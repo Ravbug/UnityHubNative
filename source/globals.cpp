@@ -10,15 +10,17 @@ using namespace std;
 
 #include <sys/stat.h>
 
+static const string projectsFile = "projects.txt";
+
 #if defined __APPLE__
 
 	#include <pwd.h>
 	//the location to store application data
-	static const string path = getpwuid(getuid())->pw_dir + string("/Library/Application Support/UnityHubNative");
+	static const string datapath = getpwuid(getuid())->pw_dir + string("/Library/Application Support/UnityHubNative");
 	static const char dirsep = '/';
 
 #elif defined __WIN32__
-	static const string path = getenv("HOMEPATH") + string("\\AppData\\Roaming\\UnityHubNative");
+	static const string datapath = getenv("HOMEPATH") + string("\\AppData\\Roaming\\UnityHubNative");
 	static const char dirsep = '\\';
 
 #else
@@ -33,9 +35,6 @@ struct project{
 	string modifiedDate;
 	string path;
 };
-
-//will store the list of projects
-static vector<project> projects;
 
 /**
  Determines if a file exists at a path using stat()

@@ -15,13 +15,13 @@
 #include <wx/font.h>
 #include <wx/colour.h>
 #include <wx/settings.h>
+#include <wx/listctrl.h>
 #include <wx/bitmap.h>
 #include <wx/image.h>
 #include <wx/icon.h>
 #include <wx/button.h>
-#include <wx/listctrl.h>
-#include <wx/gbsizer.h>
 #include <wx/sizer.h>
+#include <wx/gbsizer.h>
 #include <wx/panel.h>
 #include <wx/notebook.h>
 #include <wx/menu.h>
@@ -41,8 +41,9 @@ class MainFrame : public wxFrame
 		wxNotebook* notebook;
 		wxPanel* projects_pane;
 		wxStaticText* m_staticText2;
-		wxButton* add_existing_proj;
 		wxListCtrl* projectsList;
+		wxButton* add_new_proj;
+		wxButton* add_existing_proj;
 		wxPanel* installs_pane;
 		wxMenuBar* menubar;
 		wxMenu* menuFile;

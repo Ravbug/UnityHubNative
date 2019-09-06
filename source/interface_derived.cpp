@@ -13,6 +13,7 @@
 wxBEGIN_EVENT_TABLE(MainFrameDerived, wxFrame)
 EVT_MENU(wxID_ABOUT, MainFrameDerived::OnAbout)
 EVT_BUTTON(wxID_ADD,MainFrameDerived::OnAddProject)
+EVT_BUTTON(wxID_NEW,MainFrameDerived::OnCreateProject)
 wxEND_EVENT_TABLE()
 
 //call superclass constructor
@@ -24,8 +25,20 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	}
 	
 	//make the data folder if it does not already exist (with readwrite for all groups)
-	int status = mkdir(path.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	int status = mkdir(datapath.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 	if (status != 0){
+		//check that projects file exists in folder
+		string p = string(datapath + dirsep + projectsFile);
+		if (file_exists(p)){
+			ifstream in;
+			in.open(p);
+			string line;
+			//load each project (each path is on its own line)
+			while (getline(in, line)){
+				project pr = LoadProject(line);
+				AddProject(pr);
+			}
+		}
 		//TODO: load the existing projects from file
 	}
 }
@@ -44,6 +57,10 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
 		project p = LoadProject(path);
 		AddProject(p);
 	}
+}
+
+void MainFrameDerived::OnCreateProject(wxCommandEvent& event){
+	wxMessageBox( "Replace with project creation dialog", "Create Project", wxOK | wxICON_INFORMATION );
 }
 
 /** Brings up a folder selection dialog with a prompt
@@ -102,6 +119,19 @@ project MainFrameDerived::LoadProject(string &path){
 }
 
 /**
+ Writes the project file paths to the file in the Application directory
+ The file's name is projects.txt and will be created if it is not present.
+ */
+void MainFrameDerived::SaveProjects(){
+	ofstream file;
+	file.open(datapath + dirsep + projectsFile);
+	for (project& p : projects){
+		file << p.path << endl;
+	}
+	file.close();
+}
+
+/**
  Adds a project to the table
  @param p the project struct to add
  @note Ensure all the fields on the struct are initialized
@@ -109,6 +139,9 @@ project MainFrameDerived::LoadProject(string &path){
 void MainFrameDerived::AddProject(project& p){
 	//add to the vector backing the UI
 	projects.push_back(p);
+	
+	//save to file
+	SaveProjects();
 	
 	//add (painfully) to the UI
 	wxListItem i;

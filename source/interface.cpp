@@ -32,11 +32,20 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 
 	gbSizer1->Add( m_staticText2, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	add_existing_proj = new wxButton( projects_pane, wxID_ADD, wxT("Add Existing"), wxDefaultPosition, wxDefaultSize, 0 );
-	gbSizer1->Add( add_existing_proj, wxGBPosition( 0, 1 ), wxGBSpan( 1, 1 ), wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 5 );
-
 	projectsList = new wxListCtrl( projects_pane, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_SINGLE_SEL );
-	gbSizer1->Add( projectsList, wxGBPosition( 1, 0 ), wxGBSpan( 1, 2 ), wxALL|wxEXPAND, 5 );
+	gbSizer1->Add( projectsList, wxGBPosition( 1, 0 ), wxGBSpan( 1, 3 ), wxALL|wxEXPAND, 5 );
+
+	wxBoxSizer* pManSizer;
+	pManSizer = new wxBoxSizer( wxHORIZONTAL );
+
+	add_new_proj = new wxButton( projects_pane, wxID_NEW, wxT("Create New"), wxDefaultPosition, wxDefaultSize, 0 );
+	pManSizer->Add( add_new_proj, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	add_existing_proj = new wxButton( projects_pane, wxID_ADD, wxT("Add Existing"), wxDefaultPosition, wxDefaultSize, 0 );
+	pManSizer->Add( add_existing_proj, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	gbSizer1->Add( pManSizer, wxGBPosition( 0, 2 ), wxGBSpan( 1, 1 ), wxEXPAND|wxALIGN_RIGHT, 5 );
 
 
 	gbSizer1->AddGrowableCol( 1 );
@@ -59,13 +68,17 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	this->Layout();
 	menubar = new wxMenuBar( 0 );
 	menuFile = new wxMenu();
-	wxMenuItem* m_menuItem2;
-	m_menuItem2 = new wxMenuItem( menuFile, wxID_EXIT, wxString( wxT("Close") ) + wxT('\t') + wxT("Ctrl-W"), wxEmptyString, wxITEM_NORMAL );
-	menuFile->Append( m_menuItem2 );
+	wxMenuItem* quit_menu;
+	quit_menu = new wxMenuItem( menuFile, wxID_EXIT, wxString( wxT("Close") ) + wxT('\t') + wxT("Ctrl-W"), wxEmptyString, wxITEM_NORMAL );
+	menuFile->Append( quit_menu );
 
-	wxMenuItem* m_menuItem3;
-	m_menuItem3 = new wxMenuItem( menuFile, wxID_ABOUT, wxString( wxT("About") ) , wxEmptyString, wxITEM_NORMAL );
-	menuFile->Append( m_menuItem3 );
+	wxMenuItem* about_menu;
+	about_menu = new wxMenuItem( menuFile, wxID_ABOUT, wxString( wxT("About") ) , wxEmptyString, wxITEM_NORMAL );
+	menuFile->Append( about_menu );
+
+	wxMenuItem* pref_menu;
+	pref_menu = new wxMenuItem( menuFile, wxID_PREFERENCES, wxString( wxT("Preferences") ) , wxEmptyString, wxITEM_NORMAL );
+	menuFile->Append( pref_menu );
 
 	menubar->Append( menuFile, wxT("File") );
 
