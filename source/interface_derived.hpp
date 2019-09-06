@@ -25,6 +25,8 @@ public:
 	void OnAddProject(wxCommandEvent& event);
 	void OnCreateProject(wxCommandEvent& event);
 	void OnOpenProject(wxListEvent& event);
+	void OnLocateInstall(wxCommandEvent& event);
+	void OnRemoveInstallPath(wxCommandEvent& event);
 	static string GetPathFromDialog(string& message);
 	wxDECLARE_EVENT_TABLE();
 private:
@@ -32,7 +34,11 @@ private:
 	project LoadProject(string& path);
 	void SaveProjects();
 	void OpenProject(long& index);
+	void SaveEditorVersions();
+	void LoadEditorPath(const string& path);
+	
 	
 	//will store the list of projects
 	vector<project> projects;
+	vector<string> installPaths;
 };

@@ -11,7 +11,7 @@
 
 MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
 {
-	this->SetSizeHints( wxSize( 500,250 ), wxDefaultSize );
+	this->SetSizeHints( wxSize( 500,320 ), wxDefaultSize );
 
 	wxBoxSizer* main_sizer;
 	main_sizer = new wxBoxSizer( wxVERTICAL );
@@ -59,6 +59,64 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	projectSizer->Fit( projects_pane );
 	notebook->AddPage( projects_pane, wxT("Projects"), false );
 	installs_pane = new wxPanel( notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxGridBagSizer* iManSizer;
+	iManSizer = new wxGridBagSizer( 0, 0 );
+	iManSizer->SetFlexibleDirection( wxBOTH );
+	iManSizer->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+
+	m_staticText5 = new wxStaticText( installs_pane, wxID_ANY, wxT("Detected Installations"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText5->Wrap( -1 );
+	m_staticText5->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD, false, wxEmptyString ) );
+
+	iManSizer->Add( m_staticText5, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALL, 5 );
+
+	m_staticText6 = new wxStaticText( installs_pane, wxID_ANY, wxT("Install Search Paths"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText6->Wrap( -1 );
+	m_staticText6->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD, false, wxEmptyString ) );
+
+	iManSizer->Add( m_staticText6, wxGBPosition( 2, 0 ), wxGBSpan( 1, 1 ), wxALL, 5 );
+
+	installsList = new wxListCtrl( installs_pane, wxID_FLOPPY, wxDefaultPosition, wxDefaultSize, wxLC_LIST|wxLC_SINGLE_SEL );
+	iManSizer->Add( installsList, wxGBPosition( 1, 0 ), wxGBSpan( 1, 1 ), wxALL|wxEXPAND, 5 );
+
+	installsPathsList = new wxListCtrl( installs_pane, wxID_FLOPPY, wxDefaultPosition, wxDefaultSize, wxLC_LIST|wxLC_SINGLE_SEL );
+	iManSizer->Add( installsPathsList, wxGBPosition( 3, 0 ), wxGBSpan( 1, 1 ), wxALL|wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer4;
+	bSizer4 = new wxBoxSizer( wxVERTICAL );
+
+	m_button5 = new wxButton( installs_pane, wxID_FIND, wxT("Add Location"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer4->Add( m_button5, 0, wxALL|wxEXPAND, 5 );
+
+	m_button6 = new wxButton( installs_pane, wxID_CLEAR, wxT("Remove"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer4->Add( m_button6, 0, wxALL|wxEXPAND, 5 );
+
+
+	iManSizer->Add( bSizer4, wxGBPosition( 3, 1 ), wxGBSpan( 1, 1 ), wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer5;
+	bSizer5 = new wxBoxSizer( wxVERTICAL );
+
+	m_button8 = new wxButton( installs_pane, wxID_ANY, wxT("Install New"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer5->Add( m_button8, 0, wxALL|wxEXPAND, 5 );
+
+	m_button9 = new wxButton( installs_pane, wxID_ANY, wxT("Modify"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer5->Add( m_button9, 0, wxALL|wxEXPAND, 5 );
+
+	m_button10 = new wxButton( installs_pane, wxID_ANY, wxT("Uninstall"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer5->Add( m_button10, 0, wxALL|wxEXPAND, 5 );
+
+
+	iManSizer->Add( bSizer5, wxGBPosition( 1, 1 ), wxGBSpan( 1, 1 ), wxEXPAND, 5 );
+
+
+	iManSizer->AddGrowableCol( 0 );
+	iManSizer->AddGrowableRow( 1 );
+	iManSizer->AddGrowableRow( 3 );
+
+	installs_pane->SetSizer( iManSizer );
+	installs_pane->Layout();
+	iManSizer->Fit( installs_pane );
 	notebook->AddPage( installs_pane, wxT("Editor Versions"), false );
 
 	main_sizer->Add( notebook, 1, wxEXPAND | wxALL, 5 );
@@ -79,6 +137,10 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxMenuItem* pref_menu;
 	pref_menu = new wxMenuItem( menuFile, wxID_PREFERENCES, wxString( wxT("Preferences") ) , wxEmptyString, wxITEM_NORMAL );
 	menuFile->Append( pref_menu );
+
+	wxMenuItem* changeEditorVersion;
+	changeEditorVersion = new wxMenuItem( menuFile, wxID_REPLACE, wxString( wxT("Change Editor Version") ) + wxT('\t') + wxT("Ctrl-E"), wxEmptyString, wxITEM_NORMAL );
+	menuFile->Append( changeEditorVersion );
 
 	menubar->Append( menuFile, wxT("File") );
 

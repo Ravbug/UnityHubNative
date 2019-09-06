@@ -14,6 +14,8 @@ wxBEGIN_EVENT_TABLE(MainFrameDerived, wxFrame)
 EVT_MENU(wxID_ABOUT, MainFrameDerived::OnAbout)
 EVT_BUTTON(wxID_ADD,MainFrameDerived::OnAddProject)
 EVT_BUTTON(wxID_NEW,MainFrameDerived::OnCreateProject)
+EVT_BUTTON(wxID_FIND,MainFrameDerived::OnLocateInstall)
+EVT_BUTTON(wxID_CLEAR,MainFrameDerived::OnRemoveInstallPath)
 EVT_LIST_ITEM_ACTIVATED(wxID_HARDDISK, MainFrameDerived::OnOpenProject)
 wxEND_EVENT_TABLE()
 
@@ -40,6 +42,19 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 				AddProject(pr);
 			}
 		}
+		//check that the installs path file exists in the folder
+		p = string(datapath + dirsep + editorPathsFile);
+		if (file_exists(p)){
+			//load the editors
+			ifstream in; in.open(p); string line;
+			while (getline(in, line)){
+				LoadEditorPath(line);
+			}
+		}
+		else{
+			//add default data
+			LoadEditorPath(defaultInstall);
+		}
 	}
 	//if no projects to load, the interface will be blank
 }
@@ -58,6 +73,52 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
 		project p = LoadProject(path);
 		AddProject(p);
 	}
+}
+
+/**
+ Locates a Unity install path and adds it to the list and UI
+ */
+void MainFrameDerived::OnLocateInstall(wxCommandEvent& event){
+	string msg = "Select the folder containing Unity installs";
+	string path = GetPathFromDialog(msg);
+	if (path != ""){
+		LoadEditorPath(path);
+	}
+}
+
+/**
+ Loads an editor search path into the app, updating the UI and the vector
+ @param path the string path to laod
+ */
+void MainFrameDerived::LoadEditorPath(const string& path){
+	//add to internal structure and to file
+	installPaths.insert(installPaths.begin(), path);
+	SaveEditorVersions();
+	
+	//add to the UI
+	wxListItem i;
+	i.SetId(0);
+	i.SetText(path);
+	
+	installsPathsList->InsertItem(i);
+}
+
+void MainFrameDerived::OnRemoveInstallPath(wxCommandEvent& event){
+	//loop over the list control because it doesn't have a function to get the selected ID
+	long itemIndex = -1;
+	while ((itemIndex = installsPathsList->GetNextItem(itemIndex,wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != wxNOT_FOUND) {
+		// Got the selected item index
+		//remove it from the vector
+		installPaths.erase(installPaths.begin()+itemIndex);
+		
+		//update the UI
+		installsPathsList->DeleteItem(itemIndex);
+		
+		//commit to file
+		SaveEditorVersions();
+		return;
+	}
+	wxMessageBox( "You must select an install path in the list before you can remove it.", "No path selected", wxOK | wxICON_WARNING );
 }
 
 /**
@@ -82,23 +143,26 @@ void MainFrameDerived::OpenProject(long& index){
 	//get the project
 	project p = projects[index];
 	
-	string editorPath = installsPath + dirsep + p.version + dirsep + executable;
-	
-	//check that the unity editor exists at that location
-	if (file_exists(editorPath)){
-		string cmd = editorPath + " -projectpath " + p.path;
+	for(string path : installPaths){
+		string editorPath = path + dirsep + p.version + dirsep + executable;
 		
-		//start the process
-		int status = fork();
-		if (status == 0){
-			//find a method that does not use system(), some antivirus don't like that
-			system(cmd.c_str());
+		//check that the unity editor exists at that location
+		if (file_exists(editorPath)){
+			string cmd = editorPath + " -projectpath " + p.path;
+			
+			//start the process
+			//TODO: don't use fork, it is unsafe
+			int status = fork();
+			if (status == 0){
+				//TODO: find a method that does not use system(), some antivirus don't like it
+				system(cmd.c_str());
+			}
+			return;
 		}
 	}
-	else{
-		//alert user
-		wxMessageBox("The editor version " + p.version + " could not be found. Check that it is installed.", "Unable to start Unity", wxOK | wxICON_ERROR);
-	}
+	//alert user
+	wxMessageBox("The editor version " + p.version + " could not be found.\n\nCheck that it is installed, and that the folder where it has been installed is listed in the Editor Versions tab, under Install Search Paths.", "Unable to start Unity", wxOK | wxICON_ERROR);
+	
 }
 
 /** Brings up a folder selection dialog with a prompt
@@ -165,6 +229,15 @@ void MainFrameDerived::SaveProjects(){
 	file.open(datapath + dirsep + projectsFile);
 	for (project& p : projects){
 		file << p.path << endl;
+	}
+	file.close();
+}
+
+void MainFrameDerived::SaveEditorVersions(){
+	ofstream file;
+	file.open(datapath + dirsep + editorPathsFile);
+	for (string& p : installPaths){
+		file << p << endl;
 	}
 	file.close();
 }

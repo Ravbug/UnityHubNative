@@ -30,6 +30,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #define wxID_HARDDISK 1000
+#define wxID_FLOPPY 1001
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class MainFrame
@@ -46,12 +47,21 @@ class MainFrame : public wxFrame
 		wxButton* add_new_proj;
 		wxButton* add_existing_proj;
 		wxPanel* installs_pane;
+		wxStaticText* m_staticText5;
+		wxStaticText* m_staticText6;
+		wxListCtrl* installsList;
+		wxListCtrl* installsPathsList;
+		wxButton* m_button5;
+		wxButton* m_button6;
+		wxButton* m_button8;
+		wxButton* m_button9;
+		wxButton* m_button10;
 		wxMenuBar* menubar;
 		wxMenu* menuFile;
 
 	public:
 
-		MainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Unity Hub Native"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 500,300 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+		MainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Unity Hub Native"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 500,320 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 
 		~MainFrame();
 

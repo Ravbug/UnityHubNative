@@ -11,6 +11,7 @@ using namespace std;
 #include <sys/stat.h>
 
 static const string projectsFile = "projects.txt";
+static const string editorPathsFile = "editorPaths.txt";
 
 #if defined __APPLE__
 
@@ -20,8 +21,7 @@ static const string projectsFile = "projects.txt";
 	static const char dirsep = '/';
 	static const string executable = "Unity.app/Contents/MacOS/Unity";
 
-	//TODO: make this a preference
-	static const string installsPath = "/Applications/Unity/Hub/Editor";
+	static const string defaultInstall = "/Applications/Unity/Hub/Editor";
 
 
 #elif defined __WIN32__
@@ -30,7 +30,7 @@ static const string projectsFile = "projects.txt";
 
 #else
 	//disalow compilation for unsupported platforms
-#error You are compiling on an unsupported operating system. Currently only macOS and Windows are supported. If you know how to support your system, please add that functionality and submit a pull request.
+#error You are compiling on an unsupported operating system. Currently only macOS and Windows are supported. If you know how to support your system, you may add that functionality and submit a pull request.
 #endif
 
 //structure containing all the info needed to display a project
