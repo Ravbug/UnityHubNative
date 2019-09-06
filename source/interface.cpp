@@ -11,7 +11,7 @@
 
 MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
 {
-	this->SetSizeHints( wxSize( 500,320 ), wxDefaultSize );
+	this->SetSizeHints( wxSize( 560,320 ), wxDefaultSize );
 
 	wxBoxSizer* main_sizer;
 	main_sizer = new wxBoxSizer( wxVERTICAL );
@@ -37,6 +37,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 
 	wxBoxSizer* pManSizer;
 	pManSizer = new wxBoxSizer( wxHORIZONTAL );
+
+	removeProjBtn = new wxButton( projects_pane, wxID_DELETE, wxT(" Remove from list"), wxDefaultPosition, wxDefaultSize, 0 );
+	pManSizer->Add( removeProjBtn, 0, wxALL, 5 );
 
 	add_new_proj = new wxButton( projects_pane, wxID_NEW, wxT("Create New"), wxDefaultPosition, wxDefaultSize, 0 );
 	pManSizer->Add( add_new_proj, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );

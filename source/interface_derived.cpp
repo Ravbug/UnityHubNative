@@ -16,6 +16,7 @@ EVT_BUTTON(wxID_ADD,MainFrameDerived::OnAddProject)
 EVT_BUTTON(wxID_NEW,MainFrameDerived::OnCreateProject)
 EVT_BUTTON(wxID_FIND,MainFrameDerived::OnLocateInstall)
 EVT_BUTTON(wxID_CLEAR,MainFrameDerived::OnRemoveInstallPath)
+EVT_BUTTON(wxID_DELETE,MainFrameDerived::OnRemoveProject)
 EVT_LIST_ITEM_ACTIVATED(wxID_HARDDISK, MainFrameDerived::OnOpenProject)
 wxEND_EVENT_TABLE()
 
@@ -36,10 +37,31 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 			ifstream in;
 			in.open(p);
 			string line;
+			//if one cannot be loaded
+			vector<string> erroredProjects;
 			//load each project (each path is on its own line)
 			while (getline(in, line)){
-				project pr = LoadProject(line);
-				AddProject(pr);
+				try{
+					project pr = LoadProject(line);
+					AddProject(pr);
+				}
+				catch(runtime_error& e){
+					//remove project
+					erroredProjects.push_back(line);
+				}
+			}
+			//alert user if projects could not be loaded
+			if (erroredProjects.size() > 0){
+				//build string
+				string str;
+				for (string s : erroredProjects){
+					str += s + "\n";
+				}
+				//message box
+				wxMessageBox("The following projects could not be loaded. They have been removed from the list.\n\n"+str, "Loading error", wxOK | wxICON_WARNING );
+				
+				//save to remove the broken projects
+				SaveProjects();
 			}
 		}
 		//check that the installs path file exists in the folder
@@ -69,10 +91,41 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
 	string msg ="Select the folder containing the Unity Project";
 	string path = GetPathFromDialog(msg);
 	if (path != ""){
+		//check that the project does not already exist
+		for(project& p : projects){
+			if (p.path == path){
+				wxMessageBox( "This project has already been added.", "Cannot add project", wxOK | wxICON_WARNING );
+				return;
+			}
+		}
+		
 		//add it to the projects list
-		project p = LoadProject(path);
-		AddProject(p);
+		try{
+			project p = LoadProject(path);
+			AddProject(p);
+		}
+		catch(runtime_error& e){
+			wxMessageBox(e.what(),"Unable to add project",wxOK | wxICON_ERROR);
+		}
 	}
+}
+
+void MainFrameDerived::OnRemoveProject(wxCommandEvent& event){
+	//loop over the list control because it doesn't have a function to get the selected ID
+	long itemIndex = -1;
+	while ((itemIndex = projectsList->GetNextItem(itemIndex,wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != wxNOT_FOUND) {
+		//remove from the vector
+		projects.erase(projects.begin()+itemIndex);
+
+		//remove from the list view
+		projectsList->DeleteItem(itemIndex);
+		
+		//update the file
+		SaveProjects();
+		
+		return;
+	}
+	wxMessageBox("You must select a project in the list before you can remove it from the list.", "No project selected", wxOK | wxICON_WARNING );
 }
 
 /**
@@ -191,7 +244,7 @@ string MainFrameDerived::GetPathFromDialog(string& message)
 project MainFrameDerived::LoadProject(string &path){
 	//error if the file does not exist
 	if (!file_exists(path)){
-		throw exception();
+		throw runtime_error(path + " does not exist.");
 	}
 	
 	//the name is the final part of the path
@@ -200,7 +253,7 @@ project MainFrameDerived::LoadProject(string &path){
 	//Load ProjectSettings/ProjectVersion.txt to get the editor version, if it exists
 	string projSettings = string(path + dirsep + "ProjectSettings" + dirsep + "ProjectVersion.txt");
 	if (!file_exists(projSettings)){
-		throw exception();
+		throw runtime_error("No ProjectVersion.txt found at " + path + "\n\nEnsure the folder you selected is the root folder of a complete Unity project.");
 	}
 	
 	//the first line of ProjectVersion.txt contains the editor verison as plain text
@@ -213,7 +266,7 @@ project MainFrameDerived::LoadProject(string &path){
 	//get the modification date
 	struct stat fileInfo;
 	if (stat(path.c_str(), &fileInfo) != 0) {
-		throw exception();
+		throw runtime_error("Cannot get modification date. Ensure this program has access to "+path);
 	}
 	
 	project p = {name,version,ctime(&fileInfo.st_mtime),path,};

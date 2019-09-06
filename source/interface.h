@@ -44,6 +44,7 @@ class MainFrame : public wxFrame
 		wxPanel* projects_pane;
 		wxStaticText* m_staticText2;
 		wxListCtrl* projectsList;
+		wxButton* removeProjBtn;
 		wxButton* add_new_proj;
 		wxButton* add_existing_proj;
 		wxPanel* installs_pane;
@@ -61,7 +62,7 @@ class MainFrame : public wxFrame
 
 	public:
 
-		MainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Unity Hub Native"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 500,320 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+		MainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Unity Hub Native"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 560,320 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 
 		~MainFrame();
 

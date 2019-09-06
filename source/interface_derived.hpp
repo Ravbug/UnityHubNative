@@ -24,11 +24,14 @@ public:
 	void OnAbout(wxCommandEvent& event);
 	void OnAddProject(wxCommandEvent& event);
 	void OnCreateProject(wxCommandEvent& event);
+	void OnRemoveProject(wxCommandEvent& event);
 	void OnOpenProject(wxListEvent& event);
 	void OnLocateInstall(wxCommandEvent& event);
 	void OnRemoveInstallPath(wxCommandEvent& event);
-	static string GetPathFromDialog(string& message);
 	wxDECLARE_EVENT_TABLE();
+	
+	static string GetPathFromDialog(string& message);
+
 private:
 	void AddProject(project& p);
 	project LoadProject(string& path);
