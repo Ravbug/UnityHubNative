@@ -32,14 +32,15 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 
 	gbSizer1->Add( m_staticText2, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	add_existing_proj = new wxButton( projects_pane, wxID_ANY, wxT("Add Existing"), wxDefaultPosition, wxDefaultSize, 0 );
+	add_existing_proj = new wxButton( projects_pane, wxID_ADD, wxT("Add Existing"), wxDefaultPosition, wxDefaultSize, 0 );
 	gbSizer1->Add( add_existing_proj, wxGBPosition( 0, 1 ), wxGBSpan( 1, 1 ), wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 5 );
 
-	projectsList = new wxListCtrl( projects_pane, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_HRULES|wxLC_ICON|wxLC_REPORT|wxLC_SINGLE_SEL );
+	projectsList = new wxListCtrl( projects_pane, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_SINGLE_SEL );
 	gbSizer1->Add( projectsList, wxGBPosition( 1, 0 ), wxGBSpan( 1, 2 ), wxALL|wxEXPAND, 5 );
 
 
 	gbSizer1->AddGrowableCol( 1 );
+	gbSizer1->AddGrowableRow( 1 );
 
 	projectSizer->Add( gbSizer1, 1, wxEXPAND, 5 );
 

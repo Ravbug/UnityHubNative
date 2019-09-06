@@ -16,6 +16,8 @@
 		AA1D0FCC222A0A4B00678304 /* wxrelease.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = AA1D0FC9222A0A4A00678304 /* wxrelease.xcconfig */; };
 		AA1D0FCD222A0A4B00678304 /* wxcocoa.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = AA1D0FCA222A0A4B00678304 /* wxcocoa.xcconfig */; };
 		AA1D0FCE222A0A4B00678304 /* wxdebug.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = AA1D0FCB222A0A4B00678304 /* wxdebug.xcconfig */; };
+		AA56E9702321F67C002BB5E1 /* globals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AA56E96F2321F67C002BB5E1 /* globals.cpp */; };
+		AA56E98A2321F67E002BB5E1 /* globals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AA56E96F2321F67C002BB5E1 /* globals.cpp */; };
 		AA9F4B912321BEE900FF2E24 /* interface_derived.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AA9F4B8F2321BEE900FF2E24 /* interface_derived.cpp */; };
 		AA9F4B922321BEE900FF2E24 /* interface_derived.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AA9F4B8F2321BEE900FF2E24 /* interface_derived.cpp */; };
 		AAD015C0222B2FE300E25CB7 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AAF9D87B222B14E900437548 /* main.cpp */; };
@@ -244,6 +246,7 @@
 		AA1D0FC9222A0A4A00678304 /* wxrelease.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = wxrelease.xcconfig; path = wxWidgets/build/osx/wxrelease.xcconfig; sourceTree = SOURCE_ROOT; };
 		AA1D0FCA222A0A4B00678304 /* wxcocoa.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = wxcocoa.xcconfig; path = wxWidgets/build/osx/wxcocoa.xcconfig; sourceTree = SOURCE_ROOT; };
 		AA1D0FCB222A0A4B00678304 /* wxdebug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = wxdebug.xcconfig; path = wxWidgets/build/osx/wxdebug.xcconfig; sourceTree = SOURCE_ROOT; };
+		AA56E96F2321F67C002BB5E1 /* globals.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = globals.cpp; sourceTree = "<group>"; };
 		AA9F4B8F2321BEE900FF2E24 /* interface_derived.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = interface_derived.cpp; sourceTree = "<group>"; };
 		AA9F4B902321BEE900FF2E24 /* interface_derived.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = interface_derived.hpp; sourceTree = "<group>"; };
 		AAD015CD222B2FE300E25CB7 /* Unity Hub Native.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Unity Hub Native.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -327,6 +330,7 @@
 				AA012113224C24D4000F4F82 /* wxmac.icns */,
 				AAF9D87A222B14E900437548 /* Info_cocoa.plist */,
 				AAF9D87B222B14E900437548 /* main.cpp */,
+				AA56E96F2321F67C002BB5E1 /* globals.cpp */,
 				AA9F4B8F2321BEE900FF2E24 /* interface_derived.cpp */,
 				AA9F4B902321BEE900FF2E24 /* interface_derived.hpp */,
 				41B5AAEC22DB8BB300347CC8 /* interface.cpp */,
@@ -659,6 +663,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA56E9702321F67C002BB5E1 /* globals.cpp in Sources */,
 				AA9F4B912321BEE900FF2E24 /* interface_derived.cpp in Sources */,
 				AAF9D87D222B14E900437548 /* main.cpp in Sources */,
 				41B5AAEE22DB8BB400347CC8 /* interface.cpp in Sources */,
@@ -669,6 +674,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA56E98A2321F67E002BB5E1 /* globals.cpp in Sources */,
 				AA9F4B922321BEE900FF2E24 /* interface_derived.cpp in Sources */,
 				AAD015C0222B2FE300E25CB7 /* main.cpp in Sources */,
 				41B5AAEF22DB8BB400347CC8 /* interface.cpp in Sources */,

@@ -9,6 +9,11 @@
 #pragma once
 
 #include "interface.h"
+#include "globals.cpp"
+
+using namespace std;
+
+
 
 class MainFrameDerived : public MainFrame{
 public:
@@ -17,6 +22,10 @@ public:
 	
 	//events
 	void OnAbout(wxCommandEvent& event);
+	void OnAddProject(wxCommandEvent& event);
+	static string GetPathFromDialog(string& message);
 	wxDECLARE_EVENT_TABLE();
-
+private:
+	void AddProject(project& p);
+	project LoadProject(string& path);
 };
