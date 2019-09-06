@@ -24,12 +24,14 @@ public:
 	void OnAbout(wxCommandEvent& event);
 	void OnAddProject(wxCommandEvent& event);
 	void OnCreateProject(wxCommandEvent& event);
+	void OnOpenProject(wxListEvent& event);
 	static string GetPathFromDialog(string& message);
 	wxDECLARE_EVENT_TABLE();
 private:
 	void AddProject(project& p);
 	project LoadProject(string& path);
 	void SaveProjects();
+	void OpenProject(long& index);
 	
 	//will store the list of projects
 	vector<project> projects;

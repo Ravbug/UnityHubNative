@@ -18,6 +18,11 @@ static const string projectsFile = "projects.txt";
 	//the location to store application data
 	static const string datapath = getpwuid(getuid())->pw_dir + string("/Library/Application Support/UnityHubNative");
 	static const char dirsep = '/';
+	static const string executable = "Unity.app/Contents/MacOS/Unity";
+
+	//TODO: make this a preference
+	static const string installsPath = "/Applications/Unity/Hub/Editor";
+
 
 #elif defined __WIN32__
 	static const string datapath = getenv("HOMEPATH") + string("\\AppData\\Roaming\\UnityHubNative");

@@ -14,6 +14,7 @@ wxBEGIN_EVENT_TABLE(MainFrameDerived, wxFrame)
 EVT_MENU(wxID_ABOUT, MainFrameDerived::OnAbout)
 EVT_BUTTON(wxID_ADD,MainFrameDerived::OnAddProject)
 EVT_BUTTON(wxID_NEW,MainFrameDerived::OnCreateProject)
+EVT_LIST_ITEM_ACTIVATED(wxID_HARDDISK, MainFrameDerived::OnOpenProject)
 wxEND_EVENT_TABLE()
 
 //call superclass constructor
@@ -39,8 +40,8 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 				AddProject(pr);
 			}
 		}
-		//TODO: load the existing projects from file
 	}
+	//if no projects to load, the interface will be blank
 }
 
 //definitions for the events
@@ -59,8 +60,45 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
 	}
 }
 
+/**
+ Called to create a new project
+ */
 void MainFrameDerived::OnCreateProject(wxCommandEvent& event){
 	wxMessageBox( "Replace with project creation dialog", "Create Project", wxOK | wxICON_INFORMATION );
+}
+
+/**
+ Called when you double click or press Enter on a cell in the ListView
+ */
+void MainFrameDerived::OnOpenProject(wxListEvent& event){
+	OpenProject(event.m_itemIndex);
+}
+
+/**
+ Launches Unity with a project
+ @param index the integer representing which project in the projects Vector to load
+ */
+void MainFrameDerived::OpenProject(long& index){
+	//get the project
+	project p = projects[index];
+	
+	string editorPath = installsPath + dirsep + p.version + dirsep + executable;
+	
+	//check that the unity editor exists at that location
+	if (file_exists(editorPath)){
+		string cmd = editorPath + " -projectpath " + p.path;
+		
+		//start the process
+		int status = fork();
+		if (status == 0){
+			//find a method that does not use system(), some antivirus don't like that
+			system(cmd.c_str());
+		}
+	}
+	else{
+		//alert user
+		wxMessageBox("The editor version " + p.version + " could not be found. Check that it is installed.", "Unable to start Unity", wxOK | wxICON_ERROR);
+	}
 }
 
 /** Brings up a folder selection dialog with a prompt
@@ -106,7 +144,7 @@ project MainFrameDerived::LoadProject(string &path){
 	ifstream inFile;
 	inFile.open(projSettings);
 	getline(inFile,version);
-	version = version.substr(16);
+	version = version.substr(17);
 	
 	//get the modification date
 	struct stat fileInfo;
@@ -138,7 +176,7 @@ void MainFrameDerived::SaveProjects(){
  */
 void MainFrameDerived::AddProject(project& p){
 	//add to the vector backing the UI
-	projects.push_back(p);
+	projects.insert(projects.begin(),p);
 	
 	//save to file
 	SaveProjects();
