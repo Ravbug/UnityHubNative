@@ -10,8 +10,15 @@ using namespace std;
 
 #include <sys/stat.h>
 
+//data file names
 static const string projectsFile = "projects.txt";
 static const string editorPathsFile = "editorPaths.txt";
+
+//structure for representing an editor and for locating it
+struct editor{
+	string name;
+	string path;
+};
 
 #if defined __APPLE__
 

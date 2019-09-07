@@ -293,6 +293,7 @@ void MainFrameDerived::SaveEditorVersions(){
 		file << p << endl;
 	}
 	file.close();
+	LoadEditorVersions();
 }
 
 /**
@@ -326,4 +327,43 @@ void MainFrameDerived::AddProject(project& p){
 	i.SetColumn(3);
 	i.SetText(p.path);
 	projectsList->SetItem(i);
+}
+
+/**
+ Loads all installed editor versions from the Install Search Paths, and updates the list control
+ */
+void MainFrameDerived::LoadEditorVersions(){
+	//clear list control
+	installsList->ClearAll();
+	
+	//iterate over the search paths
+	for (string& path : installPaths){
+		//open the folder
+		DIR* dir = opendir(path.c_str());
+		struct dirent *entry = readdir(dir);
+		//loop over the contents
+		while (entry != NULL)
+		{
+			//is this a folder?
+			if (entry->d_type == DT_DIR){
+				//does this folder have a valid executable inside?
+				string p = string(path + dirsep + entry->d_name + dirsep + executable);
+				if (file_exists(p)){
+					//add it to the list
+					wxListItem i;
+					i.SetId(0);
+					i.SetText(entry->d_name);
+					installsList->InsertItem(i);
+					
+					//add it to the backing datastructure
+					editor e = {entry->d_name, path};
+					editors.push_back(e);
+				}
+			}
+			entry = readdir(dir);
+		}
+		//free resources when finished
+		closedir(dir);
+		free(entry);
+	}
 }

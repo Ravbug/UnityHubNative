@@ -13,8 +13,6 @@
 
 using namespace std;
 
-
-
 class MainFrameDerived : public MainFrame{
 public:
 	//constructor (takes no args)
@@ -39,9 +37,10 @@ private:
 	void OpenProject(long& index);
 	void SaveEditorVersions();
 	void LoadEditorPath(const string& path);
-	
+	void LoadEditorVersions();
 	
 	//will store the list of projects
 	vector<project> projects;
 	vector<string> installPaths;
+	vector<editor> editors;
 };
