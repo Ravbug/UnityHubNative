@@ -10,6 +10,7 @@
 
 #include "interface.h"
 #include "globals.cpp"
+#include <functional>
 
 using namespace std;
 
@@ -42,5 +43,25 @@ private:
 	//will store the list of projects
 	vector<project> projects;
 	vector<string> installPaths;
+	vector<editor> editors;
+};
+
+class CreateProjectDialogD : CreateProjectDialog{
+public:
+	CreateProjectDialogD(wxWindow* parent, vector<editor>& versions);
+	void show(){
+		this->ShowModal();
+	}
+	
+	void OnCancel(wxCommandEvent& event){
+		//close and dispose self
+		this->EndModal(0);
+		delete this;
+	}
+	wxDECLARE_EVENT_TABLE();
+private:
+	bool validateForm();
+	void loadTemplates(editor e);
+	//std::function<const string&> callback;
 	vector<editor> editors;
 };

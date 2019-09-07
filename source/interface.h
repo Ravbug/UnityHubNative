@@ -26,6 +26,9 @@
 #include <wx/notebook.h>
 #include <wx/menu.h>
 #include <wx/frame.h>
+#include <wx/textctrl.h>
+#include <wx/choice.h>
+#include <wx/dialog.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -65,6 +68,32 @@ class MainFrame : public wxFrame
 		MainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Unity Hub Native"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 560,320 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 
 		~MainFrame();
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Class CreateProjectDialog
+///////////////////////////////////////////////////////////////////////////////
+class CreateProjectDialog : public wxDialog
+{
+	private:
+
+	protected:
+		wxStaticText* m_staticText9;
+		wxTextCtrl* projNameTxt;
+		wxStaticText* m_staticText10;
+		wxTextCtrl* projLocTxt;
+		wxButton* chooseProjLocBtn;
+		wxStaticText* m_staticText11;
+		wxChoice* unityVersionChoice;
+		wxListCtrl* templateCtrl;
+		wxButton* cancelProjBtn;
+		wxButton* createProjBtn;
+
+	public:
+
+		CreateProjectDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Create a New Unity Project"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 350,230 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
+		~CreateProjectDialog();
 
 };
 

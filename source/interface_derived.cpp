@@ -178,7 +178,9 @@ void MainFrameDerived::OnRemoveInstallPath(wxCommandEvent& event){
  Called to create a new project
  */
 void MainFrameDerived::OnCreateProject(wxCommandEvent& event){
-	wxMessageBox( "Replace with project creation dialog", "Create Project", wxOK | wxICON_INFORMATION );
+	//create a dialog and show it
+	CreateProjectDialogD* dialog = new CreateProjectDialogD(this,editors);
+	dialog->show();
 }
 
 /**
