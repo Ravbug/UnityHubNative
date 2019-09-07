@@ -188,7 +188,7 @@ CreateProjectDialog::CreateProjectDialog( wxWindow* parent, wxWindowID id, const
 	projLocTxt = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
 	gbSizer3->Add( projLocTxt, wxGBPosition( 1, 1 ), wxGBSpan( 1, 1 ), wxALL|wxEXPAND, 5 );
 
-	chooseProjLocBtn = new wxButton( this, wxID_ANY, wxT("Choose..."), wxDefaultPosition, wxDefaultSize, 0 );
+	chooseProjLocBtn = new wxButton( this, wxID_OPEN, wxT("Choose..."), wxDefaultPosition, wxDefaultSize, 0 );
 	gbSizer3->Add( chooseProjLocBtn, wxGBPosition( 1, 2 ), wxGBSpan( 1, 1 ), wxALL|wxEXPAND, 5 );
 
 	m_staticText11 = new wxStaticText( this, wxID_ANY, wxT("Select Template for Version:"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -209,9 +209,7 @@ CreateProjectDialog::CreateProjectDialog( wxWindow* parent, wxWindowID id, const
 	cancelProjBtn = new wxButton( this, wxID_CANCEL, wxT("Cancel"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer6->Add( cancelProjBtn, 0, wxALL, 5 );
 
-	createProjBtn = new wxButton( this, wxID_ANY, wxT("Create"), wxDefaultPosition, wxDefaultSize, 0 );
-	createProjBtn->Enable( false );
-
+	createProjBtn = new wxButton( this, wxID_FILE, wxT("Create"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer6->Add( createProjBtn, 0, wxALL, 5 );
 
 

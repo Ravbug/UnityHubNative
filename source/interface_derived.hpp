@@ -19,18 +19,8 @@ public:
 	//constructor (takes no args)
 	MainFrameDerived();
 	
-	//events
-	void OnAbout(wxCommandEvent& event);
-	void OnAddProject(wxCommandEvent& event);
-	void OnCreateProject(wxCommandEvent& event);
-	void OnRemoveProject(wxCommandEvent& event);
-	void OnOpenProject(wxListEvent& event);
-	void OnLocateInstall(wxCommandEvent& event);
-	void OnRemoveInstallPath(wxCommandEvent& event);
-	wxDECLARE_EVENT_TABLE();
-	
 	static string GetPathFromDialog(string& message);
-
+	
 private:
 	void AddProject(project& p);
 	project LoadProject(string& path);
@@ -44,6 +34,16 @@ private:
 	vector<project> projects;
 	vector<string> installPaths;
 	vector<editor> editors;
+	
+	//events
+	void OnAbout(wxCommandEvent& event);
+	void OnAddProject(wxCommandEvent& event);
+	void OnCreateProject(wxCommandEvent& event);
+	void OnRemoveProject(wxCommandEvent& event);
+	void OnOpenProject(wxListEvent& event);
+	void OnLocateInstall(wxCommandEvent& event);
+	void OnRemoveInstallPath(wxCommandEvent& event);
+	wxDECLARE_EVENT_TABLE();
 };
 
 class CreateProjectDialogD : CreateProjectDialog{
@@ -52,16 +52,19 @@ public:
 	void show(){
 		this->ShowModal();
 	}
+private:
+	string validateForm();
+	void loadTemplates(editor& e);
+	//std::function<const string&> callback;
+	vector<editor> editors;
 	
+	//events
 	void OnCancel(wxCommandEvent& event){
 		//close and dispose self
 		this->EndModal(0);
 		delete this;
 	}
+	void OnCreate(wxCommandEvent& event);
+	void setProjectPath(wxCommandEvent& event);
 	wxDECLARE_EVENT_TABLE();
-private:
-	bool validateForm();
-	void loadTemplates(editor e);
-	//std::function<const string&> callback;
-	vector<editor> editors;
 };

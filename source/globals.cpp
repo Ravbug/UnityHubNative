@@ -13,6 +13,7 @@ using namespace std;
 //data file names
 static const string projectsFile = "projects.txt";
 static const string editorPathsFile = "editorPaths.txt";
+static const string templatePrefix = "com.unity.template";
 
 //structure for representing an editor and for locating it
 struct editor{
@@ -26,9 +27,11 @@ struct editor{
 	//the location to store application data
 	static const string datapath = getpwuid(getuid())->pw_dir + string("/Library/Application Support/UnityHubNative");
 	static const char dirsep = '/';
-	static const string executable = "Unity.app/Contents/MacOS/Unity";
 
+	//where to find various Unity things on macOS
+	static const string executable = "Unity.app/Contents/MacOS/Unity";
 	static const string defaultInstall = "/Applications/Unity/Hub/Editor";
+	static const string templatesDir = "Unity.app/Contents/Resources/PackageManager/ProjectTemplates/";
 
 
 #elif defined __WIN32__
