@@ -31,7 +31,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	{
 		string cols[] = {"Project Name","Unity Version","Last Modified","Path"};
 		for (string& str : cols){
-			projectsList->AppendColumn(str,wxLIST_FORMAT_CENTER,wxLIST_AUTOSIZE);
+			projectsList->AppendColumn(str,wxLIST_FORMAT_CENTER);
 		}
 	}
 	//make the data folder if it does not already exist (with readwrite for all groups)
@@ -372,6 +372,12 @@ void MainFrameDerived::AddProject(project& p){
 	i.SetColumn(3);
 	i.SetText(p.path);
 	projectsList->SetItem(i);
+	
+	//resize columns
+	int cols = projectsList->GetColumnCount();
+	for (int i = 0; i < cols; i++){
+		projectsList->SetColumnWidth(i, wxLIST_AUTOSIZE);
+	}
 }
 
 /**
