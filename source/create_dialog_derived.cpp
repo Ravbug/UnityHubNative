@@ -17,9 +17,9 @@ EVT_CHOICE(wxID_INDEX,CreateProjectDialogD::OnChoiceChanged)
 wxEND_EVENT_TABLE()
 
 //Construct the dialog
-CreateProjectDialogD::CreateProjectDialogD(wxWindow* parent, vector<editor>& versions) : CreateProjectDialog(parent){
+CreateProjectDialogD::CreateProjectDialogD(wxWindow* parent, vector<editor>& versions, DialogCallback callback) : CreateProjectDialog(parent){
 	editors = versions;
-	//callback = c;
+	this->callback = callback;
 	//Set combo box values to the different Unity versions passed in
 	for (editor& e : editors){
 		unityVersionChoice->AppendString(e.name);
@@ -74,6 +74,7 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 		string command = executablePath + " -createproject \"" + projPath + dirsep + projName + "\" -cloneFromTemplate " + executableTemplatesPath + templatePrefix + "." + templateName;
 		
 		//TODO: return this command to what summoned this dialog
+		this->callback(command);
 		
 		//close and dispose self
 		this->EndModal(0);

@@ -46,16 +46,17 @@ private:
 	wxDECLARE_EVENT_TABLE();
 };
 
+typedef std::function<void(const string&)> DialogCallback;
 class CreateProjectDialogD : CreateProjectDialog{
 public:
-	CreateProjectDialogD(wxWindow* parent, vector<editor>& versions);
+	CreateProjectDialogD(wxWindow* parent, vector<editor>& versions, DialogCallback callback);
 	void show(){
 		this->ShowModal();
 	}
 private:
 	string validateForm();
 	void loadTemplates(editor& e);
-	//std::function<const string&> callback;
+	DialogCallback callback;
 	vector<editor> editors;
 	
 	//events

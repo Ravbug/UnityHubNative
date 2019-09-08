@@ -179,7 +179,15 @@ void MainFrameDerived::OnRemoveInstallPath(wxCommandEvent& event){
  */
 void MainFrameDerived::OnCreateProject(wxCommandEvent& event){
 	//create a dialog and show it
-	CreateProjectDialogD* dialog = new CreateProjectDialogD(this,editors);
+	DialogCallback d = [&](string str){
+		//launch the process
+		int status = fork();
+		if (status == 0){
+			//TODO: find a method that does not use system(), some antivirus don't like it
+			system(str.c_str());
+		}
+	};
+	CreateProjectDialogD* dialog = new CreateProjectDialogD(this,editors,d);
 	dialog->show();
 }
 
