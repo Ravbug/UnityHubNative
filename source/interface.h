@@ -33,7 +33,8 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #define wxID_HARDDISK 1000
-#define wxID_FLOPPY 1001
+#define wxID_JUMP_TO 1001
+#define wxID_FLOPPY 1002
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class MainFrame
@@ -47,6 +48,7 @@ class MainFrame : public wxFrame
 		wxPanel* projects_pane;
 		wxStaticText* m_staticText2;
 		wxListCtrl* projectsList;
+		wxButton* revealProjBtn;
 		wxButton* removeProjBtn;
 		wxButton* add_new_proj;
 		wxButton* add_existing_proj;

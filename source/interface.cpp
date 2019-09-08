@@ -38,6 +38,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* pManSizer;
 	pManSizer = new wxBoxSizer( wxHORIZONTAL );
 
+	revealProjBtn = new wxButton( projects_pane, wxID_JUMP_TO, wxT("Reveal"), wxDefaultPosition, wxDefaultSize, 0 );
+	pManSizer->Add( revealProjBtn, 0, wxALL, 5 );
+
 	removeProjBtn = new wxButton( projects_pane, wxID_DELETE, wxT(" Remove from list"), wxDefaultPosition, wxDefaultSize, 0 );
 	pManSizer->Add( removeProjBtn, 0, wxALL, 5 );
 
@@ -48,7 +51,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	pManSizer->Add( add_existing_proj, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
-	gbSizer1->Add( pManSizer, wxGBPosition( 0, 2 ), wxGBSpan( 1, 1 ), wxEXPAND|wxALIGN_RIGHT, 5 );
+	gbSizer1->Add( pManSizer, wxGBPosition( 0, 1 ), wxGBSpan( 1, 2 ), wxEXPAND|wxALIGN_RIGHT, 5 );
 
 
 	gbSizer1->AddGrowableCol( 1 );
@@ -82,7 +85,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	installsList = new wxListCtrl( installs_pane, wxID_FLOPPY, wxDefaultPosition, wxDefaultSize, wxLC_LIST|wxLC_SINGLE_SEL );
 	iManSizer->Add( installsList, wxGBPosition( 1, 0 ), wxGBSpan( 1, 1 ), wxALL|wxEXPAND, 5 );
 
-	installsPathsList = new wxListCtrl( installs_pane, wxID_FLOPPY, wxDefaultPosition, wxDefaultSize, wxLC_LIST|wxLC_SINGLE_SEL );
+	installsPathsList = new wxListCtrl( installs_pane, wxID_HOME, wxDefaultPosition, wxDefaultSize, wxLC_LIST|wxLC_SINGLE_SEL );
 	iManSizer->Add( installsPathsList, wxGBPosition( 3, 0 ), wxGBSpan( 1, 1 ), wxALL|wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer4;

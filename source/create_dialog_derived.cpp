@@ -63,11 +63,10 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 		string projPath = projLocTxt->GetValue().ToStdString();
 		
 		//get the selected template
-		long itemIndex = -1;
+		long itemIndex = wxListCtrl_get_selected(templateCtrl);
 		string templateName;
-		while ((itemIndex = templateCtrl->GetNextItem(itemIndex,wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != wxNOT_FOUND) {
+		if (itemIndex > -1){
 			templateName = templateCtrl->GetItemText(itemIndex);
-			break;
 		}
 		
 		//create the command string
@@ -104,11 +103,7 @@ string CreateProjectDialogD::validateForm(){
 	}
 	
 	//is a template selected?
-	long itemIndex = -1;
-	while ((itemIndex = templateCtrl->GetNextItem(itemIndex,wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != wxNOT_FOUND) {
-		break;
-	}
-	if (itemIndex == -1){
+	if(wxListCtrl_get_selected(templateCtrl) > -1){
 		return "You must select a template.";
 	}
 	

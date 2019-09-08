@@ -17,7 +17,10 @@ EVT_BUTTON(wxID_NEW,MainFrameDerived::OnCreateProject)
 EVT_BUTTON(wxID_FIND,MainFrameDerived::OnLocateInstall)
 EVT_BUTTON(wxID_CLEAR,MainFrameDerived::OnRemoveInstallPath)
 EVT_BUTTON(wxID_DELETE,MainFrameDerived::OnRemoveProject)
+EVT_BUTTON(wxID_JUMP_TO,MainFrameDerived::OnRevealProject)
 EVT_LIST_ITEM_ACTIVATED(wxID_HARDDISK, MainFrameDerived::OnOpenProject)
+EVT_LIST_ITEM_ACTIVATED(wxID_FLOPPY,MainFrameDerived::OnRevealEditor)
+EVT_LIST_ITEM_ACTIVATED(wxID_HOME,MainFrameDerived::OnRevealInstallLocation)
 wxEND_EVENT_TABLE()
 
 //call superclass constructor
@@ -113,9 +116,8 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
 }
 
 void MainFrameDerived::OnRemoveProject(wxCommandEvent& event){
-	//loop over the list control because it doesn't have a function to get the selected ID
-	long itemIndex = -1;
-	while ((itemIndex = projectsList->GetNextItem(itemIndex,wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != wxNOT_FOUND) {
+	long itemIndex = wxListCtrl_get_selected(projectsList);
+	if (itemIndex > -1){
 		//remove from the vector
 		projects.erase(projects.begin()+itemIndex);
 
@@ -124,10 +126,10 @@ void MainFrameDerived::OnRemoveProject(wxCommandEvent& event){
 		
 		//update the file
 		SaveProjects();
-		
-		return;
 	}
-	wxMessageBox("You must select a project in the list before you can remove it from the list.", "No project selected", wxOK | wxICON_WARNING );
+	else{
+		wxMessageBox("You must select a project in the list before you can remove it from the list.", "No project selected", wxOK | wxICON_WARNING );
+	}
 }
 
 /**
@@ -159,9 +161,8 @@ void MainFrameDerived::LoadEditorPath(const string& path){
 }
 
 void MainFrameDerived::OnRemoveInstallPath(wxCommandEvent& event){
-	//loop over the list control because it doesn't have a function to get the selected ID
-	long itemIndex = -1;
-	while ((itemIndex = installsPathsList->GetNextItem(itemIndex,wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != wxNOT_FOUND) {
+	long itemIndex = wxListCtrl_get_selected(installsPathsList);
+	if (itemIndex > -1){
 		// Got the selected item index
 		//remove it from the vector
 		installPaths.erase(installPaths.begin()+itemIndex);
@@ -197,6 +198,37 @@ void MainFrameDerived::OnCreateProject(wxCommandEvent& event){
  */
 void MainFrameDerived::OnOpenProject(wxListEvent& event){
 	OpenProject(event.m_itemIndex);
+}
+
+/**
+ Called when an item in the installs pane is activated. Reveals that editor in the system's file browser.
+ @param event the list event created by the wxListCtrl
+ */
+void MainFrameDerived::OnRevealEditor(wxListEvent& event){
+	editor& e = editors[event.GetIndex()];
+	string path = e.path + dirsep + e.name;
+	reveal_in_explorer(path);
+}
+
+/**
+ Called when an item in the install search paths pane is activated. Reveals that location in the system's file browser.
+ @param event the list event created by the wxListCtrl
+ */
+void MainFrameDerived::OnRevealInstallLocation(wxListEvent& event){
+	editor& e = editors[event.GetIndex()];
+	string path = e.path;
+	reveal_in_explorer(path);
+}
+
+/**
+ Called when the reveal project button is clicked
+ */
+void MainFrameDerived::OnRevealProject(wxCommandEvent& event){
+	long selectedIndex = wxListCtrl_get_selected(projectsList);
+	if (selectedIndex > -1){
+		project& p = projects[selectedIndex];
+		reveal_in_explorer(p.path);
+	}
 }
 
 /**
@@ -361,7 +393,7 @@ void MainFrameDerived::LoadEditorVersions(){
 					
 					//add it to the backing datastructure
 					editor e = {entry->d_name, path};
-					editors.push_back(e);
+					editors.insert(editors.begin(),e);
 				}
 			}
 			entry = readdir(dir);

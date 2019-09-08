@@ -43,6 +43,9 @@ private:
 	void OnOpenProject(wxListEvent& event);
 	void OnLocateInstall(wxCommandEvent& event);
 	void OnRemoveInstallPath(wxCommandEvent& event);
+	void OnRevealEditor(wxListEvent& event);
+	void OnRevealInstallLocation(wxListEvent& event);
+	void OnRevealProject(wxCommandEvent& event);
 	wxDECLARE_EVENT_TABLE();
 };
 
