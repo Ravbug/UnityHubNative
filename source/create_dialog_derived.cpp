@@ -74,7 +74,8 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 		string command = executablePath + " -createproject \"" + projPath + dirsep + projName + "\" -cloneFromTemplate " + executableTemplatesPath + templatePrefix + "." + templateName;
 		
 		//TODO: return this command to what summoned this dialog
-		this->callback(command);
+		project p = {projName,e.name,"",projPath + dirsep + projName};
+		this->callback(command,p);
 		
 		//close and dispose self
 		this->EndModal(0);

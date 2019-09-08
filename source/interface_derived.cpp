@@ -179,7 +179,10 @@ void MainFrameDerived::OnRemoveInstallPath(wxCommandEvent& event){
  */
 void MainFrameDerived::OnCreateProject(wxCommandEvent& event){
 	//create a dialog and show it
-	DialogCallback d = [&](string str){
+	DialogCallback d = [&](string str, project p){
+		//add the project
+		this->AddProject(p);
+		
 		//launch the process
 		int status = fork();
 		if (status == 0){

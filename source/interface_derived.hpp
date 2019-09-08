@@ -46,7 +46,7 @@ private:
 	wxDECLARE_EVENT_TABLE();
 };
 
-typedef std::function<void(const string&)> DialogCallback;
+typedef std::function<void(const string&,const project&)> DialogCallback;
 class CreateProjectDialogD : CreateProjectDialog{
 public:
 	CreateProjectDialogD(wxWindow* parent, vector<editor>& versions, DialogCallback callback);
