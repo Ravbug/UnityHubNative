@@ -1296,8 +1296,8 @@
                 <property name="window_name"></property>
                 <property name="window_style"></property>
                 <object class="wxMenu" expanded="1">
-                    <property name="label">File</property>
-                    <property name="name">menuFile</property>
+                    <property name="label">Window</property>
+                    <property name="name">menuWindow</property>
                     <property name="permission">protected</property>
                     <object class="wxMenuItem" expanded="0">
                         <property name="bitmap"></property>

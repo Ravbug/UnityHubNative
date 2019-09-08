@@ -128,16 +128,16 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	this->SetSizer( main_sizer );
 	this->Layout();
 	menubar = new wxMenuBar( 0 );
-	menuFile = new wxMenu();
+	menuWindow = new wxMenu();
 	wxMenuItem* quit_menu;
-	quit_menu = new wxMenuItem( menuFile, wxID_EXIT, wxString( wxT("Close") ) + wxT('\t') + wxT("Ctrl-W"), wxEmptyString, wxITEM_NORMAL );
-	menuFile->Append( quit_menu );
+	quit_menu = new wxMenuItem( menuWindow, wxID_EXIT, wxString( wxT("Close") ) + wxT('\t') + wxT("Ctrl-W"), wxEmptyString, wxITEM_NORMAL );
+	menuWindow->Append( quit_menu );
 
 	wxMenuItem* about_menu;
-	about_menu = new wxMenuItem( menuFile, wxID_ABOUT, wxString( wxT("About") ) , wxEmptyString, wxITEM_NORMAL );
-	menuFile->Append( about_menu );
+	about_menu = new wxMenuItem( menuWindow, wxID_ABOUT, wxString( wxT("About") ) , wxEmptyString, wxITEM_NORMAL );
+	menuWindow->Append( about_menu );
 
-	menubar->Append( menuFile, wxT("File") );
+	menubar->Append( menuWindow, wxT("Window") );
 
 	this->SetMenuBar( menubar );
 
