@@ -33,6 +33,8 @@ struct editor{
 	static const string defaultInstall = "/Applications/Unity/Hub/Editor";
 	static const string templatesDir = "Unity.app/Contents/Resources/PackageManager/ProjectTemplates/";
 
+	//for stream redirecting to dev/null
+	static const string null_device = ">/dev/null 2>&1";
 
 #elif defined __WIN32__
 	static const string datapath = getenv("HOMEPATH") + string("\\AppData\\Roaming\\UnityHubNative");
@@ -59,4 +61,17 @@ struct project{
 inline bool file_exists(string& name){
 	struct stat buffer;
 	return (stat (name.c_str(), &buffer) == 0);
+}
+
+/**
+ Launches a shell command as a separate, non-connected process. The output of this
+ command is not captured (sent to the system's null device)
+ @param command the shell command to run on the system
+ @note The command passed to this function must be correct for the system it is running on.
+ */
+inline void launch_process(string& command){
+	//the '&' runs the command nonblocking, and >/dev/null 2>&1 destroys output
+	FILE* stream = popen(string(command + null_device + " &").c_str(),"r");
+	//close stream, since Unity's output does not matter
+	pclose(stream);
 }

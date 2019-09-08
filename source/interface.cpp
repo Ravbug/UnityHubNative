@@ -137,10 +137,6 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	about_menu = new wxMenuItem( menuFile, wxID_ABOUT, wxString( wxT("About") ) , wxEmptyString, wxITEM_NORMAL );
 	menuFile->Append( about_menu );
 
-	wxMenuItem* pref_menu;
-	pref_menu = new wxMenuItem( menuFile, wxID_PREFERENCES, wxString( wxT("Preferences") ) , wxEmptyString, wxITEM_NORMAL );
-	menuFile->Append( pref_menu );
-
 	wxMenuItem* changeEditorVersion;
 	changeEditorVersion = new wxMenuItem( menuFile, wxID_REPLACE, wxString( wxT("Change Editor Version") ) + wxT('\t') + wxT("Ctrl-E"), wxEmptyString, wxITEM_NORMAL );
 	menuFile->Append( changeEditorVersion );
@@ -196,7 +192,7 @@ CreateProjectDialog::CreateProjectDialog( wxWindow* parent, wxWindowID id, const
 	gbSizer3->Add( m_staticText11, wxGBPosition( 2, 0 ), wxGBSpan( 1, 2 ), wxALL, 5 );
 
 	wxArrayString unityVersionChoiceChoices;
-	unityVersionChoice = new wxChoice( this, wxID_INDEX, wxDefaultPosition, wxDefaultSize, unityVersionChoiceChoices, 0 );
+	unityVersionChoice = new wxChoice( this, wxID_INDEX, wxDefaultPosition, wxDefaultSize, unityVersionChoiceChoices, wxCB_SORT );
 	unityVersionChoice->SetSelection( 0 );
 	gbSizer3->Add( unityVersionChoice, wxGBPosition( 2, 2 ), wxGBSpan( 1, 1 ), wxALL, 5 );
 

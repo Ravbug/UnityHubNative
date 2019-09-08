@@ -23,11 +23,12 @@ wxEND_EVENT_TABLE()
 //call superclass constructor
 MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	//set up project list columns
-	string cols[] = {"Project Name","Unity Version","Last Modified","Path"};
-	for (string& str : cols){
-		projectsList->AppendColumn(str,wxLIST_FORMAT_CENTER,wxLIST_AUTOSIZE_USEHEADER);
+	{
+		string cols[] = {"Project Name","Unity Version","Last Modified","Path"};
+		for (string& str : cols){
+			projectsList->AppendColumn(str,wxLIST_FORMAT_CENTER,wxLIST_AUTOSIZE);
+		}
 	}
-	
 	//make the data folder if it does not already exist (with readwrite for all groups)
 	int status = mkdir(datapath.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 	if (status != 0){
@@ -64,6 +65,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 				SaveProjects();
 			}
 		}
+		
 		//check that the installs path file exists in the folder
 		p = string(datapath + dirsep + editorPathsFile);
 		if (file_exists(p)){
@@ -184,11 +186,7 @@ void MainFrameDerived::OnCreateProject(wxCommandEvent& event){
 		this->AddProject(p);
 		
 		//launch the process
-		int status = fork();
-		if (status == 0){
-			//TODO: find a method that does not use system(), some antivirus don't like it
-			system(str.c_str());
-		}
+		launch_process(str);
 	};
 	CreateProjectDialogD* dialog = new CreateProjectDialogD(this,editors,d);
 	dialog->show();
@@ -217,12 +215,8 @@ void MainFrameDerived::OpenProject(long& index){
 			string cmd = editorPath + " -projectpath \"" + p.path + "\"";
 			
 			//start the process
-			//TODO: don't use fork, it is unsafe
-			int status = fork();
-			if (status == 0){
-				//TODO: find a method that does not use system(), some antivirus don't like it
-				system(cmd.c_str());
-			}
+			launch_process(cmd);
+			
 			return;
 		}
 	}
@@ -363,10 +357,7 @@ void MainFrameDerived::LoadEditorVersions(){
 				string p = string(path + dirsep + entry->d_name + dirsep + executable);
 				if (file_exists(p)){
 					//add it to the list
-					wxListItem i;
-					i.SetId(0);
-					i.SetText(entry->d_name);
-					installsList->InsertItem(i);
+					installsList->InsertItem(0,string(entry->d_name) + " – " + path);
 					
 					//add it to the backing datastructure
 					editor e = {entry->d_name, path};
