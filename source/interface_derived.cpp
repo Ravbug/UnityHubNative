@@ -203,7 +203,7 @@ void MainFrameDerived::OpenProject(long& index){
 		
 		//check that the unity editor exists at that location
 		if (file_exists(editorPath)){
-			string cmd = editorPath + " -projectpath " + p.path;
+			string cmd = editorPath + " -projectpath \"" + p.path + "\"";
 			
 			//start the process
 			//TODO: don't use fork, it is unsafe

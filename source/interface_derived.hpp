@@ -62,9 +62,10 @@ private:
 	void OnCancel(wxCommandEvent& event){
 		//close and dispose self
 		this->EndModal(0);
-		delete this;
+		this->Destroy();
 	}
 	void OnCreate(wxCommandEvent& event);
 	void setProjectPath(wxCommandEvent& event);
+	void OnChoiceChanged(wxCommandEvent& event);
 	wxDECLARE_EVENT_TABLE();
 };

@@ -92,7 +92,7 @@ class CreateProjectDialog : public wxDialog
 
 	public:
 
-		CreateProjectDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Create a New Unity Project"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 350,230 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
+		CreateProjectDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Create a New Unity Project"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 350,230 ), long style = wxCAPTION|wxRESIZE_BORDER );
 		~CreateProjectDialog();
 
 };

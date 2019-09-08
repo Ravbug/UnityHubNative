@@ -196,7 +196,7 @@ CreateProjectDialog::CreateProjectDialog( wxWindow* parent, wxWindowID id, const
 	gbSizer3->Add( m_staticText11, wxGBPosition( 2, 0 ), wxGBSpan( 1, 2 ), wxALL, 5 );
 
 	wxArrayString unityVersionChoiceChoices;
-	unityVersionChoice = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, unityVersionChoiceChoices, 0 );
+	unityVersionChoice = new wxChoice( this, wxID_INDEX, wxDefaultPosition, wxDefaultSize, unityVersionChoiceChoices, 0 );
 	unityVersionChoice->SetSelection( 0 );
 	gbSizer3->Add( unityVersionChoice, wxGBPosition( 2, 2 ), wxGBSpan( 1, 1 ), wxALL, 5 );
 

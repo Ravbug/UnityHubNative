@@ -13,6 +13,7 @@ wxBEGIN_EVENT_TABLE(CreateProjectDialogD, wxDialog)
 EVT_BUTTON(wxID_CANCEL,CreateProjectDialogD::OnCancel)
 EVT_BUTTON(wxID_OPEN,CreateProjectDialogD::setProjectPath)
 EVT_BUTTON(wxID_FILE,CreateProjectDialogD::OnCreate)
+EVT_CHOICE(wxID_INDEX,CreateProjectDialogD::OnChoiceChanged)
 wxEND_EVENT_TABLE()
 
 //Construct the dialog
@@ -54,12 +55,32 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 	//validate form
 	string message = validateForm();
 	if (message == ""){
-		cout << "form valid" << endl;
+		//assemble the command that will create the project described by the dialog
+		editor& e = editors[unityVersionChoice->GetSelection()];
+		string executablePath = e.path + dirsep + e.name + dirsep + executable;
+		string executableTemplatesPath = e.path + dirsep + e.name + dirsep + templatesDir;
+		string projName = projNameTxt->GetValue().ToStdString();
+		string projPath = projLocTxt->GetValue().ToStdString();
+		
+		//get the selected template
+		long itemIndex = -1;
+		string templateName;
+		while ((itemIndex = templateCtrl->GetNextItem(itemIndex,wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != wxNOT_FOUND) {
+			templateName = templateCtrl->GetItemText(itemIndex);
+			break;
+		}
+		
+		//create the command string
+		string command = executablePath + " -createproject \"" + projPath + dirsep + projName + "\" -cloneFromTemplate " + executableTemplatesPath + templatePrefix + "." + templateName;
+		
+		//TODO: return this command to what summoned this dialog
+		
 		//close and dispose self
 		this->EndModal(0);
 		delete this;
 	}
 	else{
+		//notify user of why the dialog form is invalid
 		wxMessageBox(message,"Cannot Create Project",wxOK | wxICON_ERROR);
 	}
 }
@@ -97,7 +118,9 @@ string CreateProjectDialogD::validateForm(){
  @param e the editor struct to load templates for
  */
 void CreateProjectDialogD::loadTemplates(editor& e){
-	//prepare directory
+	//clear the picker
+	templateCtrl->ClearAll();
+	
 	//open the folder
 	string templatesFolder = e.path + dirsep + e.name + dirsep + templatesDir;
 	DIR* dir = opendir(templatesFolder.c_str());
@@ -110,7 +133,8 @@ void CreateProjectDialogD::loadTemplates(editor& e){
 			//add it to the UI
 			wxListItem i;
 			i.SetId(0);
-			i.SetText(string(entry->d_name).substr(templatePrefix.length()+1));
+			string label = entry->d_name;
+			i.SetText(label.substr(templatePrefix.length()+1));
 			
 			templateCtrl->InsertItem(i);
 		}
@@ -120,4 +144,11 @@ void CreateProjectDialogD::loadTemplates(editor& e){
 	//free resources
 	closedir(dir);
 	free(entry);
+}
+
+void CreateProjectDialogD::OnChoiceChanged(wxCommandEvent& event){
+	//get the editor struct for the selected id
+	editor& e = editors[event.GetInt()];
+	//load the templates for this editor
+	loadTemplates(e);
 }
