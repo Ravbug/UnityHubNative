@@ -18,6 +18,8 @@ EVT_BUTTON(wxID_FIND,MainFrameDerived::OnLocateInstall)
 EVT_BUTTON(wxID_CLEAR,MainFrameDerived::OnRemoveInstallPath)
 EVT_BUTTON(wxID_DELETE,MainFrameDerived::OnRemoveProject)
 EVT_BUTTON(wxID_JUMP_TO,MainFrameDerived::OnRevealProject)
+EVT_BUTTON(wxID_BACKWARD,MainFrameDerived::OnOpenHub)
+EVT_BUTTON(wxID_RELOAD,MainFrameDerived::OnReloadEditors)
 EVT_LIST_ITEM_ACTIVATED(wxID_HARDDISK, MainFrameDerived::OnOpenProject)
 EVT_LIST_ITEM_ACTIVATED(wxID_FLOPPY,MainFrameDerived::OnRevealEditor)
 EVT_LIST_ITEM_ACTIVATED(wxID_HOME,MainFrameDerived::OnRevealInstallLocation)
@@ -229,6 +231,10 @@ void MainFrameDerived::OnRevealProject(wxCommandEvent& event){
 		project& p = projects[selectedIndex];
 		reveal_in_explorer(p.path);
 	}
+}
+
+void MainFrameDerived::OnOpenHub(wxCommandEvent& event){
+	reveal_in_explorer(hubDefault);
 }
 
 /**

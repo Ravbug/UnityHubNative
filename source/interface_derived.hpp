@@ -46,6 +46,10 @@ private:
 	void OnRevealEditor(wxListEvent& event);
 	void OnRevealInstallLocation(wxListEvent& event);
 	void OnRevealProject(wxCommandEvent& event);
+	void OnOpenHub(wxCommandEvent& event);
+	void OnReloadEditors(wxCommandEvent& event){
+		this->LoadEditorVersions();
+	}
 	wxDECLARE_EVENT_TABLE();
 };
 

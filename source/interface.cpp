@@ -103,14 +103,11 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* bSizer5;
 	bSizer5 = new wxBoxSizer( wxVERTICAL );
 
-	m_button8 = new wxButton( installs_pane, wxID_ANY, wxT("Install New"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer5->Add( m_button8, 0, wxALL|wxEXPAND, 5 );
+	launchHubBtn = new wxButton( installs_pane, wxID_BACKWARD, wxT("Manage"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer5->Add( launchHubBtn, 0, wxALL|wxEXPAND, 5 );
 
-	m_button9 = new wxButton( installs_pane, wxID_ANY, wxT("Modify"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer5->Add( m_button9, 0, wxALL|wxEXPAND, 5 );
-
-	m_button10 = new wxButton( installs_pane, wxID_ANY, wxT("Uninstall"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer5->Add( m_button10, 0, wxALL|wxEXPAND, 5 );
+	reloadInstalls = new wxButton( installs_pane, wxID_RELOAD, wxT("Reload"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer5->Add( reloadInstalls, 0, wxALL|wxEXPAND, 5 );
 
 
 	iManSizer->Add( bSizer5, wxGBPosition( 1, 1 ), wxGBSpan( 1, 1 ), wxEXPAND, 5 );

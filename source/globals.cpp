@@ -32,6 +32,8 @@ struct editor{
 	//where to find various Unity things on macOS
 	static const string executable = "Unity.app/Contents/MacOS/Unity";
 	static const string defaultInstall = "/Applications/Unity/Hub/Editor";
+	//TODO: make this a preference?
+	static const string hubDefault = "/Applications/Unity Hub.app";
 	static const string templatesDir = "Unity.app/Contents/Resources/PackageManager/ProjectTemplates/";
 
 	//for stream redirecting to dev/null
@@ -77,7 +79,7 @@ inline void launch_process(string& command){
 	pclose(stream);
 }
 
-inline void reveal_in_explorer(string& path){
+inline void reveal_in_explorer(const string& path){
 #if defined __APPLE__
 	string command = "open \"" + path + "\"";
 	launch_process(command);

@@ -35,6 +35,7 @@
 #define wxID_HARDDISK 1000
 #define wxID_JUMP_TO 1001
 #define wxID_FLOPPY 1002
+#define wxID_RELOAD 1003
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class MainFrame
@@ -59,9 +60,8 @@ class MainFrame : public wxFrame
 		wxListCtrl* installsPathsList;
 		wxButton* m_button5;
 		wxButton* m_button6;
-		wxButton* m_button8;
-		wxButton* m_button9;
-		wxButton* m_button10;
+		wxButton* launchHubBtn;
+		wxButton* reloadInstalls;
 		wxMenuBar* menubar;
 		wxMenu* menuFile;
 
