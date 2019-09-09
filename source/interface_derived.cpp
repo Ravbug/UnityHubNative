@@ -8,6 +8,13 @@
 
 #include "interface_derived.hpp"
 #include <fstream>
+#include <wx/msgdlg.h>
+#include <wx/dirdlg.h>
+#if defined _WIN32
+#include "dirent.h" 
+#else
+#include <dirent.h>
+#endif
 
 //Declare events here
 wxBEGIN_EVENT_TABLE(MainFrameDerived, wxFrame)
@@ -35,7 +42,13 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 		}
 	}
 	//make the data folder if it does not already exist (with readwrite for all groups)
-	int status = mkdir(datapath.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	#if defined __APPLE__ || defined __linux__
+		int status = mkdir(datapath.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	#elif defined _WIN32
+		int status = mkdir(datapath.c_str());
+		//on windows also make the main window background white
+		//this->SetBackgroundColour(*wxWHITE);
+	#endif
 	if (status != 0){
 		//check that projects file exists in folder
 		string p = string(datapath + dirsep + projectsFile);
