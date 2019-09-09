@@ -7,6 +7,12 @@
 //
 
 #include "interface_derived.hpp"
+#if defined _WIN32 
+#include "dirent.h" 
+#else
+#include <dirent.h>
+#endif
+#include <wx/msgdlg.h>
 
 //Declare events here
 wxBEGIN_EVENT_TABLE(CreateProjectDialogD, wxDialog)
@@ -103,7 +109,7 @@ string CreateProjectDialogD::validateForm(){
 	}
 	
 	//is a template selected?
-	if(wxListCtrl_get_selected(templateCtrl) > -1){
+	if(wxListCtrl_get_selected(templateCtrl) == -1){
 		return "You must select a template.";
 	}
 	

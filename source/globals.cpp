@@ -40,8 +40,21 @@ struct editor{
 	static const string null_device = ">/dev/null 2>&1";
 
 #elif defined _WIN32
+//naming conflicts
+#define popen _popen
+#define pclose _pclose
+#define mkdir _mkdir
 	static const string datapath = getenv("HOMEPATH") + string("\\AppData\\Roaming\\UnityHubNative");
 	static const char dirsep = '\\';
+
+	//where to find various Unity things on windows
+	static const string executable = "Editor\\Unity.exe";
+	static const string defaultInstall = "C:\\Program Files\\Unity\\Hub\\Editor";
+	
+	static const string hubDefault = "C:\\Program Files\\Unity Hub\\Unity Hub.exe";
+	static const string templatesDir = "Editor\\Data\\Resources\\PackageManager\\ProjectTemplates\\libcache\\";
+
+	static const string null_device = "";
 
 #else
 	//disalow compilation for unsupported platforms
