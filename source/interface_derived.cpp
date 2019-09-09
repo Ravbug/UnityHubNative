@@ -49,7 +49,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 		//on windows also make the main window background white
 		this->SetBackgroundColour(*wxWHITE);
 		//high DPI scaling fixes
-		fitWindowMinSize(this);
+		dpi_scale(this);
 	#endif
 	if (status != 0){
 		//check that projects file exists in folder
