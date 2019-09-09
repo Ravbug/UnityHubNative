@@ -48,6 +48,8 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 		int status = mkdir(datapath.c_str());
 		//on windows also make the main window background white
 		this->SetBackgroundColour(*wxWHITE);
+		//high DPI scaling fixes
+		fitWindowMinSize(this);
 	#endif
 	if (status != 0){
 		//check that projects file exists in folder
@@ -104,7 +106,11 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 //definitions for the events
 void MainFrameDerived::OnAbout(wxCommandEvent& event)
 {
-	wxMessageBox( "Unity Hub Native is a custom Unity Hub, designed to be more efficient than Unity's official hub. That hub is written in Electron, so it consumes more resources in all departments (CPU, GPU, RAM, Disk, Network) than an app with it's job should. \n\nThis app is not a replacement for the Unity Hub, and never will be. It is for people who do not want to wait seconds before they can launch their Unity projects, or create new ones.\n\nVisit github.com/ravbug/UnityHubNative for more information and for updates. \n\nCreated by Ravbug, written in C++. Uses the wxWidgets GUI library.", "About Unity Hub Native", wxOK | wxICON_INFORMATION );
+	string winfix = "";
+#if defined _WIN32
+	winfix = "About Unity Hub Native\n\n";
+#endif
+	wxMessageBox(winfix + "Unity Hub Native is a custom Unity Hub, designed to be more efficient than Unity's official hub. That hub is written in Electron, so it consumes more resources in all departments (CPU, GPU, RAM, Disk, Network) than an app with it's job should. \n\nThis app is not a replacement for the Unity Hub, and never will be. It is for people who do not want to wait seconds before they can launch their Unity projects, or create new ones.\n\nVisit github.com/ravbug/UnityHubNative for more information and for updates. \n\nCreated by Ravbug, written in C++. Uses the wxWidgets GUI library.", "About Unity Hub Native", wxOK | wxICON_INFORMATION );
 }
 
 void MainFrameDerived::OnAddProject(wxCommandEvent& event){
@@ -414,7 +420,7 @@ void MainFrameDerived::LoadEditorVersions(){
 				string p = string(path + dirsep + entry->d_name + dirsep + executable);
 				if (file_exists(p)){
 					//add it to the list
-					installsList->InsertItem(0,string(entry->d_name) + " – " + path);
+					installsList->InsertItem(0,string(entry->d_name) + " - " + path);
 					
 					//add it to the backing datastructure
 					editor e = {entry->d_name, path};

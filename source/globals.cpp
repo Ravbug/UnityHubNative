@@ -44,15 +44,47 @@ struct editor{
 #define popen _popen
 #define pclose _pclose
 #define mkdir _mkdir
+#include <windows.h>
+#include <gdiplus.h>	
 	static const string datapath = getenv("HOMEPATH") + string("\\AppData\\Roaming\\UnityHubNative");
 	static const char dirsep = '\\';
 
 	//where to find various Unity things on windows
 	static const string executable = "Editor\\Unity.exe";
-	static const string defaultInstall = "C:\\Program Files\\Unity\\Hub\\Editor";
+	static const string defaultInstall = "\\Program Files\\Unity\\Hub\\Editor";
 	
-	static const string hubDefault = "C:\\Program Files\\Unity Hub\\Unity Hub.exe";
+	static const string hubDefault = "\\Program Files\\Unity Hub\\Unity Hub.exe";
 	static const string templatesDir = "Editor\\Data\\Resources\\PackageManager\\ProjectTemplates\\";
+	
+	/**
+	@returns the calculated display scale factor using GDI+
+	*/
+	inline float get_WIN_dpi_multiple() {
+		FLOAT dpiX;
+		HDC screen = GetDC(0);
+		dpiX = static_cast<FLOAT>(GetDeviceCaps(screen, LOGPIXELSX));
+		ReleaseDC(0, screen);
+		return dpiX / 96;
+	}
+
+	/*
+	Scales a wxWindow to the correct size using the monitor's DPI factor (Windows only)
+	This preserves the defined size of the window. To simply fit the window to contents, regardless
+	of DPI, use fitWindowMinSize.
+	@param window the wxWindow to scale
+	*/
+	inline void dpi_scale(wxWindow* window) {
+		//fit size to children
+		window->Fit();
+
+		//calculate the scaled min size
+		float fac = get_WIN_dpi_multiple();
+		float minh = window->GetMinHeight() * fac;
+		float minw = window->GetMinWidth() * fac;
+		//set the minimum size
+		window->SetSizeHints(wxSize(minw,minh));
+	}
+
 #else
 	//disalow compilation for unsupported platforms
 #error You are compiling on an unsupported operating system. Currently only macOS and Windows are supported. If you know how to support your system, submit a pull request.
@@ -116,4 +148,17 @@ inline long wxListCtrl_get_selected(wxListCtrl* listCtrl){
 		break;
 	}
 	return itemIndex;
+}
+
+/**
+Fits a wxWindow to its contents, and then sets that size as the window's minimum size
+@param window the wxWindow to apply size changes
+*/
+inline void fitWindowMinSize(wxWindow* window) {
+	//fit size to children
+	window->Fit();
+
+	//constrain minimum size to the minimum fitting size
+	wxSize size = window->GetSize();
+	window->SetSizeHints(size);
 }

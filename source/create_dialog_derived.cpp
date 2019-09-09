@@ -25,9 +25,8 @@ wxEND_EVENT_TABLE()
 //Construct the dialog
 CreateProjectDialogD::CreateProjectDialogD(wxWindow* parent, vector<editor>& versions, DialogCallback callback) : CreateProjectDialog(parent){
 #if defined _WIN32
-	//fix incorrect sizing on Windows
-	this->SetSize(350,270);
-	this->SetSizeHints(wxSize(350, 270), wxDefaultSize);
+	//high DPI scaling fixes
+	fitWindowMinSize(this);
 #endif
 
 	editors = versions;
