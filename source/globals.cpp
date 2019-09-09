@@ -36,9 +36,6 @@ struct editor{
 	static const string hubDefault = "/Applications/Unity Hub.app";
 	static const string templatesDir = "Unity.app/Contents/Resources/PackageManager/ProjectTemplates/";
 
-	//for stream redirecting to dev/null
-	static const string null_device = ">/dev/null 2>&1";
-
 #elif defined _WIN32
 //naming conflicts
 #define popen _popen
@@ -52,7 +49,7 @@ struct editor{
 	static const string defaultInstall = "C:\\Program Files\\Unity\\Hub\\Editor";
 	
 	static const string hubDefault = "C:\\Program Files\\Unity Hub\\Unity Hub.exe";
-	static const string templatesDir = "Editor\\Data\\Resources\\PackageManager\\ProjectTemplates\\libcache\\";
+	static const string templatesDir = "Editor\\Data\\Resources\\PackageManager\\ProjectTemplates\\";
 
 	static const string null_device = "";
 
@@ -86,8 +83,13 @@ inline bool file_exists(string& name){
  @note The command passed to this function must be correct for the system it is running on. If it is not correct, the function will appear to do nothing.
  */
 inline void launch_process(string& command){
+#if defined __APPLE__ || defined __linux__
 	//the '&' runs the command nonblocking, and >/dev/null 2>&1 destroys output
 	FILE* stream = popen(string(command + null_device + " &").c_str(),"r");
+#elif _WIN32
+	//On Windows, there is no need for a null device or for a special character to indicate nonblocking execution
+	FILE* stream = popen(command.c_str(), "r");
+#endif
 	//close stream, since Unity's output does not matter
 	pclose(stream);
 }
@@ -95,9 +97,11 @@ inline void launch_process(string& command){
 inline void reveal_in_explorer(const string& path){
 #if defined __APPLE__
 	string command = "open \"" + path + "\"";
-	launch_process(command);
+	
 #elif defined _WIN32
+	string command = "\"\\Windows\\explorer.exe\" \"" + path + "\"";
 #endif
+	launch_process(command);
 }
 
 /**

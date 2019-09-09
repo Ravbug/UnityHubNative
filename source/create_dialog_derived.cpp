@@ -24,6 +24,12 @@ wxEND_EVENT_TABLE()
 
 //Construct the dialog
 CreateProjectDialogD::CreateProjectDialogD(wxWindow* parent, vector<editor>& versions, DialogCallback callback) : CreateProjectDialog(parent){
+#if defined _WIN32
+	//fix incorrect sizing on Windows
+	this->SetSize(350,270);
+	this->SetSizeHints(wxSize(350, 270), wxDefaultSize);
+#endif
+
 	editors = versions;
 	this->callback = callback;
 	//Set combo box values to the different Unity versions passed in
@@ -76,7 +82,7 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 		}
 		
 		//create the command string
-		string command = executablePath + " -createproject \"" + projPath + dirsep + projName + "\" -cloneFromTemplate " + executableTemplatesPath + templatePrefix + "." + templateName;
+		string command = "\"" + executablePath + "\" -createproject \"" + projPath + dirsep + projName + "\" -cloneFromTemplate \"" + executableTemplatesPath + templatePrefix + "." + templateName + "\"";
 		
 		//TODO: return this command to what summoned this dialog
 		project p = {projName,e.name,"",projPath + dirsep + projName};

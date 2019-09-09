@@ -47,7 +47,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	#elif defined _WIN32
 		int status = mkdir(datapath.c_str());
 		//on windows also make the main window background white
-		//this->SetBackgroundColour(*wxWHITE);
+		this->SetBackgroundColour(*wxWHITE);
 	#endif
 	if (status != 0){
 		//check that projects file exists in folder
@@ -263,7 +263,7 @@ void MainFrameDerived::OpenProject(long& index){
 		
 		//check that the unity editor exists at that location
 		if (file_exists(editorPath)){
-			string cmd = editorPath + " -projectpath \"" + p.path + "\"";
+			string cmd = "\"" + editorPath + "\" -projectpath \"" + p.path + "\"";
 			
 			//start the process
 			launch_process(cmd);
