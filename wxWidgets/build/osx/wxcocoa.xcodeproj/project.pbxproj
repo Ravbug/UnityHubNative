@@ -469,6 +469,9 @@
 		213CE0DD5B2335D0AD53B54A /* gzclose.c in Sources */ = {isa = PBXBuildFile; fileRef = 7A24E9101688368296C21EBE /* gzclose.c */; };
 		213CE0DD5B2335D0AD53B54B /* gzclose.c in Sources */ = {isa = PBXBuildFile; fileRef = 7A24E9101688368296C21EBE /* gzclose.c */; };
 		213CE0DD5B2335D0AD53B54C /* gzclose.c in Sources */ = {isa = PBXBuildFile; fileRef = 7A24E9101688368296C21EBE /* gzclose.c */; };
+		215958201947310B88BBEDB3 /* statbmp.mm in Sources */ = {isa = PBXBuildFile; fileRef = FD6B26B5A6A733A89EF5AB9C /* statbmp.mm */; };
+		215958201947310B88BBEDB4 /* statbmp.mm in Sources */ = {isa = PBXBuildFile; fileRef = FD6B26B5A6A733A89EF5AB9C /* statbmp.mm */; };
+		215958201947310B88BBEDB5 /* statbmp.mm in Sources */ = {isa = PBXBuildFile; fileRef = FD6B26B5A6A733A89EF5AB9C /* statbmp.mm */; };
 		219304C9DDA33E9AADB515DC /* datetimectrl_osx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D049F49C75043592B7E318B3 /* datetimectrl_osx.cpp */; };
 		219304C9DDA33E9AADB515DD /* datetimectrl_osx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D049F49C75043592B7E318B3 /* datetimectrl_osx.cpp */; };
 		219304C9DDA33E9AADB515DE /* datetimectrl_osx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D049F49C75043592B7E318B3 /* datetimectrl_osx.cpp */; };
@@ -823,12 +826,6 @@
 		4040AE89BF9F34668091064A /* dragimgg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2A67053D16D63C588E555C84 /* dragimgg.cpp */; };
 		4040AE89BF9F34668091064B /* dragimgg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2A67053D16D63C588E555C84 /* dragimgg.cpp */; };
 		4040AE89BF9F34668091064C /* dragimgg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2A67053D16D63C588E555C84 /* dragimgg.cpp */; };
-		750C716389AD3ADBABC9D689 /* statbmp_osx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F582C6B3A5AA3367BB4DBE97 /* statbmp_osx.cpp */; };
-		750C716389AD3ADBABC9D68A /* statbmp_osx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F582C6B3A5AA3367BB4DBE97 /* statbmp_osx.cpp */; };
-		750C716389AD3ADBABC9D68B /* statbmp_osx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F582C6B3A5AA3367BB4DBE97 /* statbmp_osx.cpp */; };
-		215958201947310B88BBEDB3 /* statbmp.mm in Sources */ = {isa = PBXBuildFile; fileRef = FD6B26B5A6A733A89EF5AB9C /* statbmp.mm */; };
-		215958201947310B88BBEDB4 /* statbmp.mm in Sources */ = {isa = PBXBuildFile; fileRef = FD6B26B5A6A733A89EF5AB9C /* statbmp.mm */; };
-		215958201947310B88BBEDB5 /* statbmp.mm in Sources */ = {isa = PBXBuildFile; fileRef = FD6B26B5A6A733A89EF5AB9C /* statbmp.mm */; };
 		4156FDB73D0A397A870E4302 /* overlay.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0FBD8031E28A3C9CB7C45784 /* overlay.mm */; };
 		4156FDB73D0A397A870E4303 /* overlay.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0FBD8031E28A3C9CB7C45784 /* overlay.mm */; };
 		4156FDB73D0A397A870E4304 /* overlay.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0FBD8031E28A3C9CB7C45784 /* overlay.mm */; };
@@ -1381,6 +1378,9 @@
 		745C39E90E8C3C08A887B51C /* msgdlgg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A1CB6A4171D4343BB0A9858A /* msgdlgg.cpp */; };
 		745C39E90E8C3C08A887B51D /* msgdlgg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A1CB6A4171D4343BB0A9858A /* msgdlgg.cpp */; };
 		745C39E90E8C3C08A887B51E /* msgdlgg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A1CB6A4171D4343BB0A9858A /* msgdlgg.cpp */; };
+		750C716389AD3ADBABC9D689 /* statbmp_osx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F582C6B3A5AA3367BB4DBE97 /* statbmp_osx.cpp */; };
+		750C716389AD3ADBABC9D68A /* statbmp_osx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F582C6B3A5AA3367BB4DBE97 /* statbmp_osx.cpp */; };
+		750C716389AD3ADBABC9D68B /* statbmp_osx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F582C6B3A5AA3367BB4DBE97 /* statbmp_osx.cpp */; };
 		7569F0BC3C603EB19168088F /* collpaneg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84758329F2163F00A9C005DF /* collpaneg.cpp */; };
 		7569F0BC3C603EB191680890 /* collpaneg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84758329F2163F00A9C005DF /* collpaneg.cpp */; };
 		7569F0BC3C603EB191680891 /* collpaneg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84758329F2163F00A9C005DF /* collpaneg.cpp */; };
@@ -11111,6 +11111,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7DEBE1EB2B94305E8E8D6EA5 /* wxcocoa.xcconfig */;
 			buildSettings = {
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(GCC_PREPROCESSOR_DEFINITIONS)",
 					"wxUSE_BASE=1",
@@ -11392,6 +11393,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7DEBE1EB2B94305E8E8D6EA5 /* wxcocoa.xcconfig */;
 			buildSettings = {
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(GCC_PREPROCESSOR_DEFINITIONS)",
 					"wxUSE_BASE=1",
