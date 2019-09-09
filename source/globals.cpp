@@ -36,6 +36,9 @@ struct editor{
 	static const string hubDefault = "/Applications/Unity Hub.app";
 	static const string templatesDir = "Unity.app/Contents/Resources/PackageManager/ProjectTemplates/";
 
+	//for stream redirecting to dev/null
+	static const string null_device = ">/dev/null 2>&1";
+
 #elif defined _WIN32
 //naming conflicts
 #define popen _popen
@@ -50,9 +53,6 @@ struct editor{
 	
 	static const string hubDefault = "C:\\Program Files\\Unity Hub\\Unity Hub.exe";
 	static const string templatesDir = "Editor\\Data\\Resources\\PackageManager\\ProjectTemplates\\";
-
-	static const string null_device = "";
-
 #else
 	//disalow compilation for unsupported platforms
 #error You are compiling on an unsupported operating system. Currently only macOS and Windows are supported. If you know how to support your system, submit a pull request.
