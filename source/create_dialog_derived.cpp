@@ -81,8 +81,13 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 		}
 		
 		//create the command string
-		string command = "\"" + executablePath + "\" -createproject \"" + projPath + dirsep + projName + "\" -cloneFromTemplate \"" + executableTemplatesPath + templatePrefix + "." + templateName + "\"";
-		
+		#if defined __APPLE__
+			string command = "\"" + executablePath + "\" -createproject \"" + projPath + dirsep + projName + "\" -cloneFromTemplate \"" + executableTemplatesPath + templatePrefix + "." + templateName + "\"";
+		#elif defined _WIN32
+			string fullProj = "\"" + projPath + dirsep + projName + "\"";
+			string fullTemplate = "\"" + executableTemplatesPath + templatePrefix + "." + templateName + "\"";
+			string command = WinEscapePath(executablePath) + " -createproject " + fullProj + " -cloneFromTemplate " + fullTemplate;
+		#endif
 		//TODO: return this command to what summoned this dialog
 		project p = {projName,e.name,"",projPath + dirsep + projName};
 		this->callback(command,p);

@@ -67,7 +67,7 @@ struct editor{
 		return dpiX / 96;
 	}
 
-	/*
+	/**
 	Scales a wxWindow to the correct size using the monitor's DPI factor (Windows only)
 	This preserves the defined size of the window. To simply fit the window to contents, regardless
 	of DPI, use fitWindowMinSize.
@@ -83,6 +83,30 @@ struct editor{
 		float minw = window->GetMinWidth() * fac;
 		//set the minimum size
 		window->SetSizeHints(wxSize(minw,minh));
+	}
+
+	/**
+	Replaces all instances of a string with another string, within a string
+	@param str the string to operate on
+	@param from the string to be replaced
+	@param to the string to replace `from` with
+	*/
+	inline string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
+		size_t start_pos = 0;
+		while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+			str.replace(start_pos, from.length(), to);
+			start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+		}
+		return str;
+	}
+
+	/**
+	Escapes Windows paths by replacing spaces ' ' with  '^ '
+	@param path the windows path to escape
+	@return the escaped path
+	*/
+	inline string WinEscapePath(string& path) {
+		return ReplaceAll(path, string(" "), string("^ "));
 	}
 
 #else
@@ -119,6 +143,7 @@ inline void launch_process(string& command){
 	//the '&' runs the command nonblocking, and >/dev/null 2>&1 destroys output
 	FILE* stream = popen(string(command + null_device + " &").c_str(),"r");
 #elif _WIN32
+	cout << command << endl;
 	//On Windows, there is no need for a null device or for a special character to indicate nonblocking execution
 	FILE* stream = popen(command.c_str(), "r");
 #endif
@@ -131,7 +156,9 @@ inline void reveal_in_explorer(const string& path){
 	string command = "open \"" + path + "\"";
 	
 #elif defined _WIN32
-	string command = "\"\\Windows\\explorer.exe\" \"" + path + "\"";
+	//do not surround the paths in quotes, it will not work
+	string command = "\\Windows\\explorer.exe " + path;
+	command = WinEscapePath(command);
 #endif
 	launch_process(command);
 }

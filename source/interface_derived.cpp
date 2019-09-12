@@ -269,7 +269,13 @@ void MainFrameDerived::OpenProject(long& index){
 		
 		//check that the unity editor exists at that location
 		if (file_exists(editorPath)){
+			
+			//platform specific paths
+			#if defined __APPLE__
 			string cmd = "\"" + editorPath + "\" -projectpath \"" + p.path + "\"";
+			#elif defined _WIN32
+			string cmd = WinEscapePath(editorPath) + " -projectpath " + "\"" + p.path + "\"";
+			#endif
 			
 			//start the process
 			launch_process(cmd);

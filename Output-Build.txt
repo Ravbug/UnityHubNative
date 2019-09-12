@@ -1,0 +1,11 @@
+﻿1>------ Rebuild All started: Project: windows, Configuration: Debug Win32 ------
+1>create_dialog_derived.cpp
+1>globals.cpp
+1>interface.cpp
+1>interface_derived.cpp
+1>main.cpp
+1>Generating Code...
+1>C:\Users\Main\Documents\UnityHubNative\source\interface_derived.cpp(69,26): warning C4101:  'e': unreferenced local variable
+1>windows.vcxproj -> C:\Users\Main\Documents\UnityHubNative\Debug\UnityHubNative_x86.exe
+1>Done building project "windows.vcxproj".
+========== Rebuild All: 1 succeeded, 0 failed, 0 skipped ==========
