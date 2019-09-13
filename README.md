@@ -28,18 +28,17 @@ This application stores its own files in an application data directory. If the a
 - Windows: `%APPDATA%/UnityHubNative`
 
 ## Compiling it yourself
-At the moment, you cannot compile this Application for Linux. Linux support is planned for the future, but is currently a low priority.
+At the moment, you cannot compile this application for Linux. Linux support is planned for the future, but is currently a low priority.
 ### macOS
 1. Open `mac.xcodeproj` in Xcode.
 2. Select `Minecraft Sounds Extractor` from the target selector.
 3. Press Build (cmd + b). Everything will compile in one step. 
-
 ### Windows
 1. Open `wxWidgets\build\msw\` and find the SLN that most closely matches your Visual Studio version. For example, open `wx_vc15.sln` if you are using Visual Studio 2015 or later.
 2. Select the configuration you want to build (example: `Debug x86`), and press `Build -> Build Solution` (ctrl + shift + B). 
 3. Repeat step 2 for each configuration you want to use. I recommend compiling Debug and Release for x64 at the very least.
    - Alternatively, to build all the possible configurations, go to Build → Batch Build, Select All, and press Build, 
-4. In the repository root folder, open `windows.sln` in the template root, select your configuration, and build.
+4. In the repository root folder, open `windows.sln`, select your configuration, and build.
 
 ## Issues
 Please report all problems in the [Issues](https://github.com/Ravbug/wxWidgetsTemplate/issues) section of this repository. 
