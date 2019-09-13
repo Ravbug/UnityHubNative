@@ -128,7 +128,7 @@ struct project{
  @param name the path to the file
  @return true if the file exists, false if it does not
  */
-inline bool file_exists(string& name){
+inline bool file_exists(const string& name){
 	struct stat buffer;
 	return (stat (name.c_str(), &buffer) == 0);
 }
@@ -140,7 +140,7 @@ inline bool file_exists(string& name){
  @param command the shell command to run on the system
  @note The command passed to this function must be correct for the system it is running on. If it is not correct, the function will appear to do nothing.
  */
-inline void launch_process(string& command) {
+inline void launch_process(const string& command) {
 #if defined __APPLE__ || defined __linux__
 	//the '&' runs the command nonblocking, and >/dev/null 2>&1 destroys output
 	FILE* stream = popen(string(command + null_device + " &").c_str(), "r");

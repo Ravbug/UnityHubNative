@@ -19,13 +19,13 @@ public:
 	//constructor (takes no args)
 	MainFrameDerived();
 	
-	static string GetPathFromDialog(string& message);
+	static string GetPathFromDialog(const string& message);
 	
 private:
-	void AddProject(project& p);
-	project LoadProject(string& path);
+	void AddProject(const project& p);
+	project LoadProject(const string& path);
 	void SaveProjects();
-	void OpenProject(long& index);
+	void OpenProject(const long& index);
 	void SaveEditorVersions();
 	void LoadEditorPath(const string& path);
 	void LoadEditorVersions();
@@ -56,13 +56,13 @@ private:
 typedef std::function<void(const string&,const project&)> DialogCallback;
 class CreateProjectDialogD : CreateProjectDialog{
 public:
-	CreateProjectDialogD(wxWindow* parent, vector<editor>& versions, DialogCallback callback);
+	CreateProjectDialogD(wxWindow* parent, const vector<editor>& versions, const DialogCallback& callback);
 	void show(){
 		this->ShowModal();
 	}
 private:
 	string validateForm();
-	void loadTemplates(editor& e);
+	void loadTemplates(const editor& e);
 	DialogCallback callback;
 	vector<editor> editors;
 	

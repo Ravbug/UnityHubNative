@@ -23,7 +23,7 @@ EVT_CHOICE(wxID_INDEX,CreateProjectDialogD::OnChoiceChanged)
 wxEND_EVENT_TABLE()
 
 //Construct the dialog
-CreateProjectDialogD::CreateProjectDialogD(wxWindow* parent, vector<editor>& versions, DialogCallback callback) : CreateProjectDialog(parent){
+CreateProjectDialogD::CreateProjectDialogD(wxWindow* parent, const vector<editor>& versions, const DialogCallback& callback) : CreateProjectDialog(parent){
 #if defined _WIN32
 	//high DPI scaling fixes
 	fitWindowMinSize(this);
@@ -130,7 +130,7 @@ string CreateProjectDialogD::validateForm(){
  Loads the templates for an editor into the listctrl in the dialog
  @param e the editor struct to load templates for
  */
-void CreateProjectDialogD::loadTemplates(editor& e){
+void CreateProjectDialogD::loadTemplates(const editor& e){
 	//clear the picker
 	templateCtrl->ClearAll();
 	

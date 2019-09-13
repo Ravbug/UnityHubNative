@@ -110,7 +110,7 @@ void MainFrameDerived::OnAbout(wxCommandEvent& event)
 #if defined _WIN32
 	winfix = "About Unity Hub Native\n\n";
 #endif
-	wxMessageBox(winfix + "Unity Hub Native is a custom Unity Hub, designed to be more efficient than Unity's official hub. That hub is written in Electron, so it consumes more resources in all departments (CPU, GPU, RAM, Disk, Network) than an app with it's job should. \n\nThis app is not a replacement for the Unity Hub, and never will be. It is for people who do not want to wait seconds before they can launch their Unity projects, or create new ones.\n\nVisit github.com/ravbug/UnityHubNative for more information and for updates. \n\nCreated by Ravbug, written in C++. Uses the wxWidgets GUI library.", "About Unity Hub Native", wxOK | wxICON_INFORMATION );
+	wxMessageBox(winfix + "Unity Hub Native is a custom Unity Hub, designed to be more efficient than Unity's official hub. That hub is written in Electron, so it consumes more resources in all departments (CPU, GPU, RAM, Disk, Network) than an app with its job should. \n\nThis app is not a replacement for the Unity Hub, and never will be. It is for people who do not want to wait seconds before they can launch their Unity projects, or create new ones.\n\nVisit github.com/ravbug/UnityHubNative for more information and for updates. \n\nCreated by Ravbug, written in C++. Uses the wxWidgets GUI library.", "About Unity Hub Native", wxOK | wxICON_INFORMATION );
 }
 
 void MainFrameDerived::OnAddProject(wxCommandEvent& event){
@@ -260,7 +260,7 @@ void MainFrameDerived::OnOpenHub(wxCommandEvent& event){
  Launches Unity with a project
  @param index the integer representing which project in the projects Vector to load
  */
-void MainFrameDerived::OpenProject(long& index){
+void MainFrameDerived::OpenProject(const long& index){
 	//get the project
 	project p = projects[index];
 	
@@ -292,7 +292,7 @@ void MainFrameDerived::OpenProject(long& index){
  * @param message the prompt for the user
  * @return path selected, or an empty string if nothing chosen
  */
-string MainFrameDerived::GetPathFromDialog(string& message)
+string MainFrameDerived::GetPathFromDialog(const string& message)
 {
 	//present the dialog
 	wxDirDialog dlg(NULL, message, "", wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
@@ -311,7 +311,7 @@ string MainFrameDerived::GetPathFromDialog(string& message)
  @throws Exception if a file cannot be located in the Unity project, or if the file contains unexpected data.
  @note Surround this function in a try/catch, because it throws if it cannot succeed.
  */
-project MainFrameDerived::LoadProject(string &path){
+project MainFrameDerived::LoadProject(const string &path){
 	//error if the file does not exist
 	if (!file_exists(path)){
 		throw runtime_error(path + " does not exist.");
@@ -371,7 +371,7 @@ void MainFrameDerived::SaveEditorVersions(){
  @param p the project struct to add
  @note Ensure all the fields on the struct are initialized
  */
-void MainFrameDerived::AddProject(project& p){
+void MainFrameDerived::AddProject(const project& p){
 	//add to the vector backing the UI
 	projects.insert(projects.begin(),p);
 	
