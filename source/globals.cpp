@@ -46,6 +46,7 @@ struct editor{
 #define mkdir _mkdir
 #include <windows.h>
 #include <gdiplus.h>	
+#include <thread>
 	static const string datapath = getenv("HOMEPATH") + string("\\AppData\\Roaming\\UnityHubNative");
 	static const char dirsep = '\\';
 
@@ -132,23 +133,31 @@ inline bool file_exists(string& name){
 	return (stat (name.c_str(), &buffer) == 0);
 }
 
+
 /**
  Launches a shell command as a separate, non-connected process. The output of this
  command is not captured (sent to the system's null device)
  @param command the shell command to run on the system
  @note The command passed to this function must be correct for the system it is running on. If it is not correct, the function will appear to do nothing.
  */
-inline void launch_process(string& command){
+inline void launch_process(string& command) {
 #if defined __APPLE__ || defined __linux__
 	//the '&' runs the command nonblocking, and >/dev/null 2>&1 destroys output
-	FILE* stream = popen(string(command + null_device + " &").c_str(),"r");
-#elif _WIN32
-	cout << command << endl;
-	//On Windows, there is no need for a null device or for a special character to indicate nonblocking execution
-	FILE* stream = popen(command.c_str(), "r");
-#endif
-	//close stream, since Unity's output does not matter
+	FILE* stream = popen(string(command + null_device + " &").c_str(), "r");
 	pclose(stream);
+
+#elif _WIN32
+	//On Windows, create an independent thread
+	//this method has the side effect of creating a cmd window, and when Unity is launched from it, the cmd window
+	//does not dissapear automatically, and UnityHubNative cannot launch more processes until that window is closed
+	auto bg_exec = [](string com) {
+		FILE* stream = popen(com.c_str(), "r");
+		pclose(stream);
+	};
+	thread run(bg_exec,command);
+	run.detach();
+#endif
+	
 }
 
 inline void reveal_in_explorer(const string& path){
