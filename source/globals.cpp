@@ -152,12 +152,19 @@ inline void launch_process(string& command) {
 	//does not dissapear automatically, and UnityHubNative cannot launch more processes until that window is closed
 	auto bg_exec = [](string com) {
 		FILE* stream = popen(com.c_str(), "r");
-		pclose(stream);
+		//read the buffer to the end of the buffer
+		char buffer[1024];
+		if (stream) {
+			while (!feof(stream)) {
+				fgets(buffer,1024,stream);
+			}
+			//close the buffer when at the end
+			pclose(stream);
+		}
 	};
 	thread run(bg_exec,command);
 	run.detach();
 #endif
-	
 }
 
 inline void reveal_in_explorer(const string& path){
