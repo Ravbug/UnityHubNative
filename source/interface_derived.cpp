@@ -110,7 +110,7 @@ void MainFrameDerived::OnAbout(wxCommandEvent& event)
 #if defined _WIN32
 	winfix = "About Unity Hub Native\n\n";
 #endif
-	wxMessageBox(winfix + "Unity Hub Native is a custom Unity Hub, designed to be more efficient than Unity's official hub. That hub is written in Electron, so it consumes more resources in all departments (CPU, GPU, RAM, Disk, Network) than an app with its job should. \n\nThis app is not a replacement for the Unity Hub, and never will be. It is for people who do not want to wait seconds before they can launch their Unity projects, or create new ones.\n\nVisit github.com/ravbug/UnityHubNative for more information and for updates. \n\nCreated by Ravbug, written in C++. Uses the wxWidgets GUI library.", "About Unity Hub Native", wxOK | wxICON_INFORMATION );
+	wxMessageBox(winfix + "Unity Hub Native is a custom Unity Hub, designed to be more efficient than Unity's official hub. Rather than Electron and web technologies, this application uses native GUI on each platform. \n\nThis app is not a replacement for the Unity Hub.\n\nVisit github.com/ravbug/UnityHubNative for more information and for updates. \n\nCreated by Ravbug, written in C++. Uses the wxWidgets GUI library.", "About Unity Hub Native", wxOK | wxICON_INFORMATION );
 }
 
 void MainFrameDerived::OnAddProject(wxCommandEvent& event){
