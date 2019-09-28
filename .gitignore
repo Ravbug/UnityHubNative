@@ -352,11 +352,15 @@ MigrationBackup/
 *.exp
 *.dll
 
-# wxWidgets compiled data
+# wxWidgets compiled data Windows
 wxWidgets/lib/vc_dll/
 wxWidgets/lib/vc_lib/
 wxWidgets/lib/vc_x64_dll/
 wxWidgets/lib/vc_x64_lib/
+/wxWidgets/build/msw/vc_x64_mswu
+/wxWidgets/build/msw/vc_mswu
+/wxWidgets/build/msw/vc_mswud
+/wxWidgets/build/msw/vc_x64_mswud
 
 # Linux compiled data
 wxWidgets/build/linux/
@@ -365,3 +369,4 @@ linux-build/
 # Mac OS temporary and compiled data
 *.DS_STORE
 wxWidgets/build/osx/setup/*
+
