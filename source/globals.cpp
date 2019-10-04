@@ -23,7 +23,6 @@ struct editor{
 };
 
 #if defined __APPLE__
-
 	#include <pwd.h>
 	//the location to store application data
 	static const string datapath = getpwuid(getuid())->pw_dir + string("/Library/Application Support/UnityHubNative");

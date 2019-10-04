@@ -33,8 +33,8 @@
 #include <UIKit/UIWebView.h>
 #else
 #include <WebKit/WebKit.h>
-#include <WebKit/HIWebView.h>
-#include <WebKit/CarbonUtils.h>
+//#include <WebKit/HIWebView.h>
+//#include <WebKit/CarbonUtils.h>
 #endif
 #include <Foundation/NSURLError.h>
 

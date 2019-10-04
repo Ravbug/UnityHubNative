@@ -21,8 +21,8 @@
 #include "wx/osx/private.h"
 
 #include <WebKit/WebKit.h>
-#include <WebKit/HIWebView.h>
-#include <WebKit/CarbonUtils.h>
+//#include <WebKit/HIWebView.h>
+//#include <WebKit/CarbonUtils.h>
 
 #include "wx/html/webkit.h"
 
