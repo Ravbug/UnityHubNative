@@ -10,11 +10,13 @@ using namespace std;
 
 #include <sys/stat.h>
 #include <wx/listctrl.h>
+#include <string>
 
 //data file names
 static const string projectsFile = "projects.txt";
 static const string editorPathsFile = "editorPaths.txt";
 static const string templatePrefix = "com.unity.template";
+static const string AppVersion = "v1.1";
 
 //structure for representing an editor and for locating it
 struct editor{
@@ -46,6 +48,7 @@ struct editor{
 #include <windows.h>
 #include <gdiplus.h>	
 #include <thread>
+#include <wx/wx.h>
 	static const string datapath = getenv("HOMEPATH") + string("\\AppData\\Roaming\\UnityHubNative");
 	static const char dirsep = '\\';
 
@@ -146,23 +149,9 @@ inline void launch_process(const string& command) {
 	pclose(stream);
 
 #elif _WIN32
-	//On Windows, create an independent thread
-	//this method has the side effect of creating a cmd window, and when Unity is launched from it, the cmd window
-	//does not dissapear automatically, and UnityHubNative cannot launch more processes until that window is closed
-	auto bg_exec = [](string com) {
-		FILE* stream = popen(com.c_str(), "r");
-		//read the buffer to the end of the buffer
-		char buffer[1024];
-		if (stream) {
-			while (!feof(stream)) {
-				fgets(buffer,1024,stream);
-			}
-			//close the buffer when at the end
-			pclose(stream);
-		}
-	};
-	thread run(bg_exec,command);
-	run.detach();
+	//call wxExecute with the Async flag
+	wxExecute(wxString(command),0);
+
 #endif
 }
 
@@ -172,8 +161,7 @@ inline void reveal_in_explorer(const string& path){
 	
 #elif defined _WIN32
 	//do not surround the paths in quotes, it will not work
-	string command = "\\Windows\\explorer.exe " + path;
-	command = WinEscapePath(command);
+	string command = "\\Windows\\explorer.exe \"" + path + "\"";
 #endif
 	launch_process(command);
 }

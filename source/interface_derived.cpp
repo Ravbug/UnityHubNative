@@ -10,6 +10,7 @@
 #include <fstream>
 #include <wx/msgdlg.h>
 #include <wx/dirdlg.h>
+#include <wx/aboutdlg.h>
 #if defined _WIN32
 #include "dirent.h" 
 #else
@@ -106,11 +107,14 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 //definitions for the events
 void MainFrameDerived::OnAbout(wxCommandEvent& event)
 {
-	string winfix = "";
-#if defined _WIN32
-	winfix = "About Unity Hub Native\n\n";
-#endif
-	wxMessageBox(winfix + "Unity Hub Native is a custom Unity Hub, designed to be more efficient than Unity's official hub. Rather than Electron and web technologies, this application uses native GUI on each platform. \n\nThis app is not a replacement for the Unity Hub.\n\nVisit github.com/ravbug/UnityHubNative for more information and for updates. \n\nCreated by Ravbug, written in C++. Uses the wxWidgets GUI library.", "About Unity Hub Native", wxOK | wxICON_INFORMATION );
+	wxAboutDialogInfo aboutInfo;
+	aboutInfo.SetName("Unity Hub Native");
+	aboutInfo.SetVersion(AppVersion);
+	aboutInfo.SetDescription(_("Unity Hub Native is a custom Unity Hub, designed to be more efficient than Unity's official hub.\nRather than use Electron and web technologies for the GUI, this application uses native GUI on each platform.\nThis app is not a replacement for the official Unity Hub.\n\nCreated by Ravbug, written in C++. Uses the wxWidgets GUI library." ));
+	aboutInfo.SetCopyright("(C) 2019");
+	aboutInfo.SetWebSite("https://github.com/ravbug/UnityHubNative");
+	aboutInfo.AddDeveloper("Ravbug (github.com/ravbug)");
+	wxAboutBox(aboutInfo);
 }
 
 void MainFrameDerived::OnAddProject(wxCommandEvent& event){
@@ -269,13 +273,8 @@ void MainFrameDerived::OpenProject(const long& index){
 		
 		//check that the unity editor exists at that location
 		if (file_exists(editorPath)){
-			
-			//platform specific paths
-			#if defined __APPLE__
+					
 			string cmd = "\"" + editorPath + "\" -projectpath \"" + p.path + "\"";
-			#elif defined _WIN32
-			string cmd = WinEscapePath(editorPath) + " -projectpath " + "\"" + p.path + "\"";
-			#endif
 			
 			//start the process
 			launch_process(cmd);
