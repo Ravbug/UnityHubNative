@@ -242,7 +242,7 @@ CreateProjectDialog::~CreateProjectDialog()
 
 OpenWithEditorDlgBase::OpenWithEditorDlgBase( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
 {
-	this->SetSizeHints( wxSize( 330,215 ), wxDefaultSize );
+	this->SetSizeHints( wxSize( 230,215 ), wxDefaultSize );
 
 	wxGridBagSizer* gbSizer4;
 	gbSizer4 = new wxGridBagSizer( 0, 0 );
@@ -253,18 +253,18 @@ OpenWithEditorDlgBase::OpenWithEditorDlgBase( wxWindow* parent, wxWindowID id, c
 	m_staticText7->Wrap( -1 );
 	gbSizer4->Add( m_staticText7, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALL, 5 );
 
-	editorsListCtrl = new wxListCtrl( this, VERSIONS_LIST, wxDefaultPosition, wxDefaultSize, wxLC_NO_HEADER|wxLC_REPORT );
-	gbSizer4->Add( editorsListCtrl, wxGBPosition( 1, 0 ), wxGBSpan( 1, 3 ), wxALL|wxEXPAND, 5 );
+	editorsListBox = new wxListBox( this, VERSIONS_LIST, wxDefaultPosition, wxDefaultSize, 0, NULL, wxLB_HSCROLL|wxLB_NEEDED_SB|wxLB_SINGLE );
+	gbSizer4->Add( editorsListBox, wxGBPosition( 1, 0 ), wxGBSpan( 1, 3 ), wxALL|wxEXPAND, 5 );
 
 	dlgCancel = new wxButton( this, wxID_CANCEL, wxT("Cancel"), wxDefaultPosition, wxDefaultSize, 0 );
-	gbSizer4->Add( dlgCancel, wxGBPosition( 2, 1 ), wxGBSpan( 1, 1 ), wxALL, 5 );
+	gbSizer4->Add( dlgCancel, wxGBPosition( 2, 1 ), wxGBSpan( 1, 1 ), wxALL|wxEXPAND|wxALIGN_RIGHT, 5 );
 
 	openBtn = new wxButton( this, wxID_OPEN, wxT("Open"), wxDefaultPosition, wxDefaultSize, 0 );
 
 	openBtn->SetDefault();
 	openBtn->Enable( false );
 
-	gbSizer4->Add( openBtn, wxGBPosition( 2, 2 ), wxGBSpan( 1, 1 ), wxALL, 5 );
+	gbSizer4->Add( openBtn, wxGBPosition( 2, 2 ), wxGBSpan( 1, 1 ), wxALL|wxALIGN_RIGHT, 5 );
 
 
 	gbSizer4->AddGrowableCol( 0 );

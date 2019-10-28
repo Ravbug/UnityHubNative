@@ -55,7 +55,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	//make the data folder if it does not already exist (with readwrite for all groups)
 	#if defined __APPLE__ || defined __linux__
 		int status = mkdir(datapath.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-		menuReveal->SetItemLabel("Reveal In Finder\tCtrl-R");
+		menuReveal->SetItemLabel("Reveal In Finder\tCtrl-F");
 	#elif defined _WIN32
 		int status = mkdir(datapath.c_str());
 		//on windows also make the main window background white
@@ -63,7 +63,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 		//high DPI scaling fixes
 		dpi_scale(this);
 		//set reveal label
-		menuReveal->SetItemLabel("Reveal In File Explorer\tCtrl-R");
+		menuReveal->SetItemLabel("Reveal In File Explorer\tCtrl-F");
 	#endif
 	if (status != 0){
 		ReloadData();

@@ -29,6 +29,7 @@
 #include <wx/textctrl.h>
 #include <wx/choice.h>
 #include <wx/dialog.h>
+#include <wx/listbox.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -112,7 +113,7 @@ class OpenWithEditorDlgBase : public wxDialog
 
 	protected:
 		wxStaticText* m_staticText7;
-		wxListCtrl* editorsListCtrl;
+		wxListBox* editorsListBox;
 		wxButton* dlgCancel;
 		wxButton* openBtn;
 

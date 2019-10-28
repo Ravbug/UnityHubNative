@@ -11,7 +11,6 @@
 		41B5AAEF22DB8BB400347CC8 /* interface.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 41B5AAEC22DB8BB300347CC8 /* interface.cpp */; };
 		AA012114224C24D4000F4F82 /* wxmac.icns in Resources */ = {isa = PBXBuildFile; fileRef = AA012113224C24D4000F4F82 /* wxmac.icns */; };
 		AA012115224C24D4000F4F82 /* wxmac.icns in Resources */ = {isa = PBXBuildFile; fileRef = AA012113224C24D4000F4F82 /* wxmac.icns */; };
-		AA14A0EE222A1217002C4553 /* libwx_osx_cocoa.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = AA1D0F81222A0A1D00678304 /* libwx_osx_cocoa.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		AA14A0F3222A1219002C4553 /* libwx_osx_cocoa.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AA1D0F81222A0A1D00678304 /* libwx_osx_cocoa.dylib */; };
 		AA56E9702321F67C002BB5E1 /* globals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AA56E96F2321F67C002BB5E1 /* globals.cpp */; };
 		AA56E98A2321F67E002BB5E1 /* globals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AA56E96F2321F67C002BB5E1 /* globals.cpp */; };
@@ -219,20 +218,6 @@
 		};
 /* End PBXContainerItemProxy section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		AA14A0F1222A1217002C4553 /* Embed Libraries */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				AA14A0EE222A1217002C4553 /* libwx_osx_cocoa.dylib in Embed Libraries */,
-			);
-			name = "Embed Libraries";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
 		41B5AAEC22DB8BB300347CC8 /* interface.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = interface.cpp; sourceTree = "<group>"; };
 		41B5AAED22DB8BB400347CC8 /* interface.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = interface.h; sourceTree = "<group>"; };
@@ -385,7 +370,6 @@
 				AA1D0F4A222A09A600678304 /* Sources */,
 				AA1D0F4B222A09A600678304 /* Frameworks */,
 				AA1D0F4C222A09A600678304 /* Resources */,
-				AA14A0F1222A1217002C4553 /* Embed Libraries */,
 			);
 			buildRules = (
 			);
@@ -829,11 +813,13 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1.2;
 				INFOPLIST_FILE = "$(SRCROOT)/source/Info_cocoa.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MARKETING_VERSION = 1.2;
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ravbug.UnityHubNativeDynamic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -846,11 +832,13 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1.2;
 				INFOPLIST_FILE = "$(SRCROOT)/source/Info_cocoa.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MARKETING_VERSION = 1.2;
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ravbug.UnityHubNativeDynamic;
 				PRODUCT_NAME = "$(TARGET_NAME)";

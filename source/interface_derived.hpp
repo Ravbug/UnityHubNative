@@ -152,11 +152,9 @@ private:
 		this->EndModal(0);
 		this->Destroy();
 	}
-	void OnSelect(wxListEvent& event){
-		openBtn->Enable(true);
-	}
-	void OnDeselect(wxListEvent& event){
-		openBtn->Enable(false);
+	//enable or disable the continue button if there is a selection
+	void OnSelectionChange(wxCommandEvent& event){
+		openBtn->Enable(editorsListBox->GetSelection() != wxNOT_FOUND );
 	}
 	
 	void OnOpen(wxCommandEvent& event);
