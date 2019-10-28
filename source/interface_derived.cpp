@@ -69,6 +69,9 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 		ReloadData();
 	}
 	//if no projects to load, the interface will be blank
+	
+	//force first tab to select
+	notebook->SetSelection(0);
 }
 
 /**
