@@ -28,6 +28,7 @@ EVT_BUTTON(wxID_DELETE,MainFrameDerived::OnRemoveProject)
 EVT_BUTTON(wxID_JUMP_TO,MainFrameDerived::OnRevealProject)
 EVT_BUTTON(wxID_BACKWARD,MainFrameDerived::OnOpenHub)
 EVT_BUTTON(wxID_RELOAD,MainFrameDerived::OnReloadEditors)
+EVT_BUTTON(OPEN_WITH, MainFrameDerived::OnOpenWith)
 EVT_LIST_ITEM_ACTIVATED(wxID_HARDDISK, MainFrameDerived::OnOpenProject)
 EVT_LIST_ITEM_ACTIVATED(wxID_FLOPPY,MainFrameDerived::OnRevealEditor)
 EVT_LIST_ITEM_ACTIVATED(wxID_HOME,MainFrameDerived::OnRevealInstallLocation)
@@ -140,34 +141,6 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
 	}
 }
 
-void MainFrameDerived::OnRemoveProject(wxCommandEvent& event){
-	long itemIndex = wxListCtrl_get_selected(projectsList);
-	if (itemIndex > -1){
-		//remove from the vector
-		projects.erase(projects.begin()+itemIndex);
-
-		//remove from the list view
-		projectsList->DeleteItem(itemIndex);
-		
-		//update the file
-		SaveProjects();
-	}
-	else{
-		wxMessageBox("You must select a project in the list before you can remove it from the list.", "No project selected", wxOK | wxICON_WARNING );
-	}
-}
-
-/**
- Locates a Unity install path and adds it to the list and UI
- */
-void MainFrameDerived::OnLocateInstall(wxCommandEvent& event){
-	string msg = "Select the folder containing Unity installs";
-	string path = GetPathFromDialog(msg);
-	if (path != ""){
-		LoadEditorPath(path);
-	}
-}
-
 /**
  Loads an editor search path into the app, updating the UI and the vector
  @param path the string path to laod
@@ -219,33 +192,6 @@ void MainFrameDerived::OnCreateProject(wxCommandEvent& event){
 }
 
 /**
- Called when you double click or press Enter on a cell in the ListView
- */
-void MainFrameDerived::OnOpenProject(wxListEvent& event){
-	OpenProject(event.m_itemIndex);
-}
-
-/**
- Called when an item in the installs pane is activated. Reveals that editor in the system's file browser.
- @param event the list event created by the wxListCtrl
- */
-void MainFrameDerived::OnRevealEditor(wxListEvent& event){
-	editor& e = editors[event.GetIndex()];
-	string path = e.path + dirsep + e.name;
-	reveal_in_explorer(path);
-}
-
-/**
- Called when an item in the install search paths pane is activated. Reveals that location in the system's file browser.
- @param event the list event created by the wxListCtrl
- */
-void MainFrameDerived::OnRevealInstallLocation(wxListEvent& event){
-	editor& e = editors[event.GetIndex()];
-	string path = e.path;
-	reveal_in_explorer(path);
-}
-
-/**
  Called when the reveal project button is clicked
  */
 void MainFrameDerived::OnRevealProject(wxCommandEvent& event){
@@ -256,8 +202,21 @@ void MainFrameDerived::OnRevealProject(wxCommandEvent& event){
 	}
 }
 
-void MainFrameDerived::OnOpenHub(wxCommandEvent& event){
-	reveal_in_explorer(hubDefault);
+/**
+ Called when OpenWith button is pressed
+ */
+void MainFrameDerived::OnOpenWith(wxCommandEvent& event){
+	long selectedIndex = wxListCtrl_get_selected(projectsList);
+	if (selectedIndex > -1){
+		project& p = projects[selectedIndex];
+		OpenWithCallback c = [&](project p, editor e){
+			//open the project
+			OpenProject(p,e);
+		};
+				
+		OpenWithDlg* dlg = new OpenWithDlg(this,p,editors,c);
+		dlg->show();
+	}
 }
 
 /**
@@ -285,6 +244,16 @@ void MainFrameDerived::OpenProject(const long& index){
 	//alert user
 	wxMessageBox("The editor version " + p.version + " could not be found.\n\nCheck that it is installed, and that the folder where it has been installed is listed in the Editor Versions tab, under Install Search Paths.", "Unable to start Unity", wxOK | wxICON_ERROR);
 	
+}
+
+/**
+ Open a specific project with a specific editor
+ @param p the project to open
+ @param e the editor version to use when opening the project
+ */
+void MainFrameDerived::OpenProject(const project& p, const editor& e){
+	string cmd = "\"" + e.path + dirsep + e.name + dirsep + executable + "\" -projectpath \"" + p.path + "\"";
+	launch_process(cmd);
 }
 
 /** Brings up a folder selection dialog with a prompt

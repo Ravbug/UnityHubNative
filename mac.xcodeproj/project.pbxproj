@@ -13,20 +13,15 @@
 		AA012115224C24D4000F4F82 /* wxmac.icns in Resources */ = {isa = PBXBuildFile; fileRef = AA012113224C24D4000F4F82 /* wxmac.icns */; };
 		AA14A0EE222A1217002C4553 /* libwx_osx_cocoa.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = AA1D0F81222A0A1D00678304 /* libwx_osx_cocoa.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		AA14A0F3222A1219002C4553 /* libwx_osx_cocoa.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AA1D0F81222A0A1D00678304 /* libwx_osx_cocoa.dylib */; };
-		AA1D0FCC222A0A4B00678304 /* wxrelease.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = AA1D0FC9222A0A4A00678304 /* wxrelease.xcconfig */; };
-		AA1D0FCD222A0A4B00678304 /* wxcocoa.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = AA1D0FCA222A0A4B00678304 /* wxcocoa.xcconfig */; };
-		AA1D0FCE222A0A4B00678304 /* wxdebug.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = AA1D0FCB222A0A4B00678304 /* wxdebug.xcconfig */; };
 		AA56E9702321F67C002BB5E1 /* globals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AA56E96F2321F67C002BB5E1 /* globals.cpp */; };
 		AA56E98A2321F67E002BB5E1 /* globals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AA56E96F2321F67C002BB5E1 /* globals.cpp */; };
 		AA9F4B912321BEE900FF2E24 /* interface_derived.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AA9F4B8F2321BEE900FF2E24 /* interface_derived.cpp */; };
 		AA9F4B922321BEE900FF2E24 /* interface_derived.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AA9F4B8F2321BEE900FF2E24 /* interface_derived.cpp */; };
+		AAA0F59B23667BCA00B8E4A7 /* open_with_dlg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AAA0F59A23667BCA00B8E4A7 /* open_with_dlg.cpp */; };
+		AAA0F59C23667BCA00B8E4A7 /* open_with_dlg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AAA0F59A23667BCA00B8E4A7 /* open_with_dlg.cpp */; };
 		AAB4B99F23233EB5007D21F9 /* create_dialog_derived.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AAB4B99E23233EB5007D21F9 /* create_dialog_derived.cpp */; };
 		AAB4B9A023233EB5007D21F9 /* create_dialog_derived.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AAB4B99E23233EB5007D21F9 /* create_dialog_derived.cpp */; };
 		AAD015C0222B2FE300E25CB7 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AAF9D87B222B14E900437548 /* main.cpp */; };
-		AAD015C4222B2FE300E25CB7 /* wxrelease.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = AA1D0FC9222A0A4A00678304 /* wxrelease.xcconfig */; };
-		AAD015C5222B2FE300E25CB7 /* wxcocoa.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = AA1D0FCA222A0A4B00678304 /* wxcocoa.xcconfig */; };
-		AAD015C6222B2FE300E25CB7 /* Info_cocoa.plist in Resources */ = {isa = PBXBuildFile; fileRef = AAF9D87A222B14E900437548 /* Info_cocoa.plist */; };
-		AAD015C7222B2FE300E25CB7 /* wxdebug.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = AA1D0FCB222A0A4B00678304 /* wxdebug.xcconfig */; };
 		AAD015CF222B328200E25CB7 /* libwx_osx_cocoa_static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AA1D0F83222A0A1D00678304 /* libwx_osx_cocoa_static.a */; };
 		AADF6A25222B359700991DD2 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AADF6A0B222B359700991DD2 /* CoreFoundation.framework */; };
 		AADF6A27222B35B300991DD2 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AADF6A26222B35B300991DD2 /* CoreGraphics.framework */; };
@@ -36,7 +31,6 @@
 		AADF6A2F222B360200991DD2 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AADF6A2E222B360200991DD2 /* IOKit.framework */; };
 		AADF6A31222B360700991DD2 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AADF6A30222B360700991DD2 /* AppKit.framework */; };
 		AADF6A33222B360C00991DD2 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AADF6A32222B360C00991DD2 /* Foundation.framework */; };
-		AAF9D87C222B14E900437548 /* Info_cocoa.plist in Resources */ = {isa = PBXBuildFile; fileRef = AAF9D87A222B14E900437548 /* Info_cocoa.plist */; };
 		AAF9D87D222B14E900437548 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AAF9D87B222B14E900437548 /* main.cpp */; };
 /* End PBXBuildFile section */
 
@@ -251,6 +245,7 @@
 		AA56E96F2321F67C002BB5E1 /* globals.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = globals.cpp; sourceTree = "<group>"; };
 		AA9F4B8F2321BEE900FF2E24 /* interface_derived.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = interface_derived.cpp; sourceTree = "<group>"; };
 		AA9F4B902321BEE900FF2E24 /* interface_derived.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = interface_derived.hpp; sourceTree = "<group>"; };
+		AAA0F59A23667BCA00B8E4A7 /* open_with_dlg.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = open_with_dlg.cpp; sourceTree = "<group>"; };
 		AAB4B99E23233EB5007D21F9 /* create_dialog_derived.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = create_dialog_derived.cpp; sourceTree = "<group>"; };
 		AAD015CD222B2FE300E25CB7 /* Unity Hub Native.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Unity Hub Native.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AADF6A0B222B359700991DD2 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
@@ -336,6 +331,7 @@
 				AA56E96F2321F67C002BB5E1 /* globals.cpp */,
 				AA9F4B8F2321BEE900FF2E24 /* interface_derived.cpp */,
 				AA9F4B902321BEE900FF2E24 /* interface_derived.hpp */,
+				AAA0F59A23667BCA00B8E4A7 /* open_with_dlg.cpp */,
 				AAB4B99E23233EB5007D21F9 /* create_dialog_derived.cpp */,
 				41B5AAEC22DB8BB300347CC8 /* interface.cpp */,
 				41B5AAED22DB8BB400347CC8 /* interface.h */,
@@ -424,7 +420,7 @@
 		AA1D0F46222A09A600678304 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 1010;
+				LastUpgradeCheck = 1100;
 				ORGANIZATIONNAME = Ravbug;
 				TargetAttributes = {
 					AA1D0F4D222A09A600678304 = {
@@ -640,11 +636,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AA1D0FCC222A0A4B00678304 /* wxrelease.xcconfig in Resources */,
-				AA1D0FCD222A0A4B00678304 /* wxcocoa.xcconfig in Resources */,
 				AA012114224C24D4000F4F82 /* wxmac.icns in Resources */,
-				AAF9D87C222B14E900437548 /* Info_cocoa.plist in Resources */,
-				AA1D0FCE222A0A4B00678304 /* wxdebug.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -652,11 +644,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AAD015C4222B2FE300E25CB7 /* wxrelease.xcconfig in Resources */,
-				AAD015C5222B2FE300E25CB7 /* wxcocoa.xcconfig in Resources */,
 				AA012115224C24D4000F4F82 /* wxmac.icns in Resources */,
-				AAD015C6222B2FE300E25CB7 /* Info_cocoa.plist in Resources */,
-				AAD015C7222B2FE300E25CB7 /* wxdebug.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -672,6 +660,7 @@
 				AAB4B99F23233EB5007D21F9 /* create_dialog_derived.cpp in Sources */,
 				AAF9D87D222B14E900437548 /* main.cpp in Sources */,
 				41B5AAEE22DB8BB400347CC8 /* interface.cpp in Sources */,
+				AAA0F59B23667BCA00B8E4A7 /* open_with_dlg.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -684,6 +673,7 @@
 				AAB4B9A023233EB5007D21F9 /* create_dialog_derived.cpp in Sources */,
 				AAD015C0222B2FE300E25CB7 /* main.cpp in Sources */,
 				41B5AAEF22DB8BB400347CC8 /* interface.cpp in Sources */,
+				AAA0F59C23667BCA00B8E4A7 /* open_with_dlg.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -704,7 +694,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
@@ -775,7 +765,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
@@ -836,7 +826,7 @@
 		AA1D0F60222A09A800678304 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = wxTest/wxTest.entitlements;
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = "$(SRCROOT)/source/Info_cocoa.plist";
@@ -853,7 +843,7 @@
 		AA1D0F61222A09A800678304 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = wxTest/wxTest.entitlements;
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = "$(SRCROOT)/source/Info_cocoa.plist";
@@ -870,7 +860,7 @@
 		AAD015CB222B2FE300E25CB7 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = wxTest/wxTest.entitlements;
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				HEADER_SEARCH_PATHS = (
@@ -900,7 +890,7 @@
 		AAD015CC222B2FE300E25CB7 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = wxTest/wxTest.entitlements;
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				HEADER_SEARCH_PATHS = (

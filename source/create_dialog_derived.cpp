@@ -1,8 +1,6 @@
 //
 //  create_dialog_derived.cpp
-//  mac
 //
-//  Created by Main on 9/6/19.
 //  Copyright © 2019 Ravbug. All rights reserved.
 //
 

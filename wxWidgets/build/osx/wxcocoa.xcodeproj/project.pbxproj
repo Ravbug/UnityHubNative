@@ -6984,16 +6984,18 @@
 		19367367C9323490BB936F06 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				LastUpgradeCheck = 1100;
 			};
 			buildConfigurationList = 6976B5F5F3A63A21A92029E3 /* Build configuration list for PBXProject "wxcocoa" */;
 			compatibilityVersion = "Xcode 3.1";
-			developmentRegion = English;
+			developmentRegion = en;
 			hasScannedForEncodings = 1;
 			knownRegions = (
-				English,
-				Japanese,
-				French,
-				German,
+				de,
+				ja,
+				en,
+				fr,
+				Base,
 			);
 			mainGroup = 1D56230B75893DBA8A923441 /* wxcocoa */;
 			productRefGroup = C2FC1A9BBB8C3046994369BF /* Products */;
@@ -10947,6 +10949,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7DEBE1EB2B94305E8E8D6EA5 /* wxcocoa.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(GCC_PREPROCESSOR_DEFINITIONS)",
@@ -10962,6 +10965,33 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 8707324525DB344EA0E7D5CE /* wxdebug.xcconfig */;
 			buildSettings = {
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
 				WXROOT = "$(PROJECT_DIR)/../..";
 			};
 			name = Debug;
@@ -10970,6 +11000,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = BD044F7074D0307985FCA361 /* wxcocoa_ml.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -10980,6 +11011,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4738C1AA38623F8B9A5E5E30 /* wxcocoa_mlbase.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -10990,6 +11022,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11000,6 +11033,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11010,6 +11044,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11020,6 +11055,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11030,6 +11066,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11041,6 +11078,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4738C1AA38623F8B9A5E5E30 /* wxcocoa_mlbase.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11051,6 +11089,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11061,6 +11100,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11071,6 +11111,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11081,6 +11122,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11091,6 +11133,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11101,6 +11144,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11111,7 +11155,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7DEBE1EB2B94305E8E8D6EA5 /* wxcocoa.xcconfig */;
 			buildSettings = {
-				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(GCC_PREPROCESSOR_DEFINITIONS)",
 					"wxUSE_BASE=1",
@@ -11124,6 +11168,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11134,6 +11179,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11143,6 +11189,7 @@
 		55C93151F6053EBCBDD70E0B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -11151,6 +11198,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D69A302C00153A709B7DE4C6 /* wxcocoa_ml3rd.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11161,6 +11209,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D69A302C00153A709B7DE4C6 /* wxcocoa_ml3rd.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11171,6 +11220,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D69A302C00153A709B7DE4C6 /* wxcocoa_ml3rd.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11181,6 +11231,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D69A302C00153A709B7DE4C6 /* wxcocoa_ml3rd.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_CFLAGS = (
@@ -11198,6 +11249,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D69A302C00153A709B7DE4C6 /* wxcocoa_ml3rd.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11208,6 +11260,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D69A302C00153A709B7DE4C6 /* wxcocoa_ml3rd.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11218,6 +11271,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D69A302C00153A709B7DE4C6 /* wxcocoa_ml3rd.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_EXTENSION = .a;
 				EXECUTABLE_PREFIX = lib;
 				MACH_O_TYPE = staticlib;
@@ -11229,6 +11283,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7DEBE1EB2B94305E8E8D6EA5 /* wxcocoa.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(GCC_PREPROCESSOR_DEFINITIONS)",
@@ -11244,6 +11299,32 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D5B7B7C10A3E3C689AE1E418 /* wxrelease.xcconfig */;
 			buildSettings = {
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
 				WXROOT = "$(PROJECT_DIR)/../..";
 			};
 			name = Release;
@@ -11252,6 +11333,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = BD044F7074D0307985FCA361 /* wxcocoa_ml.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11262,6 +11344,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4738C1AA38623F8B9A5E5E30 /* wxcocoa_mlbase.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11272,6 +11355,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11282,6 +11366,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11292,6 +11377,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11302,6 +11388,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11312,6 +11399,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11323,6 +11411,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4738C1AA38623F8B9A5E5E30 /* wxcocoa_mlbase.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11333,6 +11422,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11343,6 +11433,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11353,6 +11444,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11363,6 +11455,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11373,6 +11466,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11383,6 +11477,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11393,7 +11488,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7DEBE1EB2B94305E8E8D6EA5 /* wxcocoa.xcconfig */;
 			buildSettings = {
-				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(GCC_PREPROCESSOR_DEFINITIONS)",
 					"wxUSE_BASE=1",
@@ -11406,6 +11501,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11416,6 +11512,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E862A0A422483954B755053E /* wxcocoa_mlgui.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11425,6 +11522,7 @@
 		99B665C6D0D137B38CEA93A1 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -11433,6 +11531,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D69A302C00153A709B7DE4C6 /* wxcocoa_ml3rd.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11443,6 +11542,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D69A302C00153A709B7DE4C6 /* wxcocoa_ml3rd.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11453,6 +11553,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D69A302C00153A709B7DE4C6 /* wxcocoa_ml3rd.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11463,6 +11564,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D69A302C00153A709B7DE4C6 /* wxcocoa_ml3rd.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_CFLAGS = (
@@ -11480,6 +11582,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D69A302C00153A709B7DE4C6 /* wxcocoa_ml3rd.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11490,6 +11593,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D69A302C00153A709B7DE4C6 /* wxcocoa_ml3rd.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_PREFIX = lib;
 				INSTALL_PATH = "@executable_path/../Frameworks/";
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
@@ -11500,6 +11604,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D69A302C00153A709B7DE4C6 /* wxcocoa_ml3rd.xcconfig */;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				EXECUTABLE_EXTENSION = .a;
 				EXECUTABLE_PREFIX = lib;
 				MACH_O_TYPE = staticlib;

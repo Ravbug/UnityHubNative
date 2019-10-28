@@ -18,19 +18,10 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 
 	notebook = new wxNotebook( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
 	projects_pane = new wxPanel( notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	wxBoxSizer* projectSizer;
-	projectSizer = new wxBoxSizer( wxVERTICAL );
-
 	wxGridBagSizer* gbSizer1;
 	gbSizer1 = new wxGridBagSizer( 0, 0 );
 	gbSizer1->SetFlexibleDirection( wxBOTH );
 	gbSizer1->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
-
-	m_staticText2 = new wxStaticText( projects_pane, wxID_ANY, wxT("Projects"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText2->Wrap( -1 );
-	m_staticText2->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD, false, wxEmptyString ) );
-
-	gbSizer1->Add( m_staticText2, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	projectsList = new wxListCtrl( projects_pane, wxID_HARDDISK, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_SINGLE_SEL );
 	gbSizer1->Add( projectsList, wxGBPosition( 1, 0 ), wxGBSpan( 1, 3 ), wxALL|wxEXPAND|wxFIXED_MINSIZE, 5 );
@@ -45,24 +36,24 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	pManSizer->Add( removeProjBtn, 0, wxALL, 5 );
 
 	add_new_proj = new wxButton( projects_pane, wxID_NEW, wxT("Create New"), wxDefaultPosition, wxDefaultSize, 0 );
-	pManSizer->Add( add_new_proj, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	pManSizer->Add( add_new_proj, 0, wxALL, 5 );
 
 	add_existing_proj = new wxButton( projects_pane, wxID_ADD, wxT("Add Existing"), wxDefaultPosition, wxDefaultSize, 0 );
-	pManSizer->Add( add_existing_proj, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	pManSizer->Add( add_existing_proj, 0, wxALL, 5 );
+
+	openWithBtn = new wxButton( projects_pane, OPEN_WITH, wxT("Open With"), wxDefaultPosition, wxDefaultSize, 0 );
+	pManSizer->Add( openWithBtn, 0, wxALL, 5 );
 
 
-	gbSizer1->Add( pManSizer, wxGBPosition( 0, 1 ), wxGBSpan( 1, 2 ), wxEXPAND|wxALIGN_RIGHT, 5 );
+	gbSizer1->Add( pManSizer, wxGBPosition( 0, 0 ), wxGBSpan( 1, 2 ), wxEXPAND, 5 );
 
 
 	gbSizer1->AddGrowableCol( 1 );
 	gbSizer1->AddGrowableRow( 1 );
 
-	projectSizer->Add( gbSizer1, 1, wxEXPAND, 5 );
-
-
-	projects_pane->SetSizer( projectSizer );
+	projects_pane->SetSizer( gbSizer1 );
 	projects_pane->Layout();
-	projectSizer->Fit( projects_pane );
+	gbSizer1->Fit( projects_pane );
 	notebook->AddPage( projects_pane, wxT("Projects"), false );
 	installs_pane = new wxPanel( notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxGridBagSizer* iManSizer;
@@ -134,7 +125,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	menuWindow->Append( quit_menu );
 
 	wxMenuItem* about_menu;
-	about_menu = new wxMenuItem( menuWindow, wxID_ABOUT, wxString( wxT("About") ) , wxEmptyString, wxITEM_NORMAL );
+	about_menu = new wxMenuItem( menuWindow, wxID_ABOUT, wxString( wxT("About Unity Hub Native") ) , wxEmptyString, wxITEM_NORMAL );
 	menuWindow->Append( about_menu );
 
 	menubar->Append( menuWindow, wxT("Window") );
@@ -202,6 +193,8 @@ CreateProjectDialog::CreateProjectDialog( wxWindow* parent, wxWindowID id, const
 	bSizer6->Add( cancelProjBtn, 0, wxALL, 5 );
 
 	createProjBtn = new wxButton( this, wxID_FILE, wxT("Create"), wxDefaultPosition, wxDefaultSize, 0 );
+
+	createProjBtn->SetDefault();
 	bSizer6->Add( createProjBtn, 0, wxALL, 5 );
 
 
@@ -218,5 +211,46 @@ CreateProjectDialog::CreateProjectDialog( wxWindow* parent, wxWindowID id, const
 }
 
 CreateProjectDialog::~CreateProjectDialog()
+{
+}
+
+OpenWithEditorDlgBase::OpenWithEditorDlgBase( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
+{
+	this->SetSizeHints( wxSize( 330,215 ), wxDefaultSize );
+
+	wxGridBagSizer* gbSizer4;
+	gbSizer4 = new wxGridBagSizer( 0, 0 );
+	gbSizer4->SetFlexibleDirection( wxBOTH );
+	gbSizer4->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+
+	m_staticText7 = new wxStaticText( this, wxID_ANY, wxT("Select Editor Version"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText7->Wrap( -1 );
+	gbSizer4->Add( m_staticText7, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALL, 5 );
+
+	editorsListCtrl = new wxListCtrl( this, VERSIONS_LIST, wxDefaultPosition, wxDefaultSize, wxLC_ICON );
+	gbSizer4->Add( editorsListCtrl, wxGBPosition( 1, 0 ), wxGBSpan( 1, 3 ), wxALL|wxEXPAND, 5 );
+
+	dlgCancel = new wxButton( this, wxID_CANCEL, wxT("Cancel"), wxDefaultPosition, wxDefaultSize, 0 );
+	gbSizer4->Add( dlgCancel, wxGBPosition( 2, 1 ), wxGBSpan( 1, 1 ), wxALL, 5 );
+
+	openBtn = new wxButton( this, wxID_OPEN, wxT("Open"), wxDefaultPosition, wxDefaultSize, 0 );
+
+	openBtn->SetDefault();
+	openBtn->Enable( false );
+
+	gbSizer4->Add( openBtn, wxGBPosition( 2, 2 ), wxGBSpan( 1, 1 ), wxALL, 5 );
+
+
+	gbSizer4->AddGrowableCol( 0 );
+	gbSizer4->AddGrowableRow( 1 );
+
+	this->SetSizer( gbSizer4 );
+	this->Layout();
+	gbSizer4->Fit( this );
+
+	this->Centre( wxBOTH );
+}
+
+OpenWithEditorDlgBase::~OpenWithEditorDlgBase()
 {
 }
