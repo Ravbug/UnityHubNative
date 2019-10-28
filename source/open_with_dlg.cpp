@@ -19,7 +19,7 @@ OpenWithDlg::OpenWithDlg(wxWindow* parent, const project& project, const vector<
 	fitWindowMinSize(this);
 
 	//add column
-	editorsListCtrl->AppendColumn("", wxLIST_FORMAT_CENTER, wxLIST_AUTOSIZE_USEHEADER);
+	editorsListCtrl->AppendColumn("Select Editor Version to open current project", wxLIST_FORMAT_CENTER, wxLIST_AUTOSIZE_USEHEADER);
 
 	//populate list ctrl in reverse so ids match
 	for (long x = versions.size()-1; x >= 0; x--){
