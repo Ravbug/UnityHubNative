@@ -19,7 +19,7 @@ OpenWithDlg::OpenWithDlg(wxWindow* parent, const project& project, const vector<
 	fitWindowMinSize(this);
 
 	//populate list ctrl in reverse so ids match
-	for (unsigned long x = versions.size()-1; x >= 0; x--){
+	for (long x = versions.size()-1; x >= 0; x--){
 		editor e = versions[x];
 		wxListItem i;
 		i.SetId(0);
