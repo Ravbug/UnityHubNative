@@ -30,7 +30,7 @@ CreateProjectDialogD::CreateProjectDialogD(wxWindow* parent, const vector<editor
 	editors = versions;
 	this->callback = callback;
 	//Set combo box values to the different Unity versions passed in
-	for (editor& e : editors){
+	for (const editor& e : editors){
 		unityVersionChoice->AppendString(e.name);
 	}
 	//select the element 0

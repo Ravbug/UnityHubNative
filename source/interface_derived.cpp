@@ -48,9 +48,6 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 		for (string& str : cols){
 			projectsList->AppendColumn(str,wxLIST_FORMAT_CENTER);
 		}
-
-//		installsList->AppendColumn("", wxLIST_FORMAT_CENTER, wxLIST_AUTOSIZE_USEHEADER);
-//		installsPathsList->AppendColumn("", wxLIST_FORMAT_CENTER, wxLIST_AUTOSIZE_USEHEADER);
 	}
 	//make the data folder if it does not already exist (with readwrite for all groups)
 	#if defined __APPLE__ || defined __linux__
@@ -176,14 +173,14 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
  */
 void MainFrameDerived::LoadEditorPath(const string& path){
 	//add to internal structure and to file
-	installPaths.insert(installPaths.begin(), path);
+	installPaths.push_back(path);
 	SaveEditorVersions();
 	
 	//add to the UI
 	wxArrayString a;
 	a.Add(path);
 	
-	installsPathsList->InsertItems(a,0);
+	installsPathsList->Append(a);
 }
 
 void MainFrameDerived::OnRemoveInstallPath(wxCommandEvent& event){
@@ -407,6 +404,7 @@ void MainFrameDerived::AddProject(const project& p){
 void MainFrameDerived::LoadEditorVersions(){
 	//clear list control
 	installsList->Clear();
+	editors.clear();
 	
 	//iterate over the search paths
 	for (string& path : installPaths){
@@ -427,12 +425,12 @@ void MainFrameDerived::LoadEditorVersions(){
 					
 					//add it to the backing datastructure
 					editor e = {entry->d_name, path};
-					editors.insert(editors.begin(),e);
+					editors.push_back(e);
 				}
 			}
 			entry = readdir(dir);
 		}
-		installsList->InsertItems(a, 0);
+		installsList->Append(a);
 		//free resources when finished
 		closedir(dir);
 		free(entry);

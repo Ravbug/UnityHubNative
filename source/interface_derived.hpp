@@ -97,9 +97,7 @@ private:
 	void OnRevealInstallLocation(wxCommandEvent& event){
 		int id = installsPathsList->GetSelection();
 		if (id != wxNOT_FOUND){
-			editor& e = editors[id];
-			string path = e.path;
-			reveal_in_explorer(path);
+			reveal_in_explorer(installPaths[id]);
 		}
 	}
 	void OnOpenHub(wxCommandEvent& event){
