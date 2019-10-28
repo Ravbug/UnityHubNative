@@ -65,6 +65,7 @@ class MainFrame : public wxFrame
 		wxButton* launchHubBtn;
 		wxButton* reloadInstalls;
 		wxMenuBar* menubar;
+		wxMenu* menuProject;
 		wxMenu* menuWindow;
 
 	public:

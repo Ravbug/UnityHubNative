@@ -119,6 +119,33 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	this->SetSizer( main_sizer );
 	this->Layout();
 	menubar = new wxMenuBar( 0 );
+	menuProject = new wxMenu();
+	wxMenuItem* menuCreate;
+	menuCreate = new wxMenuItem( menuProject, wxID_NEW, wxString( wxT("Create New Project") ) + wxT('\t') + wxT("Ctrl-N"), wxEmptyString, wxITEM_NORMAL );
+	menuProject->Append( menuCreate );
+
+	wxMenuItem* menuAdd;
+	menuAdd = new wxMenuItem( menuProject, wxID_ADD, wxString( wxT("Add Existing Project") ) + wxT('\t') + wxT("Ctrl-Shift-N"), wxEmptyString, wxITEM_NORMAL );
+	menuProject->Append( menuAdd );
+
+	wxMenuItem* menuRemove;
+	menuRemove = new wxMenuItem( menuProject, wxID_DELETE, wxString( wxT("Remove Project From List") ) + wxT('\t') + wxT("Ctrl--"), wxEmptyString, wxITEM_NORMAL );
+	menuProject->Append( menuRemove );
+
+	wxMenuItem* menuReveal;
+	menuReveal = new wxMenuItem( menuProject, wxID_FIND, wxString( wxT("Reveal") ) + wxT('\t') + wxT("Ctrl-F"), wxEmptyString, wxITEM_NORMAL );
+	menuProject->Append( menuReveal );
+
+	wxMenuItem* menuOpenWith;
+	menuOpenWith = new wxMenuItem( menuProject, wxID_PROPERTIES, wxString( wxT("Open In Different Version") ) + wxT('\t') + wxT("Ctrl-O"), wxEmptyString, wxITEM_NORMAL );
+	menuProject->Append( menuOpenWith );
+
+	wxMenuItem* menuReload;
+	menuReload = new wxMenuItem( menuProject, wxID_REFRESH, wxString( wxT("Reload Data") ) + wxT('\t') + wxT("Ctrl-R"), wxEmptyString, wxITEM_NORMAL );
+	menuProject->Append( menuReload );
+
+	menubar->Append( menuProject, wxT("Project") );
+
 	menuWindow = new wxMenu();
 	wxMenuItem* quit_menu;
 	quit_menu = new wxMenuItem( menuWindow, wxID_EXIT, wxString( wxT("Close") ) + wxT('\t') + wxT("Ctrl-W"), wxEmptyString, wxITEM_NORMAL );

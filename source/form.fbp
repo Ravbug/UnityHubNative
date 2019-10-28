@@ -1293,6 +1293,89 @@
                 <property name="window_name"></property>
                 <property name="window_style"></property>
                 <object class="wxMenu" expanded="1">
+                    <property name="label">Project</property>
+                    <property name="name">menuProject</property>
+                    <property name="permission">protected</property>
+                    <object class="wxMenuItem" expanded="1">
+                        <property name="bitmap"></property>
+                        <property name="checked">0</property>
+                        <property name="enabled">1</property>
+                        <property name="help"></property>
+                        <property name="id">wxID_NEW</property>
+                        <property name="kind">wxITEM_NORMAL</property>
+                        <property name="label">Create New Project</property>
+                        <property name="name">menuCreate</property>
+                        <property name="permission">none</property>
+                        <property name="shortcut">Ctrl-N</property>
+                        <property name="unchecked_bitmap"></property>
+                    </object>
+                    <object class="wxMenuItem" expanded="1">
+                        <property name="bitmap"></property>
+                        <property name="checked">0</property>
+                        <property name="enabled">1</property>
+                        <property name="help"></property>
+                        <property name="id">wxID_ADD</property>
+                        <property name="kind">wxITEM_NORMAL</property>
+                        <property name="label">Add Existing Project</property>
+                        <property name="name">menuAdd</property>
+                        <property name="permission">none</property>
+                        <property name="shortcut">Ctrl-Shift-N</property>
+                        <property name="unchecked_bitmap"></property>
+                    </object>
+                    <object class="wxMenuItem" expanded="1">
+                        <property name="bitmap"></property>
+                        <property name="checked">0</property>
+                        <property name="enabled">1</property>
+                        <property name="help"></property>
+                        <property name="id">wxID_DELETE</property>
+                        <property name="kind">wxITEM_NORMAL</property>
+                        <property name="label">Remove Project From List</property>
+                        <property name="name">menuRemove</property>
+                        <property name="permission">none</property>
+                        <property name="shortcut">Ctrl--</property>
+                        <property name="unchecked_bitmap"></property>
+                    </object>
+                    <object class="wxMenuItem" expanded="1">
+                        <property name="bitmap"></property>
+                        <property name="checked">0</property>
+                        <property name="enabled">1</property>
+                        <property name="help"></property>
+                        <property name="id">wxID_FIND</property>
+                        <property name="kind">wxITEM_NORMAL</property>
+                        <property name="label">Reveal</property>
+                        <property name="name">menuReveal</property>
+                        <property name="permission">none</property>
+                        <property name="shortcut">Ctrl-F</property>
+                        <property name="unchecked_bitmap"></property>
+                    </object>
+                    <object class="wxMenuItem" expanded="1">
+                        <property name="bitmap"></property>
+                        <property name="checked">0</property>
+                        <property name="enabled">1</property>
+                        <property name="help"></property>
+                        <property name="id">wxID_PROPERTIES</property>
+                        <property name="kind">wxITEM_NORMAL</property>
+                        <property name="label">Open In Different Version</property>
+                        <property name="name">menuOpenWith</property>
+                        <property name="permission">none</property>
+                        <property name="shortcut">Ctrl-O</property>
+                        <property name="unchecked_bitmap"></property>
+                    </object>
+                    <object class="wxMenuItem" expanded="1">
+                        <property name="bitmap"></property>
+                        <property name="checked">0</property>
+                        <property name="enabled">1</property>
+                        <property name="help"></property>
+                        <property name="id">wxID_REFRESH</property>
+                        <property name="kind">wxITEM_NORMAL</property>
+                        <property name="label">Reload Data</property>
+                        <property name="name">menuReload</property>
+                        <property name="permission">none</property>
+                        <property name="shortcut">Ctrl-R</property>
+                        <property name="unchecked_bitmap"></property>
+                    </object>
+                </object>
+                <object class="wxMenu" expanded="1">
                     <property name="label">Window</property>
                     <property name="name">menuWindow</property>
                     <property name="permission">protected</property>

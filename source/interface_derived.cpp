@@ -20,6 +20,12 @@
 //Declare events here
 wxBEGIN_EVENT_TABLE(MainFrameDerived, wxFrame)
 EVT_MENU(wxID_ABOUT, MainFrameDerived::OnAbout)
+EVT_MENU(wxID_NEW, MainFrameDerived::OnCreateProject)
+EVT_MENU(wxID_ADD, MainFrameDerived::OnAddProject)
+EVT_MENU(wxID_DELETE, MainFrameDerived::OnRemoveProject)
+EVT_MENU(wxID_FIND, MainFrameDerived::OnRevealProject)
+EVT_MENU(wxID_PROPERTIES, MainFrameDerived::OnOpenWith)
+EVT_MENU(wxID_REFRESH, MainFrameDerived::OnReloadData)
 EVT_BUTTON(wxID_ADD,MainFrameDerived::OnAddProject)
 EVT_BUTTON(wxID_NEW,MainFrameDerived::OnCreateProject)
 EVT_BUTTON(wxID_FIND,MainFrameDerived::OnLocateInstall)
@@ -54,55 +60,69 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 		dpi_scale(this);
 	#endif
 	if (status != 0){
-		//check that projects file exists in folder
-		string p = string(datapath + dirsep + projectsFile);
-		if (file_exists(p)){
-			ifstream in;
-			in.open(p);
-			string line;
-			//if one cannot be loaded
-			vector<string> erroredProjects;
-			//load each project (each path is on its own line)
-			while (getline(in, line)){
-				try{
-					project pr = LoadProject(line);
-					AddProject(pr);
-				}
-				catch(runtime_error& e){
-					//remove project
-					erroredProjects.push_back(line);
-				}
-			}
-			//alert user if projects could not be loaded
-			if (erroredProjects.size() > 0){
-				//build string
-				string str;
-				for (string s : erroredProjects){
-					str += s + "\n";
-				}
-				//message box
-				wxMessageBox("The following projects could not be loaded. They have been removed from the list.\n\n"+str, "Loading error", wxOK | wxICON_WARNING );
-				
-				//save to remove the broken projects
-				SaveProjects();
-			}
-		}
-		
-		//check that the installs path file exists in the folder
-		p = string(datapath + dirsep + editorPathsFile);
-		if (file_exists(p)){
-			//load the editors
-			ifstream in; in.open(p); string line;
-			while (getline(in, line)){
-				LoadEditorPath(line);
-			}
-		}
-		else{
-			//add default data
-			LoadEditorPath(defaultInstall);
-		}
+		ReloadData();
 	}
 	//if no projects to load, the interface will be blank
+}
+
+/**
+ Loads the data in the main view. If anything is currently loaded, it will be cleared and re-loaded
+ */
+void MainFrameDerived::ReloadData(){
+	//clear any existing items
+	projectsList->DeleteAllItems();
+	installsPathsList->DeleteAllItems();
+	projects.clear();
+	installPaths.clear();
+	editors.clear();
+	
+	//check that projects file exists in folder
+	string p = string(datapath + dirsep + projectsFile);
+	if (file_exists(p)){
+		ifstream in;
+		in.open(p);
+		string line;
+		//if one cannot be loaded
+		vector<string> erroredProjects;
+		//load each project (each path is on its own line)
+		while (getline(in, line)){
+			try{
+				project pr = LoadProject(line);
+				AddProject(pr);
+			}
+			catch(runtime_error& e){
+				//remove project
+				erroredProjects.push_back(line);
+			}
+		}
+		//alert user if projects could not be loaded
+		if (erroredProjects.size() > 0){
+			//build string
+			string str;
+			for (string s : erroredProjects){
+				str += s + "\n";
+			}
+			//message box
+			wxMessageBox("The following projects could not be loaded. They have been removed from the list.\n\n"+str, "Loading error", wxOK | wxICON_WARNING );
+			
+			//save to remove the broken projects
+			SaveProjects();
+		}
+	}
+	
+	//check that the installs path file exists in the folder
+	p = string(datapath + dirsep + editorPathsFile);
+	if (file_exists(p)){
+		//load the editors
+		ifstream in; in.open(p); string line;
+		while (getline(in, line)){
+			LoadEditorPath(line);
+		}
+	}
+	else{
+		//add default data
+		LoadEditorPath(defaultInstall);
+	}
 }
 
 //definitions for the events

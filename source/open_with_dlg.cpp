@@ -18,8 +18,9 @@ OpenWithDlg::OpenWithDlg(wxWindow* parent, const project& project, const vector<
 	//fix window size
 	fitWindowMinSize(this);
 
-	//populate list ctrl
-	for (const editor& e : versions){
+	//populate list ctrl in reverse so ids match
+	for (unsigned long x = versions.size()-1; x >= 0; x--){
+		editor e = versions[x];
 		wxListItem i;
 		i.SetId(0);
 		string label = e.name + " - " + e.path;

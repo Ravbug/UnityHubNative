@@ -30,6 +30,7 @@ private:
 	void SaveEditorVersions();
 	void LoadEditorPath(const string& path);
 	void LoadEditorVersions();
+	void ReloadData();
 	
 	//will store the list of projects
 	vector<project> projects;
@@ -43,6 +44,9 @@ private:
 	void OnRemoveInstallPath(wxCommandEvent& event);
 	void OnRevealProject(wxCommandEvent& event);
 	void OnOpenWith(wxCommandEvent& event);
+	void OnReloadData(wxCommandEvent& event){
+		ReloadData();
+	}
 	void OnRemoveProject(wxCommandEvent& event){
 		long itemIndex = wxListCtrl_get_selected(projectsList);
 		if (itemIndex > -1){
