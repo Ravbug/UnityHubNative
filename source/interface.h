@@ -23,13 +23,13 @@
 #include <wx/gbsizer.h>
 #include <wx/panel.h>
 #include <wx/stattext.h>
+#include <wx/listbox.h>
 #include <wx/notebook.h>
 #include <wx/menu.h>
 #include <wx/frame.h>
 #include <wx/textctrl.h>
 #include <wx/choice.h>
 #include <wx/dialog.h>
-#include <wx/listbox.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -59,8 +59,8 @@ class MainFrame : public wxFrame
 		wxPanel* installs_pane;
 		wxStaticText* m_staticText5;
 		wxStaticText* m_staticText6;
-		wxListCtrl* installsList;
-		wxListCtrl* installsPathsList;
+		wxListBox* installsList;
+		wxListBox* installsPathsList;
 		wxButton* m_button5;
 		wxButton* m_button6;
 		wxButton* launchHubBtn;

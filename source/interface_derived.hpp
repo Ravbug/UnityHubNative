@@ -82,19 +82,25 @@ private:
 	Called when an item in the installs pane is activated. Reveals that editor in the system's file browser.
 	@param event the list event created by the wxListCtrl
 	*/
-	void OnRevealEditor(wxListEvent& event){
-		editor& e = editors[event.GetIndex()];
-		string path = e.path + dirsep + e.name;
-		reveal_in_explorer(path);
+	void OnRevealEditor(wxCommandEvent& event){
+		int id = installsList->GetSelection();
+		if (id != wxNOT_FOUND){
+			editor& e = editors[id];
+			string path = e.path + dirsep + e.name;
+			reveal_in_explorer(path);
+		}
 	}
 	/**
 	Called when an item in the install search paths pane is activated. Reveals that location in the system's file browser.
 	@param event the list event created by the wxListCtrl
 	*/
-	void OnRevealInstallLocation(wxListEvent& event){
-		editor& e = editors[event.GetIndex()];
-		string path = e.path;
-		reveal_in_explorer(path);
+	void OnRevealInstallLocation(wxCommandEvent& event){
+		int id = installsPathsList->GetSelection();
+		if (id != wxNOT_FOUND){
+			editor& e = editors[id];
+			string path = e.path;
+			reveal_in_explorer(path);
+		}
 	}
 	void OnOpenHub(wxCommandEvent& event){
 		reveal_in_explorer(hubDefault);

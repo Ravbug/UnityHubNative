@@ -36,8 +36,8 @@ EVT_BUTTON(wxID_BACKWARD,MainFrameDerived::OnOpenHub)
 EVT_BUTTON(wxID_RELOAD,MainFrameDerived::OnReloadEditors)
 EVT_BUTTON(OPEN_WITH, MainFrameDerived::OnOpenWith)
 EVT_LIST_ITEM_ACTIVATED(wxID_HARDDISK, MainFrameDerived::OnOpenProject)
-EVT_LIST_ITEM_ACTIVATED(wxID_FLOPPY,MainFrameDerived::OnRevealEditor)
-EVT_LIST_ITEM_ACTIVATED(wxID_HOME,MainFrameDerived::OnRevealInstallLocation)
+EVT_LISTBOX_DCLICK(wxID_FLOPPY,MainFrameDerived::OnRevealEditor)
+EVT_LISTBOX_DCLICK(wxID_HOME,MainFrameDerived::OnRevealInstallLocation)
 wxEND_EVENT_TABLE()
 
 //call superclass constructor
@@ -80,7 +80,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 void MainFrameDerived::ReloadData(){
 	//clear any existing items
 	projectsList->DeleteAllItems();
-	installsPathsList->DeleteAllItems();
+	installsPathsList->Clear();
 	projects.clear();
 	installPaths.clear();
 	editors.clear();
@@ -180,23 +180,21 @@ void MainFrameDerived::LoadEditorPath(const string& path){
 	SaveEditorVersions();
 	
 	//add to the UI
-	wxListItem i;
-	i.SetColumn(0);
-	i.SetId(0);
-	i.SetText(path);
+	wxArrayString a;
+	a.Add(path);
 	
-	installsPathsList->InsertItem(i);
+	installsPathsList->InsertItems(a,0);
 }
 
 void MainFrameDerived::OnRemoveInstallPath(wxCommandEvent& event){
-	long itemIndex = wxListCtrl_get_selected(installsPathsList);
-	if (itemIndex > -1){
+	int itemIndex = installsPathsList->GetSelection();
+	if (itemIndex != wxNOT_FOUND){
 		// Got the selected item index
 		//remove it from the vector
 		installPaths.erase(installPaths.begin()+itemIndex);
 		
 		//update the UI
-		installsPathsList->DeleteItem(itemIndex);
+		installsPathsList->Delete(itemIndex);
 		
 		//commit to file
 		SaveEditorVersions();
@@ -408,7 +406,7 @@ void MainFrameDerived::AddProject(const project& p){
  */
 void MainFrameDerived::LoadEditorVersions(){
 	//clear list control
-	installsList->ClearAll();
+	installsList->Clear();
 	
 	//iterate over the search paths
 	for (string& path : installPaths){
@@ -416,6 +414,7 @@ void MainFrameDerived::LoadEditorVersions(){
 		DIR* dir = opendir(path.c_str());
 		struct dirent *entry = readdir(dir);
 		//loop over the contents
+		wxArrayString a;
 		while (entry != NULL)
 		{
 			//is this a folder?
@@ -424,7 +423,7 @@ void MainFrameDerived::LoadEditorVersions(){
 				string p = string(path + dirsep + entry->d_name + dirsep + executable);
 				if (file_exists(p)){
 					//add it to the list
-					installsList->InsertItem(0,string(entry->d_name) + " - " + path);
+					a.Add(string(entry->d_name) + " - " + path);
 					
 					//add it to the backing datastructure
 					editor e = {entry->d_name, path};
@@ -433,6 +432,7 @@ void MainFrameDerived::LoadEditorVersions(){
 			}
 			entry = readdir(dir);
 		}
+		installsList->InsertItems(a, 0);
 		//free resources when finished
 		closedir(dir);
 		free(entry);
