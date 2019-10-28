@@ -122,7 +122,14 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
 	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/conftools/ac_c_bigendian_cross.m4 \
+	$(top_srcdir)/acinclude.m4 \
+	$(top_srcdir)/conftools/ax-require-defined.m4 \
+	$(top_srcdir)/conftools/ax-check-compile-flag.m4 \
+	$(top_srcdir)/conftools/ax-check-link-flag.m4 \
+	$(top_srcdir)/conftools/ax-append-flag.m4 \
+	$(top_srcdir)/conftools/ax-append-compile-flags.m4 \
+	$(top_srcdir)/conftools/ax-append-link-flags.m4 \
+	$(top_srcdir)/conftools/expatcfg-compiler-supports-visibility.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -302,6 +309,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -310,7 +318,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-dist_man_MANS = xmlwf.1
+@WITH_DOCBOOK_TRUE@dist_man_MANS = xmlwf.1
 EXTRA_DIST = \
     expat.png \
     reference.html \
@@ -405,6 +413,7 @@ ctags CTAGS:
 
 cscope cscopelist:
 
+@WITH_DOCBOOK_TRUE@dist-hook:
 
 distdir: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) distdir-am
@@ -439,6 +448,9 @@ distdir-am: $(DISTFILES)
 	    || exit 1; \
 	  fi; \
 	done
+	$(MAKE) $(AM_MAKEFLAGS) \
+	  top_distdir="$(top_distdir)" distdir="$(distdir)" \
+	  dist-hook
 check-am: all-am
 check: check-am
 all-am: Makefile $(MANS)
@@ -547,25 +559,28 @@ uninstall-man: uninstall-man1
 .MAKE: install-am install-strip
 
 .PHONY: all all-am check check-am clean clean-generic clean-libtool \
-	clean-local cscopelist-am ctags-am distclean distclean-generic \
-	distclean-libtool distdir dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-man1 install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-generic mostlyclean-libtool pdf pdf-am \
-	ps ps-am tags-am uninstall uninstall-am uninstall-man \
-	uninstall-man1
+	clean-local cscopelist-am ctags-am dist-hook distclean \
+	distclean-generic distclean-libtool distdir dvi dvi-am html \
+	html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-man1 install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags-am uninstall \
+	uninstall-am uninstall-man uninstall-man1
 
 .PRECIOUS: Makefile
 
 
-xmlwf.1: xmlwf.xml
+.PHONY: dist-hook  # not inside conditional to avoid automake warning
+
+@WITH_DOCBOOK_TRUE@xmlwf.1: xmlwf.xml
 @WITH_DOCBOOK_TRUE@	-rm -f $@
 @WITH_DOCBOOK_TRUE@	$(DOCBOOK_TO_MAN) $<
 @WITH_DOCBOOK_TRUE@	test -f $@ || mv XMLWF.1 $@
+@WITH_DOCBOOK_FALSE@dist-hook:
 @WITH_DOCBOOK_FALSE@	@echo 'ERROR: Configure with --with-docbook for "make dist".' 1>&2
 @WITH_DOCBOOK_FALSE@	@false
 

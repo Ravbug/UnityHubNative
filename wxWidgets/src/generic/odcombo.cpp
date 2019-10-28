@@ -233,14 +233,21 @@ void wxVListBoxComboPopup::DismissWithEvent()
 
 void wxVListBoxComboPopup::SendComboBoxEvent( int selection )
 {
+    // TODO: wxVListBox should be refactored to inherit from wxItemContainer
+    //       and then we would be able to just call SendSelectionChangedEvent()
+    //       (which, itself, should be moved down to wxItemContainer from
+    //       wxControlWithItemsBase) instead of duplicating its code.
+
     wxCommandEvent evt(wxEVT_COMBOBOX,m_combo->GetId());
 
     evt.SetEventObject(m_combo);
 
     evt.SetInt(selection);
+    if ( selection != wxNOT_FOUND )
+        evt.SetString(m_strings[selection]);
 
     // Set client data, if any
-    if ( selection >= 0 && (int)m_clientDatas.GetCount() > selection )
+    if ( selection >= 0 && (int)m_clientDatas.size() > selection )
     {
         void* clientData = m_clientDatas[selection];
         if ( m_clientDataItemsType == wxClientData_Object )
@@ -523,7 +530,7 @@ void wxVListBoxComboPopup::Insert( const wxString& item, int pos )
 
     m_strings.Insert(item,pos);
     if ( (int)m_clientDatas.size() >= pos )
-        m_clientDatas.Insert(NULL, pos);
+        m_clientDatas.insert(m_clientDatas.begin()+pos, NULL);
 
     m_widths.insert(m_widths.begin()+pos, -1);
     m_widthsDirty = true;
@@ -578,11 +585,11 @@ void wxVListBoxComboPopup::ClearClientDatas()
 {
     if ( m_clientDataItemsType == wxClientData_Object )
     {
-        for ( size_t i=0; i<m_clientDatas.GetCount(); i++ )
-            delete (wxClientData*) m_clientDatas[i];
+        for ( wxVector<void*>::iterator it = m_clientDatas.begin(); it != m_clientDatas.end(); ++it )
+            delete (wxClientData*) *it;
     }
 
-    m_clientDatas.Empty();
+    m_clientDatas.clear();
     m_clientDataItemsType = wxClientData_None;
 }
 
@@ -600,21 +607,18 @@ void wxVListBoxComboPopup::SetItemClientData( unsigned int n,
 
 void* wxVListBoxComboPopup::GetItemClientData(unsigned int n) const
 {
-    if ( m_clientDatas.GetCount() > n )
-        return m_clientDatas[n];
-
-    return NULL;
+    return n < m_clientDatas.size() ? m_clientDatas[n] : NULL;
 }
 
 void wxVListBoxComboPopup::Delete( unsigned int item )
 {
     // Remove client data, if set
-    if ( m_clientDatas.GetCount() )
+    if ( !m_clientDatas.empty() )
     {
         if ( m_clientDataItemsType == wxClientData_Object )
             delete (wxClientData*) m_clientDatas[item];
 
-        m_clientDatas.RemoveAt(item);
+        m_clientDatas.erase(m_clientDatas.begin()+item);
     }
 
     m_strings.RemoveAt(item);
@@ -833,7 +837,7 @@ wxSize wxVListBoxComboPopup::GetAdjustedSize( int minWidth, int prefHeight, int 
     CalcWidths();
 
     // Take scrollbar into account in width calculations
-    int widestWidth = m_widestWidth + wxSystemSettings::GetMetric(wxSYS_VSCROLL_X);
+    int widestWidth = m_widestWidth + wxSystemSettings::GetMetric(wxSYS_VSCROLL_X, this);
     return wxSize(minWidth > widestWidth ? minWidth : widestWidth,
                   height+2);
 }

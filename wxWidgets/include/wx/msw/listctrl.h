@@ -154,6 +154,9 @@ public:
     // Gets information about the item
     bool GetItem(wxListItem& info) const;
 
+    // Check if the item is visible
+    bool IsVisible(long item) const wxOVERRIDE;
+
     // Sets information about the item
     bool SetItem(wxListItem& info);
 
@@ -196,7 +199,7 @@ public:
     bool SetItemPosition(long item, const wxPoint& pos);
 
     // Gets the number of items in the list control
-    int GetItemCount() const;
+    int GetItemCount() const wxOVERRIDE;
 
     // Gets the number of columns in the list control
     int GetColumnCount() const wxOVERRIDE { return m_colCount; }
@@ -357,6 +360,11 @@ public:
     // Necessary for drawing hrules and vrules, if specified
     void OnPaint(wxPaintEvent& event);
 
+    // Override SetDoubleBuffered() to do nothing, its implementation in the
+    // base class is incompatible with the double buffering done by this native
+    // control.
+    virtual bool IsDoubleBuffered() const wxOVERRIDE;
+    virtual void SetDoubleBuffered(bool on) wxOVERRIDE;
 
     virtual bool ShouldInheritColours() const wxOVERRIDE { return false; }
 
@@ -387,6 +395,13 @@ protected:
         { return MSWGetBestViewRect(width, -1).y; }
     virtual int DoGetBestClientWidth(int height) const wxOVERRIDE
         { return MSWGetBestViewRect(-1, height).x; }
+#if wxUSE_TOOLTIPS
+    virtual void DoSetToolTip(wxToolTip *tip) wxOVERRIDE;
+#endif // wxUSE_TOOLTIPS
+
+    virtual void MSWUpdateFontOnDPIChange(const wxSize& newDPI) wxOVERRIDE;
+
+    void OnDPIChanged(wxDPIChangedEvent& event);
 
     wxSize MSWGetBestViewRect(int x, int y) const;
 
@@ -420,26 +435,6 @@ protected:
 
     // true if we have any items with custom attributes
     bool m_hasAnyAttr;
-
-    // these functions are only used for virtual list view controls, i.e. the
-    // ones with wxLC_VIRTUAL style
-
-    // return the text for the given column of the given item
-    virtual wxString OnGetItemText(long item, long column) const;
-
-    // return the icon for the given item. In report view, OnGetItemImage will
-    // only be called for the first column. See OnGetItemColumnImage for
-    // details.
-    virtual int OnGetItemImage(long item) const;
-
-    // return the icon for the given item and column.
-    virtual int OnGetItemColumnImage(long item, long column) const;
-
-    // return the attribute for the given item and column (may return NULL if none)
-    virtual wxItemAttr *OnGetItemColumnAttr(long item, long WXUNUSED(column)) const
-    {
-        return OnGetItemAttr(item);
-    }
 
 private:
     // process NM_CUSTOMDRAW notification message

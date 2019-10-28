@@ -53,6 +53,7 @@
 #include "wx/stopwatch.h"
 #include "wx/weakref.h"
 #include "wx/generic/private/markuptext.h"
+#include "wx/generic/private/rowheightcache.h"
 #include "wx/generic/private/widthcalc.h"
 #if wxUSE_ACCESSIBILITY
 #include "wx/private/markupparser.h"
@@ -69,8 +70,6 @@ class wxDataViewCtrl;
 //-----------------------------------------------------------------------------
 // constants
 //-----------------------------------------------------------------------------
-
-static const int SCROLL_UNIT_X = 15;
 
 // the cell padding on the left/right
 static const int PADDING_RIGHTLEFT = 3;
@@ -180,7 +179,8 @@ wxTextCtrl *CreateEditorTextCtrl(wxWindow *parent, const wxRect& labelRect, cons
 
 void wxDataViewColumn::Init(int width, wxAlignment align, int flags)
 {
-    m_width = width;
+    m_width =
+    m_manuallySetWidth = width;
     m_minWidth = 0;
     m_align = align;
     m_flags = flags;
@@ -193,7 +193,7 @@ int wxDataViewColumn::GetWidth() const
     switch ( m_width )
     {
         case wxCOL_WIDTH_DEFAULT:
-            return wxDVC_DEFAULT_WIDTH;
+            return wxWindow::FromDIP(wxDVC_DEFAULT_WIDTH, m_owner);
 
         case wxCOL_WIDTH_AUTOSIZE:
             wxCHECK_MSG( m_owner, wxDVC_DEFAULT_WIDTH, "no owner control" );
@@ -709,11 +709,18 @@ public:
     bool Cleared();
     void Resort()
     {
+        ClearRowHeightCache();
+
         if (!IsVirtualList())
         {
             m_root->Resort(this);
         }
         UpdateDisplay();
+    }
+    void ClearRowHeightCache()
+    {
+        if ( m_rowHeightCache )
+            m_rowHeightCache->Clear();
     }
 
     SortOrder GetSortOrder() const
@@ -821,6 +828,7 @@ public:
     int GetLineStart( unsigned int row ) const;  // row * m_lineHeight in fixed mode
     int GetLineHeight( unsigned int row ) const; // m_lineHeight in fixed mode
     int GetLineAt( unsigned int y ) const;       // y / m_lineHeight in fixed mode
+    int QueryAndCacheLineHeight(unsigned int row, wxDataViewItem item) const;
 
     void SetRowHeight( int lineHeight ) { m_lineHeight = lineHeight; }
     int GetRowHeight() const { return m_lineHeight; }
@@ -910,6 +918,7 @@ private:
     bool                        m_hasFocus;
     bool                        m_useCellFocus;
     bool                        m_currentColSetByKeyboard;
+    HeightCache                *m_rowHeightCache;
 
 #if wxUSE_DRAG_AND_DROP
     int                         m_dragCount;
@@ -1183,7 +1192,8 @@ wxSize wxDataViewTextRenderer::GetSize() const
         return GetTextExtent(m_text);
     }
     else
-        return wxSize(wxDVC_DEFAULT_RENDERER_SIZE,wxDVC_DEFAULT_RENDERER_SIZE);
+        return GetView()->FromDIP(wxSize(wxDVC_DEFAULT_RENDERER_SIZE,
+                                         wxDVC_DEFAULT_RENDERER_SIZE));
 }
 
 // ---------------------------------------------------------
@@ -1246,7 +1256,8 @@ wxSize wxDataViewBitmapRenderer::GetSize() const
     else if (m_icon.IsOk())
         return wxSize( m_icon.GetWidth(), m_icon.GetHeight() );
 
-    return wxSize(wxDVC_DEFAULT_RENDERER_SIZE,wxDVC_DEFAULT_RENDERER_SIZE);
+    return GetView()->FromDIP(wxSize(wxDVC_DEFAULT_RENDERER_SIZE,
+                                     wxDVC_DEFAULT_RENDERER_SIZE));
 }
 
 // ---------------------------------------------------------
@@ -1291,7 +1302,7 @@ bool wxDataViewToggleRenderer::Render( wxRect cell, wxDC *dc, int WXUNUSED(state
     if (m_toggle)
         flags |= wxCONTROL_CHECKED;
     if (GetMode() != wxDATAVIEW_CELL_ACTIVATABLE ||
-        GetEnabled() == false)
+        !(GetOwner()->GetOwner()->IsEnabled() && GetEnabled()))
         flags |= wxCONTROL_DISABLED;
 
     // Ensure that the check boxes always have at least the minimal required
@@ -1344,8 +1355,8 @@ wxIMPLEMENT_ABSTRACT_CLASS(wxDataViewProgressRenderer, wxDataViewRenderer);
 wxDataViewProgressRenderer::wxDataViewProgressRenderer( const wxString &label,
     const wxString &varianttype, wxDataViewCellMode mode, int align ) :
     wxDataViewRenderer( varianttype, mode, align )
+    , m_label(label)
 {
-    m_label = label;
     m_value = 0;
 }
 
@@ -1514,8 +1525,8 @@ class wxBitmapCanvas: public wxWindow
 public:
     wxBitmapCanvas( wxWindow *parent, const wxBitmap &bitmap, const wxSize &size ) :
     wxWindow( parent, wxID_ANY, wxPoint(0,0), size )
+        , m_bitmap(bitmap)
     {
-        m_bitmap = bitmap;
         Bind(wxEVT_PAINT, &wxBitmapCanvas::OnPaint, this);
     }
 
@@ -1946,6 +1957,14 @@ wxDataViewMainWindow::wxDataViewMainWindow( wxDataViewCtrl *parent, wxWindowID i
     m_useCellFocus = false;
     m_currentRow = (unsigned)-1;
     m_lineHeight = GetDefaultRowHeight();
+    if (GetOwner()->HasFlag(wxDV_VARIABLE_LINE_HEIGHT))
+    {
+        m_rowHeightCache = new HeightCache();
+    }
+    else
+    {
+        m_rowHeightCache = NULL;
+    }
 
 #if wxUSE_DRAG_AND_DROP
     m_dragCount = 0;
@@ -1982,6 +2001,7 @@ wxDataViewMainWindow::~wxDataViewMainWindow()
 {
     DestroyTree();
     delete m_renameTimer;
+    delete m_rowHeightCache;
 }
 
 
@@ -2139,8 +2159,7 @@ wxBitmap wxDataViewMainWindow::CreateItemBitmap( unsigned int row, int &indent )
     {
         wxDataViewTreeNode *node = GetTreeNodeByRow(row);
         indent = GetOwner()->GetIndent() * node->GetIndentLevel();
-        indent = indent + m_lineHeight;
-            // try to use the m_lineHeight as the expander space
+        indent += wxRendererNative::Get().GetExpanderSize(this).GetWidth();
     }
     width -= indent;
 
@@ -2439,6 +2458,24 @@ void wxDataViewMainWindow::OnPaint( wxPaintEvent &WXUNUSED(event) )
                         colRect.x += colRect.width;
                     }
                 }
+                else // Not using column focus.
+                {
+                    flags |= wxCONTROL_CURRENT | wxCONTROL_FOCUSED;
+
+                    // We still need to show the current item if it's not
+                    // selected.
+                    if ( !selected )
+                    {
+                        wxRendererNative::Get().DrawFocusRect
+                                                (
+                                                    this,
+                                                    dc,
+                                                    rowRect,
+                                                    flags
+                                                );
+                    }
+                    //else: The current item is selected, will be drawn below.
+                }
             }
 
             // draw selection and whole-item focus:
@@ -2449,7 +2486,7 @@ void wxDataViewMainWindow::OnPaint( wxPaintEvent &WXUNUSED(event) )
                     this,
                     dc,
                     rowRect,
-                    flags | wxCONTROL_CURRENT
+                    flags
                     );
             }
         }
@@ -2476,11 +2513,13 @@ void wxDataViewMainWindow::OnPaint( wxPaintEvent &WXUNUSED(event) )
     for (unsigned int i = col_start; i < col_last; i++)
     {
         wxDataViewColumn *col = GetOwner()->GetColumnAt( i );
+        if ( col->IsHidden() )
+            continue;       // skip it!
+
         wxDataViewRenderer *cell = col->GetRenderer();
         cell_rect.width = col->GetWidth();
-
-        if ( col->IsHidden() || cell_rect.width <= 0 )
-            continue;       // skip it!
+        if ( cell_rect.width <= 0 )
+            continue;
 
         cell_rect.y = first_line_start;
         for (unsigned int item = item_start; item < item_last; item++)
@@ -2539,17 +2578,17 @@ void wxDataViewMainWindow::OnPaint( wxPaintEvent &WXUNUSED(event) )
                 // Calculate the indent first
                 indent = GetOwner()->GetIndent() * node->GetIndentLevel();
 
-                // We don't have any method to return the size of the expander
-                // button currently (TODO: add one to wxRendererNative), so
-                // just guesstimate it.
-                const int expWidth = 3*dc.GetCharWidth();
+                // Get expander size
+                wxSize expSize = wxRendererNative::Get().GetExpanderSize(this);
 
                 // draw expander if needed
                 if ( node->HasChildren() )
                 {
                     wxRect rect = cell_rect;
                     rect.x += indent;
-                    rect.width = expWidth;
+                    rect.y += (cell_rect.GetHeight() - expSize.GetHeight()) / 2; // center vertically
+                    rect.width = expSize.GetWidth();
+                    rect.height = expSize.GetHeight();
 
                     int flag = 0;
                     if ( m_underMouse == node )
@@ -2564,7 +2603,7 @@ void wxDataViewMainWindow::OnPaint( wxPaintEvent &WXUNUSED(event) )
                     wxRendererNative::Get().DrawTreeItemButton( this, dc, rect, flag);
                 }
 
-                indent += expWidth;
+                indent += expSize.GetWidth();
 
                 // force the expander column to left-center align
                 cell->SetAlignment( wxALIGN_CENTER_VERTICAL );
@@ -2734,11 +2773,12 @@ bool wxDataViewMainWindow::ItemAdded(const wxDataViewItem & parent, const wxData
         wxDataViewVirtualListModel *list_model =
             (wxDataViewVirtualListModel*) GetModel();
         m_count = list_model->GetCount();
-
-        m_selection.OnItemsInserted(GetRowByItem(item), 1);
     }
     else
     {
+        // specific position (row) is unclear, so clear whole height cache
+        ClearRowHeightCache();
+
         wxDataViewTreeNode *parentNode = FindNode(parent);
 
         if ( !parentNode )
@@ -2820,6 +2860,8 @@ bool wxDataViewMainWindow::ItemAdded(const wxDataViewItem & parent, const wxData
         InvalidateCount();
     }
 
+    m_selection.OnItemsInserted(GetRowByItem(item), 1);
+
     GetOwner()->InvalidateColBestWidths();
     UpdateDisplay();
 
@@ -2879,6 +2921,9 @@ bool wxDataViewMainWindow::ItemDeleted(const wxDataViewItem& parent,
 
             return true;
         }
+
+        if ( m_rowHeightCache )
+            m_rowHeightCache->Remove(GetRowByItem(parent) + itemPosInNode);
 
         // Delete the item from wxDataViewTreeNode representation:
         const int itemsDeleted = 1 + itemNode->GetSubTreeCount();
@@ -2944,6 +2989,9 @@ bool wxDataViewMainWindow::DoItemChanged(const wxDataViewItem & item, int view_c
 {
     if ( !IsVirtualList() )
     {
+        if ( m_rowHeightCache )
+            m_rowHeightCache->Remove(GetRowByItem(item));
+
         // Move this node to its new correct place after it was updated.
         //
         // In principle, we could skip the call to PutInSortOrder() if the modified
@@ -2993,6 +3041,8 @@ bool wxDataViewMainWindow::Cleared()
     DestroyTree();
     m_selection.Clear();
     m_currentRow = (unsigned)-1;
+
+    ClearRowHeightCache();
 
     if (GetModel())
     {
@@ -3061,9 +3111,12 @@ void wxDataViewMainWindow::ScrollTo( int rows, int column )
 
     int x, y;
     m_owner->GetScrollPixelsPerUnit( &x, &y );
-    int sy = GetLineStart( rows )/y;
+
+    // Take care to not divide by 0 if we're somehow called before scrolling
+    // parameters are initialized.
+    int sy = y ? GetLineStart( rows )/y : -1;
     int sx = -1;
-    if( column != -1 )
+    if( column != -1 && x )
     {
         wxRect rect = GetClientRect();
         int colnum = 0;
@@ -3321,147 +3374,132 @@ wxRect wxDataViewMainWindow::GetLinesRect( unsigned int rowFrom, unsigned int ro
 
 int wxDataViewMainWindow::GetLineStart( unsigned int row ) const
 {
-    const wxDataViewModel *model = GetModel();
+    // check for the easy case first
+    if ( !m_rowHeightCache || !GetOwner()->HasFlag(wxDV_VARIABLE_LINE_HEIGHT) )
+        return row * m_lineHeight;
 
-    if (GetOwner()->GetWindowStyle() & wxDV_VARIABLE_LINE_HEIGHT)
+    int start = 0;
+    if ( m_rowHeightCache->GetLineStart(row, start) )
+        return start;
+
+    unsigned int r;
+    for (r = 0; r < row; r++)
     {
-        // TODO make more efficient
-
-        int start = 0;
-
-        unsigned int r;
-        for (r = 0; r < row; r++)
+        int height = 0;
+        if ( !m_rowHeightCache->GetLineHeight(r, height) )
         {
-            const wxDataViewTreeNode* node = GetTreeNodeByRow(r);
-            if (!node) return start;
+            // row height not in cache -> get it from the renderer...
+            wxDataViewItem item = GetItemByRow(r);
+            if (!item)
+                break;
 
-            wxDataViewItem item = node->GetItem();
-
-            unsigned int cols = GetOwner()->GetColumnCount();
-            unsigned int col;
-            int height = m_lineHeight;
-            for (col = 0; col < cols; col++)
-            {
-                const wxDataViewColumn *column = GetOwner()->GetColumn(col);
-                if (column->IsHidden())
-                    continue;      // skip it!
-
-                if ((col != 0) &&
-                    model->IsContainer(item) &&
-                    !model->HasContainerColumns(item))
-                    continue;      // skip it!
-
-                wxDataViewRenderer *renderer =
-                    const_cast<wxDataViewRenderer*>(column->GetRenderer());
-                renderer->PrepareForItem(model, item, column->GetModelColumn());
-
-                height = wxMax( height, renderer->GetSize().y );
-            }
-
-            start += height;
+            height = QueryAndCacheLineHeight(r, item);
         }
 
-        return start;
+        start += height;
     }
-    else
-    {
-        return row * m_lineHeight;
-    }
+
+    return start;
 }
 
 int wxDataViewMainWindow::GetLineAt( unsigned int y ) const
 {
-    const wxDataViewModel *model = GetModel();
-
     // check for the easy case first
-    if ( !GetOwner()->HasFlag(wxDV_VARIABLE_LINE_HEIGHT) )
+    if ( !m_rowHeightCache || !GetOwner()->HasFlag(wxDV_VARIABLE_LINE_HEIGHT) )
         return y / m_lineHeight;
 
-    // TODO make more efficient
     unsigned int row = 0;
+    if ( m_rowHeightCache->GetLineAt(y, row) )
+        return row;
+
+    // OnPaint asks GetLineAt for the very last y position and this is always
+    // below the last item (--> an invalid item). To prevent iterating over all
+    // items, check if y is below the last row.
+    // Because this is done very often (for each repaint) its worth to handle
+    // this special case separately.
+    int height = 0;
+    int start = 0;
+    unsigned int rowCount = GetRowCount();
+    if (rowCount == 0 ||
+        (m_rowHeightCache->GetLineInfo(rowCount - 1, start, height) &&
+         y >= static_cast<unsigned int>(start + height)))
+    {
+        return rowCount;
+    }
+
+    // sum all item heights until y is reached
     unsigned int yy = 0;
     for (;;)
     {
-        const wxDataViewTreeNode* node = GetTreeNodeByRow(row);
-        if (!node)
+        height = 0;
+        if ( !m_rowHeightCache->GetLineHeight(row, height) )
         {
-            // not really correct...
-            return row + ((y-yy) / m_lineHeight);
-        }
+            // row height not in cache -> get it from the renderer...
+            wxDataViewItem item = GetItemByRow(row);
+            if ( !item )
+            {
+                wxASSERT(row >= GetRowCount());
+                break;
+            }
 
-        wxDataViewItem item = node->GetItem();
-
-        unsigned int cols = GetOwner()->GetColumnCount();
-        unsigned int col;
-        int height = m_lineHeight;
-        for (col = 0; col < cols; col++)
-        {
-            const wxDataViewColumn *column = GetOwner()->GetColumn(col);
-            if (column->IsHidden())
-                continue;      // skip it!
-
-            if ((col != 0) &&
-                model->IsContainer(item) &&
-                !model->HasContainerColumns(item))
-                continue;      // skip it!
-
-            wxDataViewRenderer *renderer =
-                const_cast<wxDataViewRenderer*>(column->GetRenderer());
-            renderer->PrepareForItem(model, item, column->GetModelColumn());
-
-            height = wxMax( height, renderer->GetSize().y );
+            height = QueryAndCacheLineHeight(row, item);
         }
 
         yy += height;
         if (y < yy)
-            return row;
+            break;
 
         row++;
     }
+    return row;
 }
 
 int wxDataViewMainWindow::GetLineHeight( unsigned int row ) const
 {
-    const wxDataViewModel *model = GetModel();
-
-    if (GetOwner()->GetWindowStyle() & wxDV_VARIABLE_LINE_HEIGHT)
-    {
-        wxASSERT( !IsVirtualList() );
-
-        const wxDataViewTreeNode* node = GetTreeNodeByRow(row);
-        // wxASSERT( node );
-        if (!node) return m_lineHeight;
-
-        wxDataViewItem item = node->GetItem();
-
-        int height = m_lineHeight;
-
-        unsigned int cols = GetOwner()->GetColumnCount();
-        unsigned int col;
-        for (col = 0; col < cols; col++)
-        {
-            const wxDataViewColumn *column = GetOwner()->GetColumn(col);
-            if (column->IsHidden())
-                continue;      // skip it!
-
-            if ((col != 0) &&
-                model->IsContainer(item) &&
-                !model->HasContainerColumns(item))
-                continue;      // skip it!
-
-            wxDataViewRenderer *renderer =
-                const_cast<wxDataViewRenderer*>(column->GetRenderer());
-            renderer->PrepareForItem(model, item, column->GetModelColumn());
-
-            height = wxMax( height, renderer->GetSize().y );
-        }
-
-        return height;
-    }
-    else
-    {
+    // check for the easy case first
+    if ( !m_rowHeightCache || !GetOwner()->HasFlag(wxDV_VARIABLE_LINE_HEIGHT) )
         return m_lineHeight;
+
+    int height = 0;
+    if ( m_rowHeightCache->GetLineHeight(row, height) )
+        return height;
+
+    wxDataViewItem item = GetItemByRow(row);
+    if ( !item )
+        return m_lineHeight;
+
+    height = QueryAndCacheLineHeight(row, item);
+    return height;
+}
+
+int wxDataViewMainWindow::QueryAndCacheLineHeight(unsigned int row, wxDataViewItem item) const
+{
+    const wxDataViewModel *model = GetModel();
+    int height = m_lineHeight;
+    unsigned int cols = GetOwner()->GetColumnCount();
+    unsigned int col;
+    for (col = 0; col < cols; col++)
+    {
+        const wxDataViewColumn *column = GetOwner()->GetColumn(col);
+        if (column->IsHidden())
+            continue;      // skip it!
+
+        if ((col != 0) &&
+            model->IsContainer(item) &&
+            !model->HasContainerColumns(item))
+            continue;      // skip it!
+
+        wxDataViewRenderer *renderer =
+            const_cast<wxDataViewRenderer*>(column->GetRenderer());
+        renderer->PrepareForItem(model, item, column->GetModelColumn());
+
+        height = wxMax(height, renderer->GetSize().y);
     }
+
+    // ... and store the height in the cache
+    m_rowHeightCache->Put(row, height);
+
+    return height;
 }
 
 
@@ -3602,6 +3640,13 @@ void wxDataViewMainWindow::Expand( unsigned int row )
     if (!node->HasChildren())
         return;
 
+    if ( m_rowHeightCache )
+    {
+        // Expand makes new rows visible thus we invalidates all following
+        // rows in the height cache
+        m_rowHeightCache->Remove(row);
+    }
+
     if (!node->IsOpen())
     {
         if ( !SendExpanderEvent(wxEVT_DATAVIEW_ITEM_EXPANDING, node->GetItem()) )
@@ -3650,6 +3695,13 @@ void wxDataViewMainWindow::Collapse(unsigned int row)
 
     if (!node->HasChildren())
         return;
+
+    if ( m_rowHeightCache )
+    {
+        // Collapse hides rows thus we invalidates all following
+        // rows in the height cache
+        m_rowHeightCache->Remove(row);
+    }
 
     if (node->IsOpen())
     {
@@ -3828,7 +3880,7 @@ wxRect wxDataViewMainWindow::GetItemRect( const wxDataViewItem & item,
     {
         wxDataViewTreeNode* node = GetTreeNodeByRow(row);
         indent = GetOwner()->GetIndent() * node->GetIndentLevel();
-        indent = indent + m_lineHeight; // use m_lineHeight as the width of the expander
+        indent += wxRendererNative::Get().GetExpanderSize(this).GetWidth();
     }
 
     wxRect itemRect( xpos + indent,
@@ -4657,6 +4709,7 @@ void wxDataViewMainWindow::OnMouse( wxMouseEvent &event )
 
         int indent = node->GetIndentLevel();
         itemOffset = GetOwner()->GetIndent()*indent;
+        const int expWidth = wxRendererNative::Get().GetExpanderSize(this).GetWidth();
 
         if ( node->HasChildren() )
         {
@@ -4664,7 +4717,7 @@ void wxDataViewMainWindow::OnMouse( wxMouseEvent &event )
             // visual expander so the user can hit that little thing reliably
             wxRect rect(xpos + itemOffset,
                         GetLineStart( current ) + (GetLineHeight(current) - m_lineHeight)/2,
-                        m_lineHeight, m_lineHeight);
+                        expWidth, m_lineHeight);
 
             if( rect.Contains(x, y) )
             {
@@ -4686,7 +4739,7 @@ void wxDataViewMainWindow::OnMouse( wxMouseEvent &event )
 
         // Account for the expander as well, even if this item doesn't have it,
         // its parent does so it still counts for the offset.
-        itemOffset += m_lineHeight;
+        itemOffset += expWidth;
     }
     if (!hoverOverExpander)
     {
@@ -5017,17 +5070,49 @@ void wxDataViewMainWindow::UpdateColumnSizes()
 
     int fullWinWidth = GetSize().x;
 
-    wxDataViewColumn *lastCol = owner->GetColumn(colsCount - 1);
-    int colswidth = GetEndOfLastCol();
-    int lastColX = colswidth - lastCol->GetWidth();
+    // Find the last shown column: we shouldn't bother to resize the columns
+    // that are hidden anyhow.
+    int lastColIndex = -1;
+    wxDataViewColumn *lastCol wxDUMMY_INITIALIZE(NULL);
+    for ( int colIndex = colsCount - 1; colIndex >= 0; --colIndex )
+    {
+        lastCol = owner->GetColumnAt(colIndex);
+        if ( !lastCol->IsHidden() )
+        {
+            lastColIndex = colIndex;
+            break;
+        }
+    }
+
+    if ( lastColIndex == -1 )
+    {
+        // All columns are hidden.
+        return;
+    }
+
+    int lastColX = 0;
+    for ( int colIndex = 0; colIndex < lastColIndex; ++colIndex )
+    {
+        const wxDataViewColumn *c = owner->GetColumnAt(colIndex);
+
+        if ( !c->IsHidden() )
+            lastColX += c->GetWidth();
+    }
+
+    int colswidth = lastColX + lastCol->GetWidth();
     if ( lastColX < fullWinWidth )
     {
-        int desiredWidth = wxMax(fullWinWidth - lastColX, lastCol->GetMinWidth());
-        if ( !lastCol->WXUpdateWidth(desiredWidth) )
+        const int availableWidth = fullWinWidth - lastColX;
+
+        // Never make the column automatically smaller than the last width it
+        // was explicitly given nor its minimum width.
+        if ( availableWidth <= wxMax(lastCol->GetMinWidth(),
+                                     lastCol->WXGetManuallySetWidth()) )
         {
-            // The column width didn't change, no need to do anything else.
             return;
         }
+
+        lastCol->WXUpdateWidth(availableWidth);
 
         // All columns fit on screen, so we don't need horizontal scrolling.
         // To prevent flickering scrollbar when resizing the window to be
@@ -5035,7 +5120,7 @@ void wxDataViewMainWindow::UpdateColumnSizes()
         // be corrected at idle time.
         SetVirtualSize(0, m_virtualSize.y);
 
-        RefreshRect(wxRect(lastColX, 0, fullWinWidth - lastColX, GetSize().y));
+        RefreshRect(wxRect(lastColX, 0, availableWidth, GetSize().y));
     }
     else
     {
@@ -5048,11 +5133,10 @@ void wxDataViewMainWindow::UpdateColumnSizes()
 // wxDataViewCtrl
 //-----------------------------------------------------------------------------
 
-WX_DEFINE_LIST(wxDataViewColumnList)
-
 wxIMPLEMENT_DYNAMIC_CLASS(wxDataViewCtrl, wxDataViewCtrlBase);
 wxBEGIN_EVENT_TABLE(wxDataViewCtrl, wxDataViewCtrlBase)
     EVT_SIZE(wxDataViewCtrl::OnSize)
+    EVT_DPI_CHANGED(wxDataViewCtrl::OnDPIChanged)
 wxEND_EVENT_TABLE()
 
 wxDataViewCtrl::~wxDataViewCtrl()
@@ -5060,8 +5144,7 @@ wxDataViewCtrl::~wxDataViewCtrl()
     if (m_notifier)
         GetModel()->RemoveNotifier( m_notifier );
 
-    m_cols.Clear();
-    m_colsBestWidths.clear();
+    DoClearColumns();
 
 #if wxUSE_ACCESSIBILITY
     SetAccessible(NULL);
@@ -5071,7 +5154,6 @@ wxDataViewCtrl::~wxDataViewCtrl()
 
 void wxDataViewCtrl::Init()
 {
-    m_cols.DeleteContents(true);
     m_notifier = NULL;
 
     m_headerArea = NULL;
@@ -5125,7 +5207,7 @@ bool wxDataViewCtrl::Create(wxWindow *parent,
     sizer->Add( m_clientArea, 1, wxGROW );
     SetSizer( sizer );
 
-    EnableSystemTheme();
+    EnableSystemThemeByDefault();
 
 #if wxUSE_ACCESSIBILITY
     wxAccessible::NotifyEvent(wxACC_EVENT_OBJECT_CREATE, this, wxOBJID_CLIENT, wxACC_SELF);
@@ -5172,9 +5254,6 @@ wxSize wxDataViewCtrl::GetSizeAvailableForScrollTarget(const wxSize& size)
 
 void wxDataViewCtrl::OnSize( wxSizeEvent &WXUNUSED(event) )
 {
-    if ( m_clientArea && GetColumnCount() )
-        m_clientArea->UpdateColumnSizes();
-
     // We need to override OnSize so that our scrolled
     // window a) does call Layout() to use sizers for
     // positioning the controls but b) does not query
@@ -5183,6 +5262,11 @@ void wxDataViewCtrl::OnSize( wxSizeEvent &WXUNUSED(event) )
     // calling SetScrollbar() further down.
 
     Layout();
+
+    // Update the last column size to take all the available space. Note that
+    // this must be done after calling Layout() to update m_clientArea size.
+    if ( m_clientArea && GetColumnCount() )
+        m_clientArea->UpdateColumnSizes();
 
     AdjustScrollbars();
 
@@ -5194,6 +5278,28 @@ void wxDataViewCtrl::OnSize( wxSizeEvent &WXUNUSED(event) )
             m_headerArea->GetSize().y <= m_headerArea->GetBestSize(). y )
     {
         m_headerArea->Refresh();
+    }
+}
+
+void wxDataViewCtrl::OnDPIChanged(wxDPIChangedEvent& event)
+{
+    if ( m_clientArea )
+    {
+        m_clientArea->ClearRowHeightCache();
+        m_clientArea->SetRowHeight(m_clientArea->GetDefaultRowHeight());
+    }
+
+    for ( unsigned i = 0; i < m_cols.size(); ++i )
+    {
+        int minWidth = m_cols[i]->GetMinWidth();
+        if ( minWidth > 0 )
+            minWidth = minWidth * event.GetNewDPI().x / event.GetOldDPI().x;
+        m_cols[i]->SetMinWidth(minWidth);
+
+        int width = m_cols[i]->WXGetManuallySetWidth();
+        if ( width > 0 )
+            width = width * event.GetNewDPI().x / event.GetOldDPI().x;
+        m_cols[i]->SetWidth(width);
     }
 }
 
@@ -5321,7 +5427,7 @@ bool wxDataViewCtrl::AppendColumn( wxDataViewColumn *col )
     if (!wxDataViewCtrlBase::AppendColumn(col))
         return false;
 
-    m_cols.Append( col );
+    m_cols.push_back( col );
     m_colsBestWidths.push_back(CachedColWidthInfo());
     OnColumnsCountChanged();
     return true;
@@ -5332,7 +5438,7 @@ bool wxDataViewCtrl::PrependColumn( wxDataViewColumn *col )
     if (!wxDataViewCtrlBase::PrependColumn(col))
         return false;
 
-    m_cols.Insert( col );
+    m_cols.insert(m_cols.begin(), col);
     m_colsBestWidths.insert(m_colsBestWidths.begin(), CachedColWidthInfo());
     OnColumnsCountChanged();
     return true;
@@ -5343,7 +5449,7 @@ bool wxDataViewCtrl::InsertColumn( unsigned int pos, wxDataViewColumn *col )
     if (!wxDataViewCtrlBase::InsertColumn(pos,col))
         return false;
 
-    m_cols.Insert( pos, col );
+    m_cols.insert(m_cols.begin() + pos, col);
     m_colsBestWidths.insert(m_colsBestWidths.begin() + pos, CachedColWidthInfo());
     OnColumnsCountChanged();
     return true;
@@ -5392,7 +5498,7 @@ void wxDataViewCtrl::DoSetIndent()
 
 unsigned int wxDataViewCtrl::GetColumnCount() const
 {
-    return m_cols.GetCount();
+    return m_cols.size();
 }
 
 bool wxDataViewCtrl::SetRowHeight( int lineHeight )
@@ -5544,12 +5650,12 @@ void wxDataViewCtrl::ColumnMoved(wxDataViewColumn *col, unsigned int new_pos)
 
 bool wxDataViewCtrl::DeleteColumn( wxDataViewColumn *column )
 {
-    wxDataViewColumnList::compatibility_iterator ret = m_cols.Find( column );
-    if (!ret)
+    const int idx = GetColumnIndex(column);
+    if ( idx == wxNOT_FOUND )
         return false;
 
-    m_colsBestWidths.erase(m_colsBestWidths.begin() + GetColumnIndex(column));
-    m_cols.Erase(ret);
+    m_colsBestWidths.erase(m_colsBestWidths.begin() + idx);
+    m_cols.erase(m_cols.begin() + idx);
 
     if ( m_clientArea->GetCurrentColumn() == column )
         m_clientArea->ClearCurrentColumn();
@@ -5559,10 +5665,20 @@ bool wxDataViewCtrl::DeleteColumn( wxDataViewColumn *column )
     return true;
 }
 
+void wxDataViewCtrl::DoClearColumns()
+{
+    typedef wxVector<wxDataViewColumn*>::const_iterator citer;
+    for ( citer it = m_cols.begin(); it != m_cols.end(); ++it )
+        delete *it;
+}
+
 bool wxDataViewCtrl::ClearColumns()
 {
     SetExpanderColumn(NULL);
-    m_cols.Clear();
+
+    DoClearColumns();
+
+    m_cols.clear();
     m_sortingColumnIdxs.clear();
     m_colsBestWidths.clear();
 

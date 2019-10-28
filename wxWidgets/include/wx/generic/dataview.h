@@ -12,7 +12,6 @@
 
 #include "wx/defs.h"
 #include "wx/object.h"
-#include "wx/list.h"
 #include "wx/control.h"
 #include "wx/scrolwin.h"
 #include "wx/icon.h"
@@ -70,10 +69,14 @@ public:
 
     virtual void SetWidth(int width) wxOVERRIDE
     {
-        // As a small optimization, use this method to avoid calling
-        // UpdateWidth() if the width didn't really change, even if we don't
-        // care about its return value.
-        (void)WXUpdateWidth(width);
+        // Call the actual update method, used for both automatic and "manual"
+        // width changes.
+        WXUpdateWidth(width);
+
+        // Do remember the last explicitly set width: this is used to prevent
+        // UpdateColumnSizes() from resizing the last column to be smaller than
+        // this size.
+        m_manuallySetWidth = width;
     }
     virtual int GetWidth() const wxOVERRIDE;
 
@@ -129,16 +132,25 @@ public:
 
     // This method is specific to the generic implementation and is used only
     // by wxWidgets itself.
-    bool WXUpdateWidth(int width)
+    void WXUpdateWidth(int width)
     {
         if ( width == m_width )
-            return false;
+            return;
+
+        // Normally we don't update it here as this method is called by
+        // UpdateColumnSizes() which resizes the column automatically, and not
+        // "manually", but if it's the first time the width is being set for a
+        // column created with the default width, do set m_manuallySetWidth in
+        // order to prevent the column from becoming narrower than its initial
+        // size when the control is resized, as this is unexpected.
+        if ( m_width == -1 )
+            m_manuallySetWidth = width;
 
         m_width = width;
         UpdateWidth();
-
-        return true;
     }
+
+    int WXGetManuallySetWidth() const { return m_manuallySetWidth; }
 
 private:
     // common part of all ctors
@@ -152,6 +164,7 @@ private:
 
     wxString m_title;
     int m_width,
+        m_manuallySetWidth,
         m_minWidth;
     wxAlignment m_align;
     int m_flags;
@@ -166,9 +179,6 @@ private:
 // ---------------------------------------------------------
 // wxDataViewCtrl
 // ---------------------------------------------------------
-
-WX_DECLARE_LIST_WITH_DECL(wxDataViewColumn, wxDataViewColumnList,
-                          class WXDLLIMPEXP_CORE);
 
 class WXDLLIMPEXP_CORE wxDataViewCtrl : public wxDataViewCtrlBase,
                                        public wxScrollHelper
@@ -308,6 +318,8 @@ protected:
 
     virtual void DoEnableSystemTheme(bool enable, wxWindow* window) wxOVERRIDE;
 
+    void OnDPIChanged(wxDPIChangedEvent& event);
+
 public:     // utility functions not part of the API
 
     // returns the "best" width for the idx-th column
@@ -354,7 +366,9 @@ private:
     void InvalidateColBestWidth(int idx);
     void UpdateColWidths();
 
-    wxDataViewColumnList      m_cols;
+    void DoClearColumns();
+
+    wxVector<wxDataViewColumn*> m_cols;
     // cached column best widths information, values are for
     // respective columns from m_cols and the arrays have same size
     struct CachedColWidthInfo

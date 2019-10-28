@@ -69,21 +69,12 @@ public:
     wxAuiToolBarEvent(wxEventType commandType = wxEVT_NULL,
                       int winId = 0)
           : wxNotifyEvent(commandType, winId)
+        , m_clickPt(-1, -1)
+        , m_rect(-1, -1, 0, 0)
     {
         m_isDropdownClicked = false;
-        m_clickPt = wxPoint(-1, -1);
-        m_rect = wxRect(-1,-1, 0, 0);
         m_toolId = -1;
     }
-#ifndef SWIG
-    wxAuiToolBarEvent(const wxAuiToolBarEvent& c) : wxNotifyEvent(c)
-    {
-        m_isDropdownClicked = c.m_isDropdownClicked;
-        m_clickPt = c.m_clickPt;
-        m_rect = c.m_rect;
-        m_toolId = c.m_toolId;
-    }
-#endif
     wxEvent *Clone() const wxOVERRIDE { return new wxAuiToolBarEvent(*this); }
 
     bool IsDropDownClicked() const  { return m_isDropdownClicked; }
@@ -130,17 +121,6 @@ public:
         m_sticky = true;
         m_userData = 0;
         m_alignment = wxALIGN_CENTER;
-    }
-
-    wxAuiToolBarItem(const wxAuiToolBarItem& c)
-    {
-        Assign(c);
-    }
-
-    wxAuiToolBarItem& operator=(const wxAuiToolBarItem& c)
-    {
-        Assign(c);
-        return *this;
     }
 
     void Assign(const wxAuiToolBarItem& c)
@@ -338,6 +318,8 @@ public:
                          wxWindow* wnd,
                          const wxAuiToolBarItem& item) = 0;
 
+    // Note that these functions work with the size in DIPs, not physical
+    // pixels.
     virtual int GetElementSize(int elementId) = 0;
     virtual void SetElementSize(int elementId, int size) = 0;
 
@@ -451,6 +433,7 @@ protected:
     wxPen m_gripperPen2;
     wxPen m_gripperPen3;
 
+    // These values are in DIPs and not physical pixels.
     int m_separatorSize;
     int m_gripperSize;
     int m_overflowSize;
@@ -634,12 +617,6 @@ protected:
     wxRect GetOverflowRect() const;
     wxSize GetLabelSize(const wxString& label);
     wxAuiToolBarItem* FindToolByPositionWithPacking(wxCoord x, wxCoord y) const;
-
-    void DoSetSize(int x,
-                   int y,
-                   int width,
-                   int height,
-                   int sizeFlags = wxSIZE_AUTO) wxOVERRIDE;
 
 protected: // handlers
 

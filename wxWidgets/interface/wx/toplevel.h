@@ -228,6 +228,12 @@ public:
     /**
         Iconizes or restores the window.
 
+        Note that in wxGTK the change to the window state is not immediate,
+        i.e. IsIconized() will typically return @false right after a call to
+        Iconize() and its return value will only change after the control flow
+        returns to the event loop and the notification about the window being
+        really iconized is received.
+
         @param iconize
             If @true, iconizes the window; if @false, shows and restores it.
 
@@ -277,13 +283,28 @@ public:
     bool IsUsingNativeDecorations() const;
 
     /**
-        See wxWindow::SetAutoLayout(): when auto layout is on, this function gets
-        called automatically when the window is resized.
+        Lays out the children using the window sizer or resizes the only child
+        of the window to cover its entire area.
+
+        This class overrides the base class Layout() method to check if this
+        window contains exactly one child -- which is commonly the case, with
+        wxPanel being often created as the only child of wxTopLevelWindow --
+        and, if this is the case, resizes this child window to cover the entire
+        client area.
+
+        Note that if you associate a sizer with this window, the sizer takes
+        precedence and the only-child-resizing is only used as fallback.
+
+        @returns @false if nothing was done because the window doesn't have
+                 neither a sizer nor a single child, @true otherwise.
     */
     virtual bool Layout();
 
     /**
         Maximizes or restores the window.
+
+        Note that, just as with Iconize(), the change to the window state is
+        not immediate in at least wxGTK port.
 
         @param maximize
             If @true, maximizes the window, otherwise it restores it.
@@ -445,11 +466,11 @@ public:
     */
     wxWindow* SetDefaultItem(wxWindow* win);
 
-    
+
     wxWindow*  SetTmpDefaultItem(wxWindow * win);
     wxWindow* GetTmpDefaultItem() const;
 
-    
+
     /**
         Sets the icon for this window.
 
@@ -467,8 +488,8 @@ public:
     void SetIcon(const wxIcon& icon);
 
     /**
-        Sets several icons of different sizes for this window: this allows to
-        use different icons for different situations (e.g. task switching bar,
+        Sets several icons of different sizes for this window: this allows
+        using different icons for different situations (e.g. task switching bar,
         taskbar, window title bar) instead of scaling, with possibly bad looking
         results, the only icon set by SetIcon().
 
@@ -571,20 +592,20 @@ public:
         there are any open top level windows.
     */
     virtual bool ShouldPreventAppExit() const;
-    
+
     /**
         This function sets the wxTopLevelWindow's modified state on OS X,
         which currently draws a black dot in the wxTopLevelWindow's close button.
         On other platforms, this method does nothing.
-        
+
         @see OSXIsModified()
     */
     virtual void OSXSetModified(bool modified);
-    
+
     /**
         Returns the current modified state of the wxTopLevelWindow on OS X.
         On other platforms, this method does nothing.
-        
+
         @see OSXSetModified()
     */
     virtual bool OSXIsModified() const;
@@ -611,7 +632,7 @@ public:
     virtual void ShowWithoutActivating();
 
     /**
-        Enables the maximize button to toggle full screen mode. Prior to 
+        Enables the maximize button to toggle full screen mode. Prior to
         OS X 10.10 a full screen button is added to the right upper corner
         of a window's title bar.
 

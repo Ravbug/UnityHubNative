@@ -222,9 +222,6 @@
 
 #define wxUSE_STD_STRING_CONV_IN_WXSTRING wxUSE_STL
 
-#cmakedefine01 wxUSE_IOSTREAMH
-
-
 
 #cmakedefine01 wxUSE_LONGLONG
 
@@ -713,6 +710,8 @@
 #cmakedefine01 wxUSE_INKEDIT
 
 #cmakedefine01 wxUSE_INICONF
+
+#cmakedefine01 wxUSE_WINSOCK2
 
 
 #cmakedefine01 wxUSE_DATEPICKCTRL_GENERIC

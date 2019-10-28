@@ -9,15 +9,12 @@
 #ifndef _WX_QT_WINDOW_H_
 #define _WX_QT_WINDOW_H_
 
-#include <list>
-
 class QShortcut;
 template < class T > class QList;
 
 class QWidget;
-class QScrollWindow;
-class QAbstractScrollArea;
 class QScrollArea;
+class QScrollBar;
 class QPicture;
 class QPainter;
 
@@ -134,6 +131,9 @@ public:
     virtual bool SetTransparent(wxByte alpha) wxOVERRIDE;
     virtual bool CanSetTransparent() wxOVERRIDE { return true; }
 
+    virtual bool SetBackgroundColour(const wxColour& colour) wxOVERRIDE;
+    virtual bool SetForegroundColour(const wxColour& colour) wxOVERRIDE;
+
     QWidget *GetHandle() const wxOVERRIDE;
 
 #if wxUSE_DRAG_AND_DROP
@@ -148,7 +148,8 @@ public:
 
     // wxQt implementation internals:
 
-    virtual QPicture *QtGetPicture() const;
+    // Caller maintains ownership of pict - window will NOT delete it
+    void QtSetPicture( QPicture* pict );
 
     QPainter *QtGetPainter();
 
@@ -167,12 +168,18 @@ public:
 
     static void QtStoreWindowPointer( QWidget *widget, const wxWindowQt *window );
     static wxWindowQt *QtRetrieveWindowPointer( const QWidget *widget );
+    static void QtSendSetCursorEvent(wxWindowQt* win, wxPoint posClient);
 
 #if wxUSE_ACCEL
     virtual void QtHandleShortcut ( int command );
 #endif // wxUSE_ACCEL
 
     virtual QScrollArea *QtGetScrollBarsContainer() const;
+
+#if wxUSE_TOOLTIPS
+    // applies tooltip to the widget.
+    virtual void QtApplyToolTip(const wxString& text);
+#endif // wxUSE_TOOLTIPS
 
 protected:
     virtual void DoGetTextExtent(const wxString& string,
@@ -209,29 +216,39 @@ protected:
     virtual bool DoPopupMenu(wxMenu *menu, int x, int y) wxOVERRIDE;
 #endif // wxUSE_MENUS
 
+    // Return the parent to use for children being reparented to us: this is
+    // overridden in wxFrame to use its central widget rather than the frame
+    // itself.
+    virtual QWidget* QtGetParentWidget() const { return GetHandle(); }
+
+
     QWidget *m_qtWindow;
 
 private:
     void Init();
-    QScrollArea *m_qtContainer;
+    QScrollArea *m_qtContainer;  // either NULL or the same as m_qtWindow pointer
 
-    wxScrollBar *m_horzScrollBar;
-    wxScrollBar *m_vertScrollBar;
-    void QtOnScrollBarEvent( wxScrollEvent& event );
-    
-    wxScrollBar *QtGetScrollBar( int orientation ) const;
-    wxScrollBar *QtSetScrollBar( int orientation, wxScrollBar *scrollBar=NULL );
+    QScrollBar *m_horzScrollBar; // owned by m_qtWindow when allocated
+    QScrollBar *m_vertScrollBar; // owned by m_qtWindow when allocated
+
+    // Return the viewport of m_qtContainer, if it's used, or just m_qtWindow.
+    //
+    // Always returns non-null pointer if the window has been already created.
+    QWidget *QtGetClientWidget() const;
+
+    QScrollBar *QtGetScrollBar( int orientation ) const;
+    QScrollBar *QtSetScrollBar( int orientation, QScrollBar *scrollBar=NULL );
 
     bool QtSetBackgroundStyle();
 
-    QPicture *m_qtPicture;
-    QPainter *m_qtPainter;
+    QPicture *m_qtPicture;                                   // not owned
+    wxScopedPtr<QPainter> m_qtPainter;                       // always allocated
 
     bool m_mouseInside;
 
 #if wxUSE_ACCEL
-    QList< QShortcut* > *m_qtShortcuts;
-    wxQtShortcutHandler *m_qtShortcutHandler;
+    wxVector<QShortcut*> m_qtShortcuts; // owned by whatever GetHandle() returns
+    wxScopedPtr<wxQtShortcutHandler> m_qtShortcutHandler;    // always allocated
     bool m_processingShortcut;
 #endif // wxUSE_ACCEL
 

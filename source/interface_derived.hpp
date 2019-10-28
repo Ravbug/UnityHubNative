@@ -11,6 +11,7 @@
 #include "interface.h"
 #include "globals.cpp"
 #include <functional>
+#include <wx/webview.h>
 
 using namespace std;
 
@@ -37,6 +38,8 @@ private:
 	vector<string> installPaths;
 	vector<editor> editors;
 	
+	wxWebView* learnView;
+
 	//events
 	void OnAbout(wxCommandEvent& event);
 	void OnAddProject(wxCommandEvent& event);

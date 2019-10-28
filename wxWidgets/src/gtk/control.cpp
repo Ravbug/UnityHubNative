@@ -267,6 +267,18 @@ wxControl::GetDefaultAttributesFromGTKWidget(GtkWidget* widget,
     attr.font = wxFont(info);
     gdk_rgba_free(fc);
     gdk_rgba_free(bc);
+
+    // Go up the parent chain for a background color
+    while (attr.colBg.Alpha() == 0 && (widget = gtk_widget_get_parent(widget)))
+    {
+        sc = gtk_widget_get_style_context(widget);
+        gtk_style_context_save(sc);
+        gtk_style_context_set_state(sc, stateFlag);
+        gtk_style_context_get(sc, stateFlag, "background-color", &bc, NULL);
+        gtk_style_context_restore(sc);
+        attr.colBg = wxColour(*bc);
+        gdk_rgba_free(bc);
+    }
 #else
     GtkStyle* style;
 
@@ -329,9 +341,21 @@ wxSize wxControl::GTKGetPreferredSize(GtkWidget* widget) const
 #ifdef __WXGTK3__
     int w, h;
     gtk_widget_get_size_request(widget, &w, &h);
+
+    // gtk_widget_get_preferred_size() just returns 0 if the control is hidden,
+    // so we have to temporarily show the widget before calling it to get
+    // something useful from it, if it's currently hidden.
+    // So workaround this case.
+    const bool wasHidden = !gtk_widget_get_visible(widget);
+    if ( wasHidden )
+        gtk_widget_show(widget);
+
     gtk_widget_set_size_request(widget, -1, -1);
     gtk_widget_get_preferred_size(widget, NULL, &req);
     gtk_widget_set_size_request(widget, w, h);
+
+    if ( wasHidden )
+        gtk_widget_hide(widget);
 #else
     GTK_WIDGET_GET_CLASS(widget)->size_request(widget, &req);
 #endif

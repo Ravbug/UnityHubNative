@@ -253,8 +253,8 @@ class wxHtmlImageMapCell : public wxHtmlCell
 
 
 wxHtmlImageMapCell::wxHtmlImageMapCell( wxString &name )
+    : m_Name(name)
 {
-    m_Name = name ;
 }
 
 wxHtmlLinkInfo *wxHtmlImageMapCell::GetLink( int x, int y ) const
@@ -310,6 +310,12 @@ public:
 
     virtual void Layout(int w) wxOVERRIDE;
 
+    virtual wxString GetDescription() const wxOVERRIDE
+    {
+        return wxString::Format("wxHtmlImageCell with bitmap of size %d*%d",
+                                m_bmpW, m_bmpH);
+    }
+
 private:
     wxBitmap           *m_bitmap;
     int                 m_align;
@@ -359,6 +365,7 @@ wxHtmlImageCell::wxHtmlImageCell(wxHtmlWindowInterface *windowIface,
                                  wxFSFile *input, double scaleHDPI,
                                  int w, bool wpercent, int h, bool hpresent, double scale, int align,
                                  const wxString& mapname) : wxHtmlCell()
+    , m_mapName(mapname)
 {
     m_windowIface = windowIface;
     m_scale = scale;
@@ -370,7 +377,6 @@ wxHtmlImageCell::wxHtmlImageCell(wxHtmlWindowInterface *windowIface,
     m_bmpWpercent = wpercent;
     m_bmpHpresent = hpresent;
     m_imageMap = NULL;
-    m_mapName = mapname;
     SetCanLiveOnPagebreak(false);
 #if wxUSE_GIF && wxUSE_TIMER
     m_gifDecoder = NULL;

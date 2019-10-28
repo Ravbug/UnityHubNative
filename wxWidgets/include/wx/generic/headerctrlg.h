@@ -50,7 +50,7 @@ public:
 protected:
     virtual wxSize DoGetBestSize() const wxOVERRIDE;
 
-    
+
 private:
     // implement base class pure virtuals
     virtual void DoSetCount(unsigned int count) wxOVERRIDE;
@@ -176,6 +176,7 @@ private:
     // (its size is always m_numColumns)
     wxArrayInt m_colIndices;
 
+    bool m_wasSeparatorDClick;
 
     wxDECLARE_EVENT_TABLE();
     wxDECLARE_NO_COPY_CLASS(wxHeaderCtrl);

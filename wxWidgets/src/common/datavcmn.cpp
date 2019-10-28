@@ -1067,7 +1067,7 @@ wxDataViewCustomRendererBase::RenderText(const wxString& text,
     int flags = 0;
     if ( state & wxDATAVIEW_CELL_SELECTED )
         flags |= wxCONTROL_SELECTED;
-    if ( !GetOwner()->GetOwner()->IsEnabled() )
+    if ( !(GetOwner()->GetOwner()->IsEnabled() && GetEnabled()) )
         flags |= wxCONTROL_DISABLED;
 
     // Notice that we intentionally don't use any alignment here: it is not
@@ -1743,7 +1743,7 @@ wxSize wxDataViewSpinRenderer::GetSize() const
     // Allow some space for the spin buttons, which is approximately the size
     // of a scrollbar (and getting pixel-exact value would be complicated).
     // Also add some whitespace between the text and the button:
-    sz.x += wxSystemSettings::GetMetric(wxSYS_VSCROLL_X);
+    sz.x += wxSystemSettings::GetMetric(wxSYS_VSCROLL_X, m_editorCtrl);
     sz.x += GetTextExtent("M").x;
 
     return sz;
@@ -1821,7 +1821,7 @@ wxSize wxDataViewChoiceRenderer::GetSize() const
     // Allow some space for the right-side button, which is approximately the
     // size of a scrollbar (and getting pixel-exact value would be complicated).
     // Also add some whitespace between the text and the button:
-    sz.x += wxSystemSettings::GetMetric(wxSYS_VSCROLL_X);
+    sz.x += wxSystemSettings::GetMetric(wxSYS_VSCROLL_X, m_editorCtrl);
     sz.x += GetTextExtent("M").x;
 
     return sz;
@@ -1971,6 +1971,8 @@ wxSize wxDataViewDateRenderer::GetSize() const
 // ----------------------------------------------------------------------------
 // wxDataViewCheckIconTextRenderer implementation
 // ----------------------------------------------------------------------------
+
+#ifndef __WXOSX__
 
 IMPLEMENT_VARIANT_OBJECT_EXPORTED(wxDataViewCheckIconText, WXDLLIMPEXP_ADV)
 
@@ -2161,6 +2163,8 @@ wxSize wxDataViewCheckIconTextRenderer::GetCheckSize() const
 {
     return wxRendererNative::Get().GetCheckBoxSize(GetView());
 }
+
+#endif // !__WXOSX__
 
 //-----------------------------------------------------------------------------
 // wxDataViewListStore

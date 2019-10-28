@@ -28,11 +28,13 @@
     #include "wx/button.h"
     #include "wx/statbox.h"
     #include "wx/toplevel.h"
+    #include "wx/app.h"
 #endif // WX_PRECOMP
 
 #include "wx/display.h"
 #include "wx/vector.h"
 #include "wx/listimpl.cpp"
+#include "wx/private/window.h"
 
 
 //---------------------------------------------------------------------------
@@ -90,8 +92,6 @@ WX_DEFINE_EXPORTED_LIST( wxSizerItemList )
 
 #ifdef wxNEEDS_BORDER_IN_PX
 
-int wxSizerFlags::ms_defaultBorderInPx = 0;
-
 /* static */
 int wxSizerFlags::DoGetDefaultBorderInPx()
 {
@@ -103,11 +103,14 @@ int wxSizerFlags::DoGetDefaultBorderInPx()
     // between related and unrelated controls, as explained at the above URL,
     // but we don't have a way to specify this in our API currently.
     //
-    // We also have to use the DPI for the primary monitor here as we don't
-    // have any associated window, so this is wrong on systems using multiple
-    // monitors with different resolutions too -- but, again, without changes
+    // We also have to use the DPI for the monitor showing the top window here
+    // as we don't have any associated window -- but, again, without changes
     // in the API, there is nothing we can do about this.
-    return wxWindow::FromDIP(5, NULL);
+    const wxWindow* const win = wxTheApp ? wxTheApp->GetTopWindow() : NULL;
+    static wxPrivate::DpiDependentValue<int> s_defaultBorderInPx;
+    if ( s_defaultBorderInPx.HasChanged(win) )
+        s_defaultBorderInPx.SetAtNewDPI(wxWindow::FromDIP(5, win));
+    return s_defaultBorderInPx.Get();
 }
 
 #endif // wxNEEDS_BORDER_IN_PX
@@ -984,16 +987,23 @@ void wxSizer::FitInside( wxWindow *window )
     window->SetVirtualSize( size );
 }
 
+void wxSizer::RecalcSizes()
+{
+    // It is recommended to override RepositionChildren() in the derived
+    // classes, but if they don't do it, this method must be overridden.
+    wxFAIL_MSG( wxS("Must be overridden if RepositionChildren() is not") );
+}
+
 void wxSizer::Layout()
 {
     // (re)calculates minimums needed for each item and other preparations
     // for layout
-    CalcMin();
+    const wxSize minSize = CalcMin();
 
     // Applies the layout and repositions/resizes the items
     wxWindow::ChildrenRepositioningGuard repositionGuard(m_containingWindow);
 
-    RecalcSizes();
+    RepositionChildren(minSize);
 }
 
 void wxSizer::SetSizeHints( wxWindow *window )
@@ -1457,7 +1467,7 @@ int wxGridSizer::CalcRowsCols(int& nrows, int& ncols) const
     return nitems;
 }
 
-void wxGridSizer::RecalcSizes()
+void wxGridSizer::RepositionChildren(const wxSize& WXUNUSED(minSize))
 {
     int nitems, nrows, ncols;
     if ( (nitems = CalcRowsCols(nrows, ncols)) == 0 )
@@ -1625,7 +1635,7 @@ wxFlexGridSizer::~wxFlexGridSizer()
 {
 }
 
-void wxFlexGridSizer::RecalcSizes()
+void wxFlexGridSizer::RepositionChildren(const wxSize& minSize)
 {
     int nrows, ncols;
     if ( !CalcRowsCols(nrows, ncols) )
@@ -1634,7 +1644,7 @@ void wxFlexGridSizer::RecalcSizes()
     const wxPoint pt(GetPosition());
     const wxSize sz(GetSize());
 
-    AdjustForGrowables(sz);
+    AdjustForGrowables(sz, minSize);
 
     wxSizerItemList::const_iterator i = m_children.begin();
     const wxSizerItemList::const_iterator end = m_children.end();
@@ -1707,16 +1717,8 @@ static int SumArraySizes(const wxArrayInt& sizes, int gap)
     return total;
 }
 
-void wxFlexGridSizer::FindWidthsAndHeights(int nrows, int ncols)
+wxSize wxFlexGridSizer::FindWidthsAndHeights(int WXUNUSED(nrows), int ncols)
 {
-    // We have to recalculate the sizes in case the item minimum size has
-    // changed since the previous layout, or the item has been hidden using
-    // wxSizer::Show(). If all the items in a row/column are hidden, the final
-    // dimension of the row/column will be -1, indicating that the column
-    // itself is hidden.
-    m_rowHeights.assign(nrows, -1);
-    m_colWidths.assign(ncols, -1);
-
     // n is the index of the item in left-to-right top-to-bottom order
     size_t n = 0;
     for ( wxSizerItemList::iterator i = m_children.begin();
@@ -1742,8 +1744,8 @@ void wxFlexGridSizer::FindWidthsAndHeights(int nrows, int ncols)
 
     AdjustForFlexDirection();
 
-    m_calculatedMinSize = wxSize(SumArraySizes(m_colWidths, m_hgap),
-                                 SumArraySizes(m_rowHeights, m_vgap));
+    return wxSize(SumArraySizes(m_colWidths, m_hgap),
+                  SumArraySizes(m_rowHeights, m_vgap));
 }
 
 wxSize wxFlexGridSizer::CalcMin()
@@ -1775,11 +1777,7 @@ wxSize wxFlexGridSizer::CalcMin()
         }
     }
 
-    // The stage of looking for max values in each row/column has been
-    // made a separate function, since it's reused in AdjustForGrowables.
-    FindWidthsAndHeights(nrows,ncols);
-
-    return m_calculatedMinSize;
+    return FindWidthsAndHeights(nrows,ncols);
 }
 
 void wxFlexGridSizer::AdjustForFlexDirection()
@@ -1893,7 +1891,7 @@ DoAdjustForGrowables(int delta,
     }
 }
 
-void wxFlexGridSizer::AdjustForGrowables(const wxSize& sz)
+void wxFlexGridSizer::AdjustForGrowables(const wxSize& sz, const wxSize& minSize)
 {
 #if wxDEBUG_LEVEL
     // by the time this function is called, the sizer should be already fully
@@ -1931,7 +1929,7 @@ void wxFlexGridSizer::AdjustForGrowables(const wxSize& sz)
     {
         DoAdjustForGrowables
         (
-            sz.x - m_calculatedMinSize.x,
+            sz.x - minSize.x,
             m_growableCols,
             m_colWidths,
             m_growMode == wxFLEX_GROWMODE_SPECIFIED ? &m_growableColsProportions
@@ -1949,7 +1947,7 @@ void wxFlexGridSizer::AdjustForGrowables(const wxSize& sz)
               i != m_children.end();
               ++i )
         {
-            didAdjustMinSize |= (*i)->InformFirstDirection(wxHORIZONTAL, m_colWidths[col], sz.y - m_calculatedMinSize.y);
+            didAdjustMinSize |= (*i)->InformFirstDirection(wxHORIZONTAL, m_colWidths[col], sz.y - minSize.y);
             if ( ++col == ncols )
                 col = 0;
         }
@@ -1959,7 +1957,7 @@ void wxFlexGridSizer::AdjustForGrowables(const wxSize& sz)
         {
             DoAdjustForGrowables
             (
-                sz.x - m_calculatedMinSize.x,
+                sz.x - minSize.x,
                 m_growableCols,
                 m_colWidths,
                 m_growMode == wxFLEX_GROWMODE_SPECIFIED ? &m_growableColsProportions
@@ -1974,7 +1972,7 @@ void wxFlexGridSizer::AdjustForGrowables(const wxSize& sz)
         // should treat all rows as having proportion of 1 then
         DoAdjustForGrowables
         (
-            sz.y - m_calculatedMinSize.y,
+            sz.y - minSize.y,
             m_growableRows,
             m_rowHeights,
             m_growMode == wxFLEX_GROWMODE_SPECIFIED ? &m_growableRowsProportions
@@ -2076,7 +2074,10 @@ wxSizerItem *wxBoxSizer::DoInsert(size_t index, wxSizerItem *item)
             );
         }
 
-        if ( flags & wxEXPAND )
+        // Note that using alignment with wxEXPAND can make sense if wxSHAPED
+        // is also used, as the item doesn't necessarily fully expand in the
+        // other direction in this case.
+        if ( (flags & wxEXPAND) && !(flags & wxSHAPED) )
         {
             wxASSERT_MSG
             (
@@ -2102,7 +2103,7 @@ wxSizerItem *wxBoxSizer::DoInsert(size_t index, wxSizerItem *item)
             );
         }
 
-        if ( flags & wxEXPAND )
+        if ( (flags & wxEXPAND) && !(flags & wxSHAPED) )
         {
             wxASSERT_MSG(
                 !(flags & (wxALIGN_BOTTOM | wxALIGN_CENTRE_VERTICAL)),
@@ -2123,9 +2124,9 @@ namespace
 {
 
 /*
-    Helper of RecalcSizes(): checks if there is enough remaining space for the
-    min size of the given item and returns its min size or the entire remaining
-    space depending on which one is greater.
+    Helper of RepositionChildren(): checks if there is enough remaining space
+    for the min size of the given item and returns its min size or the entire
+    remaining space depending on which one is greater.
 
     This function updates the remaining space parameter to account for the size
     effectively allocated to the item.
@@ -2163,7 +2164,7 @@ GetMinOrRemainingSize(int orient, const wxSizerItem *item, int *remainingSpace_)
 
 } // anonymous namespace
 
-void wxBoxSizer::RecalcSizes()
+void wxBoxSizer::RepositionChildren(const wxSize& minSize)
 {
     if ( m_children.empty() )
         return;
@@ -2173,7 +2174,7 @@ void wxBoxSizer::RecalcSizes()
 
     // the amount of free space which we should redistribute among the
     // stretchable items (i.e. those with non zero proportion)
-    int delta = totalMajorSize - GetSizeInMajorDir(m_calculatedMinSize);
+    int delta = totalMajorSize - GetSizeInMajorDir(minSize);
 
     // declare loop variables used below:
     wxSizerItemList::const_iterator i;  // iterator in m_children list
@@ -2492,7 +2493,7 @@ void wxBoxSizer::RecalcSizes()
 wxSize wxBoxSizer::CalcMin()
 {
     m_totalProportion = 0;
-    m_calculatedMinSize = wxSize(0, 0);
+    wxSize minSize;
 
     // The minimal size for the sizer should be big enough to allocate its
     // element at least its minimal size but also, and this is the non trivial
@@ -2523,19 +2524,19 @@ wxSize wxBoxSizer::CalcMin()
         else // fixed size item
         {
             // Just account for its size directly
-            SizeInMajorDir(m_calculatedMinSize) += GetSizeInMajorDir(sizeMinThis);
+            SizeInMajorDir(minSize) += GetSizeInMajorDir(sizeMinThis);
         }
 
         // In the transversal direction we just need to find the maximum.
-        if ( GetSizeInMinorDir(sizeMinThis) > GetSizeInMinorDir(m_calculatedMinSize) )
-            SizeInMinorDir(m_calculatedMinSize) = GetSizeInMinorDir(sizeMinThis);
+        if ( GetSizeInMinorDir(sizeMinThis) > GetSizeInMinorDir(minSize) )
+            SizeInMinorDir(minSize) = GetSizeInMinorDir(sizeMinThis);
     }
 
     // Using the max ratio ensures that the min size is big enough for all
     // items to have their min size and satisfy the proportions among them.
-    SizeInMajorDir(m_calculatedMinSize) += (int)(maxMinSizeToProp*m_totalProportion);
+    SizeInMajorDir(minSize) += (int)(maxMinSizeToProp*m_totalProportion);
 
-    return m_calculatedMinSize;
+    return minSize;
 }
 
 bool
@@ -2604,7 +2605,7 @@ wxStaticBoxSizer::~wxStaticBoxSizer()
         m_staticBox->WXDestroyWithoutChildren();
 }
 
-void wxStaticBoxSizer::RecalcSizes()
+void wxStaticBoxSizer::RepositionChildren(const wxSize& minSize)
 {
     int top_border, other_border;
     m_staticBox->GetBordersForSizer(&top_border, &other_border);
@@ -2621,7 +2622,7 @@ void wxStaticBoxSizer::RecalcSizes()
 #if defined( __WXGTK20__ )
         // if the wxStaticBox has created a wxPizza to contain its children
         // (see wxStaticBox::AddChild) then we need to place the items it contains
-        // in the wxBoxSizer::RecalcSizes() call below using coordinates relative
+        // in the base class version called below using coordinates relative
         // to the top-left corner of the staticbox:
         m_position.x = m_position.y = 0;
 #elif defined(__WXOSX__) && wxOSX_USE_COCOA
@@ -2630,7 +2631,7 @@ void wxStaticBoxSizer::RecalcSizes()
         m_position.x = m_position.y = 10;
 #else
         // if the wxStaticBox has children, then these windows must be placed
-        // by the wxBoxSizer::RecalcSizes() call below using coordinates relative
+        // by the base class version called below using coordinates relative
         // to the top-left corner of the staticbox (but unlike wxGTK, we need
         // to keep in count the static borders here!):
         m_position.x = other_border;
@@ -2646,7 +2647,7 @@ void wxStaticBoxSizer::RecalcSizes()
         m_position.y += top_border;
     }
 
-    wxBoxSizer::RecalcSizes();
+    wxBoxSizer::RepositionChildren(minSize);
 
     m_position = old_pos;
     m_size = old_size;

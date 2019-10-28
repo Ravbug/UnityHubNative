@@ -333,7 +333,7 @@ class WXDLLIMPEXP_BASE wxListKey
 public:
     // implicit ctors
     wxListKey() : m_keyType(wxKEY_NONE)
-        { }
+        { m_key.integer = 0; }
     wxListKey(long i) : m_keyType(wxKEY_INTEGER)
         { m_key.integer = i; }
     wxListKey(const wxString& s) : m_keyType(wxKEY_STRING)
@@ -496,14 +496,6 @@ protected:
                                    void *data,
                                    const wxListKey& key = wxDefaultListKey) = 0;
 
-
-    // ctors
-        // from an array
-    wxListBase(size_t count, void *elements[]);
-        // from a sequence of objects
-    wxListBase(void *object, ... /* terminate with NULL */);
-
-protected:
     void Assign(const wxListBase& list)
         { Clear(); DoCopy(list); }
 
@@ -688,8 +680,6 @@ private:
             { }                                                             \
         name(const name& list) : wxListBase(list.GetKeyType())              \
             { Assign(list); }                                               \
-        name(size_t count, T *elements[])                                   \
-            : wxListBase(count, (void **)elements) { }                      \
                                                                             \
         name& operator=(const name& list)                                   \
             { if (&list != this) Assign(list); return *this; }              \

@@ -257,7 +257,7 @@ enum wxWindowVariant
     @style{wxWS_EX_BLOCK_EVENTS}
            wxCommandEvents and the objects of the derived classes are
            forwarded to the parent window and so on recursively by default.
-           Using this flag for the given window allows to block this
+           Using this flag for the given window allows blocking this
            propagation at this window, i.e. prevent the events from being
            propagated further upwards. Dialogs have this flag on by default
            for the reasons explained in the @ref overview_events.
@@ -486,7 +486,7 @@ public:
         container windows.
      */
     virtual bool AcceptsFocusRecursively() const;
-    
+
     /**
      Can this window itself have focus?
     */
@@ -494,7 +494,7 @@ public:
 
     /**
        Can this window have focus right now?
-        
+
        If this method returns true, it means that calling SetFocus() will
        put focus either to this window or one of its children, if you need
        to know whether this window accepts focus itself, use IsFocusable()
@@ -1410,7 +1410,7 @@ public:
     InformFirstDirection(int direction,
                          int size,
                          int availableOtherDir);
-    
+
     /**
         Resets the cached best size value so it will be recalculated the next time it
         is needed.
@@ -1493,9 +1493,14 @@ public:
     void SetClientSize(const wxRect& rect);
 
     /**
-        This normally does not need to be called by user code.
-        It is called when a window is added to a sizer, and is used so the window
-        can remove itself from the sizer when it is destroyed.
+        Used by wxSizer internally to notify the window about being managed by
+        the given sizer.
+
+        This method should not be called from outside the library, unless
+        you're implementing a custom sizer class -- and in the latter case you
+        must call this method with the pointer to the sizer itself whenever a
+        window is added to it and with @NULL argument when the window is
+        removed from it.
     */
     void SetContainingSizer(wxSizer* sizer);
 
@@ -1793,7 +1798,7 @@ public:
     wxRect GetClientRect() const;
 
 
-    
+
     /**
         Moves the window to the given position.
 
@@ -2035,6 +2040,20 @@ public:
         version can be used without having to create an object first.
     */
     virtual wxVisualAttributes GetDefaultAttributes() const;
+
+    /**
+        Return the DPI of the display used by this window.
+
+        The returned value can be different for different windows on systems
+        with support for per-monitor DPI values, such as Microsoft Windows 10.
+
+        If the DPI is not available, returns @c wxSize(0,0) object.
+
+        @see wxDisplay::GetPPI(), wxDPIChangedEvent
+
+        @since 3.1.3
+     */
+    virtual wxSize GetDPI() const;
 
     /**
         Returns the font for this window.
@@ -2834,6 +2853,14 @@ public:
         disabled, all of its children are disabled as well and they are reenabled again
         when the parent is.
 
+        A window can be created initially disabled by calling this method on it
+        @e before calling Create() to create the actual underlying window, e.g.
+        @code
+            wxWindow* w = new MyWindow(); // Note: default ctor is used here.
+            w->Enable(false);
+            w->Create(parent, ... all the usual non-default ctor arguments ...);
+        @endcode
+
         @param enable
             If @true, enables the window for input. If @false, disables the window.
 
@@ -3423,15 +3450,20 @@ public:
     void SetConstraints(wxLayoutConstraints* constraints);
 
     /**
-        Invokes the constraint-based layout algorithm or the sizer-based algorithm
-        for this window.
+        Lays out the children of this window using the associated sizer.
 
-        This function does not get called automatically when the window is resized
-        because lots of windows deriving from wxWindow does not need this functionality.
-        If you want to have Layout() called automatically, you should derive
-        from wxPanel (see wxPanel::Layout).
+        If a sizer hadn't been associated with this window (see SetSizer()),
+        this function doesn't do anything, unless this is a top level window
+        (see wxTopLevelWindow::Layout()).
+
+        Note that this method is called automatically when the window size
+        changes if it has the associated sizer (or if SetAutoLayout() with
+        @true argument had been explicitly called), ensuring that it is always
+        laid out correctly.
 
         @see @ref overview_windowsizing
+
+        @returns Always returns @true, the return value is not useful.
     */
     virtual bool Layout();
 
@@ -3601,7 +3633,7 @@ public:
     */
     wxBorder GetBorder() const;
 
-    
+
     /**
         Does the window-specific updating after processing the update event.
         This function is called by UpdateWindowUI() in order to check return
@@ -3713,7 +3745,7 @@ public:
     */
     virtual bool IsTopLevel() const;
 
-    
+
     /**
         This virtual function is normally only used internally, but
         sometimes an application may need it to implement functionality
@@ -3750,7 +3782,8 @@ public:
             or wxMOD_WIN specifying the modifier keys that have to be pressed along
             with the key.
         @param virtualKeyCode
-            The virtual key code of the hotkey.
+            The key code of the hotkey, e.g. an ASCII character such as @c 'K'
+            or one of elements of wxKeyCode enum.
 
         @return @true if the hotkey was registered successfully. @false if some
                  other application already registered a hotkey with this

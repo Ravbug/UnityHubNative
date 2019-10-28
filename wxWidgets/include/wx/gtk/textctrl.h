@@ -95,7 +95,6 @@ public:
 
     // Overridden wxWindow methods
     virtual void SetWindowStyleFlag( long style ) wxOVERRIDE;
-    virtual bool Enable( bool enable = true ) wxOVERRIDE;
 
     // Implementation from now on
     void OnDropFiles( wxDropFilesEvent &event );
@@ -143,6 +142,8 @@ public:
     static wxVisualAttributes
     GetClassDefaultAttributes(wxWindowVariant variant = wxWINDOW_VARIANT_NORMAL);
 
+    void GTKOnTextChanged() wxOVERRIDE;
+
 protected:
     // overridden wxWindow virtual methods
     virtual wxSize DoGetBestSize() const wxOVERRIDE;
@@ -153,6 +154,8 @@ protected:
 
     virtual void DoFreeze() wxOVERRIDE;
     virtual void DoThaw() wxOVERRIDE;
+
+    virtual void DoEnable(bool enable) wxOVERRIDE;
 
     // Widgets that use the style->base colour for the BG colour should
     // override this and return true.
@@ -181,7 +184,6 @@ private:
     // overridden wxTextEntry virtual methods
     virtual GtkEditable *GetEditable() const wxOVERRIDE;
     virtual GtkEntry *GetEntry() const wxOVERRIDE;
-    virtual void EnableTextChangedEvents(bool enable) wxOVERRIDE;
 
     // change the font for everything in this control
     void ChangeFontGlobally();
@@ -195,7 +197,7 @@ private:
     // returns either m_text or m_buffer depending on whether the control is
     // single- or multi-line; convenient for the GTK+ functions which work with
     // both
-    void *GetTextObject() const
+    void *GetTextObject() const wxOVERRIDE
     {
         return IsMultiLine() ? static_cast<void *>(m_buffer)
                              : static_cast<void *>(m_text);

@@ -14,7 +14,7 @@ dnl ---------------------------------------------------------------------------
 dnl initialization
 dnl ---------------------------------------------------------------------------
 
-AC_INIT([wxWidgets], [3.1.2], [wx-dev@googlegroups.com])
+AC_INIT([wxWidgets], [3.1.3], [wx-dev@googlegroups.com])
 
 dnl the file passed to AC_CONFIG_SRCDIR should be specific to our package
 AC_CONFIG_SRCDIR([wx-config.in])
@@ -40,7 +40,7 @@ dnl wx_release_number += 1
 
 wx_major_version_number=3
 wx_minor_version_number=1
-wx_release_number=2
+wx_release_number=3
 wx_subrelease_number=0
 
 WX_RELEASE=$wx_major_version_number.$wx_minor_version_number
@@ -1222,8 +1222,8 @@ dnl NOTE: We clobber wxUSE_MACOSX_SDK with the SDK path
 if test "x$wxUSE_MACOSX_SDK" = "xno"; then
     wxUSE_MACOSX_SDK=
 elif test "x$wxUSE_MACOSX_SDK" = "xyes"; then
-    # TODO: Search for most recent SDK and use it.
-    wxUSE_MACOSX_SDK="/Developer/SDKs/MacOSX10.4u.sdk"
+    dnl Try to use the default SDK.
+    wxUSE_MACOSX_SDK="`xcode-select -p`/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
 fi
 
 
@@ -1275,7 +1275,7 @@ dnl We need to quote the next line where we don't need macros and do need [] in 
         wxUSE_MACOSX_VERSION_MIN=
     fi
 elif test "x$wxUSE_MACOSX_VERSION_MIN" = "x"; then
-    wxUSE_MACOSX_VERSION_MIN=10.7
+    wxUSE_MACOSX_VERSION_MIN=10.9
 fi
 
 if test "x$MACOSX_SDK_OPTS" != "x"; then
@@ -1847,9 +1847,6 @@ AC_DEFINE(HAVE_STD_UNORDERED_SET)
 AC_DEFINE(HAVE_TYPE_TRAITS)
 
 else dnl Not using C++11, so we do need to run the checks.
-
-dnl check for iostream (as opposed to iostream.h) standard header
-WX_CPP_NEW_HEADERS(, AC_DEFINE(wxUSE_IOSTREAMH))
 
 dnl the next few tests are all for C++ features and so need to be done using
 dnl C++ compiler
@@ -2569,15 +2566,19 @@ dnl Check for lzma library
 dnl ------------------------------------------------------------------------
 
 if test "$wxUSE_LIBLZMA" != "no"; then
-    AC_CHECK_HEADER(lzma.h,,,[])
+    dnl We shouldn't depend on the external liblzma if system libraries are
+    dnl explicitly disabled.
+    if test "$wxUSE_SYS_LIBS" != "no"; then
+        AC_CHECK_HEADER(lzma.h,,,[])
 
-    if test "$ac_cv_header_lzma_h" = "yes"; then
-        AC_CHECK_LIB(lzma, lzma_code,
-            [
-                LZMA_LINK="-llzma"
-                LIBS="$LZMA_LINK $LIBS"
-                AC_DEFINE(wxUSE_LIBLZMA)
-            ])
+        if test "$ac_cv_header_lzma_h" = "yes"; then
+            AC_CHECK_LIB(lzma, lzma_code,
+                [
+                    LZMA_LINK="-llzma"
+                    LIBS="$LZMA_LINK $LIBS"
+                    AC_DEFINE(wxUSE_LIBLZMA)
+                ])
+        fi
     fi
 
     if test -z "$LZMA_LINK"; then
@@ -2612,35 +2613,47 @@ dnl Check for tiff library
 dnl ------------------------------------------------------------------------
 
 TIFF_LINK=
-TIFF_PREREQ_LINKS=-lm
 if test "$wxUSE_LIBTIFF" != "no" ; then
     AC_DEFINE(wxUSE_LIBTIFF)
 
     if test "$wxUSE_LIBTIFF" = "sys" -o "$wxUSE_LIBTIFF" = "yes" ; then
-        dnl libtiff may depend on libjpeg and libz so use them in the test
-        dnl below or it would fail
-        if test "$wxUSE_LIBJPEG" = "sys"; then
-            TIFF_PREREQ_LINKS="$TIFF_PREREQ_LINKS $JPEG_LINK"
-        fi
-        if test "$wxUSE_ZLIB" = "sys"; then
-            TIFF_PREREQ_LINKS="$TIFF_PREREQ_LINKS $ZLIB_LINK"
-        fi
-        if test -n "$LZMA_LINK"; then
-            TIFF_PREREQ_LINKS="$TIFF_PREREQ_LINKS $LZMA_LINK"
-        fi
-        if test "$wxUSE_LIBJBIG" = "yes"; then
-            TIFF_PREREQ_LINKS="$TIFF_PREREQ_LINKS $JBIG_LINK"
-        fi
-        AC_CHECK_HEADER(tiffio.h,
-                        [
-                            AC_CHECK_LIB(tiff, TIFFError,
-                                         TIFF_LINK=" -ltiff",
-                                         ,
-                                         $TIFF_PREREQ_LINKS)
-                        ],
-                        [],
-                        [ ]
-                       )
+        dnl First try using pkg-config as it's the most reliable way to detect
+        dnl libtiff.
+        PKG_CHECK_MODULES(LIBTIFF, [libtiff-4],
+            [
+                TIFF_LINK=$LIBTIFF_LIBS
+                CFLAGS="$LIBTIFF_CFLAGS $CFLAGS"
+            ],
+            [
+                AC_MSG_RESULT([not found via pkg-config])
+
+                TIFF_PREREQ_LINKS=-lm
+
+                dnl libtiff may depend on libjpeg and libz so use them in the test
+                dnl below or it would fail
+                if test "$wxUSE_LIBJPEG" = "sys"; then
+                    TIFF_PREREQ_LINKS="$TIFF_PREREQ_LINKS $JPEG_LINK"
+                fi
+                if test "$wxUSE_ZLIB" = "sys"; then
+                    TIFF_PREREQ_LINKS="$TIFF_PREREQ_LINKS $ZLIB_LINK"
+                fi
+                if test -n "$LZMA_LINK"; then
+                    TIFF_PREREQ_LINKS="$TIFF_PREREQ_LINKS $LZMA_LINK"
+                fi
+                if test "$wxUSE_LIBJBIG" = "yes"; then
+                    TIFF_PREREQ_LINKS="$TIFF_PREREQ_LINKS $JBIG_LINK"
+                fi
+                AC_CHECK_HEADER(tiffio.h,
+                                [
+                                    AC_CHECK_LIB(tiff, TIFFError,
+                                                 TIFF_LINK=" -ltiff",
+                                                 ,
+                                                 $TIFF_PREREQ_LINKS)
+                                ],
+                                [],
+                                [ ]
+                               )
+            ])
 
         if test "x$TIFF_LINK" = "x" ; then
             if test "$wxUSE_LIBTIFF" = "sys" ; then
@@ -2709,6 +2722,17 @@ if test "$wxUSE_EXPAT" != "no"; then
         fi
     fi
     if test "$wxUSE_EXPAT" = "builtin" ; then
+        dnl Expat requires C99 compiler, so define wxCFLAGS_C99 variable which
+        dnl is used when compiling it in our makefiles.
+        save_CC="$CC"
+        AC_PROG_CC_C99
+        CC="$save_CC"
+
+        dnl Note that we need just the flags, not the full CC value including
+        dnl the compiler too.
+        wxCFLAGS_C99=$ac_cv_prog_cc_c99
+        AC_SUBST(wxCFLAGS_C99)
+
         dnl Expat needs this:
         AC_CONFIG_SUBDIRS([src/expat/expat])
     fi
@@ -4518,7 +4542,7 @@ AC_CHECK_FUNCS(inet_addr,
                         AC_CHECK_LIB(socket, inet_addr,
                             INET_LINK="socket",
                             [
-				AC_CHECK_LIB(network, inet_addr,
+                                AC_CHECK_LIB(network, inet_addr,
                                    INET_LINK="network"
                                 )
                             ]
@@ -5548,7 +5572,7 @@ fi
 
 WITH_PLUGIN_SDL=0
 if test "$wxUSE_SOUND" = "yes"; then
-  if test "$USE_UNIX" = 1 ; then
+  if test "$USE_UNIX" = 1 -a "$USE_MAC" != 1 ; then
     if test "$wxUSE_LIBSDL" != "no"; then
       PKG_CHECK_MODULES([SDL], [sdl2 >= 2.0.0],
                   [
@@ -5567,7 +5591,7 @@ if test "$wxUSE_SOUND" = "yes"; then
                                   AC_DEFINE(wxUSE_LIBSDL)
                                 ],
                                 [wxUSE_LIBSDL="no"])
-		  ])
+                  ])
       if test "$wxUSE_LIBSDL" = "yes" -a "$wxUSE_PLUGINS" = "yes" ; then
         WITH_PLUGIN_SDL=1
       fi
@@ -7110,22 +7134,8 @@ if test "$wxUSE_HTML" = "yes"; then
 fi
 if test "$wxUSE_WEBKIT" = "yes"; then
     if test "$wxUSE_MAC" = 1 -a "$USE_DARWIN" = 1; then
-        old_CPPFLAGS="$CPPFLAGS"
-        CPPFLAGS="-x objective-c++ $CPPFLAGS"
-        AC_CHECK_HEADER([WebKit/HIWebView.h],
-                        [
-                           AC_DEFINE(wxUSE_WEBKIT)
-                           WEBKIT_LINK="-framework WebKit"
-                        ],
-                        [
-                           AC_MSG_WARN([WebKit headers not found; disabling wxWebKit])
-                           wxUSE_WEBKIT=no
-                        ],
-                        [
-                           #include <Carbon/Carbon.h>
-                           #include <WebKit/WebKit.h>
-                        ])
-        CPPFLAGS="$old_CPPFLAGS"
+        AC_DEFINE(wxUSE_WEBKIT)
+        WEBKIT_LINK="-framework WebKit"
     else
         wxUSE_WEBKIT=no
     fi
@@ -7265,23 +7275,9 @@ if test "$wxUSE_WEBVIEW" = "yes"; then
                                   ])
             fi
         elif test "$wxUSE_MAC" = 1 -a "$USE_DARWIN" = 1; then
-            dnl Under Mac we always have the libraries but check for the
-            dnl headers
-            old_CPPFLAGS="$CPPFLAGS"
-            CPPFLAGS="-x objective-c++ $CPPFLAGS"
-            AC_CHECK_HEADER([WebKit/HIWebView.h],
-                            [
-                                USE_WEBVIEW_WEBKIT=1
-                                WEBKIT_LINK="-framework WebKit"
-                            ],
-                            [
-                                AC_MSG_WARN([WebKit headers not found])
-                            ],
-                            [
-                                #include <Carbon/Carbon.h>
-                                #include <WebKit/WebKit.h>
-                            ])
-            CPPFLAGS="$old_CPPFLAGS"
+            dnl Under Mac we always have the libraries
+            USE_WEBVIEW_WEBKIT=1
+            WEBKIT_LINK="-framework WebKit"
         fi
     fi
 

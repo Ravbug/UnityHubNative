@@ -258,8 +258,8 @@ int wxRichTextFloatCollector::GetWidthFromFloatRect(const wxRichTextFloatRectMap
 }
 
 wxRichTextFloatCollector::wxRichTextFloatCollector(const wxRect& rect) : m_left(wxRichTextFloatRectMapCmp), m_right(wxRichTextFloatRectMapCmp)
+    , m_availableRect(rect)
 {
-    m_availableRect = rect;
     m_para = NULL;
 }
 
@@ -866,7 +866,7 @@ bool wxRichTextObject::DrawBorder(wxDC& dc, wxRichTextBuffer* buffer, const wxRi
             wxPen pen(col, borderLeft, penStyle);
             dc.SetPen(pen);
             dc.SetBrush(*wxTRANSPARENT_BRUSH);
-            dc.DrawRoundedRectangle(rect, cornerRadius);
+            dc.DrawRoundedRectangle(rect2, cornerRadius);
             return true;
         }
     }
@@ -5099,6 +5099,7 @@ bool wxRichTextParagraph::Layout(wxDC& dc, wxRichTextDrawingContext& context, co
     // continue.
 
     wxRect availableRect;
+    long nextBreakPos = GetFirstLineBreakPosition(lastEndPos+1);
 
     node = m_children.GetFirst();
     while (node)
@@ -5127,7 +5128,8 @@ bool wxRichTextParagraph::Layout(wxDC& dc, wxRichTextDrawingContext& context, co
         // and found a suitable point some way into the child. So get the size for the fragment
         // if necessary.
 
-        long nextBreakPos = GetFirstLineBreakPosition(lastEndPos+1);
+        if (nextBreakPos > -1 && nextBreakPos < lastEndPos+1)
+            nextBreakPos = GetFirstLineBreakPosition(lastEndPos+1);
         long lastPosToUse = child->GetRange().GetEnd();
         bool lineBreakInThisObject = (nextBreakPos > -1 && nextBreakPos <= child->GetRange().GetEnd());
 
@@ -5691,6 +5693,7 @@ bool wxRichTextParagraph::InsertText(long pos, const wxString& text)
 void wxRichTextParagraph::Copy(const wxRichTextParagraph& obj)
 {
     wxRichTextCompositeObject::Copy(obj);
+    m_impactedByFloatingObjects = obj.m_impactedByFloatingObjects;
 }
 
 /// Clear the cached lines
@@ -7025,8 +7028,6 @@ bool wxRichTextPlainText::DrawTabbedString(wxDC& dc, const wxRichTextAttr& attr,
     else
         tabCount = 0;
 
-    int nextTabPos = -1;
-    int tabPos = -1;
     wxCoord w, h;
 
     if (selected)
@@ -7060,10 +7061,12 @@ bool wxRichTextPlainText::DrawTabbedString(wxDC& dc, const wxRichTextAttr& attr,
         wxString stringChunk = str.BeforeFirst(wxT('\t'));
         str = str.AfterFirst(wxT('\t'));
         dc.GetTextExtent(stringChunk, & w, & h);
+        int tabPos;
         tabPos = x + w;
         bool not_found = true;
         for (int i = 0; i < tabCount && not_found; ++i)
         {
+            int nextTabPos;
             nextTabPos = tabArray.Item(i) + x_orig;
 
             // Find the next tab position.
@@ -7252,8 +7255,6 @@ bool wxRichTextPlainText::GetRangeSize(const wxRichTextRange& range, wxSize& siz
             tabArray[i] = pos;
         }
 
-        int nextTabPos = -1;
-
         while (stringChunk.Find(wxT('\t')) >= 0)
         {
             int absoluteWidth = 0;
@@ -7294,6 +7295,7 @@ bool wxRichTextPlainText::GetRangeSize(const wxRichTextRange& range, wxSize& siz
             bool notFound = true;
             for (int i = 0; i < tabCount && notFound; ++i)
             {
+                int nextTabPos;
                 nextTabPos = tabArray.Item(i);
 
                 // Find the next tab position.
@@ -9301,7 +9303,7 @@ bool wxRichTextStdRenderer::MeasureBullet(wxRichTextParagraph* paragraph, wxDC& 
     if (attr.GetBulletStyle() & wxTEXT_ATTR_BULLET_STYLE_STANDARD)
     {
         sz.x = (int) (((float) dc.GetCharHeight()) * wxRichTextBuffer::GetBulletProportion());
-        sz.y = sz.y;
+        sz.y = sz.x;
     }
     else if (attr.HasBulletText())
     {
@@ -9656,13 +9658,13 @@ bool wxRichTextFieldTypeStandard::Draw(wxRichTextField* obj, wxDC& dc, wxRichTex
                 label = wxT("??");
             int w, h, maxDescent;
             dc.SetFont(m_font);
-            dc.GetTextExtent(m_label, & w, &h, & maxDescent);
+            dc.GetTextExtent(label, &w, &h, &maxDescent);
             dc.SetBackgroundMode(wxBRUSHSTYLE_TRANSPARENT);
             dc.SetTextForeground(textColour);
 
             int x = clientArea.x + (clientArea.width - w)/2;
             int y = clientArea.y + (clientArea.height - h)/2;
-            dc.DrawText(m_label, x, y);
+            dc.DrawText(label, x, y);
         }
     }
 
@@ -11522,7 +11524,6 @@ bool wxRichTextTableBlock::ComputeBlockForSelection(wxRichTextTable* table, wxRi
     {
         // Start with an invalid block and increase.
         wxRichTextTableBlock selBlock(-1, -1, -1, -1);
-        wxRichTextRangeArray ranges = selection.GetRanges();
         int row, col;
         for (row = 0; row < table->GetRowCount(); row++)
         {
@@ -14317,13 +14318,15 @@ void wxTextAttrDimension::CollectCommonAttributes(const wxTextAttrDimension& att
 }
 
 wxTextAttrDimensionConverter::wxTextAttrDimensionConverter(wxDC& dc, double scale, const wxSize& parentSize)
+    : m_parentSize(parentSize)
 {
-    m_ppi = dc.GetPPI().x; m_scale = scale; m_parentSize = parentSize;
+    m_ppi = dc.GetPPI().x; m_scale = scale;
 }
 
 wxTextAttrDimensionConverter::wxTextAttrDimensionConverter(int ppi, double scale, const wxSize& parentSize)
+    : m_parentSize(parentSize)
 {
-    m_ppi = ppi; m_scale = scale; m_parentSize = parentSize;
+    m_ppi = ppi; m_scale = scale;
 }
 
 int wxTextAttrDimensionConverter::ConvertTenthsMMToPixels(int units) const

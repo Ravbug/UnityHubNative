@@ -718,7 +718,7 @@ public:
 /**
     Used in a C++ implementation file to complete the declaration of a class
     that has run-time type information.
-    
+
     @header{wx/object.h}
 
     Example:
@@ -726,7 +726,7 @@ public:
     @code
     wxIMPLEMENT_ABSTRACT_CLASS(wxCommand, wxObject);
 
-    wxCommand::wxCommand(void)
+    wxCommand::wxCommand()
     {
         ...
     }
@@ -736,7 +736,7 @@ public:
 
 /**
     Used in a C++ implementation file to complete the declaration of a class
-    that has run-time type information and two base classes. 
+    that has run-time type information and two base classes.
 
     @header{wx/object.h}
 */
@@ -754,7 +754,7 @@ public:
     @code
     wxIMPLEMENT_DYNAMIC_CLASS(wxFrame, wxWindow);
 
-    wxFrame::wxFrame(void)
+    wxFrame::wxFrame()
     {
         ...
     }

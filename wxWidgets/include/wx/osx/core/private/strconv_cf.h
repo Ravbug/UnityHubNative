@@ -13,6 +13,7 @@
 
 #include <CoreFoundation/CFString.h>
 #include <CoreFoundation/CFStringEncodingExt.h>
+#include "wx/fontmap.h"
 
 // ============================================================================
 // CoreFoundation conversion classes
@@ -320,10 +321,10 @@ public:
         m_encoding = encoding ;
     }
 
-    virtual size_t ToWChar(wchar_t * dst, size_t dstSize, const char * src, size_t srcSize = wxNO_LEN) const;
-    virtual size_t FromWChar(char *dst, size_t dstSize, const wchar_t *src, size_t srcSize = wxNO_LEN) const;
+    virtual size_t ToWChar(wchar_t * dst, size_t dstSize, const char * src, size_t srcSize = wxNO_LEN) const wxOVERRIDE;
+    virtual size_t FromWChar(char *dst, size_t dstSize, const wchar_t *src, size_t srcSize = wxNO_LEN) const wxOVERRIDE;
 
-    virtual wxMBConv *Clone() const { return new wxMBConv_cf(*this); }
+    virtual wxMBConv *Clone() const wxOVERRIDE { return new wxMBConv_cf(*this); }
 
     bool IsOk() const
     {
@@ -335,3 +336,20 @@ private:
     CFStringEncoding m_encoding ;
 };
 
+// corresponding class for holding UniChars (native unicode characters)
+
+class WXDLLIMPEXP_BASE wxMacUniCharBuffer
+{
+    public :
+    wxMacUniCharBuffer( const wxString &str ) ;
+
+    ~wxMacUniCharBuffer() ;
+
+    UniCharPtr GetBuffer() ;
+
+    UniCharCount GetChars() ;
+
+    private :
+    UniCharPtr m_ubuf ;
+    UniCharCount m_chars ;
+};

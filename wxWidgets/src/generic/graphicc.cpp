@@ -260,6 +260,15 @@ public:
 
     virtual void Apply( wxGraphicsContext* context );
 
+    void CreateLinearGradientPattern(wxDouble x1, wxDouble y1,
+                                     wxDouble x2, wxDouble y2,
+                                     const wxGraphicsGradientStops& stops,
+                                     const wxGraphicsMatrix& matrix = wxNullGraphicsMatrix);
+    void CreateRadialGradientPattern(wxDouble startX, wxDouble startY,
+                                     wxDouble endX, wxDouble endY, wxDouble radius,
+                                     const wxGraphicsGradientStops& stops,
+                                     const wxGraphicsMatrix& matrix = wxNullGraphicsMatrix);
+
 protected:
     // Call this to use the given bitmap as stipple. Bitmap must be non-null
     // and valid.
@@ -268,6 +277,8 @@ protected:
     // Call this to use the given hatch style. Hatch style must be valid.
     void InitHatch(wxHatchStyle hatchStyle);
 
+    // common part of Create{Linear,Radial}GradientPattern()
+    void AddGradientStops(const wxGraphicsGradientStops& stops);
 
     double m_red;
     double m_green;
@@ -316,18 +327,8 @@ public:
     wxCairoBrushData( wxGraphicsRenderer* renderer );
     wxCairoBrushData( wxGraphicsRenderer* renderer, const wxBrush &brush );
 
-    void CreateLinearGradientBrush(wxDouble x1, wxDouble y1,
-                                   wxDouble x2, wxDouble y2,
-                                   const wxGraphicsGradientStops& stops);
-    void CreateRadialGradientBrush(wxDouble xo, wxDouble yo,
-                                   wxDouble xc, wxDouble yc, wxDouble radius,
-                                   const wxGraphicsGradientStops& stops);
-
 protected:
     void Init();
-
-    // common part of Create{Linear,Radial}GradientBrush()
-    void AddGradientStops(const wxGraphicsGradientStops& stops);
 };
 
 class wxCairoFontData : public wxGraphicsObjectRefData
@@ -721,6 +722,66 @@ void wxCairoPenBrushBaseData::Apply( wxGraphicsContext* context )
         cairo_set_source_rgba(ctext, m_red, m_green, m_blue, m_alpha);
 }
 
+void wxCairoPenBrushBaseData::AddGradientStops(const wxGraphicsGradientStops& stops)
+{
+    // loop over all the stops, they include the beginning and ending ones
+    const unsigned numStops = stops.GetCount();
+    for ( unsigned n = 0; n < numStops; n++ )
+    {
+        const wxGraphicsGradientStop stop = stops.Item(n);
+
+        const wxColour col = stop.GetColour();
+
+        cairo_pattern_add_color_stop_rgba
+        (
+            m_pattern,
+            stop.GetPosition(),
+            col.Red()/255.0,
+            col.Green()/255.0,
+            col.Blue()/255.0,
+            col.Alpha()/255.0
+        );
+    }
+
+    wxASSERT_MSG(cairo_pattern_status(m_pattern) == CAIRO_STATUS_SUCCESS,
+                 wxT("Couldn't create cairo pattern"));
+}
+
+void
+wxCairoPenBrushBaseData::CreateLinearGradientPattern(wxDouble x1, wxDouble y1,
+                                                     wxDouble x2, wxDouble y2,
+                                                     const wxGraphicsGradientStops& stops,
+                                                     const wxGraphicsMatrix& matrix)
+{
+    m_pattern = cairo_pattern_create_linear(x1,y1,x2,y2);
+
+    if ( !matrix.IsNull() )
+    {
+        cairo_matrix_t m = *((cairo_matrix_t*) matrix.GetNativeMatrix());
+        cairo_pattern_set_matrix(m_pattern, &m);
+    }
+
+    AddGradientStops(stops);
+}
+
+void
+wxCairoPenBrushBaseData::CreateRadialGradientPattern(wxDouble startX, wxDouble startY,
+                                                     wxDouble endX, wxDouble endY,
+                                                     wxDouble radius,
+                                                     const wxGraphicsGradientStops& stops,
+                                                     const wxGraphicsMatrix& matrix)
+{
+    m_pattern = cairo_pattern_create_radial(startX,startY,0.0,endX,endY,radius);
+
+    if ( !matrix.IsNull() )
+    {
+        cairo_matrix_t m = *((cairo_matrix_t*) matrix.GetNativeMatrix());
+        cairo_pattern_set_matrix(m_pattern, &m);
+    }
+
+    AddGradientStops(stops);
+}
+
 //-----------------------------------------------------------------------------
 // wxCairoPenData implementation
 //-----------------------------------------------------------------------------
@@ -732,6 +793,7 @@ wxCairoPenData::~wxCairoPenData()
 
 void wxCairoPenData::Init()
 {
+    m_pattern = NULL;
     m_lengths = NULL;
     m_userLengths = NULL;
     m_width = 0;
@@ -867,6 +929,27 @@ wxCairoPenData::wxCairoPenData( wxGraphicsRenderer* renderer, const wxGraphicsPe
         }
         break;
     }
+
+    switch ( info.GetGradientType() )
+    {
+    case wxGRADIENT_NONE:
+        break;
+
+    case wxGRADIENT_LINEAR:
+        CreateLinearGradientPattern(info.GetX1(), info.GetY1(),
+                                    info.GetX2(), info.GetY2(),
+                                    info.GetStops(),
+                                    info.GetMatrix());
+        break;
+
+    case wxGRADIENT_RADIAL:
+        CreateRadialGradientPattern(info.GetStartX(), info.GetStartY(),
+                                    info.GetEndX(), info.GetEndY(),
+                                    info.GetRadius(),
+                                    info.GetStops(),
+                                    info.GetMatrix());
+        break;
+    }
 }
 
 void wxCairoPenData::Apply( wxGraphicsContext* context )
@@ -909,52 +992,6 @@ wxCairoBrushData::wxCairoBrushData( wxGraphicsRenderer* renderer,
                 InitHatch(static_cast<wxHatchStyle>(brush.GetStyle()));
             break;
     }
-}
-
-void wxCairoBrushData::AddGradientStops(const wxGraphicsGradientStops& stops)
-{
-    // loop over all the stops, they include the beginning and ending ones
-    const unsigned numStops = stops.GetCount();
-    for ( unsigned n = 0; n < numStops; n++ )
-    {
-        const wxGraphicsGradientStop stop = stops.Item(n);
-
-        const wxColour col = stop.GetColour();
-
-        cairo_pattern_add_color_stop_rgba
-        (
-            m_pattern,
-            stop.GetPosition(),
-            col.Red()/255.0,
-            col.Green()/255.0,
-            col.Blue()/255.0,
-            col.Alpha()/255.0
-        );
-    }
-
-    wxASSERT_MSG(cairo_pattern_status(m_pattern) == CAIRO_STATUS_SUCCESS,
-                 wxT("Couldn't create cairo pattern"));
-}
-
-void
-wxCairoBrushData::CreateLinearGradientBrush(wxDouble x1, wxDouble y1,
-                                            wxDouble x2, wxDouble y2,
-                                            const wxGraphicsGradientStops& stops)
-{
-    m_pattern = cairo_pattern_create_linear(x1,y1,x2,y2);
-
-    AddGradientStops(stops);
-}
-
-void
-wxCairoBrushData::CreateRadialGradientBrush(wxDouble xo, wxDouble yo,
-                                            wxDouble xc, wxDouble yc,
-                                            wxDouble radius,
-                                            const wxGraphicsGradientStops& stops)
-{
-    m_pattern = cairo_pattern_create_radial(xo,yo,0.0,xc,yc,radius);
-
-    AddGradientStops(stops);
 }
 
 void wxCairoBrushData::Init()
@@ -1869,7 +1906,7 @@ wxCairoContext::wxCairoContext( wxGraphicsRenderer* renderer, const wxWindowDC& 
 #endif
 
 #ifdef __WXQT__
-    m_qtPainter = (QPainter*) dc.GetHandle();
+    m_qtPainter = static_cast<QPainter*>(dc.GetHandle());
     // create a internal buffer (fallback if cairo_qt_surface is missing)
     m_qtImage = new QImage(width, height, QImage::Format_ARGB32_Premultiplied);
     // clear the buffer to be painted over the current contents
@@ -2084,7 +2121,7 @@ wxCairoContext::wxCairoContext( wxGraphicsRenderer* renderer, const wxMemoryDC& 
 #endif
 
 #ifdef __WXQT__
-    m_qtPainter = NULL;
+    m_qtPainter = static_cast<QPainter*>(dc.GetHandle());
     // create a internal buffer (fallback if cairo_qt_surface is missing)
     m_qtImage = new QImage(width, height, QImage::Format_ARGB32_Premultiplied);
     // clear the buffer to be painted over the current contents
@@ -2234,6 +2271,11 @@ wxCairoContext::wxCairoContext(wxGraphicsRenderer* renderer, HWND hWnd)
 wxCairoContext::wxCairoContext( wxGraphicsRenderer* renderer, cairo_t *context )
 : wxGraphicsContext(renderer)
 {
+#ifdef __WXQT__
+    m_qtPainter = NULL;
+    m_qtImage = NULL;
+    m_qtSurface = NULL;
+#endif
 #ifdef __WXMSW__
     m_mswSurface = NULL;
     m_mswStateSavedDC = 0;
@@ -2288,6 +2330,11 @@ wxCairoContext::wxCairoContext( wxGraphicsRenderer* renderer, wxWindow *window)
 wxCairoContext::wxCairoContext(wxGraphicsRenderer* renderer) :
     wxGraphicsContext(renderer)
 {
+#ifdef __WXQT__
+    m_qtPainter = NULL;
+    m_qtImage = NULL;
+    m_qtSurface = NULL;
+#endif
 #ifdef __WXMSW__
     m_mswSurface = NULL;
     m_mswStateSavedDC = 0;
@@ -2566,6 +2613,7 @@ void wxCairoContext::Flush()
     if ( m_qtSurface )
     {
         cairo_surface_flush(m_qtSurface);
+        m_qtPainter->drawImage( 0,0, *m_qtImage );
     }
 #endif
 }
@@ -2945,13 +2993,15 @@ public :
     virtual wxGraphicsBrush
     CreateLinearGradientBrush(wxDouble x1, wxDouble y1,
                               wxDouble x2, wxDouble y2,
-                              const wxGraphicsGradientStops& stops) wxOVERRIDE;
+                              const wxGraphicsGradientStops& stops,
+                              const wxGraphicsMatrix& matrix = wxNullGraphicsMatrix) wxOVERRIDE;
 
     virtual wxGraphicsBrush
-    CreateRadialGradientBrush(wxDouble xo, wxDouble yo,
-                              wxDouble xc, wxDouble yc,
+    CreateRadialGradientBrush(wxDouble startX, wxDouble startY,
+                              wxDouble endX, wxDouble endY,
                               wxDouble radius,
-                              const wxGraphicsGradientStops& stops) wxOVERRIDE;
+                              const wxGraphicsGradientStops& stops,
+                              const wxGraphicsMatrix& matrix = wxNullGraphicsMatrix) wxOVERRIDE;
 
     // sets the font
     virtual wxGraphicsFont CreateFont( const wxFont &font , const wxColour &col = *wxBLACK ) wxOVERRIDE ;
@@ -2959,6 +3009,9 @@ public :
                                       const wxString& facename,
                                       int flags = wxFONTFLAG_DEFAULT,
                                       const wxColour& col = *wxBLACK) wxOVERRIDE;
+    virtual wxGraphicsFont CreateFontAtDPI(const wxFont& font,
+                                           const wxRealPoint& dpi,
+                                           const wxColour& col) wxOVERRIDE;
 
     // create a native bitmap representation
     virtual wxGraphicsBitmap CreateBitmap( const wxBitmap &bitmap ) wxOVERRIDE;
@@ -3139,28 +3192,31 @@ wxGraphicsBrush wxCairoRenderer::CreateBrush(const wxBrush& brush )
 wxGraphicsBrush
 wxCairoRenderer::CreateLinearGradientBrush(wxDouble x1, wxDouble y1,
                                            wxDouble x2, wxDouble y2,
-                                           const wxGraphicsGradientStops& stops)
+                                           const wxGraphicsGradientStops& stops,
+                                           const wxGraphicsMatrix& matrix)
 {
     wxGraphicsBrush p;
     ENSURE_LOADED_OR_RETURN(p);
     wxCairoBrushData* d = new wxCairoBrushData( this );
-    d->CreateLinearGradientBrush(x1, y1, x2, y2, stops);
+    d->CreateLinearGradientPattern(x1, y1, x2, y2, stops, matrix);
     p.SetRefData(d);
     return p;
 }
 
 wxGraphicsBrush
-wxCairoRenderer::CreateRadialGradientBrush(wxDouble xo, wxDouble yo,
-                                           wxDouble xc, wxDouble yc, wxDouble r,
-                                           const wxGraphicsGradientStops& stops)
+wxCairoRenderer::CreateRadialGradientBrush(wxDouble startX, wxDouble startY,
+                                           wxDouble endX, wxDouble endY, wxDouble r,
+                                           const wxGraphicsGradientStops& stops,
+                                           const wxGraphicsMatrix& matrix)
 {
     wxGraphicsBrush p;
     ENSURE_LOADED_OR_RETURN(p);
     wxCairoBrushData* d = new wxCairoBrushData( this );
-    d->CreateRadialGradientBrush(xo, yo, xc, yc, r, stops);
+    d->CreateRadialGradientPattern(startX, startY, endX, endY, r, stops, matrix);
     p.SetRefData(d);
     return p;
 }
+
 
 wxGraphicsFont wxCairoRenderer::CreateFont( const wxFont &font , const wxColour &col )
 {
@@ -3183,6 +3239,14 @@ wxCairoRenderer::CreateFont(double sizeInPixels,
     ENSURE_LOADED_OR_RETURN(font);
     font.SetRefData(new wxCairoFontData(this, sizeInPixels, facename, flags, col));
     return font;
+}
+
+wxGraphicsFont
+wxCairoRenderer::CreateFontAtDPI(const wxFont& font,
+                                 const wxRealPoint& WXUNUSED(dpi),
+                                 const wxColour& col)
+{
+    return CreateFont(font, col);
 }
 
 wxGraphicsBitmap wxCairoRenderer::CreateBitmap( const wxBitmap& bmp )
@@ -3319,13 +3383,13 @@ wxGraphicsRenderer* wxGraphicsRenderer::GetCairoRenderer()
 
 #endif  // wxUSE_CAIRO/!wxUSE_CAIRO
 
-// MSW and OS X have their own native default renderers, but the other ports
-// use Cairo by default
-#if !(defined(__WXMSW__) || defined(__WXOSX__))
+// MSW and OS X and Qt on Windows have their own native default renderers, but the other ports
+// use Cairo by default.
+#if !(defined(__WXMSW__) || defined(__WXOSX__) || (defined(__WXQT__) && defined(__WIN32__)))
 wxGraphicsRenderer* wxGraphicsRenderer::GetDefaultRenderer()
 {
     return GetCairoRenderer();
 }
-#endif // !(__WXMSW__ || __WXOSX__)
+#endif // !(__WXMSW__ || __WXOSX__ || (defined(__WXQT__) && defined(__WIN32__)))
 
 #endif // wxUSE_GRAPHICS_CONTEXT

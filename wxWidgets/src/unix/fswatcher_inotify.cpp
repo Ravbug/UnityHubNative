@@ -75,7 +75,7 @@ public:
             return false;
         }
 
-        m_source = loop->AddSourceForFD
+        m_source = wxEventLoopBase::AddSourceForFD
                          (
                           m_ifd,
                           m_handler,
@@ -533,7 +533,7 @@ protected:
             }
 
             m_cookies.erase(it);
-            delete &inevt;
+            delete[] (char*)&inevt;
             it = m_cookies.begin();
         }
     }

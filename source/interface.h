@@ -52,6 +52,12 @@ class MainFrame : public wxFrame
 		wxListCtrl* projectsList;
 		wxListBox* installsList;
 		wxListBox* installsPathsList;
+		wxPanel* learn_pane;
+		wxButton* backBtn;
+		wxStaticText* titleLabel;
+		wxButton* forwardBtn;
+		wxButton* homeBtn;
+		wxBoxSizer* webSizer;
 		wxMenuBar* menubar;
 		wxMenuItem* menuReveal;
 

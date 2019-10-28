@@ -159,6 +159,12 @@ public:
     // compute column title width
     int GetColumnTitleWidth(const wxHeaderColumn& col);
 
+    // compute column title width for the column with the given index
+    int GetColumnTitleWidth(unsigned int idx)
+    {
+        return GetColumnTitleWidth(GetColumn(idx));
+    }
+
     // implementation only from now on
     // -------------------------------
 
@@ -345,6 +351,8 @@ protected:
         return -1;
     }
 
+    void OnHeaderResizing(wxHeaderCtrlEvent& evt);
+
 private:
     // functions implementing our public API
     void DoInsert(const wxHeaderColumnSimple& col, unsigned int idx);
@@ -371,6 +379,7 @@ private:
 
 
     wxDECLARE_NO_COPY_CLASS(wxHeaderCtrlSimple);
+    wxDECLARE_EVENT_TABLE();
 };
 
 // ----------------------------------------------------------------------------

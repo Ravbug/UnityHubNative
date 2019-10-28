@@ -52,6 +52,10 @@
     - wxDataViewModel::ItemsDeleted,
     - wxDataViewModel::ItemsChanged.
 
+    Note that Cleared() can be called for all changes involving many, or all,
+    of the model items and not only for deleting all of them (i.e. clearing the
+    model).
+
     This class maintains a list of wxDataViewModelNotifier which link this class
     to the specific implementations on the supported platforms so that e.g. calling
     wxDataViewModel::ValueChanged on this model will just call
@@ -78,10 +82,10 @@
     @endcode
 
     A potentially better way to avoid memory leaks is to use wxObjectDataPtr
-    
+
     @code
         wxObjectDataPtr<MyMusicModel> musicModel;
-        
+
         wxDataViewCtrl *musicCtrl = new wxDataViewCtrl( this, wxID_ANY );
         musicModel = new MyMusicModel;
         m_musicCtrl->AssociateModel( musicModel.get() );
@@ -129,8 +133,16 @@ public:
                      unsigned int col);
 
     /**
-        Called to inform the model that all data has been cleared.
-        The control will reread the data from the model again.
+        Called to inform the model that all of its data has been changed.
+
+        This method should be called if so many of the model items have
+        changed, that the control should just reread all of them, repopulating
+        itself entirely.
+
+        Note that, contrary to the name of the method, it doesn't necessarily
+        indicate that model has become empty -- although this is the right
+        method to call, rather than ItemsDeleted(), if it was indeed cleared,
+        which explains the origin of its name.
     */
     bool Cleared();
 
@@ -382,7 +394,7 @@ public:
     */
     bool ValueChanged(const wxDataViewItem& item, unsigned int col);
 
-    
+
     virtual bool IsListModel() const;
     virtual bool IsVirtualListModel() const;
 
@@ -527,7 +539,7 @@ public:
     have other reason to use a virtual control.
 
     @see wxDataViewListModel for the API.
-    
+
     @library{wxcore}
     @category{dvc}
 */
@@ -1634,7 +1646,7 @@ public:
     /**
         Set custom colours and/or font to use for the header.
 
-        This method allows to customize the display of the control header (it
+        This method allows customizing the display of the control header (it
         does nothing if @c wxDV_NO_HEADER style is used).
 
         Currently it is only implemented in the generic version and just
@@ -2064,7 +2076,7 @@ public:
     */
     virtual bool Validate(wxVariant& value);
 
-    
+
     virtual bool HasEditorCtrl() const;
     virtual wxWindow* CreateEditorCtrl(wxWindow * parent,
                                        wxRect labelRect,
@@ -2208,7 +2220,7 @@ public:
 class wxDataViewCheckIconTextRenderer : public wxDataViewRenderer
 {
 public:
-    static wxString GetDefaultType() { return wxS("wxDataViewCheckIconText"); }
+    static wxString GetDefaultType();
 
     /**
         Create a new renderer.
@@ -2501,10 +2513,6 @@ public:
             corresponding event. Is @NULL otherwise (for keyboard activation).
             Mouse coordinates are adjusted to be relative to the cell.
 
-        @note Currently support for this method is not implemented in the
-            native macOS version of the control, i.e. it will be never called
-            there.
-
         @since 2.9.3
 
         @note Do not confuse this method with item activation in wxDataViewCtrl
@@ -2550,6 +2558,10 @@ public:
                         labelRect.GetTopLeft(), labelRect.GetSize(), 0, 0, 100, l );
         }
         @endcode
+
+        @note Currently support for this method is not implemented in the
+            native macOS version of the control, i.e. it will be never called
+            there.
 
         @see ActivateCell()
     */
@@ -2702,6 +2714,12 @@ enum wxDataViewColumnFlags
     wxDataViewCtrl has been associated.
 
     An instance of wxDataViewRenderer is used by this class to render its data.
+
+    @note In wxGTK, setting the width of the column doesn't happen immediately
+        when SetWidth() is called, but only slightly later and GetWidth() will
+        return the old width (0 initially) until this happens. If the column
+        widths are set before wxDataViewCtrl is initially shown, they will only
+        be effectively set when it becomes visible.
 
     @library{wxcore}
     @category{dvc}
@@ -3280,7 +3298,7 @@ public:
         Returns true if item is a container.
     */
     bool IsContainer( const wxDataViewItem& item );
-    
+
     /**
         Calls the same method from wxDataViewTreeStore but uses
         an index position in the image list instead of a wxIcon.

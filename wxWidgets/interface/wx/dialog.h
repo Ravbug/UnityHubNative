@@ -299,6 +299,7 @@ public:
        broken either after a new line or wrapped, at word boundary, if their
        width would become bigger than the specified maximal width.
 
+       @param message The text to be displayed.
        @param widthMax Specifies the text's maximum width (this argument is
         available since version 3.1.1, previous versions always behaved as if
         the maximal width of -1 was specified).
@@ -590,7 +591,7 @@ public:
         EndModal().
 
         Notice that it is possible to call ShowModal() for a dialog which had
-        been previously shown with Show(), this allows to make an existing
+        been previously shown with Show(), this allows making an existing
         modeless dialog modal. However ShowModal() can't be called twice
         without intervening EndModal() calls.
 

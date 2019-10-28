@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     01.03.03
-// Copyright:   (c) 2003-2006 Vadim Zeitlin <vadim@wxwindows.org>
+// Copyright:   (c) 2003-2006 Vadim Zeitlin <vadim@wxwidgets.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -111,6 +111,11 @@ wxDisplay::wxDisplay(const wxWindow* window)
     wxCHECK_MSG( window, wxNOT_FOUND, wxT("invalid window") );
 
     return Factory().GetFromWindow(window);
+}
+
+/* static */ void wxDisplay::InvalidateCache()
+{
+    Factory().InvalidateCache();
 }
 
 // ----------------------------------------------------------------------------
@@ -229,18 +234,27 @@ wxSize wxDisplayImpl::GetPPI() const
 // wxDisplayFactory implementation
 // ============================================================================
 
-wxDisplayFactory::~wxDisplayFactory()
+void wxDisplayFactory::ClearImpls()
 {
     for ( size_t n = 0; n < m_impls.size(); ++n )
     {
         // It can be null, that's ok.
         delete m_impls[n];
     }
+
+    m_impls.clear();
 }
 
 int wxDisplayFactory::GetFromWindow(const wxWindow *window)
 {
     wxCHECK_MSG( window, wxNOT_FOUND, "window can't be NULL" );
+
+    // Check if the window is created: we can't find its display before this is
+    // done anyhow, as we simply don't know on which display will it appear,
+    // and trying to do this below would just result in assert failures inside
+    // GetScreenRect() if the window doesn't yet exist, so return immediately.
+    if ( !window->GetHandle() )
+        return wxNOT_FOUND;
 
     // consider that the window belongs to the display containing its centre
     const wxRect r(window->GetScreenRect());

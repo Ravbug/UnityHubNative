@@ -60,33 +60,33 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	projects_pane->SetSizer( projectManSizer );
 	projects_pane->Layout();
 	projectManSizer->Fit( projects_pane );
-	notebook->AddPage( projects_pane, wxT("Projects"), false );
+	notebook->AddPage( projects_pane, wxT("Projects"), true );
 	wxPanel* installs_pane;
 	installs_pane = new wxPanel( notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	wxGridBagSizer* iManSizer;
-	iManSizer = new wxGridBagSizer( 0, 0 );
-	iManSizer->SetFlexibleDirection( wxBOTH );
-	iManSizer->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+	wxGridBagSizer* MainSizer;
+	MainSizer = new wxGridBagSizer( 0, 0 );
+	MainSizer->SetFlexibleDirection( wxBOTH );
+	MainSizer->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
 	wxStaticText* m_staticText5;
 	m_staticText5 = new wxStaticText( installs_pane, wxID_ANY, wxT("Detected Installations"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText5->Wrap( -1 );
 	m_staticText5->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD, false, wxEmptyString ) );
 
-	iManSizer->Add( m_staticText5, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALL, 5 );
+	MainSizer->Add( m_staticText5, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALL, 5 );
 
 	wxStaticText* m_staticText6;
 	m_staticText6 = new wxStaticText( installs_pane, wxID_ANY, wxT("Install Search Paths"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText6->Wrap( -1 );
 	m_staticText6->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD, false, wxEmptyString ) );
 
-	iManSizer->Add( m_staticText6, wxGBPosition( 2, 0 ), wxGBSpan( 1, 1 ), wxALL, 5 );
+	MainSizer->Add( m_staticText6, wxGBPosition( 2, 0 ), wxGBSpan( 1, 1 ), wxALL, 5 );
 
 	installsList = new wxListBox( installs_pane, wxID_FLOPPY, wxDefaultPosition, wxDefaultSize, 0, NULL, wxLB_HSCROLL|wxLB_NEEDED_SB|wxLB_SINGLE );
-	iManSizer->Add( installsList, wxGBPosition( 1, 0 ), wxGBSpan( 1, 1 ), wxALL|wxEXPAND, 5 );
+	MainSizer->Add( installsList, wxGBPosition( 1, 0 ), wxGBSpan( 1, 1 ), wxALL|wxEXPAND, 5 );
 
 	installsPathsList = new wxListBox( installs_pane, wxID_HOME, wxDefaultPosition, wxDefaultSize, 0, NULL, wxLB_HSCROLL|wxLB_NEEDED_SB|wxLB_SINGLE );
-	iManSizer->Add( installsPathsList, wxGBPosition( 3, 0 ), wxGBSpan( 1, 1 ), wxALL|wxEXPAND, 5 );
+	MainSizer->Add( installsPathsList, wxGBPosition( 3, 0 ), wxGBSpan( 1, 1 ), wxALL|wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer4;
 	bSizer4 = new wxBoxSizer( wxVERTICAL );
@@ -100,7 +100,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	bSizer4->Add( m_button6, 0, wxALL|wxEXPAND, 5 );
 
 
-	iManSizer->Add( bSizer4, wxGBPosition( 3, 1 ), wxGBSpan( 1, 1 ), wxEXPAND, 5 );
+	MainSizer->Add( bSizer4, wxGBPosition( 3, 1 ), wxGBSpan( 1, 1 ), wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer5;
 	bSizer5 = new wxBoxSizer( wxVERTICAL );
@@ -114,17 +114,49 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	bSizer5->Add( reloadInstalls, 0, wxALL|wxEXPAND, 5 );
 
 
-	iManSizer->Add( bSizer5, wxGBPosition( 1, 1 ), wxGBSpan( 1, 1 ), wxEXPAND, 5 );
+	MainSizer->Add( bSizer5, wxGBPosition( 1, 1 ), wxGBSpan( 1, 1 ), wxEXPAND, 5 );
 
 
-	iManSizer->AddGrowableCol( 0 );
-	iManSizer->AddGrowableRow( 1 );
-	iManSizer->AddGrowableRow( 3 );
+	MainSizer->AddGrowableCol( 0 );
+	MainSizer->AddGrowableRow( 1 );
+	MainSizer->AddGrowableRow( 3 );
 
-	installs_pane->SetSizer( iManSizer );
+	installs_pane->SetSizer( MainSizer );
 	installs_pane->Layout();
-	iManSizer->Fit( installs_pane );
-	notebook->AddPage( installs_pane, wxT("Editor Versions"), true );
+	MainSizer->Fit( installs_pane );
+	notebook->AddPage( installs_pane, wxT("Editor Versions"), false );
+	learn_pane = new wxPanel( notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxGridBagSizer* learnSizer;
+	learnSizer = new wxGridBagSizer( 0, 0 );
+	learnSizer->SetFlexibleDirection( wxBOTH );
+	learnSizer->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+
+	backBtn = new wxButton( learn_pane, wxID_ANY, wxT("<"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
+	learnSizer->Add( backBtn, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALL, 5 );
+
+	titleLabel = new wxStaticText( learn_pane, wxID_ANY, wxT("Title"), wxDefaultPosition, wxDefaultSize, 0 );
+	titleLabel->Wrap( -1 );
+	learnSizer->Add( titleLabel, wxGBPosition( 0, 3 ), wxGBSpan( 1, 1 ), wxALL, 5 );
+
+	forwardBtn = new wxButton( learn_pane, wxID_ANY, wxT(">"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
+	learnSizer->Add( forwardBtn, wxGBPosition( 0, 1 ), wxGBSpan( 1, 1 ), wxALL, 5 );
+
+	homeBtn = new wxButton( learn_pane, wxID_ANY, wxT("Home"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
+	learnSizer->Add( homeBtn, wxGBPosition( 0, 2 ), wxGBSpan( 1, 1 ), wxALL, 5 );
+
+	webSizer = new wxBoxSizer( wxVERTICAL );
+
+
+	learnSizer->Add( webSizer, wxGBPosition( 1, 0 ), wxGBSpan( 1, 4 ), wxEXPAND, 5 );
+
+
+	learnSizer->AddGrowableCol( 2 );
+	learnSizer->AddGrowableRow( 1 );
+
+	learn_pane->SetSizer( learnSizer );
+	learn_pane->Layout();
+	learnSizer->Fit( learn_pane );
+	notebook->AddPage( learn_pane, wxT("Learn"), false );
 
 	main_sizer->Add( notebook, 1, wxEXPAND | wxALL, 5 );
 

@@ -489,23 +489,38 @@ public:
 
         @since 2.9.2
 
-        @see OnKill()
+        @see OnKill(), OnExit()
     */
     virtual void OnDelete();
 
     /**
-        Callback called by Kill() before actually killing the thread.
+        Callback called by wxThread::Kill() before actually killing the thread.
 
         This function can be overridden by the derived class to perform some
         specific task when the thread is terminated. Notice that it will be
-        executed in the context of the thread that called Kill() and <b>not</b>
+        executed in the context of the thread that called wxThread::Kill() and <b>not</b>
         in this thread's context.
 
         @since 2.9.2
 
-        @see OnDelete()
+        @see OnDelete(), OnExit()
     */
     virtual void OnKill();
+
+    /**
+        Callback called by wxThread::Exit() before actually exiting the thread.
+        This function will not be called if the thread was killed with wxThread::Kill.
+
+        This function can be overridden by the derived class to perform some
+        specific task when the thread is exited. The base class version does
+        nothing and doesn't need to be called if this method is overridden.
+
+        Note that this function is protected since wxWidgets 3.1.1,
+        but previously existed as a private method since 2.9.2.
+
+        @see OnDelete(), OnKill()
+    */
+    virtual void OnExit();
 
     /**
         @deprecated
@@ -1042,11 +1057,19 @@ public:
     wxThreadError Create(unsigned int stackSize = 0);
 
     /**
-        Calling Delete() gracefully terminates a @b detached thread, either when
-        the thread calls TestDestroy() or when it finishes processing.
+        Calling Delete() requests termination of any thread.
+
+        Note that Delete() doesn't actually stop the thread, but simply asks it
+        to terminate and so will work only if the thread calls TestDestroy()
+        periodically. For detached threads, Delete() returns immediately,
+        without waiting for the thread to actually terminate, while for
+        joinable threads it does wait for the thread to terminate and may also
+        return its exit code in @a rc argument.
 
         @param rc
-            The thread exit code, if rc is not NULL.
+            For joinable threads, filled with the thread exit code on
+            successful return, if non-@NULL. For detached threads this
+            parameter is not used.
 
         @param waitMode
             As described in wxThreadWait documentation, wxTHREAD_WAIT_BLOCK
@@ -1216,7 +1239,7 @@ public:
         of detached threads.
 
         This function can only be called from another thread context.
-        
+
         Finally, note that once a thread has completed and its Entry() function
         returns, you cannot call Run() on it again (an assert will fail in debug
         builds or @c wxTHREAD_RUNNING will be returned in release builds).
@@ -1363,19 +1386,6 @@ protected:
         OnExit() will be called just before exiting.
     */
     void Exit(ExitCode exitcode = 0);
-
-private:
-
-    /**
-        Called when the thread exits.
-
-        This function is called in the context of the thread associated with the
-        wxThread object, not in the context of the main thread.
-        This function will not be called if the thread was @ref Kill() killed.
-
-        This function should never be called directly.
-    */
-    virtual void OnExit();
 };
 
 
@@ -1772,7 +1782,7 @@ bool wxIsMainThread();
     Typically, these functions are used like this:
 
     @code
-    void MyThread::Foo(void)
+    void MyThread::Foo()
     {
         // before doing any GUI calls we must ensure that
         // this thread is the only one doing it!

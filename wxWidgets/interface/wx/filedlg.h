@@ -14,7 +14,8 @@ enum
     wxFD_FILE_MUST_EXIST   = 0x0010,
     wxFD_CHANGE_DIR        = 0x0080,
     wxFD_PREVIEW           = 0x0100,
-    wxFD_MULTIPLE          = 0x0200
+    wxFD_MULTIPLE          = 0x0200,
+    wxFD_SHOW_HIDDEN       = 0x0400
 };
 
 #define wxFD_DEFAULT_STYLE      wxFD_OPEN
@@ -48,14 +49,14 @@ const char wxFileSelectorDefaultWildcardStr[];
                 return;
             //else: proceed asking to the user the new file to open
         }
-        
-        wxFileDialog 
+
+        wxFileDialog
             openFileDialog(this, _("Open XYZ file"), "", "",
                            "XYZ files (*.xyz)|*.xyz", wxFD_OPEN|wxFD_FILE_MUST_EXIST);
 
         if (openFileDialog.ShowModal() == wxID_CANCEL)
             return;     // the user changed idea...
-        
+
         // proceed loading the file chosen by the user;
         // this can be done with e.g. wxWidgets input streams:
         wxFileInputStream input_stream(openFileDialog.GetPath());
@@ -64,22 +65,22 @@ const char wxFileSelectorDefaultWildcardStr[];
             wxLogError("Cannot open file '%s'.", openFileDialog.GetPath());
             return;
         }
-        
+
         ...
     }
     @endcode
-    
+
     The typical usage for the save file dialog is instead somewhat simpler:
     @code
     void MyFrame::OnSaveAs(wxCommandEvent& WXUNUSED(event))
     {
-        wxFileDialog 
+        wxFileDialog
             saveFileDialog(this, _("Save XYZ file"), "", "",
                            "XYZ files (*.xyz)|*.xyz", wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
 
         if (saveFileDialog.ShowModal() == wxID_CANCEL)
             return;     // the user changed idea...
-        
+
         // save the current contents in the file;
         // this can be done with e.g. wxWidgets output streams:
         wxFileOutputStream output_stream(saveFileDialog.GetPath());
@@ -88,7 +89,7 @@ const char wxFileSelectorDefaultWildcardStr[];
             wxLogError("Cannot save current contents in file '%s'.", saveFileDialog.GetPath());
             return;
         }
-        
+
         ...
     }
     @endcode
@@ -107,6 +108,18 @@ const char wxFileSelectorDefaultWildcardStr[];
     descriptive test; "BMP files (*.bmp)|*.bmp" is displayed as "*.bmp", and both
     "BMP files (*.bmp)|*.bmp|GIF files (*.gif)|*.gif" and "Image files|*.bmp;*.gif"
     are errors.
+    On Mac OS X in the open file dialog the filter choice box is not shown by default.
+    Instead all given wildcards are appplied at the same time: So in the above
+    example all bmp, gif and png files are displayed. To enforce the
+    display of the filter choice set the corresponding wxSystemOptions before calling
+    the file open dialog:
+    @code
+         wxSystemOptions::SetOption(wxOSX_FILEDIALOG_ALWAYS_SHOW_TYPES, 1)
+    @endcode
+    But in contrast to Windows and Unix, where the file type choice filters only
+    the selected files, on Mac OS X even in this case the dialog shows all files
+    matching all file types. The files which does not match the currently selected
+    file type are greyed out and are not selectable.
 
     @beginStyleTable
     @style{wxFD_DEFAULT_STYLE}
@@ -123,7 +136,8 @@ const char wxFileSelectorDefaultWildcardStr[];
     @style{wxFD_NO_FOLLOW}
            Directs the dialog to return the path and file name of the selected
            shortcut file, not its target as it does by default. Currently this
-           flag is only implemented in wxMSW and the non-dereferenced link path
+           flag is only implemented in wxMSW and wxOSX (where it prevents
+           aliases from being resolved). The non-dereferenced link path
            is always returned, even without this flag, under Unix and so using
            it there doesn't do anything. This flag was added in wxWidgets
            3.1.0.
@@ -136,11 +150,13 @@ const char wxFileSelectorDefaultWildcardStr[];
     @style{wxFD_MULTIPLE}
            For open dialog only: allows selecting multiple files.
     @style{wxFD_CHANGE_DIR}
-           Change the current working directory (when the dialog is dismissed) 
+           Change the current working directory (when the dialog is dismissed)
            to the directory where the file(s) chosen by the user are.
     @style{wxFD_PREVIEW}
            Show the preview of the selected files (currently only supported by
            wxGTK).
+    @style{wxFD_SHOW_HIDDEN}
+          Show hidden files. This flag was added in wxWidgets 3.1.3
     @endStyleTable
 
     @library{wxcore}
@@ -209,6 +225,29 @@ public:
         @see SetExtraControlCreator()
     */
     virtual wxString GetCurrentlySelectedFilename() const;
+
+    /**
+        Returns the file type filter index currently selected in dialog.
+
+        Notice that this file type filter is not necessarily going to be the
+        one finally accepted by the user, so calling this function mostly makes
+        sense from an update UI event handler of a custom file dialog extra
+        control to update its state depending on the currently selected file
+        type filter.
+
+        Currently this function is fully implemented only under MSW and
+        always returns @c wxNOT_FOUND elsewhere.
+
+        @since 3.1.3
+
+        @return The 0-based index of the currently selected file type filter or
+            wxNOT_FOUND if nothing is selected.
+
+        @see SetExtraControlCreator()
+        @see GetFilterIndex()
+        @see SetFilterIndex()
+    */
+    virtual int GetCurrentlySelectedFilterIndex () const;
 
     /**
         Returns the default directory.
@@ -302,7 +341,7 @@ public:
 
     /**
         Sets the default filename.
-        
+
         In wxGTK this will have little effect unless a default directory has previously been set.
     */
     virtual void SetFilename(const wxString& setfilename);
@@ -399,7 +438,9 @@ wxString wxFileSelector(const wxString& message,
                         int y = wxDefaultCoord);
 
 /**
-    An extended version of wxFileSelector
+    An extended version of wxFileSelector()
+
+    @header{wx/filedlg.h}
 */
 wxString wxFileSelectorEx(const wxString& message = wxFileSelectorPromptStr,
                           const wxString& default_path = wxEmptyString,
@@ -412,7 +453,11 @@ wxString wxFileSelectorEx(const wxString& message = wxFileSelectorPromptStr,
                           int y = wxDefaultCoord);
 
 /**
-    Ask for filename to load
+    Shows a file dialog asking the user for a file name for opening a file.
+
+    @see wxFileSelector(), wxFileDialog
+
+    @header{wx/filedlg.h}
 */
 wxString wxLoadFileSelector(const wxString& what,
                             const wxString& extension,
@@ -420,7 +465,11 @@ wxString wxLoadFileSelector(const wxString& what,
                             wxWindow *parent = NULL);
 
 /**
-    Ask for filename to save
+    Shows a file dialog asking the user for a file name for saving a file.
+
+    @see wxFileSelector(), wxFileDialog
+
+    @header{wx/filedlg.h}
 */
 wxString wxSaveFileSelector(const wxString& what,
                             const wxString& extension,

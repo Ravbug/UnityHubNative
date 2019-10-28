@@ -222,9 +222,6 @@
 
 #define wxUSE_STD_STRING_CONV_IN_WXSTRING wxUSE_STL
 
-#define wxUSE_IOSTREAMH     0
-
-
 
 #define wxUSE_LONGLONG      0
 
@@ -713,6 +710,8 @@
 #define wxUSE_INKEDIT  0
 
 #define wxUSE_INICONF 0
+
+#define wxUSE_WINSOCK2 0
 
 
 #define wxUSE_DATEPICKCTRL_GENERIC 0

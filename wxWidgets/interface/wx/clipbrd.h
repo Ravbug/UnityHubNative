@@ -96,8 +96,8 @@ public:
         (possibly eating memory), otherwise the clipboard will be emptied on
         exit.
 
-        Currently this method is not implemented in X11-based ports, i.e.
-        wxGTK, wxX11 and wxMotif and always returns @false there.
+        Currently this method is implemented in MSW and GTK and always returns @false
+        otherwise.
 
         @return @false if the operation is unsuccessful for any reason.
     */
@@ -165,7 +165,7 @@ public:
         until this function is called again with @false.
 
         On the other platforms, there is no PRIMARY selection and so all
-        clipboard operations will fail. This allows to implement the standard
+        clipboard operations will fail. This allows implementing the standard
         X11 handling of the clipboard which consists in copying data to the
         CLIPBOARD selection only when the user explicitly requests it (i.e. by
         selecting the "Copy" menu command) but putting the currently selected

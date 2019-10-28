@@ -66,9 +66,11 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 		ReloadData();
 	}
 	//if no projects to load, the interface will be blank
-	
-	//force first tab to select
-	notebook->SetSelection(0);
+
+	//setup Learn window
+	learnView = wxWebView::New(learn_pane,wxID_ANY);
+	webSizer->Add(learnView,1,wxEXPAND,wxALL);
+	learnView->LoadURL("https://learn.unity.com");
 }
 
 /**

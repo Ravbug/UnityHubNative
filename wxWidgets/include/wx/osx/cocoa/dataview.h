@@ -486,10 +486,7 @@ public:
     virtual wxDataViewItem GetTopItem() const;
     virtual bool IsExpanded(const wxDataViewItem& item) const;
     virtual bool Reload();
-    virtual bool Remove(const wxDataViewItem& parent,
-                        const wxDataViewItem& item);
-    virtual bool Remove(const wxDataViewItem& parent,
-                        const wxDataViewItemArray& item);
+    virtual bool Remove(const wxDataViewItem& parent);
     virtual bool Update(const wxDataViewColumn* columnPtr);
     virtual bool Update(const wxDataViewItem& parent,
                         const wxDataViewItem& item);
@@ -532,7 +529,7 @@ public:
     virtual void SetRowHeight(int height);
     virtual void SetRowHeight(const wxDataViewItem& item, unsigned int height);
     virtual void OnSize();
-    
+
     virtual void StartEditor( const wxDataViewItem & item, unsigned int column );
 
     // drag & drop helper methods

@@ -19,6 +19,8 @@
 
 #include "wx/fswatcher.h"
 #include "wx/osx/core/cfstring.h"
+#include "wx/osx/core/private/strconv_cf.h"
+
 #include <CoreFoundation/CoreFoundation.h>
 
 // A small class that we will give the FSEvents
@@ -419,8 +421,8 @@ bool wxFsEventsFileSystemWatcher::RemoveAll()
         FSEventStreamStop(it->second);
         FSEventStreamInvalidate(it->second);
         FSEventStreamRelease(it->second);
-        it++;
-        ret |= true;
+        ++it;
+        ret = true;
     }
     m_streams.clear();
     return ret;
@@ -499,7 +501,7 @@ int wxFsEventsFileSystemWatcher::GetWatchedPaths(wxArrayString* paths) const
     }
     wxFileSystemWatcherBase::GetWatchedPaths(paths);
     FSEventStreamRefMap::const_iterator it = m_streams.begin();
-    for ( ; it != m_streams.end(); it++ )
+    for ( ; it != m_streams.end(); ++it )
     {
         paths->push_back(it->first);
     }

@@ -92,6 +92,7 @@
     wxIMPLEMENT_DYNAMIC_CLASS(wxSetCursorEvent, wxEvent);
     wxIMPLEMENT_DYNAMIC_CLASS(wxSysColourChangedEvent, wxEvent);
     wxIMPLEMENT_DYNAMIC_CLASS(wxDisplayChangedEvent, wxEvent);
+    wxIMPLEMENT_DYNAMIC_CLASS(wxDPIChangedEvent, wxEvent);
     wxIMPLEMENT_DYNAMIC_CLASS(wxUpdateUIEvent, wxCommandEvent);
     wxIMPLEMENT_DYNAMIC_CLASS(wxNavigationKeyEvent, wxEvent);
     wxIMPLEMENT_DYNAMIC_CLASS(wxPaletteChangedEvent, wxEvent);
@@ -302,6 +303,7 @@ wxDEFINE_EVENT( wxEVT_MENU_HIGHLIGHT, wxMenuEvent );
 wxDEFINE_EVENT( wxEVT_CONTEXT_MENU, wxContextMenuEvent );
 wxDEFINE_EVENT( wxEVT_SYS_COLOUR_CHANGED, wxSysColourChangedEvent );
 wxDEFINE_EVENT( wxEVT_DISPLAY_CHANGED, wxDisplayChangedEvent );
+wxDEFINE_EVENT( wxEVT_DPI_CHANGED, wxDPIChangedEvent );
 wxDEFINE_EVENT( wxEVT_QUERY_NEW_PALETTE, wxQueryNewPaletteEvent );
 wxDEFINE_EVENT( wxEVT_PALETTE_CHANGED, wxPaletteChangedEvent );
 wxDEFINE_EVENT( wxEVT_JOY_BUTTON_DOWN, wxJoystickEvent );
@@ -373,8 +375,8 @@ wxEventFunctor::~wxEventFunctor()
  */
 
 wxEvent::wxEvent(int theId, wxEventType commandType)
+    : m_eventType(commandType)
 {
-    m_eventType = commandType;
     m_eventObject = NULL;
     m_timeStamp = 0;
     m_id = theId;
@@ -577,6 +579,7 @@ wxMouseEvent::wxMouseEvent(wxEventType commandType)
     m_wheelAxis = wxMOUSE_WHEEL_VERTICAL;
     m_wheelRotation = 0;
     m_wheelDelta = 0;
+    m_wheelInverted = false;
     m_linesPerAction = 0;
     m_columnsPerAction = 0;
     m_magnification = 0.0f;
@@ -601,10 +604,11 @@ void wxMouseEvent::Assign(const wxMouseEvent& event)
 
     m_wheelRotation = event.m_wheelRotation;
     m_wheelDelta = event.m_wheelDelta;
+    m_wheelInverted = event.m_wheelInverted;
     m_linesPerAction = event.m_linesPerAction;
     m_columnsPerAction = event.m_columnsPerAction;
     m_wheelAxis = event.m_wheelAxis;
-    
+
     m_magnification = event.m_magnification;
 }
 
@@ -754,12 +758,12 @@ wxPoint wxMouseEvent::GetLogicalPosition(const wxDC& dc) const
 // ----------------------------------------------------------------------------
 
 wxKeyEvent::wxKeyEvent(wxEventType type)
+#if wxUSE_UNICODE
+    : m_uniChar(WXK_NONE)
+#endif
 {
     m_eventType = type;
     m_keyCode = WXK_NONE;
-#if wxUSE_UNICODE
-    m_uniChar = WXK_NONE;
-#endif
 
     m_x =
     m_y = wxDefaultCoord;
@@ -786,6 +790,21 @@ wxKeyEvent::wxKeyEvent(wxEventType eventType, const wxKeyEvent& evt)
     m_eventType = eventType;
 
     InitPropagation();
+}
+
+wxKeyEvent& wxKeyEvent::operator=(const wxKeyEvent& evt)
+{
+    if ( &evt != this )
+    {
+        wxEvent::operator=(evt);
+
+        // Borland C++ 5.82 doesn't compile an explicit call to an
+        // implicitly defined operator=() so need to do it this way:
+        *static_cast<wxKeyboardState *>(this) = evt;
+
+        DoAssignMembers(evt);
+    }
+    return *this;
 }
 
 void wxKeyEvent::InitPositionIfNecessary() const
@@ -2040,7 +2059,7 @@ bool wxEventBlocker::ProcessEvent(wxEvent& event)
             return true;   // yes, it should: mark this event as processed
     }
 
-    return wxEvtHandler::ProcessEvent(event);;
+    return wxEvtHandler::ProcessEvent(event);
 }
 
 #endif // wxUSE_GUI

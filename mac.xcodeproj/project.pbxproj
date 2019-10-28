@@ -12,6 +12,7 @@
 		AA012114224C24D4000F4F82 /* wxmac.icns in Resources */ = {isa = PBXBuildFile; fileRef = AA012113224C24D4000F4F82 /* wxmac.icns */; };
 		AA012115224C24D4000F4F82 /* wxmac.icns in Resources */ = {isa = PBXBuildFile; fileRef = AA012113224C24D4000F4F82 /* wxmac.icns */; };
 		AA14A0F3222A1219002C4553 /* libwx_osx_cocoa.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AA1D0F81222A0A1D00678304 /* libwx_osx_cocoa.dylib */; };
+		AA256DE12367942600F9EA58 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA256DC72367942600F9EA58 /* WebKit.framework */; };
 		AA56E9702321F67C002BB5E1 /* globals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AA56E96F2321F67C002BB5E1 /* globals.cpp */; };
 		AA56E98A2321F67E002BB5E1 /* globals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AA56E96F2321F67C002BB5E1 /* globals.cpp */; };
 		AA9F4B912321BEE900FF2E24 /* interface_derived.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AA9F4B8F2321BEE900FF2E24 /* interface_derived.cpp */; };
@@ -227,6 +228,7 @@
 		AA1D0FC9222A0A4A00678304 /* wxrelease.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = wxrelease.xcconfig; path = wxWidgets/build/osx/wxrelease.xcconfig; sourceTree = SOURCE_ROOT; };
 		AA1D0FCA222A0A4B00678304 /* wxcocoa.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = wxcocoa.xcconfig; path = wxWidgets/build/osx/wxcocoa.xcconfig; sourceTree = SOURCE_ROOT; };
 		AA1D0FCB222A0A4B00678304 /* wxdebug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = wxdebug.xcconfig; path = wxWidgets/build/osx/wxdebug.xcconfig; sourceTree = SOURCE_ROOT; };
+		AA256DC72367942600F9EA58 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
 		AA56E96F2321F67C002BB5E1 /* globals.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = globals.cpp; sourceTree = "<group>"; };
 		AA9F4B8F2321BEE900FF2E24 /* interface_derived.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = interface_derived.cpp; sourceTree = "<group>"; };
 		AA9F4B902321BEE900FF2E24 /* interface_derived.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = interface_derived.hpp; sourceTree = "<group>"; };
@@ -258,6 +260,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA256DE12367942600F9EA58 /* WebKit.framework in Frameworks */,
 				AADF6A33222B360C00991DD2 /* Foundation.framework in Frameworks */,
 				AADF6A31222B360700991DD2 /* AppKit.framework in Frameworks */,
 				AADF6A2F222B360200991DD2 /* IOKit.framework in Frameworks */,
@@ -276,6 +279,7 @@
 		AA14A0F2222A1219002C4553 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				AA256DC72367942600F9EA58 /* WebKit.framework */,
 				AADF6A32222B360C00991DD2 /* Foundation.framework */,
 				AADF6A30222B360700991DD2 /* AppKit.framework */,
 				AADF6A2E222B360200991DD2 /* IOKit.framework */,

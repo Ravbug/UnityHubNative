@@ -27,6 +27,7 @@
 
 #ifdef __WXMAC__
     #include "wx/osx/core/cfstring.h"
+    #include <CoreFoundation/CFString.h>
     #include <CoreFoundation/CFStringEncodingExt.h>
 
     wxUint16 gMacEncodings[wxFONTENCODING_MACMAX-wxFONTENCODING_MACMIN+1][128] ;
@@ -157,12 +158,12 @@ bool wxEncodingConverter::Init(wxFontEncoding input_enc, wxFontEncoding output_e
         else // output !Unicode
         {
             CharsetItem *rev = BuildReverseTable(out_tbl);
-            CharsetItem *item;
             CharsetItem key;
 
             for (i = 0; i < 128; i++)
             {
                 key.u = in_tbl[i];
+                CharsetItem* item;
                 item = (CharsetItem*) bsearch(&key, rev, 128, sizeof(CharsetItem), CompareCharsetItems);
                 if (item == NULL && method == wxCONVERT_SUBSTITUTE)
                     item = (CharsetItem*) bsearch(&key, encoding_unicode_fallback,

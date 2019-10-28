@@ -118,6 +118,14 @@
 #    endif
 #endif  /* wxUSE_UXTHEME */
 
+#ifndef wxUSE_WINSOCK2
+#    ifdef wxABORT_ON_CONFIG_ERROR
+#        error "wxUSE_WINSOCK2 must be defined."
+#    else
+#        define wxUSE_WINSOCK2 0
+#    endif
+#endif  /* wxUSE_WINSOCK2 */
+
 /*
  * Unfortunately we can't use compiler TLS support if the library can be used
  * inside a dynamically loaded DLL under Windows XP, as this can result in hard
@@ -436,6 +444,14 @@
 #           define wxUSE_FSWATCHER 0
 #       endif
 #   endif
+#   if wxUSE_JOYSTICK
+#       ifdef wxABORT_ON_CONFIG_ERROR
+#           error "wxJoystick requires wxThread under MSW"
+#       else
+#           undef wxUSE_JOYSTICK
+#           define wxUSE_JOYSTICK 0
+#       endif
+#   endif
 #endif /* !wxUSE_THREADS */
 
 
@@ -453,6 +469,16 @@
 #if defined(__WXUNIVERSAL__) && wxUSE_POSTSCRIPT_ARCHITECTURE_IN_MSW && !wxUSE_POSTSCRIPT
 #   undef wxUSE_POSTSCRIPT
 #   define wxUSE_POSTSCRIPT 1
+#endif
+
+/*
+    IPv6 support requires winsock2.h, but the default of wxUSE_WINSOCK2 is 0.
+    Don't require changing it explicitly and just turn it on automatically if
+    wxUSE_IPV6 is on.
+ */
+#if wxUSE_IPV6 && !wxUSE_WINSOCK2
+    #undef wxUSE_WINSOCK2
+    #define wxUSE_WINSOCK2 1
 #endif
 
 #endif /* _WX_MSW_CHKCONF_H_ */
