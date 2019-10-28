@@ -76,7 +76,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	installsList = new wxListCtrl( installs_pane, wxID_FLOPPY, wxDefaultPosition, wxDefaultSize, wxLC_LIST|wxLC_SINGLE_SEL );
 	iManSizer->Add( installsList, wxGBPosition( 1, 0 ), wxGBSpan( 1, 1 ), wxALL|wxEXPAND, 5 );
 
-	installsPathsList = new wxListCtrl( installs_pane, wxID_HOME, wxDefaultPosition, wxDefaultSize, wxLC_LIST|wxLC_SINGLE_SEL );
+	installsPathsList = new wxListCtrl( installs_pane, wxID_HOME, wxDefaultPosition, wxDefaultSize, wxLC_LIST|wxLC_NO_HEADER|wxLC_SINGLE_SEL );
 	iManSizer->Add( installsPathsList, wxGBPosition( 3, 0 ), wxGBSpan( 1, 1 ), wxALL|wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer4;
@@ -111,7 +111,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	installs_pane->SetSizer( iManSizer );
 	installs_pane->Layout();
 	iManSizer->Fit( installs_pane );
-	notebook->AddPage( installs_pane, wxT("Editor Versions"), false );
+	notebook->AddPage( installs_pane, wxT("Editor Versions"), true );
 
 	main_sizer->Add( notebook, 1, wxEXPAND | wxALL, 5 );
 
@@ -132,7 +132,6 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	menuRemove = new wxMenuItem( menuProject, wxID_DELETE, wxString( wxT("Remove Project From List") ) + wxT('\t') + wxT("Ctrl--"), wxEmptyString, wxITEM_NORMAL );
 	menuProject->Append( menuRemove );
 
-	wxMenuItem* menuReveal;
 	menuReveal = new wxMenuItem( menuProject, wxID_FIND, wxString( wxT("Reveal") ) + wxT('\t') + wxT("Ctrl-F"), wxEmptyString, wxITEM_NORMAL );
 	menuProject->Append( menuReveal );
 
@@ -254,7 +253,7 @@ OpenWithEditorDlgBase::OpenWithEditorDlgBase( wxWindow* parent, wxWindowID id, c
 	m_staticText7->Wrap( -1 );
 	gbSizer4->Add( m_staticText7, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALL, 5 );
 
-	editorsListCtrl = new wxListCtrl( this, VERSIONS_LIST, wxDefaultPosition, wxDefaultSize, wxLC_ICON );
+	editorsListCtrl = new wxListCtrl( this, VERSIONS_LIST, wxDefaultPosition, wxDefaultSize, wxLC_NO_HEADER|wxLC_REPORT );
 	gbSizer4->Add( editorsListCtrl, wxGBPosition( 1, 0 ), wxGBSpan( 1, 3 ), wxALL|wxEXPAND, 5 );
 
 	dlgCancel = new wxButton( this, wxID_CANCEL, wxT("Cancel"), wxDefaultPosition, wxDefaultSize, 0 );

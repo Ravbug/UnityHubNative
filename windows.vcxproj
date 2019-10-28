@@ -166,10 +166,12 @@
     <ClCompile Include="source\interface.cpp" />
     <ClCompile Include="source\interface_derived.cpp" />
     <ClCompile Include="source\main.cpp" />
+    <ClCompile Include="source\open_with_dlg.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
     <ClInclude Include="source\dirent.h" />
+    <ClInclude Include="source\interface.h" />
     <ClInclude Include="source\interface_derived.hpp" />
   </ItemGroup>
   <ItemGroup>

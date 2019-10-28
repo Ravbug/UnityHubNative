@@ -30,6 +30,9 @@
     <ClCompile Include="source\create_dialog_derived.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\open_with_dlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -39,6 +42,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\dirent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\interface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
