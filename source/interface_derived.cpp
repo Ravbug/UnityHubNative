@@ -49,8 +49,8 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 			projectsList->AppendColumn(str,wxLIST_FORMAT_CENTER);
 		}
 
-		installsList->AppendColumn("", wxLIST_FORMAT_CENTER, wxLIST_AUTOSIZE_USEHEADER);
-		installsPathsList->AppendColumn("", wxLIST_FORMAT_CENTER, wxLIST_AUTOSIZE_USEHEADER);
+//		installsList->AppendColumn("", wxLIST_FORMAT_CENTER, wxLIST_AUTOSIZE_USEHEADER);
+//		installsPathsList->AppendColumn("", wxLIST_FORMAT_CENTER, wxLIST_AUTOSIZE_USEHEADER);
 	}
 	//make the data folder if it does not already exist (with readwrite for all groups)
 	#if defined __APPLE__ || defined __linux__
