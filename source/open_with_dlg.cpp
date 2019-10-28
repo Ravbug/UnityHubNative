@@ -13,9 +13,6 @@ EVT_LISTBOX(VERSIONS_LIST, OpenWithDlg::OnSelectionChange)
 wxEND_EVENT_TABLE()
 
 OpenWithDlg::OpenWithDlg(wxWindow* parent, const project& project, const vector<editor>& versions,  const OpenWithCallback& callback): OpenWithEditorDlgBase(parent){
-	
-	//fix window size
-	fitWindowMinSize(this);
 
 	
 	//populate list ctrl in reverse so ids match
@@ -29,6 +26,9 @@ OpenWithDlg::OpenWithDlg(wxWindow* parent, const project& project, const vector<
 	editors = versions;
 	p = project;
 	this->callback = callback;
+	
+	//fix window size
+	fitWindowMinSize(this);
 }
 
 /**

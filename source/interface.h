@@ -49,26 +49,11 @@ class MainFrame : public wxFrame
 
 	protected:
 		wxNotebook* notebook;
-		wxPanel* projects_pane;
 		wxListCtrl* projectsList;
-		wxButton* revealProjBtn;
-		wxButton* removeProjBtn;
-		wxButton* add_new_proj;
-		wxButton* add_existing_proj;
-		wxButton* openWithBtn;
-		wxPanel* installs_pane;
-		wxStaticText* m_staticText5;
-		wxStaticText* m_staticText6;
 		wxListBox* installsList;
 		wxListBox* installsPathsList;
-		wxButton* m_button5;
-		wxButton* m_button6;
-		wxButton* launchHubBtn;
-		wxButton* reloadInstalls;
 		wxMenuBar* menubar;
-		wxMenu* menuProject;
 		wxMenuItem* menuReveal;
-		wxMenu* menuWindow;
 
 	public:
 
@@ -86,16 +71,10 @@ class CreateProjectDialog : public wxDialog
 	private:
 
 	protected:
-		wxStaticText* m_staticText9;
 		wxTextCtrl* projNameTxt;
-		wxStaticText* m_staticText10;
 		wxTextCtrl* projLocTxt;
-		wxButton* chooseProjLocBtn;
-		wxStaticText* m_staticText11;
 		wxChoice* unityVersionChoice;
 		wxListCtrl* templateCtrl;
-		wxButton* cancelProjBtn;
-		wxButton* createProjBtn;
 
 	public:
 
@@ -112,9 +91,7 @@ class OpenWithEditorDlgBase : public wxDialog
 	private:
 
 	protected:
-		wxStaticText* m_staticText7;
 		wxListBox* editorsListBox;
-		wxButton* dlgCancel;
 		wxButton* openBtn;
 
 	public:

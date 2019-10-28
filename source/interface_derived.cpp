@@ -138,7 +138,7 @@ void MainFrameDerived::OnAbout(wxCommandEvent& event)
 	aboutInfo.SetName("Unity Hub Native");
 	aboutInfo.SetVersion(AppVersion);
 	aboutInfo.SetDescription(_("Unity Hub Native is a custom Unity Hub, designed to be more efficient than Unity's official hub.\nRather than use Electron and web technologies for the GUI, this application uses native GUI on each platform.\nThis app is not a replacement for the official Unity Hub.\n\nCreated by Ravbug, written in C++. Uses the wxWidgets GUI library." ));
-	aboutInfo.SetCopyright("(C) 2019");
+	aboutInfo.SetCopyright("(C) Ravbug 2019");
 	aboutInfo.SetWebSite("https://github.com/ravbug/UnityHubNative");
 	aboutInfo.AddDeveloper("Ravbug (github.com/ravbug)");
 	wxAboutBox(aboutInfo);
