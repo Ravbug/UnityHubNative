@@ -104,12 +104,13 @@ class OpenWithEditorDlgBase : public wxDialog
 	private:
 
 	protected:
+		wxStaticText* openWithLabel;
 		wxListBox* editorsListBox;
 		wxButton* openBtn;
 
 	public:
 
-		OpenWithEditorDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Set Editor Version"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxCAPTION|wxCLOSE_BOX|wxRESIZE_BORDER|wxSTAY_ON_TOP );
+		OpenWithEditorDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Open With Specific Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxCAPTION|wxCLOSE_BOX|wxRESIZE_BORDER|wxSTAY_ON_TOP );
 		~OpenWithEditorDlgBase();
 
 };

@@ -319,10 +319,9 @@ OpenWithEditorDlgBase::OpenWithEditorDlgBase( wxWindow* parent, wxWindowID id, c
 	openWithSizer->SetFlexibleDirection( wxBOTH );
 	openWithSizer->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
-	wxStaticText* m_staticText7;
-	m_staticText7 = new wxStaticText( this, wxID_ANY, wxT("Select Editor Version"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText7->Wrap( -1 );
-	openWithSizer->Add( m_staticText7, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALL, 5 );
+	openWithLabel = new wxStaticText( this, wxID_ANY, wxT("Select Editor Version"), wxDefaultPosition, wxDefaultSize, 0 );
+	openWithLabel->Wrap( -1 );
+	openWithSizer->Add( openWithLabel, wxGBPosition( 0, 0 ), wxGBSpan( 1, 3 ), wxALL, 5 );
 
 	editorsListBox = new wxListBox( this, VERSIONS_LIST, wxDefaultPosition, wxDefaultSize, 0, NULL, wxLB_NEEDED_SB|wxLB_SINGLE );
 	openWithSizer->Add( editorsListBox, wxGBPosition( 1, 0 ), wxGBSpan( 1, 3 ), wxALL|wxEXPAND, 5 );

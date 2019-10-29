@@ -27,6 +27,9 @@ OpenWithDlg::OpenWithDlg(wxWindow* parent, const project& project, const vector<
 	p = project;
 	this->callback = callback;
 	
+	//set title
+	openWithLabel->SetLabel("Select editor verison to open \"" + project.name + "\"");
+	
 	//fix window size
 	fitWindowMinSize(this);
 }
