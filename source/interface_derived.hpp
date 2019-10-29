@@ -45,7 +45,7 @@ private:
 	wxWebView* learnView = NULL;
 	const string homeurl = "https://learn.unity.com";
 	wxString lastURL = wxString(homeurl);
-	wxTimer timeout = wxTimer(this,TIMER);
+	wxTimer* timeout;
 	
 	//webview events
 	/** Backwards button hit */

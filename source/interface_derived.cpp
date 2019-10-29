@@ -43,7 +43,7 @@ EVT_BUTTON(OPEN_WITH, MainFrameDerived::OnOpenWith)
 EVT_LIST_ITEM_ACTIVATED(wxID_HARDDISK, MainFrameDerived::OnOpenProject)
 EVT_LISTBOX_DCLICK(wxID_FLOPPY,MainFrameDerived::OnRevealEditor)
 EVT_LISTBOX_DCLICK(wxID_HOME,MainFrameDerived::OnRevealInstallLocation)
-EVT_NOTEBOOK_PAGE_CHANGING(NOTEBOOK, MainFrameDerived::OnPageChanging)
+EVT_NOTEBOOK_PAGE_CHANGED(NOTEBOOK, MainFrameDerived::OnPageChanging)
 EVT_BUTTON(Nav_Back, MainFrameDerived::OnNavigateBack)
 EVT_BUTTON(Nav_Forward, MainFrameDerived::OnNavigateForwards)
 EVT_BUTTON(Nav_Home, MainFrameDerived::OnNavigateHome)
@@ -78,6 +78,8 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 		ReloadData();
 	}
 	//if no projects to load, the interface will be blank	
+
+	timeout = new wxTimer(this,TIMER);
 }
 
 /**
@@ -187,9 +189,7 @@ void MainFrameDerived::OnPageChanging(wxBookCtrlEvent& event){
 		if (!learnView){
 			//show the web view if its not currently allocated
 			learnView = wxWebView::New(learn_pane,WEBVIEW,lastURL);
-#if defined _WIN32
-			learnView->MSWSetEmulationLevel();
-#endif
+
 			webSizer->Add(learnView,1,wxEXPAND,wxALL);
 			//force layout so that the view appears
 			learnSizer->Layout();
@@ -197,14 +197,14 @@ void MainFrameDerived::OnPageChanging(wxBookCtrlEvent& event){
 		else{
 			//reset timeout
 			if (learnView){
-				timeout.StartOnce(TIMER_LENGTH);
+				timeout->StartOnce(TIMER_LENGTH);
 			}
 		}
 	}
 	else{
 		//set a timer to deallocate the view
 		if (learnView){
-			timeout.StartOnce(TIMER_LENGTH);
+			timeout->StartOnce(TIMER_LENGTH);
 		}
 	}
 }
