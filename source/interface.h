@@ -24,6 +24,7 @@
 #include <wx/panel.h>
 #include <wx/stattext.h>
 #include <wx/listbox.h>
+#include <wx/hyperlink.h>
 #include <wx/notebook.h>
 #include <wx/menu.h>
 #include <wx/frame.h>
@@ -33,12 +34,16 @@
 
 ///////////////////////////////////////////////////////////////////////////
 
-#define wxID_HARDDISK 1000
-#define wxID_JUMP_TO 1001
-#define OPEN_WITH 1002
-#define wxID_FLOPPY 1003
-#define wxID_RELOAD 1004
-#define VERSIONS_LIST 1005
+#define NOTEBOOK 1000
+#define wxID_HARDDISK 1001
+#define wxID_JUMP_TO 1002
+#define OPEN_WITH 1003
+#define wxID_FLOPPY 1004
+#define wxID_RELOAD 1005
+#define Nav_Back 1006
+#define Nav_Forward 1007
+#define Nav_Home 1008
+#define VERSIONS_LIST 1009
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class MainFrame
@@ -53,11 +58,13 @@ class MainFrame : public wxFrame
 		wxListBox* installsList;
 		wxListBox* installsPathsList;
 		wxPanel* learn_pane;
+		wxGridBagSizer* learnSizer;
 		wxButton* backBtn;
 		wxStaticText* titleLabel;
 		wxButton* forwardBtn;
 		wxButton* homeBtn;
 		wxBoxSizer* webSizer;
+		wxHyperlinkCtrl* openInBrowserCtrl;
 		wxMenuBar* menubar;
 		wxMenuItem* menuReveal;
 

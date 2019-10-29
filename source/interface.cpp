@@ -16,7 +16,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* main_sizer;
 	main_sizer = new wxBoxSizer( wxVERTICAL );
 
-	notebook = new wxNotebook( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
+	notebook = new wxNotebook( this, NOTEBOOK, wxDefaultPosition, wxDefaultSize, 0 );
 	wxPanel* projects_pane;
 	projects_pane = new wxPanel( notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxGridBagSizer* projectManSizer;
@@ -126,28 +126,45 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	MainSizer->Fit( installs_pane );
 	notebook->AddPage( installs_pane, wxT("Editor Versions"), false );
 	learn_pane = new wxPanel( notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	wxGridBagSizer* learnSizer;
 	learnSizer = new wxGridBagSizer( 0, 0 );
 	learnSizer->SetFlexibleDirection( wxBOTH );
 	learnSizer->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
-	backBtn = new wxButton( learn_pane, wxID_ANY, wxT("<"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
+	backBtn = new wxButton( learn_pane, Nav_Back, wxT("<"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
 	learnSizer->Add( backBtn, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALL, 5 );
 
-	titleLabel = new wxStaticText( learn_pane, wxID_ANY, wxT("Title"), wxDefaultPosition, wxDefaultSize, 0 );
+	titleLabel = new wxStaticText( learn_pane, wxID_ANY, wxT("Loading Page"), wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT|wxST_ELLIPSIZE_END|wxST_NO_AUTORESIZE );
 	titleLabel->Wrap( -1 );
-	learnSizer->Add( titleLabel, wxGBPosition( 0, 3 ), wxGBSpan( 1, 1 ), wxALL, 5 );
+	learnSizer->Add( titleLabel, wxGBPosition( 0, 3 ), wxGBSpan( 1, 2 ), wxALL|wxEXPAND, 5 );
 
-	forwardBtn = new wxButton( learn_pane, wxID_ANY, wxT(">"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
+	forwardBtn = new wxButton( learn_pane, Nav_Forward, wxT(">"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
 	learnSizer->Add( forwardBtn, wxGBPosition( 0, 1 ), wxGBSpan( 1, 1 ), wxALL, 5 );
 
-	homeBtn = new wxButton( learn_pane, wxID_ANY, wxT("Home"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
+	homeBtn = new wxButton( learn_pane, Nav_Home, wxT("Home"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
 	learnSizer->Add( homeBtn, wxGBPosition( 0, 2 ), wxGBSpan( 1, 1 ), wxALL, 5 );
 
 	webSizer = new wxBoxSizer( wxVERTICAL );
 
 
 	learnSizer->Add( webSizer, wxGBPosition( 1, 0 ), wxGBSpan( 1, 4 ), wxEXPAND, 5 );
+
+	wxBoxSizer* warningSizer;
+	warningSizer = new wxBoxSizer( wxHORIZONTAL );
+
+	wxStaticText* m_staticText9;
+	m_staticText9 = new wxStaticText( learn_pane, wxID_ANY, wxT("Do not use to fill forms or sign into accounts"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText9->Wrap( -1 );
+	m_staticText9->SetFont( wxFont( 10, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
+
+	warningSizer->Add( m_staticText9, 0, wxALL, 5 );
+
+	openInBrowserCtrl = new wxHyperlinkCtrl( learn_pane, wxID_ANY, wxT("Open current page in default browser"), wxEmptyString, wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE );
+	openInBrowserCtrl->SetFont( wxFont( 10, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
+
+	warningSizer->Add( openInBrowserCtrl, 0, wxALL, 5 );
+
+
+	learnSizer->Add( warningSizer, wxGBPosition( 2, 0 ), wxGBSpan( 1, 4 ), wxEXPAND, 5 );
 
 
 	learnSizer->AddGrowableCol( 2 );

@@ -17,6 +17,11 @@
 #include <dirent.h>
 #endif
 
+#define LEARN_TAB 2
+#define WEBVIEW 2000
+//the web view unloads after 5 minutes of page hidden
+const int TIMER_LENGTH = 5 * 1000 * 60;
+
 //Declare events here
 wxBEGIN_EVENT_TABLE(MainFrameDerived, wxFrame)
 EVT_MENU(wxID_ABOUT, MainFrameDerived::OnAbout)
@@ -38,6 +43,13 @@ EVT_BUTTON(OPEN_WITH, MainFrameDerived::OnOpenWith)
 EVT_LIST_ITEM_ACTIVATED(wxID_HARDDISK, MainFrameDerived::OnOpenProject)
 EVT_LISTBOX_DCLICK(wxID_FLOPPY,MainFrameDerived::OnRevealEditor)
 EVT_LISTBOX_DCLICK(wxID_HOME,MainFrameDerived::OnRevealInstallLocation)
+EVT_NOTEBOOK_PAGE_CHANGING(NOTEBOOK, MainFrameDerived::OnPageChanging)
+EVT_BUTTON(Nav_Back, MainFrameDerived::OnNavigateBack)
+EVT_BUTTON(Nav_Forward, MainFrameDerived::OnNavigateForwards)
+EVT_BUTTON(Nav_Home, MainFrameDerived::OnNavigateHome)
+EVT_WEBVIEW_NAVIGATED(WEBVIEW,MainFrameDerived::OnNavigationComplete)
+EVT_WEBVIEW_NEWWINDOW(WEBVIEW, MainFrameDerived::OnNavigationNewWindow)
+EVT_TIMER(TIMER, MainFrameDerived::OnTimerExpire)
 wxEND_EVENT_TABLE()
 
 //call superclass constructor
@@ -65,12 +77,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	if (status != 0){
 		ReloadData();
 	}
-	//if no projects to load, the interface will be blank
-
-	//setup Learn window
-	learnView = wxWebView::New(learn_pane,wxID_ANY);
-	webSizer->Add(learnView,1,wxEXPAND,wxALL);
-	learnView->LoadURL("https://learn.unity.com");
+	//if no projects to load, the interface will be blank	
 }
 
 /**
@@ -165,6 +172,39 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
 		}
 		catch(runtime_error& e){
 			wxMessageBox(e.what(),"Unable to add project",wxOK | wxICON_ERROR);
+		}
+	}
+}
+
+/**
+ Called when the top segmented control switches pages
+ @param event the wxBookCtrlEvent sent by the segmented control. Used to get the currently selected page
+ @discussion If the Learn tab is switched to, the app will load the web view if it is not loaded, or reset the unload timer. If the learn tab is switched away from, then the app will set a timer to unload the web view and save resources. The app saves in memory the currenlty loaded page so that it can be re-loaded when the view gets re-initialized
+ */
+void MainFrameDerived::OnPageChanging(wxBookCtrlEvent& event){
+	int selection = event.GetSelection();
+	if (selection == LEARN_TAB){
+		if (!learnView){
+			//show the web view if its not currently allocated
+			learnView = wxWebView::New(learn_pane,WEBVIEW,lastURL);
+#if defined _WIN32
+			learnView->MSWSetEmulationLevel();
+#endif
+			webSizer->Add(learnView,1,wxEXPAND,wxALL);
+			//force layout so that the view appears
+			learnSizer->Layout();
+		}
+		else{
+			//reset timeout
+			if (learnView){
+				timeout.StartOnce(TIMER_LENGTH);
+			}
+		}
+	}
+	else{
+		//set a timer to deallocate the view
+		if (learnView){
+			timeout.StartOnce(TIMER_LENGTH);
 		}
 	}
 }
