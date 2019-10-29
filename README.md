@@ -12,12 +12,14 @@ It launches many times faster, uses far less memory and CPU, and is a fraction o
 ## Features
 - Add an existing project to the list using the Add Existing button
 - Open projects by double-clicking them in the list, or by selecting them and pressing Enter
-- Create new unity projects with templates, for any Unity modern version you have installed, with the Create New button
+- Create new unity projects with templates, for any modern Unity version you have installed, with the Create New button
 - View Unity installs by double clicking them in the list views in the Editor Versions section
+- Update projects to a Unity version of your choosing
 
-UnityHubNative does not have every feature that the official hub has, namely changing editor versions or installing / managing Unity Installs. There is a Manage button in the Editor Versions page which will launch the official hub.
+UnityHubNative does not have every feature that the official hub has, namely installing / managing Unity Installs. There is a Manage button in the Editor Versions page which will launch the official hub. In addition, you cannot uninstall the official Unity Hub. This app serves as a shortcut to get into your projects faster. 
 
 ## Installation
+This application is self-contained on Windows and macOS.
 1. Open the [Releases](https://github.com/Ravbug/UnityHubNative/releases) section, and download the version for your platform.
 2. Place the executable anywhere (Recommended `/Applications` on Mac and `C:\Program Files` on windows)
 3. Double click to run
