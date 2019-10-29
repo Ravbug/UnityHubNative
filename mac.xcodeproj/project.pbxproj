@@ -31,6 +31,7 @@
 		AADF6A2F222B360200991DD2 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AADF6A2E222B360200991DD2 /* IOKit.framework */; };
 		AADF6A31222B360700991DD2 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AADF6A30222B360700991DD2 /* AppKit.framework */; };
 		AADF6A33222B360C00991DD2 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AADF6A32222B360C00991DD2 /* Foundation.framework */; };
+		AAE979862368D8C50015B122 /* libwx_osx_cocoa.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = AA1D0F81222A0A1D00678304 /* libwx_osx_cocoa.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		AAF9D87D222B14E900437548 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AAF9D87B222B14E900437548 /* main.cpp */; };
 /* End PBXBuildFile section */
 
@@ -219,6 +220,20 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		AAE979872368D8C50015B122 /* Embed Libraries */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				AAE979862368D8C50015B122 /* libwx_osx_cocoa.dylib in Embed Libraries */,
+			);
+			name = "Embed Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		41B5AAEC22DB8BB300347CC8 /* interface.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = interface.cpp; sourceTree = "<group>"; };
 		41B5AAED22DB8BB400347CC8 /* interface.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = interface.h; sourceTree = "<group>"; };
@@ -374,6 +389,7 @@
 				AA1D0F4A222A09A600678304 /* Sources */,
 				AA1D0F4B222A09A600678304 /* Frameworks */,
 				AA1D0F4C222A09A600678304 /* Resources */,
+				AAE979872368D8C50015B122 /* Embed Libraries */,
 			);
 			buildRules = (
 			);
