@@ -66,7 +66,7 @@ private:
 	}
 	/** When the web view has finished loading the requested page */
 	void OnNavigationComplete(wxWebViewEvent& event){
-		lastURL = event.GetURL();
+		lastURL = learnView->GetCurrentURL();
 		titleLabel->SetLabel(lastURL);
 		openInBrowserCtrl->SetURL(lastURL);
 		backBtn->Enable(learnView->CanGoBack());
