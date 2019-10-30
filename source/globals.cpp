@@ -16,7 +16,7 @@ using namespace std;
 static const string projectsFile = "projects.txt";
 static const string editorPathsFile = "editorPaths.txt";
 static const string templatePrefix = "com.unity.template";
-static const string AppVersion = "v1.2";
+static const string AppVersion = "v1.3";
 
 //structure for representing an editor and for locating it
 struct editor{

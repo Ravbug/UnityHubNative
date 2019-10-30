@@ -43,7 +43,8 @@
 #define Nav_Back 1006
 #define Nav_Forward 1007
 #define Nav_Home 1008
-#define VERSIONS_LIST 1009
+#define wxID_TOP 1009
+#define VERSIONS_LIST 1010
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class MainFrame

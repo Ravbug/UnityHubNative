@@ -1847,6 +1847,10 @@
                         <property name="shortcut">Ctrl--</property>
                         <property name="unchecked_bitmap"></property>
                     </object>
+                    <object class="separator" expanded="1">
+                        <property name="name">m_separator1</property>
+                        <property name="permission">none</property>
+                    </object>
                     <object class="wxMenuItem" expanded="1">
                         <property name="bitmap"></property>
                         <property name="checked">0</property>
@@ -1913,6 +1917,37 @@
                         <property name="kind">wxITEM_NORMAL</property>
                         <property name="label">About Unity Hub Native</property>
                         <property name="name">about_menu</property>
+                        <property name="permission">none</property>
+                        <property name="shortcut"></property>
+                        <property name="unchecked_bitmap"></property>
+                    </object>
+                </object>
+                <object class="wxMenu" expanded="1">
+                    <property name="label">Help</property>
+                    <property name="name">helpMenu</property>
+                    <property name="permission">none</property>
+                    <object class="wxMenuItem" expanded="1">
+                        <property name="bitmap"></property>
+                        <property name="checked">0</property>
+                        <property name="enabled">1</property>
+                        <property name="help"></property>
+                        <property name="id">wxID_UNINDENT</property>
+                        <property name="kind">wxITEM_NORMAL</property>
+                        <property name="label">GitHub Repository</property>
+                        <property name="name">sourceMenu</property>
+                        <property name="permission">none</property>
+                        <property name="shortcut"></property>
+                        <property name="unchecked_bitmap"></property>
+                    </object>
+                    <object class="wxMenuItem" expanded="1">
+                        <property name="bitmap"></property>
+                        <property name="checked">0</property>
+                        <property name="enabled">1</property>
+                        <property name="help"></property>
+                        <property name="id">wxID_TOP</property>
+                        <property name="kind">wxITEM_NORMAL</property>
+                        <property name="label">Check for Updates</property>
+                        <property name="name">updateMenu</property>
                         <property name="permission">none</property>
                         <property name="shortcut"></property>
                         <property name="unchecked_bitmap"></property>

@@ -31,6 +31,8 @@ EVT_MENU(wxID_DELETE, MainFrameDerived::OnRemoveProject)
 EVT_MENU(wxID_FIND, MainFrameDerived::OnRevealProject)
 EVT_MENU(wxID_PROPERTIES, MainFrameDerived::OnOpenWith)
 EVT_MENU(wxID_REFRESH, MainFrameDerived::OnReloadData)
+EVT_MENU(wxID_UNINDENT, MainFrameDerived::OnSource)
+EVT_MENU(wxID_TOP, MainFrameDerived::OnUpdate)
 EVT_BUTTON(wxID_ADD,MainFrameDerived::OnAddProject)
 EVT_BUTTON(wxID_NEW,MainFrameDerived::OnCreateProject)
 EVT_BUTTON(wxID_FIND,MainFrameDerived::OnLocateInstall)
@@ -80,6 +82,9 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	//if no projects to load, the interface will be blank	
 
 	timeout = new wxTimer(this,TIMER);
+	
+	//show current version in titlebar
+	this->SetLabel("Unity Hub Native " + AppVersion);
 }
 
 /**
@@ -147,11 +152,13 @@ void MainFrameDerived::OnAbout(wxCommandEvent& event)
 {
 	wxAboutDialogInfo aboutInfo;
 	aboutInfo.SetName("Unity Hub Native");
-	aboutInfo.SetVersion(AppVersion);
-	aboutInfo.SetDescription(_("Unity Hub Native is a custom Unity Hub, designed to be more efficient than Unity's official hub.\nRather than use Electron and web technologies for the GUI, this application uses native GUI on each platform.\nThis app is not a replacement for the official Unity Hub.\n\nCreated by Ravbug, written in C++. Uses the wxWidgets GUI library." ));
+	//aboutInfo.SetVersion(AppVersion);
 	aboutInfo.SetCopyright("(C) Ravbug 2019");
+	aboutInfo.SetDescription("Developed with wxWidgets in C++");
+#if defined __linux__
 	aboutInfo.SetWebSite("https://github.com/ravbug/UnityHubNative");
 	aboutInfo.AddDeveloper("Ravbug (github.com/ravbug)");
+#endif
 	wxAboutBox(aboutInfo);
 }
 

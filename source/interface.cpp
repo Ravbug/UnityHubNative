@@ -195,6 +195,8 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	menuRemove = new wxMenuItem( menuProject, wxID_DELETE, wxString( wxT("Remove Project From List") ) + wxT('\t') + wxT("Ctrl--"), wxEmptyString, wxITEM_NORMAL );
 	menuProject->Append( menuRemove );
 
+	menuProject->AppendSeparator();
+
 	menuReveal = new wxMenuItem( menuProject, wxID_FIND, wxString( wxT("Reveal") ) + wxT('\t') + wxT("Ctrl-F"), wxEmptyString, wxITEM_NORMAL );
 	menuProject->Append( menuReveal );
 
@@ -219,6 +221,18 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	menuWindow->Append( about_menu );
 
 	menubar->Append( menuWindow, wxT("Window") );
+
+	wxMenu* helpMenu;
+	helpMenu = new wxMenu();
+	wxMenuItem* sourceMenu;
+	sourceMenu = new wxMenuItem( helpMenu, wxID_UNINDENT, wxString( wxT("GitHub Repository") ) , wxEmptyString, wxITEM_NORMAL );
+	helpMenu->Append( sourceMenu );
+
+	wxMenuItem* updateMenu;
+	updateMenu = new wxMenuItem( helpMenu, wxID_TOP, wxString( wxT("Check for Updates") ) , wxEmptyString, wxITEM_NORMAL );
+	helpMenu->Append( updateMenu );
+
+	menubar->Append( helpMenu, wxT("Help") );
 
 	this->SetMenuBar( menubar );
 

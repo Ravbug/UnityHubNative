@@ -90,6 +90,12 @@ private:
 	void OnRevealProject(wxCommandEvent& event);
 	void OnOpenWith(wxCommandEvent& event);
 	void OnPageChanging(wxBookCtrlEvent& event);
+	void OnUpdate(wxCommandEvent& event){
+		wxLaunchDefaultBrowser("https://github.com/ravbug/unityhubnative/releases/latest");
+	}
+	void OnSource(wxCommandEvent& event){
+		wxLaunchDefaultBrowser("https://github.com/ravbug/unityhubnative/");
+	}
 	void OnReloadData(wxCommandEvent& event){
 		ReloadData();
 	}
