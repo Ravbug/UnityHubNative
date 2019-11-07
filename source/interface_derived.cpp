@@ -151,13 +151,17 @@ void MainFrameDerived::ReloadData(){
 void MainFrameDerived::OnAbout(wxCommandEvent& event)
 {
 	wxAboutDialogInfo aboutInfo;
-	aboutInfo.SetName("Unity Hub Native");
-	//aboutInfo.SetVersion(AppVersion);
+	aboutInfo.SetName("Unity Hub Native");	
 	aboutInfo.SetCopyright("(C) Ravbug 2019");
 	aboutInfo.SetDescription("Developed with wxWidgets in C++");
 #if defined __linux__
 	aboutInfo.SetWebSite("https://github.com/ravbug/UnityHubNative");
 	aboutInfo.AddDeveloper("Ravbug (github.com/ravbug)");
+	aboutInfo.SetIcon(wxIcon(wxICON(wxlin)));
+	aboutInfo.SetVersion(AppVersion);
+#elif defined _WIN32
+	aboutInfo.SetVersion(AppVersion);
+	aboutInfo.SetIcon(wxIcon("IDI_WXWIN"));
 #endif
 	wxAboutBox(aboutInfo);
 }

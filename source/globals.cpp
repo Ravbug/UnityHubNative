@@ -47,7 +47,6 @@ struct editor{
 #define mkdir _mkdir
 #include <windows.h>
 #include <gdiplus.h>	
-#include <thread>
 #include <wx/wx.h>
 	static const string datapath = getenv("HOMEPATH") + string("\\AppData\\Roaming\\UnityHubNative");
 	static const char dirsep = '\\';
