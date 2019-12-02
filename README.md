@@ -33,7 +33,7 @@ This application stores its own files in an application data directory. If the a
 At the moment, you cannot compile this application for Linux. Linux support is planned for the future, but is currently a low priority.
 ### macOS
 1. Open `mac.xcodeproj` in Xcode.
-2. Select `Minecraft Sounds Extractor` from the target selector.
+2. Select `AppStatic` from the target selector.
 3. Press Build (cmd + b). Everything will compile in one step. 
 ### Windows
 1. In the repository root folder, open `windows.sln`
