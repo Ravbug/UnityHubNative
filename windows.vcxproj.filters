@@ -24,9 +24,6 @@
     <ClCompile Include="source\interface_derived.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\globals.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\create_dialog_derived.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -45,6 +42,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\interface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\globals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

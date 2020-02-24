@@ -85,7 +85,11 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	//if no projects to load, the interface will be blank	
 
 	#if defined __APPLE || defined _WIN32
-		timeout = new wxTimer(this,TIMER);
+	timeout = new wxTimer(this, TIMER);
+
+	#elif defined __linux__
+	//hide the learn tab on Linux
+	notebook->DeletePage(notebook->GetPageCount() - 1);
 	#endif
 	//show current version in titlebar
 	this->SetLabel("Unity Hub Native " + AppVersion);

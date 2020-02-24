@@ -162,7 +162,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="source\create_dialog_derived.cpp" />
-    <ClCompile Include="source\globals.cpp" />
     <ClCompile Include="source\interface.cpp" />
     <ClCompile Include="source\interface_derived.cpp" />
     <ClCompile Include="source\main.cpp" />
@@ -171,6 +170,7 @@
   <ItemGroup>
     <ClInclude Include="resource.h" />
     <ClInclude Include="source\dirent.h" />
+    <ClInclude Include="source\globals.h" />
     <ClInclude Include="source\interface.h" />
     <ClInclude Include="source\interface_derived.hpp" />
   </ItemGroup>
