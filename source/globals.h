@@ -2,21 +2,21 @@
 //  globals.cpp
 //  Unity Hub Native (Dynamic)
 //
-//  Created by Main on 9/5/19.
 //  Copyright © 2019 Ravbug. All rights reserved.
 //
-
+#pragma once
 using namespace std;
 
 #include <sys/stat.h>
 #include <wx/listctrl.h>
 #include <string>
 
+
 //data file names
 static const string projectsFile = "projects.txt";
 static const string editorPathsFile = "editorPaths.txt";
 static const string templatePrefix = "com.unity.template";
-static const string AppVersion = "v1.3";
+static const string AppVersion = "v1.35";
 
 //structure for representing an editor and for locating it
 struct editor{
@@ -111,6 +111,18 @@ struct editor{
 		return ReplaceAll(path, string(" "), string("^ "));
 	}
 
+#elif defined __linux__
+	#include <pwd.h>
+	static const string datapath = getpwuid(getuid())->pw_dir + string("/UnityHubNative");
+	static const string null_device = ">/dev/null 2>&1";
+	static const char dirsep = '/';
+	
+	static const string executable = "Editor/Unity";
+	static const string defaultInstall =  getpwuid(getuid())->pw_dir +string("/Unity/Hub/Editor");
+	//TODO: make this a preference?
+	static const string hubDefault = "/Applications/Unity Hub.app";
+	static const string templatesDir = "Unity.app/Contents/Resources/PackageManager/ProjectTemplates/";
+	
 #else
 	//disalow compilation for unsupported platforms
 #error You are compiling on an unsupported operating system. Currently only macOS and Windows are supported. If you know how to support your system, submit a pull request.
@@ -157,6 +169,9 @@ inline void launch_process(const string& command) {
 inline void reveal_in_explorer(const string& path){
 #if defined __APPLE__
 	string command = "open \"" + path + "\"";
+
+#elif defined __linux__
+	string command = "xdg-open \"" + path + "\"";
 	
 #elif defined _WIN32
 	//do not surround the paths in quotes, it will not work

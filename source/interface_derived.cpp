@@ -8,7 +8,6 @@
 
 #include "interface_derived.hpp"
 #include <fstream>
-#include <wx/msgdlg.h>
 #include <wx/dirdlg.h>
 #include <wx/aboutdlg.h>
 #if defined _WIN32
@@ -45,6 +44,8 @@ EVT_BUTTON(OPEN_WITH, MainFrameDerived::OnOpenWith)
 EVT_LIST_ITEM_ACTIVATED(wxID_HARDDISK, MainFrameDerived::OnOpenProject)
 EVT_LISTBOX_DCLICK(wxID_FLOPPY,MainFrameDerived::OnRevealEditor)
 EVT_LISTBOX_DCLICK(wxID_HOME,MainFrameDerived::OnRevealInstallLocation)
+
+#if defined __APPLE__ || defined _WIN32
 EVT_NOTEBOOK_PAGE_CHANGED(NOTEBOOK, MainFrameDerived::OnPageChanging)
 EVT_BUTTON(Nav_Back, MainFrameDerived::OnNavigateBack)
 EVT_BUTTON(Nav_Forward, MainFrameDerived::OnNavigateForwards)
@@ -52,6 +53,8 @@ EVT_BUTTON(Nav_Home, MainFrameDerived::OnNavigateHome)
 EVT_WEBVIEW_NAVIGATED(WEBVIEW,MainFrameDerived::OnNavigationComplete)
 EVT_WEBVIEW_NEWWINDOW(WEBVIEW, MainFrameDerived::OnNavigationNewWindow)
 EVT_TIMER(TIMER, MainFrameDerived::OnTimerExpire)
+#endif
+
 wxEND_EVENT_TABLE()
 
 //call superclass constructor
@@ -81,8 +84,9 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	}
 	//if no projects to load, the interface will be blank	
 
-	timeout = new wxTimer(this,TIMER);
-	
+	#if defined __APPLE || defined _WIN32
+		timeout = new wxTimer(this,TIMER);
+	#endif
 	//show current version in titlebar
 	this->SetLabel("Unity Hub Native " + AppVersion);
 }
@@ -189,6 +193,7 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
 	}
 }
 
+#if defined __APPLE__ || defined _WIN32
 /**
  Called when the top segmented control switches pages
  @param event the wxBookCtrlEvent sent by the segmented control. Used to get the currently selected page
@@ -219,7 +224,7 @@ void MainFrameDerived::OnPageChanging(wxBookCtrlEvent& event){
 		}
 	}
 }
-
+#endif
 /**
  Loads an editor search path into the app, updating the UI and the vector
  @param path the string path to laod

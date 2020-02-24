@@ -85,6 +85,8 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 			string fullProj = "\"" + projPath + dirsep + projName + "\"";
 			string fullTemplate = "\"" + executableTemplatesPath + templatePrefix + "." + templateName + "\"";
 			string command = "\"" + executablePath + "\" -createproject " + fullProj + " -cloneFromTemplate " + fullTemplate;
+		#elif defined __linux__
+			string command = "";
 		#endif
 		//TODO: return this command to what summoned this dialog
 		project p = {projName,e.name,"",projPath + dirsep + projName};

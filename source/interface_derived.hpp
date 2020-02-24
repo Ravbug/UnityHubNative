@@ -9,10 +9,15 @@
 #pragma once
 
 #include "interface.h"
-#include "globals.cpp"
+#include "globals.h"
 #include <functional>
 #include <wx/webview.h>
 #include <wx/timer.h>
+#include <wx/msgdlg.h>
+
+#if defined __linux__
+#include "wxlin.xpm"
+#endif
 
 #define TIMER 2001
 
@@ -41,7 +46,7 @@ private:
 	vector<project> projects;
 	vector<string> installPaths;
 	vector<editor> editors;
-	
+#if defined __APPLE__ || defined _WIN32
 	wxWebView* learnView = NULL;
 	const string homeurl = "https://learn.unity.com";
 	wxString lastURL = wxString(homeurl);
@@ -81,7 +86,7 @@ private:
 		delete learnView;
 		learnView = NULL;
 	}
-
+#endif
 	//window events
 	void OnAbout(wxCommandEvent& event);
 	void OnAddProject(wxCommandEvent& event);
