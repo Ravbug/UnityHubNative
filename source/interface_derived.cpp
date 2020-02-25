@@ -84,7 +84,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	}
 	//if no projects to load, the interface will be blank	
 
-	#if defined __APPLE || defined _WIN32
+	#if defined __APPLE__ || defined _WIN32
 	timeout = new wxTimer(this, TIMER);
 
 	#elif defined __linux__

@@ -13,8 +13,6 @@
 		AA012115224C24D4000F4F82 /* wxmac.icns in Resources */ = {isa = PBXBuildFile; fileRef = AA012113224C24D4000F4F82 /* wxmac.icns */; };
 		AA14A0F3222A1219002C4553 /* libwx_osx_cocoa.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AA1D0F81222A0A1D00678304 /* libwx_osx_cocoa.dylib */; };
 		AA256DE12367942600F9EA58 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA256DC72367942600F9EA58 /* WebKit.framework */; };
-		AA56E9702321F67C002BB5E1 /* globals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AA56E96F2321F67C002BB5E1 /* globals.cpp */; };
-		AA56E98A2321F67E002BB5E1 /* globals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AA56E96F2321F67C002BB5E1 /* globals.cpp */; };
 		AA9F4B912321BEE900FF2E24 /* interface_derived.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AA9F4B8F2321BEE900FF2E24 /* interface_derived.cpp */; };
 		AA9F4B922321BEE900FF2E24 /* interface_derived.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AA9F4B8F2321BEE900FF2E24 /* interface_derived.cpp */; };
 		AAA0F59B23667BCA00B8E4A7 /* open_with_dlg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AAA0F59A23667BCA00B8E4A7 /* open_with_dlg.cpp */; };
@@ -244,11 +242,11 @@
 		AA1D0FCA222A0A4B00678304 /* wxcocoa.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = wxcocoa.xcconfig; path = wxWidgets/build/osx/wxcocoa.xcconfig; sourceTree = SOURCE_ROOT; };
 		AA1D0FCB222A0A4B00678304 /* wxdebug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = wxdebug.xcconfig; path = wxWidgets/build/osx/wxdebug.xcconfig; sourceTree = SOURCE_ROOT; };
 		AA256DC72367942600F9EA58 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
-		AA56E96F2321F67C002BB5E1 /* globals.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = globals.cpp; sourceTree = "<group>"; };
 		AA9F4B8F2321BEE900FF2E24 /* interface_derived.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = interface_derived.cpp; sourceTree = "<group>"; };
 		AA9F4B902321BEE900FF2E24 /* interface_derived.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = interface_derived.hpp; sourceTree = "<group>"; };
 		AAA0F59A23667BCA00B8E4A7 /* open_with_dlg.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = open_with_dlg.cpp; sourceTree = "<group>"; };
 		AAB4B99E23233EB5007D21F9 /* create_dialog_derived.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = create_dialog_derived.cpp; sourceTree = "<group>"; };
+		AAB4C0922404AC7A00CF0C2F /* globals.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = globals.h; sourceTree = "<group>"; };
 		AAD015CD222B2FE300E25CB7 /* Unity Hub Native.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Unity Hub Native.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AADF6A0B222B359700991DD2 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
 		AADF6A26222B35B300991DD2 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -329,10 +327,10 @@
 		AA1D0F50222A09A600678304 /* source */ = {
 			isa = PBXGroup;
 			children = (
+				AAB4C0922404AC7A00CF0C2F /* globals.h */,
 				AA012113224C24D4000F4F82 /* wxmac.icns */,
 				AAF9D87A222B14E900437548 /* Info_cocoa.plist */,
 				AAF9D87B222B14E900437548 /* main.cpp */,
-				AA56E96F2321F67C002BB5E1 /* globals.cpp */,
 				AA9F4B8F2321BEE900FF2E24 /* interface_derived.cpp */,
 				AA9F4B902321BEE900FF2E24 /* interface_derived.hpp */,
 				AAA0F59A23667BCA00B8E4A7 /* open_with_dlg.cpp */,
@@ -659,7 +657,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AA56E9702321F67C002BB5E1 /* globals.cpp in Sources */,
 				AA9F4B912321BEE900FF2E24 /* interface_derived.cpp in Sources */,
 				AAB4B99F23233EB5007D21F9 /* create_dialog_derived.cpp in Sources */,
 				AAF9D87D222B14E900437548 /* main.cpp in Sources */,
@@ -672,7 +669,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AA56E98A2321F67E002BB5E1 /* globals.cpp in Sources */,
 				AA9F4B922321BEE900FF2E24 /* interface_derived.cpp in Sources */,
 				AAB4B9A023233EB5007D21F9 /* create_dialog_derived.cpp in Sources */,
 				AAD015C0222B2FE300E25CB7 /* main.cpp in Sources */,
@@ -833,13 +829,13 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.3;
+				CURRENT_PROJECT_VERSION = 1.35;
 				INFOPLIST_FILE = "$(SRCROOT)/source/Info_cocoa.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.3;
+				MARKETING_VERSION = 1.35;
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ravbug.UnityHubNativeDynamic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -852,13 +848,13 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.3;
+				CURRENT_PROJECT_VERSION = 1.35;
 				INFOPLIST_FILE = "$(SRCROOT)/source/Info_cocoa.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.3;
+				MARKETING_VERSION = 1.35;
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ravbug.UnityHubNativeDynamic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -871,7 +867,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.3;
+				CURRENT_PROJECT_VERSION = 1.35;
 				HEADER_SEARCH_PATHS = (
 					"\"$(WXROOT)/include\"",
 					"\"$(WXROOT)/build/osx/setup/$(WXTOOLKIT)/include\"",
@@ -890,7 +886,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.3;
+				MARKETING_VERSION = 1.35;
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ravbug.UnityHubNative;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -903,7 +899,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.3;
+				CURRENT_PROJECT_VERSION = 1.35;
 				HEADER_SEARCH_PATHS = (
 					"\"$(WXROOT)/include\"",
 					"\"$(WXROOT)/build/osx/setup/$(WXTOOLKIT)/include\"",
@@ -922,7 +918,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.3;
+				MARKETING_VERSION = 1.35;
 				OTHER_LDFLAGS = "$(OTHER_LDFLAGS)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ravbug.UnityHubNative;
 				PRODUCT_NAME = "$(TARGET_NAME)";
