@@ -21,16 +21,17 @@ UnityHubNative does not have every feature that the official hub has, namely ins
 ## Installation
 This application is self-contained on Windows and macOS.
 1. Open the [Releases](https://github.com/Ravbug/UnityHubNative/releases) section, and download the version for your platform.
-2. Place the executable anywhere (Recommended `/Applications` on Mac and `C:\Program Files` on windows)
+2. Place the executable anywhere. (Recommended `/Applications` on Mac, `C:\Program Files` on Windows, and `/usr/bin` on Linux)
 3. Double click to run
 
 ## Application data files
 This application stores its own files in an application data directory. If the application is behaving unexpectedly or is not working at all, try removing the folder at these locations:
 - macOS: `~/Library/Application Support/UnityHubNative`
 - Windows: `%APPDATA%/UnityHubNative`
+- Linux: `~/UnityHubNative`
 
 ## Compiling it yourself
-At the moment, you cannot compile this application for Linux. Linux support is planned for the future, but is currently a low priority.
+
 ### macOS
 1. Open `mac.xcodeproj` in Xcode.
 2. Select `AppStatic` from the target selector.
@@ -39,6 +40,8 @@ At the moment, you cannot compile this application for Linux. Linux support is p
 1. In the repository root folder, open `windows.sln`
 2. select your configuration (Debug/Release, X86/x64)
 3. Build.
+### Linux
+1. In the repository root folder, run `make`. The app will compile to `linux-build/`. If you are missing a dependency, the build system will stop and alert you with which dependency is missing. 
 
 ## Issues
 Please report all problems in the [Issues](https://github.com/Ravbug/wxWidgetsTemplate/issues) section of this repository. 
