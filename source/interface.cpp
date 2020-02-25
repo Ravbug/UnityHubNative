@@ -105,7 +105,6 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* bSizer5;
 	bSizer5 = new wxBoxSizer( wxVERTICAL );
 
-	wxButton* launchHubBtn;
 	launchHubBtn = new wxButton( installs_pane, wxID_BACKWARD, wxT("Manage"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer5->Add( launchHubBtn, 0, wxALL|wxEXPAND, 5 );
 

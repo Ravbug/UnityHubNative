@@ -58,6 +58,7 @@ class MainFrame : public wxFrame
 		wxListCtrl* projectsList;
 		wxListBox* installsList;
 		wxListBox* installsPathsList;
+		wxButton* launchHubBtn;
 		wxPanel* learn_pane;
 		wxGridBagSizer* learnSizer;
 		wxButton* backBtn;

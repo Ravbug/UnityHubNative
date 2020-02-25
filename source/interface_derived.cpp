@@ -90,6 +90,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	#elif defined __linux__
 	//hide the learn tab on Linux
 	notebook->DeletePage(notebook->GetPageCount() - 1);
+	launchHubBtn->Hide();
 	#endif
 	//show current version in titlebar
 	this->SetLabel("Unity Hub Native " + AppVersion);
