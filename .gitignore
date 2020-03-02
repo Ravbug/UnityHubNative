@@ -367,6 +367,9 @@ wxWidgets/build/linux/
 linux-build/
 wxWidgets/configure
 wxWidgets/autom4te*
+appimagetool.AppImage
+UnityHubNative-x86_64.AppImage
+editorPaths.txt
 
 # Mac OS temporary and compiled data
 *.DS_STORE

@@ -20,6 +20,10 @@ debug:
 	
 release:
 	@make --no-print-directory mode=-O3 all
+	
+linux-pkg:
+	@make --no-print-directory release
+	name=$(target) build_dir=$(build_dir) src=$(source_dir) lib_dir=$(lib_build_path)/lib ./linux-pkg.sh
 
 # Compiles the app, and the library if needed. Uses all the available processor cores.
 all: $(lib_build_path)/$(lib_file_detect)
