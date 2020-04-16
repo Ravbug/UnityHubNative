@@ -121,7 +121,7 @@ struct editor{
 	static const string defaultInstall =  getpwuid(getuid())->pw_dir +string("/Unity/Hub/Editor");
 	//TODO: make this a preference?
 	static const string hubDefault = "/Applications/Unity Hub.app";
-	static const string templatesDir = "Unity.app/Contents/Resources/PackageManager/ProjectTemplates/";
+	static const string templatesDir = "Editor/Data/Resources/PackageManager/ProjectTemplates/";
 	
 #else
 	//disalow compilation for unsupported platforms

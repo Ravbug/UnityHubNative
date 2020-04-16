@@ -38,6 +38,8 @@ CreateProjectDialogD::CreateProjectDialogD(wxWindow* parent, const vector<editor
 	
 	//populate the template chooser
 	loadTemplates(editors[0]);
+	
+	this->Fit();
 }
 
 /**
@@ -86,7 +88,7 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 			string fullTemplate = "\"" + executableTemplatesPath + templatePrefix + "." + templateName + "\"";
 			string command = "\"" + executablePath + "\" -createproject " + fullProj + " -cloneFromTemplate " + fullTemplate;
 		#elif defined __linux__
-			string command = "";
+			string command = "\"" + executablePath + "\" -createproject \"" + projPath + dirsep + projName + "\" -cloneFromTemplate \"" + executableTemplatesPath + templatePrefix + "." + templateName + "\"";
 		#endif
 		//TODO: return this command to what summoned this dialog
 		project p = {projName,e.name,"",projPath + dirsep + projName};

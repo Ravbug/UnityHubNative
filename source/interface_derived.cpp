@@ -86,6 +86,8 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 
 	//show current version in titlebar
 	this->SetLabel("Unity Hub Native " + AppVersion);
+	
+	this->Fit();
 }
 
 /**
