@@ -36,7 +36,7 @@ cd build/linux;
 echoStatus "configure" "Running configure script"
 # run the configure script
 success=0;
-../../configure --enable-unicode --enable-debug && success=1
+../../configure --enable-unicode --disable-shared && success=1
 
 # check success
 if [ $success = 0 ]; then
