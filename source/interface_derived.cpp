@@ -45,7 +45,6 @@ EVT_LIST_ITEM_ACTIVATED(wxID_HARDDISK, MainFrameDerived::OnOpenProject)
 EVT_LISTBOX_DCLICK(wxID_FLOPPY,MainFrameDerived::OnRevealEditor)
 EVT_LISTBOX_DCLICK(wxID_HOME,MainFrameDerived::OnRevealInstallLocation)
 
-#if defined __APPLE__ || defined _WIN32
 EVT_NOTEBOOK_PAGE_CHANGED(NOTEBOOK, MainFrameDerived::OnPageChanging)
 EVT_BUTTON(Nav_Back, MainFrameDerived::OnNavigateBack)
 EVT_BUTTON(Nav_Forward, MainFrameDerived::OnNavigateForwards)
@@ -53,7 +52,6 @@ EVT_BUTTON(Nav_Home, MainFrameDerived::OnNavigateHome)
 EVT_WEBVIEW_NAVIGATED(WEBVIEW,MainFrameDerived::OnNavigationComplete)
 EVT_WEBVIEW_NEWWINDOW(WEBVIEW, MainFrameDerived::OnNavigationNewWindow)
 EVT_TIMER(TIMER, MainFrameDerived::OnTimerExpire)
-#endif
 
 wxEND_EVENT_TABLE()
 
@@ -84,14 +82,8 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	}
 	//if no projects to load, the interface will be blank	
 
-	#if defined __APPLE__ || defined _WIN32
 	timeout = new wxTimer(this, TIMER);
 
-	#elif defined __linux__
-	//hide the learn tab on Linux
-	notebook->DeletePage(notebook->GetPageCount() - 1);
-	launchHubBtn->Hide();
-	#endif
 	//show current version in titlebar
 	this->SetLabel("Unity Hub Native " + AppVersion);
 }
@@ -198,7 +190,6 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
 	}
 }
 
-#if defined __APPLE__ || defined _WIN32
 /**
  Called when the top segmented control switches pages
  @param event the wxBookCtrlEvent sent by the segmented control. Used to get the currently selected page
@@ -229,7 +220,6 @@ void MainFrameDerived::OnPageChanging(wxBookCtrlEvent& event){
 		}
 	}
 }
-#endif
 /**
  Loads an editor search path into the app, updating the UI and the vector
  @param path the string path to laod

@@ -1,6 +1,6 @@
 # flags needed to build the target (compiler, target name, and compiler flags)
 CC = g++
-CFLAGS := `wxWidgets/build/linux/wx-config --cxxflags --libs` -Wl,-rpath,wxWidgets/build/linux/lib/
+CFLAGS := `wxWidgets/build/linux/wx-config --cxxflags --libs std, webview` -Wl,-rpath,wxWidgets/build/linux/lib/
 target = UnityHubNative
 
 # location of source files
