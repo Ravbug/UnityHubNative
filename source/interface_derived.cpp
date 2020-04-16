@@ -258,15 +258,20 @@ void MainFrameDerived::OnRemoveInstallPath(wxCommandEvent& event){
  */
 void MainFrameDerived::OnCreateProject(wxCommandEvent& event){
 	//create a dialog and show it
-	DialogCallback d = [&](string str, project p){
-		//add the project
-		this->AddProject(p);
-		
-		//launch the process
-		launch_process(str);
-	};
-	CreateProjectDialogD* dialog = new CreateProjectDialogD(this,editors,d);
-	dialog->show();
+	if (editors.size() > 0){
+		DialogCallback d = [&](string str, project p){
+			//add the project
+			this->AddProject(p);
+			
+			//launch the process
+			launch_process(str);
+		};
+		CreateProjectDialogD* dialog = new CreateProjectDialogD(this,editors,d);
+		dialog->show();
+	}
+	else{
+		wxMessageBox("UnityHubNative could not find any Unity Editors installed on this sytem. If you have an editor installed, make sure UnityHubNative can find it by adding its location to the Install Search Paths section of the Editor Versions Tab.\n\nIf you do not have any Unity editors installed, you must use the official hub to install one before you can create a new project with UnityHubNative.","Cannot Create Project",wxOK | wxICON_ERROR);
+	}
 }
 
 /**
@@ -463,29 +468,31 @@ void MainFrameDerived::LoadEditorVersions(){
 	for (string& path : installPaths){
 		//open the folder
 		DIR* dir = opendir(path.c_str());
-		struct dirent *entry = readdir(dir);
-		//loop over the contents
-		wxArrayString a;
-		while (entry != NULL)
-		{
-			//is this a folder?
-			if (entry->d_type == DT_DIR){
-				//does this folder have a valid executable inside?
-				string p = string(path + dirsep + entry->d_name + dirsep + executable);
-				if (file_exists(p)){
-					//add it to the list
-					a.Add(string(entry->d_name) + " - " + path);
-					
-					//add it to the backing datastructure
-					editor e = {entry->d_name, path};
-					editors.push_back(e);
+		if(dir != nullptr){
+			struct dirent *entry = readdir(dir);
+			//loop over the contents
+			wxArrayString a;
+			while (entry != nullptr)
+			{
+				//is this a folder?
+				if (entry->d_type == DT_DIR){
+					//does this folder have a valid executable inside?
+					string p = string(path + dirsep + entry->d_name + dirsep + executable);
+					if (file_exists(p)){
+						//add it to the list
+						a.Add(string(entry->d_name) + " - " + path);
+						
+						//add it to the backing datastructure
+						editor e = {entry->d_name, path};
+						editors.push_back(e);
+					}
 				}
+				entry = readdir(dir);
 			}
-			entry = readdir(dir);
+			installsList->Append(a);
+			//free resources when finished
+			closedir(dir);
+			free(entry);
 		}
-		installsList->Append(a);
-		//free resources when finished
-		closedir(dir);
-		free(entry);
 	}
 }
