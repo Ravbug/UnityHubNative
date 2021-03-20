@@ -649,6 +649,14 @@
 #   endif
 #endif /* !defined(wxUSE_DATAVIEWCTRL) */
 
+#ifndef wxUSE_NATIVE_DATAVIEWCTRL
+#   ifdef wxABORT_ON_CONFIG_ERROR
+#       error "wxUSE_NATIVE_DATAVIEWCTRL must be defined, please read comment near the top of this file."
+#   else
+#       define wxUSE_NATIVE_DATAVIEWCTRL 1
+#   endif
+#endif /* !defined(wxUSE_NATIVE_DATAVIEWCTRL) */
+
 #ifndef wxUSE_DATEPICKCTRL
 #   ifdef wxABORT_ON_CONFIG_ERROR
 #       error "wxUSE_DATEPICKCTRL must be defined, please read comment near the top of this file."
@@ -918,6 +926,14 @@
 #       define wxUSE_MDI_ARCHITECTURE 0
 #   endif
 #endif /* !defined(wxUSE_MDI_ARCHITECTURE) */
+
+#ifndef wxUSE_MENUBAR
+#   ifdef wxABORT_ON_CONFIG_ERROR
+#       error "wxUSE_MENUBAR must be defined, please read comment near the top of this file."
+#   else
+#       define wxUSE_MENUBAR 0
+#   endif
+#endif /* !defined(wxUSE_MENUBAR) */
 
 #ifndef wxUSE_MENUS
 #   ifdef wxABORT_ON_CONFIG_ERROR
@@ -2253,14 +2269,25 @@
 #   endif
 #endif /* wxUSE_SVG */
 
-#if wxUSE_TASKBARICON && !wxUSE_MENUS
-#   ifdef wxABORT_ON_CONFIG_ERROR
-#       error "wxUSE_TASKBARICON requires wxUSE_MENUS"
-#   else
-#       undef wxUSE_TASKBARICON
-#       define wxUSE_TASKBARICON 0
-#   endif
-#endif /* wxUSE_TASKBARICON */
+#if !wxUSE_MENUS
+#   if wxUSE_MENUBAR
+#      ifdef wxABORT_ON_CONFIG_ERROR
+#          error "wxUSE_MENUBAR requires wxUSE_MENUS"
+#      else
+#          undef wxUSE_MENUBAR
+#          define wxUSE_MENUBAR 0
+#      endif
+#   endif /* wxUSE_MENUBAR */
+
+#   if wxUSE_TASKBARICON
+#      ifdef wxABORT_ON_CONFIG_ERROR
+#          error "wxUSE_TASKBARICON requires wxUSE_MENUS"
+#      else
+#          undef wxUSE_TASKBARICON
+#          define wxUSE_TASKBARICON 0
+#      endif
+#   endif /* wxUSE_TASKBARICON */
+#endif /* !wxUSE_MENUS */
 
 #if !wxUSE_VARIANT
 #   if wxUSE_DATAVIEWCTRL
@@ -2282,7 +2309,8 @@
 #   endif
 #endif /* wxUSE_TREELISTCTRL */
 
-#if wxUSE_WEBVIEW && !(wxUSE_WEBVIEW_WEBKIT || wxUSE_WEBVIEW_WEBKIT2 || wxUSE_WEBVIEW_IE)
+#if wxUSE_WEBVIEW && !(wxUSE_WEBVIEW_WEBKIT || wxUSE_WEBVIEW_WEBKIT2 || \
+                       wxUSE_WEBVIEW_IE || wxUSE_WEBVIEW_EDGE)
 #   ifdef wxABORT_ON_CONFIG_ERROR
 #       error "wxUSE_WEBVIEW requires at least one backend"
 #   else
@@ -2383,6 +2411,17 @@
 #   endif
 #endif /* wxUSE_RICHTEXT */
 
+#if wxUSE_RICHTOOLTIP
+#   if !wxUSE_POPUPWIN
+#       ifdef wxABORT_ON_CONFIG_ERROR
+#           error "wxRichToolTip requires wxUSE_POPUPWIN"
+#       else
+#           undef wxUSE_POPUPWIN
+#           define wxUSE_POPUPWIN 1
+#       endif
+#   endif
+#endif /* wxUSE_RICHTOOLTIP */
+
 #if wxUSE_PROPGRID
 #   if !wxUSE_VARIANT
 #       ifdef wxABORT_ON_CONFIG_ERROR
@@ -2393,6 +2432,17 @@
 #       endif
 #   endif
 #endif /* wxUSE_PROPGRID */
+
+#if wxUSE_TIPWINDOW
+#   if !wxUSE_POPUPWIN
+#       ifdef wxABORT_ON_CONFIG_ERROR
+#           error "wxTipWindow requires wxUSE_POPUPWIN"
+#       else
+#           undef wxUSE_POPUPWIN
+#           define wxUSE_POPUPWIN 1
+#       endif
+#   endif
+#endif /* wxUSE_TIPWINDOW */
 
 #endif /* wxUSE_GUI */
 

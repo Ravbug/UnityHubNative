@@ -66,13 +66,14 @@ void wxMenu::Init()
 
     m_peer = wxMenuImpl::Create( this, wxStripMenuCodes(m_title, wxStrip_Menu) );
 
-
-    // if we have a title, insert it in the beginning of the menu
+#if wxOSX_USE_COCOA
+    // under macOS there is no built-in title, so if we have a title, insert it in the beginning of the menu
     if ( !m_title.empty() )
     {
         Append(idMenuTitle, m_title) ;
         AppendSeparator() ;
     }
+#endif
 }
 
 wxMenu::~wxMenu()
@@ -86,11 +87,6 @@ WXHMENU wxMenu::GetHMenu() const
     if ( m_peer )
         return m_peer->GetHMenu();
     return NULL;
-}
-
-void wxMenu::Break()
-{
-    // not available on the mac platform
 }
 
 void wxMenu::SetAllowRearrange( bool allow )
@@ -156,9 +152,11 @@ bool wxMenu::DoInsertOrAppend(wxMenuItem *item, size_t pos)
         }
     }
 
+#if wxUSE_MENUBAR
     // if we're already attached to the menubar, we must update it
     if ( IsAttached() && GetMenuBar()->IsAttached() )
         GetMenuBar()->Refresh();
+#endif // wxUSE_MENUBAR
 
     if ( check )
         item->Check(true);
@@ -379,7 +377,7 @@ bool wxMenu::HandleCommandProcess( wxMenuItem* item, wxWindow* senderWindow )
 
 void wxMenu::HandleMenuItemHighlighted( wxMenuItem* item )
 {
-    int menuid = item ? item->GetId() : 0;
+    int menuid = item ? item->GetId() : wxID_NONE;
     wxMenuEvent wxevent(wxEVT_MENU_HIGHLIGHT, menuid, this);
     ProcessMenuEvent(this, wxevent, GetWindow());
 }
@@ -404,6 +402,8 @@ void wxMenu::HandleMenuClosed()
 {
     DoHandleMenuOpenedOrClosed(wxEVT_MENU_CLOSE);
 }
+
+#if wxUSE_MENUBAR
 
 // Menu Bar
 
@@ -712,5 +712,6 @@ void wxMenuBar::DoGetClientSize(int *width, int *height) const
     DoGetSize(width, height);
 }
 
+#endif // wxUSE_MENUBAR
 
 #endif // wxUSE_MENUS

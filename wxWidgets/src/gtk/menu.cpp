@@ -575,7 +575,7 @@ static void menuitem_deselect(GtkWidget*, wxMenuItem* item)
     if (!item->IsEnabled())
         return;
 
-    wxMenuEvent event(wxEVT_MENU_HIGHLIGHT, -1, item->GetMenu());
+    wxMenuEvent event(wxEVT_MENU_HIGHLIGHT, wxID_NONE, item->GetMenu());
     DoCommonMenuCallbackCode(item->GetMenu(), event);
 }
 }
@@ -1349,6 +1349,7 @@ wxGetGtkAccel(const wxMenuItem* item, guint* accel_key, GdkModifierType* accel_m
 
 #ifndef __WXGTK4__
 wxGCC_WARNING_SUPPRESS(deprecated-declarations)
+wxGCC_WARNING_SUPPRESS(cast-qual)
 const char *wxGetStockGtkID(wxWindowID id)
 {
     #define STOCKITEM(wx,gtk)      \
@@ -1445,12 +1446,13 @@ const char *wxGetStockGtkID(wxWindowID id)
 
         default:
             break;
-    };
+    }
 
     #undef STOCKITEM
 
     return NULL;
 }
+wxGCC_WARNING_RESTORE(cast-qual)
 wxGCC_WARNING_RESTORE()
 #endif // !__WXGTK4__
 

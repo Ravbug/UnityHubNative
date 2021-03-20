@@ -50,7 +50,7 @@ class WXDLLIMPEXP_FWD_CORE wxQtShortcutHandler;
  * found in winevent_qt.(h|cpp) to send all Qt events here to QtHandleXXXEvent()
  * methods. All these methods receive the Qt event and the handler. This is
  * done because events of the containers (the scrolled part of the window) are
- * sent to the same wxWindow instance, that must be able to differenciate them
+ * sent to the same wxWindow instance, that must be able to differentiate them
  * as some events need different handling (paintEvent) depending on that.
  * We pass the QWidget pointer to all event handlers for consistency.
  */
@@ -64,14 +64,14 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
                 long style = 0,
-                const wxString& name = wxPanelNameStr);
+                const wxString& name = wxASCII_STR(wxPanelNameStr));
 
     bool Create(wxWindowQt *parent,
                 wxWindowID id,
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
                 long style = 0,
-                const wxString& name = wxPanelNameStr);
+                const wxString& name = wxASCII_STR(wxPanelNameStr));
 
     // Used by all window classes in the widget creation process.
     void PostCreation( bool generic = true );

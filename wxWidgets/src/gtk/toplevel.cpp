@@ -25,6 +25,7 @@
 
 #ifndef WX_PRECOMP
     #include "wx/frame.h"
+    #include "wx/app.h"     // GetAppDisplayName()
     #include "wx/icon.h"
     #include "wx/log.h"
 #endif
@@ -34,6 +35,7 @@
 
 #include "wx/gtk/private.h"
 #include "wx/gtk/private/gtk3-compat.h"
+#include "wx/gtk/private/stylecontext.h"
 #include "wx/gtk/private/win_gtk.h"
 
 #ifdef GDK_WINDOWING_X11
@@ -340,6 +342,16 @@ void wxTopLevelWindowGTK::GTKConfigureEvent(int x, int y)
 // "realize" from m_widget
 //-----------------------------------------------------------------------------
 
+#if GTK_CHECK_VERSION(3,10,0)
+extern "C" {
+static void findTitlebar(GtkWidget* widget, void* data)
+{
+    if (GTK_IS_HEADER_BAR(widget))
+        *static_cast<GtkWidget**>(data) = widget;
+}
+}
+#endif
+
 // we cannot the WM hints and icons before the widget has been realized,
 // so we do this directly after realization
 
@@ -348,6 +360,31 @@ void wxTopLevelWindowGTK::GTKHandleRealized()
     wxNonOwnedWindow::GTKHandleRealized();
 
     GdkWindow* window = gtk_widget_get_window(m_widget);
+
+#if GTK_CHECK_VERSION(3,10,0)
+    if (wx_is_at_least_gtk3(10))
+    {
+        GtkWidget* titlebar = NULL;
+        gtk_container_forall(GTK_CONTAINER(m_widget), findTitlebar, &titlebar);
+        if (titlebar)
+        {
+#if GTK_CHECK_VERSION(3,12,0)
+            if (m_gdkDecor && wx_is_at_least_gtk3(12))
+            {
+                char layout[sizeof("icon,menu:minimize,maximize,close")];
+                snprintf(layout, sizeof(layout), "icon%s:%s%s%s",
+                     m_gdkDecor & GDK_DECOR_MENU ? ",menu" : "",
+                     m_gdkDecor & GDK_DECOR_MINIMIZE ? "minimize," : "",
+                     m_gdkDecor & GDK_DECOR_MAXIMIZE ? "maximize," : "",
+                     m_gdkFunc & GDK_FUNC_CLOSE ? "close" : "");
+                gtk_header_bar_set_decoration_layout(GTK_HEADER_BAR(titlebar), layout);
+            }
+#endif // 3.12
+            // Don't set WM decorations when GTK is using Client Side Decorations
+            m_gdkDecor = 0;
+        }
+    }
+#endif // 3.10
 
     gdk_window_set_decorations(window, (GdkWMDecoration)m_gdkDecor);
     gdk_window_set_functions(window, (GdkWMFunction)m_gdkFunc);
@@ -594,6 +631,11 @@ bool wxTopLevelWindowGTK::Create( wxWindow *parent,
 
     m_title = title;
 
+#ifndef __WXGTK4__
+    // Gnome uses class as display name
+    gdk_set_program_class(wxTheApp->GetAppDisplayName().utf8_str());
+#endif
+
     // NB: m_widget may be !=NULL if it was created by derived class' Create,
     //     e.g. in wxTaskBarIconAreaGTK
     if (m_widget == NULL)
@@ -801,7 +843,13 @@ bool wxTopLevelWindowGTK::Create( wxWindow *parent,
         gtk_widget_set_size_request(m_widget, w, h);
     }
 
-    g_signal_connect(gtk_settings_get_default(), "notify::gtk-theme-name",
+    // Note that we need to connect after this signal in order to let the
+    // normal g_signal_connect() in wxSystemSettings code to run before our
+    // handler: this ensures that system settings cache is cleared before the
+    // user-defined wxSysColourChangedEvent handlers using wxSystemSettings
+    // methods are executed, which is important as otherwise they would use the
+    // old colours etc.
+    g_signal_connect_after(gtk_settings_get_default(), "notify::gtk-theme-name",
         G_CALLBACK(notify_gtk_theme_name), this);
 
     return true;
@@ -963,6 +1011,29 @@ void wxTopLevelWindowGTK::Refresh( bool WXUNUSED(eraseBackground), const wxRect 
         gdk_window_invalidate_rect(window, NULL, true);
 }
 
+#if defined(__WXGTK3__) && defined(GDK_WINDOWING_X11)
+// Check conditions under which GTK will use Client Side Decorations with X11
+static bool isUsingCSD(GtkWidget* widget)
+{
+    const char* csd = getenv("GTK_CSD");
+    if (csd == NULL || strcmp(csd, "1") != 0)
+        return false;
+
+    GdkScreen* screen = gtk_widget_get_screen(widget);
+    if (!gdk_screen_is_composited(screen))
+        return false;
+
+    GdkAtom atom = gdk_atom_intern_static_string("_GTK_FRAME_EXTENTS");
+    if (!gdk_x11_screen_supports_net_wm_hint(screen, atom))
+        return false;
+
+    if (gdk_screen_get_rgba_visual(screen) == NULL)
+        return false;
+
+    return true;
+}
+#endif // __WXGTK3__ && GDK_WINDOWING_X11
+
 bool wxTopLevelWindowGTK::Show( bool show )
 {
     wxCHECK_MSG(m_widget, false, "invalid frame");
@@ -984,6 +1055,11 @@ bool wxTopLevelWindowGTK::Show( bool show )
                 GSignalMatchType(G_SIGNAL_MATCH_ID | G_SIGNAL_MATCH_DATA),
                 g_signal_lookup("property_notify_event", GTK_TYPE_WIDGET),
                 0, NULL, NULL, this);
+#ifdef __WXGTK3__
+        // Don't defer with CSD, it isn't needed and causes pixman errors
+        if (deferShow)
+            deferShow = !isUsingCSD(m_widget);
+#endif
         if (deferShow)
         {
             GdkScreen* screen = gtk_widget_get_screen(m_widget);
@@ -1080,6 +1156,16 @@ bool wxTopLevelWindowGTK::Show( bool show )
 
     if (change && !show)
     {
+        // Generate wxEVT_KILL_FOCUS for the currently focused control
+        // immediately (i.e. without waiting until the window is destroyed and
+        // doing it from its dtor), as it could be too late to execute the
+        // handler for this event, or other events triggered by receiving it,
+        // by then because the wxTLW will have been half-destroyed by then.
+        if (GTK_IS_WINDOW(m_widget))
+        {
+            gtk_window_set_focus( GTK_WINDOW(m_widget), NULL );
+        }
+
         // make sure window has a non-default position, so when it is shown
         // again, it won't be repositioned by WM as if it were a new window
         // Note that this must be done _after_ the window is hidden.
@@ -1735,4 +1821,13 @@ bool wxTopLevelWindowGTK::CanSetTransparent()
     return XQueryExtension(gdk_x11_get_default_xdisplay (),
                            "Composite", &opcode, &event, &error);
 #endif
+}
+
+wxVisualAttributes wxTopLevelWindowGTK::GetDefaultAttributes() const
+{
+    wxVisualAttributes attrs(GetClassDefaultAttributes());
+#ifdef __WXGTK3__
+    wxGtkStyleContext().AddWindow().Bg(attrs.colBg);
+#endif
+    return attrs;
 }

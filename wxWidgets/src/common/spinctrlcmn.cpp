@@ -22,10 +22,12 @@
     #pragma hdrstop
 #endif
 
+#if wxUSE_SPINCTRL
+
 #include "wx/spinbutt.h"
 #include "wx/spinctrl.h"
 
-#if wxUSE_SPINCTRL
+#include "wx/private/spinctrl.h"
 
 wxDEFINE_EVENT(wxEVT_SPINCTRL, wxSpinEvent);
 wxDEFINE_EVENT(wxEVT_SPINCTRLDOUBLE, wxSpinDoubleEvent);
@@ -102,7 +104,9 @@ wxCONSTRUCTOR_6( wxSpinCtrl, wxWindow*, Parent, wxWindowID, Id, \
                 wxSize, Size, long, WindowStyle )
 
 
-wxString wxPrivate::wxSpinCtrlFormatAsHex(long val, long maxVal)
+using namespace wxSpinCtrlImpl;
+
+wxString wxSpinCtrlImpl::FormatAsHex(long val, long maxVal)
 {
     // We format the value like this is for compatibility with (native
     // behaviour of) wxMSW
@@ -115,17 +119,28 @@ wxString wxPrivate::wxSpinCtrlFormatAsHex(long val, long maxVal)
     return text;
 }
 
-wxSize wxPrivate::wxSpinCtrlGetBestSize(const wxControl* spin,
-                                        int minVal, int maxVal, int base)
+int wxSpinCtrlImpl::GetMaxValueLength(int minVal, int maxVal, int base)
 {
     const int lenMin = (base == 16 ?
-                       wxSpinCtrlFormatAsHex(minVal, maxVal) :
+                       FormatAsHex(minVal, maxVal) :
                        wxString::Format("%d", minVal)).length();
     const int lenMax = (base == 16 ?
-                       wxSpinCtrlFormatAsHex(maxVal, maxVal) :
+                       FormatAsHex(maxVal, maxVal) :
                        wxString::Format("%d", maxVal)).length();
-    const wxString largestString('8', wxMax(lenMin, lenMax));
+    return wxMax(lenMin, lenMax);
+}
+
+wxSize wxSpinCtrlImpl::GetBestSize(const wxControl* spin,
+                                   int minVal, int maxVal, int base)
+{
+    const wxString largestString('8', GetMaxValueLength(minVal, maxVal, base));
     return spin->GetSizeFromText(largestString);
+}
+
+bool wxSpinCtrlImpl::IsBaseCompatibleWithRange(int minVal, int maxVal, int base)
+{
+    // Negative values in the range are allowed only if base == 10
+    return base == 10 || (minVal >= 0 && maxVal >= 0);
 }
 
 #endif // wxUSE_SPINCTRL

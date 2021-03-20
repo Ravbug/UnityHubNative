@@ -1281,8 +1281,7 @@ bool wxWindowQt::QtHandlePaintEvent ( QWidget *handler, QPaintEvent *event )
                 }
 
                 // send the paint event (wxWindowDC will draw directly):
-                wxPaintEvent paint( GetId() );
-                paint.SetEventObject(this);
+                wxPaintEvent paint( this );
                 handled = ProcessWindowEvent(paint);
                 m_updateRegion.Clear();
             }
@@ -1619,15 +1618,11 @@ bool wxWindowQt::QtHandleCloseEvent ( QWidget *handler, QCloseEvent *WXUNUSED( e
 
 bool wxWindowQt::QtHandleContextMenuEvent ( QWidget *WXUNUSED( handler ), QContextMenuEvent *event )
 {
-    wxContextMenuEvent e( wxEVT_CONTEXT_MENU, GetId() );
-    e.SetPosition(
+    const wxPoint pos =
         event->reason() == QContextMenuEvent::Keyboard
             ? wxDefaultPosition
-            : wxQtConvertPoint( event->globalPos() )
-    );
-    e.SetEventObject(this);
-
-    return ProcessWindowEvent( e );
+            : wxQtConvertPoint( event->globalPos() );
+    return WXSendContextMenuEvent(pos);
 }
 
 bool wxWindowQt::QtHandleFocusEvent ( QWidget *WXUNUSED( handler ), QFocusEvent *event )

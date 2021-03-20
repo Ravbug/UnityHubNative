@@ -74,8 +74,24 @@ wxBitmap wxAuiBitmapFromBits(const unsigned char bits[], int w, int h,
 
 // This function is defined in dockart.cpp.
 void wxAuiScaleBitmap(wxBitmap& bmp, double scale);
+float wxAuiGetColourContrast(const wxColour& c1, const wxColour& c2);
 
 wxString wxAuiChopText(wxDC& dc, const wxString& text, int max_size);
+
+// Check if the color has sufficient contrast ratio (4.5 recommended)
+// (based on https://www.w3.org/TR/UNDERSTANDING-WCAG20/visual-audio-contrast7.html)
+static bool wxAuiHasSufficientContrast(const wxColour& c1, const wxColour& c2)
+{
+    return wxAuiGetColourContrast(c1, c2) >= 4.5;
+}
+
+// Pick a color that provides better contrast against the background
+static wxColour wxAuiGetBetterContrastColour(const wxColour& back_color,
+    const wxColour& c1, const wxColour& c2)
+{
+    return wxAuiGetColourContrast(back_color, c1)
+          > wxAuiGetColourContrast(back_color, c2) ? c1 : c2;
+}
 
 static void DrawButtons(wxDC& dc,
                         const wxSize& offset,
@@ -160,14 +176,6 @@ static const unsigned char list_bits[] = {
 wxAuiGenericTabArt::wxAuiGenericTabArt()
     : m_normalFont(*wxNORMAL_FONT)
     , m_selectedFont(m_normalFont)
-    , m_activeCloseBmp(wxAuiBitmapFromBits(close_bits, 16, 16, *wxBLACK))
-    , m_disabledCloseBmp(wxAuiBitmapFromBits(close_bits, 16, 16, wxColour(128,128,128)))
-    , m_activeLeftBmp(wxAuiBitmapFromBits(left_bits, 16, 16, *wxBLACK))
-    , m_disabledLeftBmp(wxAuiBitmapFromBits(left_bits, 16, 16, wxColour(128,128,128)))
-    , m_activeRightBmp(wxAuiBitmapFromBits(right_bits, 16, 16, *wxBLACK))
-    , m_disabledRightBmp(wxAuiBitmapFromBits(right_bits, 16, 16, wxColour(128,128,128)))
-    , m_activeWindowListBmp(wxAuiBitmapFromBits(list_bits, 16, 16, *wxBLACK))
-    , m_disabledWindowListBmp(wxAuiBitmapFromBits(list_bits, 16, 16, wxColour(128,128,128)))
 {
     m_selectedFont.SetWeight(wxFONTWEIGHT_BOLD);
     m_measuringFont = m_selectedFont;
@@ -185,11 +193,7 @@ wxAuiGenericTabArt::~wxAuiGenericTabArt()
 
 void wxAuiGenericTabArt::UpdateColoursFromSystem()
 {
-#if defined( __WXMAC__ ) && wxOSX_USE_COCOA_OR_CARBON
-    wxColor baseColour = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
-#else
     wxColor baseColour = wxSystemSettings::GetColour(wxSYS_COLOUR_3DFACE);
-#endif
 
     // the baseColour is too pale to use as our base colour,
     // so darken it a bit --
@@ -207,6 +211,17 @@ void wxAuiGenericTabArt::UpdateColoursFromSystem()
     m_borderPen = wxPen(borderColour);
     m_baseColourPen = wxPen(m_baseColour);
     m_baseColourBrush = wxBrush(m_baseColour);
+
+    const int disabledLightness = wxSystemSettings::GetAppearance().IsUsingDarkBackground() ? 130 : 70;
+
+    m_activeCloseBmp = wxAuiBitmapFromBits(close_bits, 16, 16, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
+    m_disabledCloseBmp = wxAuiBitmapFromBits(close_bits, 16, 16, wxSystemSettings::GetColour(wxSYS_COLOUR_INACTIVECAPTIONTEXT).ChangeLightness(disabledLightness));
+    m_activeLeftBmp = wxAuiBitmapFromBits(left_bits, 16, 16, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
+    m_disabledLeftBmp = wxAuiBitmapFromBits(left_bits, 16, 16, wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
+    m_activeRightBmp = wxAuiBitmapFromBits(right_bits, 16, 16, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
+    m_disabledRightBmp = wxAuiBitmapFromBits(right_bits, 16, 16, wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
+    m_activeWindowListBmp = wxAuiBitmapFromBits(list_bits, 16, 16, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
+    m_disabledWindowListBmp = wxAuiBitmapFromBits(list_bits, 16, 16, wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
 }
 
 wxAuiTabArt* wxAuiGenericTabArt::Clone()
@@ -264,16 +279,18 @@ void wxAuiGenericTabArt::DrawBackground(wxDC& dc,
                                         wxWindow* WXUNUSED(wnd),
                                         const wxRect& rect)
 {
-    // draw background
-    int topLightness = 90;
-    int bottomLightness = 170;
-    if ((m_baseColour.Red() < 75)
-        && (m_baseColour.Green() < 75)
-        && (m_baseColour.Blue() < 75))
+    // draw background using arbitrary hard-coded, but at least adapted to dark
+    // mode, gradient
+    int topLightness, bottomLightness;
+    if (wxSystemSettings::GetAppearance().IsUsingDarkBackground())
     {
-        //dark mode, we cannot go very light
+        topLightness = 110;
+        bottomLightness = 90;
+    }
+    else
+    {
         topLightness = 90;
-        bottomLightness = 110;
+        bottomLightness = 170;
     }
 
     wxColor top_color    = m_baseColour.ChangeLightness(topLightness);
@@ -428,7 +445,9 @@ void wxAuiGenericTabArt::DrawTab(wxDC& dc,
     int drawn_tab_yoff = border_points[1].y;
     int drawn_tab_height = border_points[0].y - border_points[1].y;
 
+    bool isdark = wxSystemSettings::GetAppearance().IsUsingDarkBackground();
 
+    wxColor back_color = m_baseColour;
     if (page.active)
     {
         // draw active tab
@@ -441,13 +460,12 @@ void wxAuiGenericTabArt::DrawTab(wxDC& dc,
 
         // this white helps fill out the gradient at the top of the tab
         wxColor gradient = *wxWHITE;
-        if ((m_baseColour.Red() < 75)
-            && (m_baseColour.Green() < 75)
-            && (m_baseColour.Blue() < 75))
+        if (isdark)
         {
             //dark mode, we go darker
             gradient = m_activeColour.ChangeLightness(70);
         }
+        back_color = gradient;
 
         dc.SetPen(wxPen(gradient));
         dc.SetBrush(wxBrush(gradient));
@@ -488,9 +506,7 @@ void wxAuiGenericTabArt::DrawTab(wxDC& dc,
         // -- draw top gradient fill for glossy look
         wxColor top_color = m_baseColour;
         wxColor bottom_color = top_color.ChangeLightness(160);
-        if ((m_baseColour.Red() < 75)
-            && (m_baseColour.Green() < 75)
-            && (m_baseColour.Blue() < 75))
+        if (isdark)
         {
             //dark mode, we go darker
             top_color = m_activeColour.ChangeLightness(70);
@@ -562,7 +578,7 @@ void wxAuiGenericTabArt::DrawTab(wxDC& dc,
             bmp = m_activeCloseBmp;
         }
 
-        wxAuiScaleBitmap(bmp, wnd->GetContentScaleFactor());
+        wxAuiScaleBitmap(bmp, wnd->GetDPIScaleFactor());
 
         int offsetY = tab_y-1;
         if (m_flags & wxAUI_NB_BOTTOM)
@@ -585,16 +601,11 @@ void wxAuiGenericTabArt::DrawTab(wxDC& dc,
                           tab_width - (text_offset-tab_x) - close_button_width);
 
     // draw tab text
-#if defined( __WXMAC__ )
-    if (page.active)
-    {
-        dc.SetTextForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_CAPTIONTEXT));
-    }
-    else
-    {
-        dc.SetTextForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_INACTIVECAPTIONTEXT));
-    }
-#endif
+    wxColor sys_color = wxSystemSettings::GetColour(
+        page.active ? wxSYS_COLOUR_CAPTIONTEXT : wxSYS_COLOUR_INACTIVECAPTIONTEXT);
+    wxColor font_color = wxAuiHasSufficientContrast(back_color, sys_color) ? sys_color
+        : wxAuiGetBetterContrastColour(back_color, *wxWHITE, *wxBLACK);
+    dc.SetTextForeground(font_color);
     dc.DrawText(draw_text,
                 text_offset,
                 drawn_tab_yoff + (drawn_tab_height)/2 - (texty/2) - 1);
@@ -744,7 +755,7 @@ void wxAuiGenericTabArt::DrawButton(wxDC& dc,
     if (!bmp.IsOk())
         return;
 
-    wxAuiScaleBitmap(bmp, wnd->GetContentScaleFactor());
+    wxAuiScaleBitmap(bmp, wnd->GetDPIScaleFactor());
 
     rect = in_rect;
 
@@ -1114,7 +1125,7 @@ void wxAuiSimpleTabArt::DrawTab(wxDC& dc,
         else
             bmp = m_disabledCloseBmp;
 
-        wxAuiScaleBitmap(bmp, wnd->GetContentScaleFactor());
+        wxAuiScaleBitmap(bmp, wnd->GetDPIScaleFactor());
 
         wxRect rect(tab_x + tab_width - bmp.GetScaledWidth() - 1,
                     tab_y + (tab_height/2) - (bmp.GetScaledHeight()/2) + 1,
@@ -1138,6 +1149,12 @@ void wxAuiSimpleTabArt::DrawTab(wxDC& dc,
                           tab_width - (text_offset-tab_x) - close_button_width);
 
     // draw tab text
+    wxColor back_color = dc.GetBrush().GetColour();
+    wxColor sys_color = wxSystemSettings::GetColour(
+        page.active ? wxSYS_COLOUR_CAPTIONTEXT : wxSYS_COLOUR_INACTIVECAPTIONTEXT);
+    wxColor font_color = wxAuiHasSufficientContrast(back_color, sys_color) ? sys_color
+        : wxAuiGetBetterContrastColour(back_color, *wxWHITE, *wxBLACK);
+    dc.SetTextForeground(font_color);
     dc.DrawText(draw_text,
                  text_offset,
                  (tab_y + tab_height)/2 - (texty/2) + 1);
@@ -1256,7 +1273,7 @@ void wxAuiSimpleTabArt::DrawButton(wxDC& dc,
     if (!bmp.IsOk())
         return;
 
-    wxAuiScaleBitmap(bmp, wnd->GetContentScaleFactor());
+    wxAuiScaleBitmap(bmp, wnd->GetDPIScaleFactor());
 
     rect = in_rect;
 

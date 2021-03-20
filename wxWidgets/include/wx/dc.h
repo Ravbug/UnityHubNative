@@ -528,7 +528,7 @@ public:
 
     virtual void ComputeScaleAndOrigin();
 
-    // this needs to overidden if the axis is inverted
+    // this needs to overridden if the axis is inverted
     virtual void SetAxisOrientation(bool xLeftRight, bool yBottomUp);
 
     virtual double GetContentScaleFactor() const { return m_contentScaleFactor; }
@@ -1327,7 +1327,7 @@ public:
             : m_dc(thdc.m_dc),
               m_hdc(thdc.m_hdc)
         {
-            const_cast<TempHDC&>(thdc).m_hdc = 0;
+            const_cast<TempHDC&>(thdc).m_hdc = NULL;
         }
 
         ~TempHDC()

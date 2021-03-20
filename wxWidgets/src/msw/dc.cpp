@@ -801,6 +801,20 @@ bool wxMSWDCImpl::DoGetPixel(wxCoord x, wxCoord y, wxColour *col) const
     return true;
 }
 
+// Check whether DC is not rotated and not scaled
+static bool IsNonTransformedDC(HDC hdc)
+{
+    // Ensure DC is not rotated
+    if ( ::GetGraphicsMode(hdc) == GM_ADVANCED )
+        return false;
+    // and not scaled
+    SIZE devExt;
+    ::GetViewportExtEx(hdc, &devExt);
+    SIZE logExt;
+    ::GetWindowExtEx(hdc, &logExt);
+    return devExt.cx == logExt.cx && devExt.cy == logExt.cy;
+}
+
 void wxMSWDCImpl::DoCrossHair(wxCoord x, wxCoord y)
 {
     RECT rect;
@@ -813,23 +827,26 @@ void wxMSWDCImpl::DoCrossHair(wxCoord x, wxCoord y)
     // We have optimized function to draw physical vertical or horizontal lines
     // with solid color and square ends so it can be used to draw a cross hair
     // for:
-    // - Solid lines with pen width > 0 because it doesn't support drawing
-    //   non-scaled 1-pixel wide lines when pen width is 0. Shape of the lines
-    //   ends doesn't matter because non-square line ends are drawn outside
-    //   the view and visible line ends are always square.
+    // - Any shape of the lines ends because non-square line ends are drawn
+    //   outside the view and visible line ends are always square.
     // - DC which coordinate system is not rotated (graphics mode
-    //   of the DC != GM_ADVANCED).
-    if ( ::GetGraphicsMode(GetHdc()) != GM_ADVANCED && // ensure DC is not rotated
+    //   of the DC != GM_ADVANCED) and not scaled.
+    // - wxCOPY raster operation mode becaue it is based on ExtTextOut() API.
+    if ( IsNonTransformedDC(GetHdc()) &&
+         m_logicalFunction == wxCOPY &&
          m_pen.IsNonTransparent() && // this calls IsOk() too
-         m_pen.GetStyle() == wxPENSTYLE_SOLID &&
-         m_pen.GetWidth() > 0
+         m_pen.GetStyle() == wxPENSTYLE_SOLID
        )
     {
+        // Since we are drawing on a non-scaled DC, a 0-pixel width line
+        // can be safely drawn as a 1-pixel wide one.
+        int w = m_pen.GetWidth() > 0 ? m_pen.GetWidth() : 1;
+
         COLORREF color = wxColourToRGB(m_pen.GetColour());
         wxDrawHVLine(GetHdc(), XLOG2DEV(rect.left), YLOG2DEV(y), XLOG2DEV(rect.right), YLOG2DEV(y),
-                     color, m_pen.GetWidth());
+                     color, w);
         wxDrawHVLine(GetHdc(), XLOG2DEV(x), YLOG2DEV(rect.top), XLOG2DEV(x), YLOG2DEV(rect.bottom),
-                     color, m_pen.GetWidth());
+                     color, w);
     }
     else
     {
@@ -844,25 +861,26 @@ void wxMSWDCImpl::DoCrossHair(wxCoord x, wxCoord y)
 void wxMSWDCImpl::DoDrawLine(wxCoord x1, wxCoord y1, wxCoord x2, wxCoord y2)
 {
     // We have optimized function to draw physical vertical or horizontal lines
-    // with solid color and square ends.
+    // with solid color and square ends. It is based on ExtTextOut() API
+    // so it can be used only with wxCOPY raster operation mode.
     // Because checking wheteher the line would be horizontal/vertical
     // in the device coordinate system is complex so we only check whether
     // the line is horizontal/vertical in the logical coordinates and use
     // optimized function only for DC which coordinate system is for sure
-    // not rotated (graphics mode of the DC != GM_ADVANCED).
-    // Moreover, optimized function can be used only for regular lines with pen
-    // width > 0 because it doesn't support drawing non-scaled 1-pixel wide
-    // lines when pen width is 0.
+    // not rotated (graphics mode of the DC != GM_ADVANCED) and not scaled.
     if ( (x1 == x2 || y1 == y2) &&
-         ::GetGraphicsMode(GetHdc()) != GM_ADVANCED && // ensure DC is not rotated
+         m_logicalFunction == wxCOPY &&
+         IsNonTransformedDC(GetHdc()) &&
          m_pen.IsNonTransparent() && // this calls IsOk() too
          m_pen.GetStyle() == wxPENSTYLE_SOLID &&
-         m_pen.GetWidth() > 0 &&
-         (m_pen.GetWidth() == 1 || m_pen.GetCap() == wxCAP_BUTT)
+         (m_pen.GetWidth() <= 1 || m_pen.GetCap() == wxCAP_BUTT)
        )
     {
+        // Since we are drawing on a non-scaled DC, a 0-pixel width line
+        // can be safely drawn as a 1-pixel wide one.
         wxDrawHVLine(GetHdc(), XLOG2DEV(x1), YLOG2DEV(y1), XLOG2DEV(x2), YLOG2DEV(y2),
-                     wxColourToRGB(m_pen.GetColour()), m_pen.GetWidth());
+                     wxColourToRGB(m_pen.GetColour()),
+                     m_pen.GetWidth() > 0 ? m_pen.GetWidth() : 1);
     }
     else
     {
@@ -971,7 +989,7 @@ void wxMSWDCImpl::DoDrawPolygon(int n,
             CalcBoundingBox(points[i].x, points[i].y);
 
         int prev = SetPolyFillMode(GetHdc(),fillStyle==wxODDEVEN_RULE?ALTERNATE:WINDING);
-        (void)Polygon(GetHdc(), (POINT*) points, n);
+        Polygon(GetHdc(), reinterpret_cast<const POINT*>(points), n);
         SetPolyFillMode(GetHdc(),prev);
     }
 }
@@ -1011,7 +1029,7 @@ wxMSWDCImpl::DoDrawPolyPolygon(int n,
             CalcBoundingBox(points[i].x, points[i].y);
 
         int prev = SetPolyFillMode(GetHdc(),fillStyle==wxODDEVEN_RULE?ALTERNATE:WINDING);
-        (void)PolyPolygon(GetHdc(), (POINT*) points, count, n);
+        PolyPolygon(GetHdc(), reinterpret_cast<const POINT*>(points), count, n);
         SetPolyFillMode(GetHdc(),prev);
     }
 }
@@ -1039,7 +1057,7 @@ void wxMSWDCImpl::DoDrawLines(int n, const wxPoint points[], wxCoord xoffset, wx
         for (i = 0; i < n; i++)
             CalcBoundingBox(points[i].x, points[i].y);
 
-        (void)Polyline(GetHdc(), (POINT*) points, n);
+        Polyline(GetHdc(), reinterpret_cast<const POINT*>(points), n);
     }
 }
 
@@ -2535,11 +2553,6 @@ wxSize wxMSWDCImpl::GetPPI() const
     }
 
     return ppi;
-}
-
-double wxMSWDCImpl::GetContentScaleFactor() const
-{
-    return GetPPI().y / 96.0;
 }
 
 // ----------------------------------------------------------------------------

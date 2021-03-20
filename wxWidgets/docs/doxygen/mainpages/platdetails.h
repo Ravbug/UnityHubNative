@@ -23,34 +23,26 @@ platforms and ports.
 
 @section page_port_wxgtk wxGTK
 
-wxGTK is a port of wxWidgets using the GTK+ library. It makes use of GTK+'s
+wxGTK is a port of wxWidgets using the GTK library. It makes use of GTK's
 native widgets wherever possible and uses wxWidgets' generic controls when
-needed. GTK+ itself has been ported to a number of systems, but so far only the
-original X11 version is supported. Support for other GTK+ backends is planned,
-such as the new DirectFB backend.
+needed.
 
-All work is being done on GTK+ version 2.0 and above. Support for GTK+ 1.2 will
-be deprecated in a later release.
-
-You will need GTK+ 2.6 or higher which is available from:
+You will need GTK 2.6 or higher which is available from:
 
 http://www.gtk.org
 
-The newer version of GTK+ you use, the more native widgets and features will be
+The newer version of GTK you use, the more native widgets and features will be
 utilized. We have gone to great lengths to allow compiling wxWidgets
-applications with the latest version of GTK+, with the resulting binary working
-on systems even with a much earlier version of GTK+. You will have to ensure
+applications with the latest version of GTK, with the resulting binary working
+on systems even with a much earlier version of GTK. You will have to ensure
 that the application is launched with lazy symbol binding for that.
 
-In order to configure wxWidgets to compile wxGTK you will need use the
+In order to configure wxWidgets to compile wxGTK you will need to use the
 @c \--with-gtk argument to the @c configure script. This is the default for many
 systems.
 
-GTK+ 1.2 can still be used, albeit discouraged. For that you can pass
-@c \--with-gtk=1 to the @c configure script.
-
-Support for GTK+ 3 is available starting with wxWidgets 2.9.4, use @c configure
-option @c \--with-gtk=3 to enable it.
+Support for GTK 3 is available starting with wxWidgets 2.9.4, and is the default
+starting with 3.1.4. Use @c configure option @c \--with-gtk=2 to use GTK 2.
 
 @subpage plat_gtk_install "Build and Install Instructions"
 
@@ -60,8 +52,8 @@ option @c \--with-gtk=3 to enable it.
 
 @section page_port_wxosx wxOSX/Cocoa
 
-wxOSX/Cocoa is the port of wxWidgets for the OS X platform. It requires
-OS X 10.7 or later and fully supports 64 bit builds.
+wxOSX/Cocoa is the port of wxWidgets for the macOS platform. It requires
+macOS 10.10 or later, Xcode 7.2.1 or greater, and fully supports 64 bit builds.
 
 @subpage plat_osx_install "Build and Install Instructions"
 

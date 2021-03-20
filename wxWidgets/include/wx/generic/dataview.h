@@ -137,20 +137,15 @@ public:
         if ( width == m_width )
             return;
 
-        // Normally we don't update it here as this method is called by
-        // UpdateColumnSizes() which resizes the column automatically, and not
-        // "manually", but if it's the first time the width is being set for a
-        // column created with the default width, do set m_manuallySetWidth in
-        // order to prevent the column from becoming narrower than its initial
-        // size when the control is resized, as this is unexpected.
-        if ( m_width == -1 )
-            m_manuallySetWidth = width;
-
         m_width = width;
         UpdateWidth();
     }
 
-    int WXGetManuallySetWidth() const { return m_manuallySetWidth; }
+    // This method is also internal and called when the column is resized by
+    // user interactively.
+    void WXOnResize(int width);
+
+    virtual int WXGetSpecifiedWidth() const wxOVERRIDE;
 
 private:
     // common part of all ctors
@@ -161,6 +156,11 @@ private:
     // former.
     void UpdateDisplay();
     void UpdateWidth();
+
+    // Return the effective value corresponding to the given width, handling
+    // its negative values such as wxCOL_WIDTH_DEFAULT.
+    int DoGetEffectiveWidth(int width) const;
+
 
     wxString m_title;
     int m_width,
@@ -202,7 +202,7 @@ public:
            const wxPoint& pos = wxDefaultPosition,
            const wxSize& size = wxDefaultSize, long style = 0,
            const wxValidator& validator = wxDefaultValidator,
-           const wxString& name = wxDataViewCtrlNameStr )
+           const wxString& name = wxASCII_STR(wxDataViewCtrlNameStr) )
              : wxScrollHelper(this)
     {
         Create(parent, id, pos, size, style, validator, name);
@@ -216,7 +216,7 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize, long style = 0,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxDataViewCtrlNameStr);
+                const wxString& name = wxASCII_STR(wxDataViewCtrlNameStr));
 
     virtual bool AssociateModel( wxDataViewModel *model ) wxOVERRIDE;
 
@@ -331,7 +331,11 @@ public:     // utility functions not part of the API
     // update the display after a change to an individual column
     void OnColumnChange(unsigned int idx);
 
-    // update after the column width changes, also calls OnColumnChange()
+    // update after the column width changes due to interactive resizing
+    void OnColumnResized();
+
+    // update after the column width changes because of e.g. title or bitmap
+    // change, invalidates the column best width and calls OnColumnChange()
     void OnColumnWidthChange(unsigned int idx);
 
     // update after a change to the number of columns

@@ -1045,7 +1045,9 @@ bool wxGCDCImpl::DoStretchBlit(
     wxCompositionMode mode = TranslateRasterOp(logical_func);
     if ( mode == wxCOMPOSITION_INVALID )
     {
-        wxFAIL_MSG( wxT("Blitting is not supported with this logical operation.") );
+        // Do *not* assert here, this function is often call from wxEVT_PAINT
+        // handler and asserting will just result in a reentrant call to the
+        // same handler and a crash.
         return false;
     }
 
@@ -1196,13 +1198,19 @@ void wxGCDCImpl::DoDrawText(const wxString& str, wxCoord x, wxCoord y)
     if ( str.empty() )
         return;
 
-    if ( !m_logicalFunctionSupported )
-        return;
+    // Text drawing shouldn't be affected by the raster operation
+    // mode set by SetLogicalFunction() and should be always done
+    // in the default wxCOPY mode (which is wxCOMPOSITION_OVER
+    // composition mode).
+    wxCompositionMode curMode = m_graphicContext->GetCompositionMode();
+    m_graphicContext->SetCompositionMode(wxCOMPOSITION_OVER);
 
     if ( m_backgroundMode == wxBRUSHSTYLE_TRANSPARENT )
         m_graphicContext->DrawText( str, x ,y);
     else
         m_graphicContext->DrawText( str, x ,y , m_graphicContext->CreateBrush(m_textBackgroundColour) );
+
+    m_graphicContext->SetCompositionMode(curMode);
 
     wxCoord w, h;
     GetOwner()->GetTextExtent(str, &w, &h);
@@ -1228,9 +1236,21 @@ void wxGCDCImpl::DoGetTextExtent( const wxString &str, wxCoord *width, wxCoord *
         m_graphicContext->SetFont( *theFont, m_textForegroundColour );
     }
 
-    wxDouble h , d , e , w;
+    wxDouble w wxDUMMY_INITIALIZE(0),
+             h wxDUMMY_INITIALIZE(0),
+             d wxDUMMY_INITIALIZE(0),
+             e wxDUMMY_INITIALIZE(0);
 
-    m_graphicContext->GetTextExtent( str, &w, &h, &d, &e );
+    // Don't pass non-NULL pointers for the parts we don't need, this could
+    // result in doing extra unnecessary work inside GetTextExtent().
+    m_graphicContext->GetTextExtent
+                      (
+                        str,
+                        width ? &w : NULL,
+                        height ? &h : NULL,
+                        descent ? &d : NULL,
+                        externalLeading ? &e : NULL
+                      );
 
     if ( height )
         *height = (wxCoord)(h+0.5);

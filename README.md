@@ -32,17 +32,13 @@ This application stores its own files in an application data directory. If the a
 
 ## Compiling it yourself
 
-### macOS
-1. Open `mac.xcodeproj` in Xcode.
-2. Select `AppStatic` from the target selector.
-3. Press Build (cmd + b). Everything will compile in one step. 
-### Windows
-1. In the repository root folder, open `windows.sln`
-2. select your configuration (Debug/Release, X86/x64)
-3. Build.
-### Linux
-1. In the repository root folder, run `make`. The app will compile to `linux-build/`. If you are missing a dependency, the build system will stop and alert you with which dependency is missing. 
-   - You will need to have the webkit2gtk3 package installed for your system. For Fedora, this can be installed with `sudo dnf install webkit2gtk3-devel.x86_64` and for Debian/Ubuntu it can be installed with `sudo apt install webkit2gtk-driver`
+Use CMake:
+```
+mkdir build && cd build
+cmake ..
+cmake --build . --config Release --target install
+```
+Note for linux users: you will need to have the `webkit2gtk3` development package installed for your system. For Fedora, this can be installed with `sudo dnf install webkit2gtk3-devel.x86_64` and for Debian/Ubuntu it can be installed with `sudo apt install webkit2gtk-driver`
 
 ## Issues
 Please report all problems in the [Issues](https://github.com/Ravbug/wxWidgetsTemplate/issues) section of this repository. 

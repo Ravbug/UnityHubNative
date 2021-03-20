@@ -48,8 +48,8 @@ static int wxOSXGetUserDefault(NSString* key, int defaultValue)
 
 wxString wxSystemAppearance::GetName() const
 {
-#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9
-    if ( WX_IS_MACOS_AVAILABLE(10, 9) )
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14
+    if ( WX_IS_MACOS_AVAILABLE(10, 14) )
     {
         return wxStringWithNSString([[NSApp effectiveAppearance] name]);
     }
@@ -60,7 +60,7 @@ wxString wxSystemAppearance::GetName() const
 
 bool wxSystemAppearance::IsDark() const
 {
-#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14
     if ( WX_IS_MACOS_AVAILABLE(10, 14) )
     {
         const NSAppearanceName
@@ -163,8 +163,17 @@ wxColour wxSystemSettingsNative::GetColour(wxSystemColour index)
         sysColor = [NSColor windowBackgroundColor];
         break;
     case wxSYS_COLOUR_HOTLIGHT:
-        // OSX doesn't change color on mouse hover
-        sysColor = [NSColor controlTextColor];
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14
+        if ( WX_IS_MACOS_AVAILABLE(10, 14) )
+        {
+            sysColor = [NSColor linkColor];
+        }
+        else
+#endif
+        {
+            // OSX doesn't change color on mouse hover
+            sysColor = [NSColor controlTextColor];
+        }
         break;
     case wxSYS_COLOUR_MENUHILIGHT:
         sysColor = [NSColor selectedMenuItemColor];
@@ -196,7 +205,7 @@ wxFont wxSystemSettingsNative::GetFont(wxSystemFont index)
         case wxSYS_DEVICE_DEFAULT_FONT :
         case wxSYS_DEFAULT_GUI_FONT :
             {
-                return *wxSMALL_FONT ;
+                return wxFont(wxOSX_SYSTEM_FONT_SMALL) ;
             } ;
             break ;
         case wxSYS_OEM_FIXED_FONT :
@@ -204,7 +213,7 @@ wxFont wxSystemSettingsNative::GetFont(wxSystemFont index)
         case wxSYS_SYSTEM_FIXED_FONT :
         default :
             {
-                return *wxNORMAL_FONT ;
+                return wxFont(wxOSX_SYSTEM_FONT_FIXED) ;
             } ;
             break ;
 

@@ -49,7 +49,7 @@ dnl If the API changes incompatibly set LIBAGE back to 0
 dnl
 
 LIBCURRENT=7    # sync
-LIBREVISION=10  # with
+LIBREVISION=11  # with
 LIBAGE=6        # CMakeLists.txt!
 
 AX_APPEND_FLAG([-DHAVE_EXPAT_CONFIG_H], [CPPFLAGS])
@@ -306,6 +306,9 @@ AS_IF([test "x${DOCBOOK_TO_MAN}" != x -a "x$with_docbook" != xno],
   page for xmlwf.])])])
 
 AM_CONDITIONAL(WITH_DOCBOOK, [test "x${DOCBOOK_TO_MAN}" != x])
+
+dnl updating _EXPAT_TARGET variable to effect the package name in expat.pc file (issue #361)
+AC_SUBST(_EXPAT_TARGET, ["$PACKAGE_NAME"])
 
 AC_CONFIG_FILES([Makefile]
   [expat.pc]

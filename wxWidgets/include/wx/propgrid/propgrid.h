@@ -593,7 +593,7 @@ enum wxPG_INTERNAL_FLAGS
 // used to do the very same thing, but it hasn't been updated for a while
 // and it is currently deprecated.
 // Please note that most member functions are inherited and as such not
-// documented heree. This means you will probably also want to read
+// documented here. This means you will probably also want to read
 // wxPropertyGridInterface class reference.
 // To process input from a propertygrid control, use these event handler
 // macros to direct input to member functions that take a wxPropertyGridEvent
@@ -672,7 +672,7 @@ public:
                     const wxPoint& pos = wxDefaultPosition,
                     const wxSize& size = wxDefaultSize,
                     long style = wxPG_DEFAULT_STYLE,
-                    const wxString& name = wxPropertyGridNameStr );
+                    const wxString& name = wxASCII_STR(wxPropertyGridNameStr) );
 
     // Destructor
     virtual ~wxPropertyGrid();
@@ -741,7 +741,7 @@ public:
                  const wxPoint& pos = wxDefaultPosition,
                  const wxSize& size = wxDefaultSize,
                  long style = wxPG_DEFAULT_STYLE,
-                 const wxString& name = wxPropertyGridNameStr );
+                 const wxString& name = wxASCII_STR(wxPropertyGridNameStr) );
 
     // Call when editor widget's contents is modified.
     // For example, this is called when changes text in wxTextCtrl (used in
@@ -1155,6 +1155,7 @@ public:
 
     const wxPGCommonValue* GetCommonValue( unsigned int i ) const
     {
+        wxCHECK_MSG( i < m_commonValues.size(), NULL, "Invalid item index" );
         return m_commonValues[i];
     }
 
@@ -1167,7 +1168,7 @@ public:
     // Returns label of given common value.
     wxString GetCommonValueLabel( unsigned int i ) const
     {
-        wxASSERT( GetCommonValue(i) );
+        wxCHECK_MSG( i < m_commonValues.size(), wxString(), "Invalid item index" );
         return GetCommonValue(i)->GetLabel();
     }
 
@@ -1233,6 +1234,9 @@ public:
 
     // Checks system screen design used for laying out various dialogs.
     static bool IsSmallScreen();
+
+    // Returns rescaled bitmap
+    static wxBitmap RescaleBitmap(const wxBitmap& srcBmp, double scaleX, double scaleY);
 
     // Returns rectangle that fully contains properties between and including
     // p1 and p2. Rectangle is in virtual scrolled window coordinates.

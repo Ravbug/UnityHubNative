@@ -126,18 +126,20 @@ run_tests() {
                     /usr/i686-w64-mingw32/lib/libwinpthread-1.dll \
                     /usr/lib/gcc/i686-w64-mingw32/*/libgcc_s_sjlj-1.dll \
                     /usr/lib/gcc/i686-w64-mingw32/*/libstdc++-6.dll \
-                    "$PWD"/libexpat.dll \
+                    "$PWD"/libexpat{,w}.dll \
                     ${i}/
         done
     fi
 
-    local make_env_args=(
+    local make_args=(
         CTEST_OUTPUT_ON_FAILURE=1
         CTEST_PARALLEL_LEVEL=2
         VERBOSE=1
+        test
     )
+    [[ $* =~ -DEXPAT_DTD=OFF ]] || make_args+=( run-xmltest )
 
-    RUN "${MAKE}" "${make_env_args[@]}" test run-xmltest
+    RUN "${MAKE}" "${make_args[@]}"
 }
 
 
@@ -180,7 +182,7 @@ run() {
 
     run_cmake "$@"
     run_compile
-    run_tests
+    run_tests "$@"
     run_processor
 }
 

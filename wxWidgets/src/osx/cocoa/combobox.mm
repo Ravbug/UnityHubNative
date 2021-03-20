@@ -20,6 +20,7 @@
     #include "wx/dcclient.h"
 #endif
 
+#include "wx/osx/private/available.h"
 #include "wx/osx/cocoa/private/textimpl.h"
 
 // work in progress
@@ -318,13 +319,13 @@ int wxNSComboBoxControl::FindString(const wxString& text) const
 void wxNSComboBoxControl::Popup()
 {
     id ax = NSAccessibilityUnignoredDescendant(m_comboBox);
-    [ax accessibilitySetValue: [NSNumber numberWithBool: YES] forAttribute: NSAccessibilityExpandedAttribute];
+    [ax setAccessibilityExpanded: YES];
 }
 
 void wxNSComboBoxControl::Dismiss()
 {
     id ax = NSAccessibilityUnignoredDescendant(m_comboBox);
-    [ax accessibilitySetValue: [NSNumber numberWithBool: NO] forAttribute: NSAccessibilityExpandedAttribute];
+    [ax setAccessibilityExpanded: NO];
 }
 
 void wxNSComboBoxControl::SetEditable(bool editable)
@@ -347,7 +348,10 @@ wxWidgetImplType* wxWidgetImpl::CreateComboBox( wxComboBox* wxpeer,
 {
     NSRect r = wxOSXGetFrameForControl( wxpeer, pos , size ) ;
     wxNSComboBox* v = [[wxNSComboBox alloc] initWithFrame:r];
-    [v setNumberOfVisibleItems:13];
+    if (WX_IS_MACOS_AVAILABLE(10, 13))
+        [v setNumberOfVisibleItems:999];
+    else
+        [v setNumberOfVisibleItems:13];
     if (style & wxCB_READONLY)
         [v setEditable:NO];
     wxNSComboBoxControl* c = new wxNSComboBoxControl( wxpeer, v );

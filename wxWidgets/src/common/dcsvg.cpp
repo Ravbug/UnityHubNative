@@ -141,7 +141,7 @@ wxString GetPenPattern(const wxPen& pen)
     // When the pen width increases, lines become thicker and unrecognizable.
     // Multiplying with 1/3th of the width creates line styles matching the appearance of wxDC.
     // The pen width is not used to modify user provided dash styles.
-    float w = pen.GetWidth();
+    double w = pen.GetWidth();
     if (pen.GetWidth() == 0)
         w = 1;
     w = w / 3;
@@ -270,6 +270,9 @@ wxString GetBrushStyleName(const wxBrush& brush)
             break;
     }
 
+    if (!brushStyle.empty())
+        brushStyle += wxString::Format(wxS("%s%02X"), Col2SVG(brush.GetColour()).substr(1), brush.GetColour().Alpha());
+
     return brushStyle;
 }
 
@@ -279,7 +282,7 @@ wxString GetBrushPattern(const wxBrush& brush)
     wxString brushStyle = GetBrushStyleName(brush);
 
     if (!brushStyle.empty())
-        s = wxS("fill=\"url(#") + brushStyle + Col2SVG(brush.GetColour()).substr(1) + wxS(")\"");
+        s = wxString::Format(wxS("fill=\"url(#%s)\""), brushStyle);
 
     return s;
 }
@@ -339,12 +342,14 @@ wxString CreateBrushFill(const wxBrush& brush, wxSVGShapeRenderingMode mode)
                 break;
         }
 
-        wxString brushColourStr = Col2SVG(brush.GetColour());
+        float opacity;
+        wxString brushColourStr = Col2SVG(brush.GetColour(), &opacity);
+        wxString brushStrokeStr = wxS("stroke-width:1; stroke-linecap:round; stroke-linejoin:round;");
 
-        s += wxString::Format(wxS("  <pattern id=\"%s%s\" patternUnits=\"userSpaceOnUse\" width=\"8\" height=\"8\">\n"),
-            patternName, brushColourStr.substr(1));
-        s += wxString::Format(wxS("    <path style=\"stroke:%s;\" %s %s/>\n"),
-            brushColourStr, pattern, GetRenderMode(mode));
+        s += wxString::Format(wxS("  <pattern id=\"%s\" patternUnits=\"userSpaceOnUse\" width=\"8\" height=\"8\">\n"),
+            patternName);
+        s += wxString::Format(wxS("    <path style=\"stroke:%s; stroke-opacity:%s; %s\" %s %s/>\n"),
+            brushColourStr, NumStr(opacity), brushStrokeStr, pattern, GetRenderMode(mode));
         s += wxS("  </pattern>\n");
     }
 
@@ -353,7 +358,13 @@ wxString CreateBrushFill(const wxBrush& brush, wxSVGShapeRenderingMode mode)
 
 void SetScaledScreenDCFont(wxScreenDC& sDC, const wxFont& font)
 {
-    const double scale = sDC.GetContentScaleFactor();
+    // When using DPI-independent pixels, the results of GetTextExtent() and
+    // similar don't depend on DPI anyhow.
+#ifndef wxHAVE_DPI_INDEPENDENT_PIXELS
+    static const int SVG_DPI = 96;
+
+    const double screenDPI = sDC.GetPPI().y;
+    const double scale = screenDPI / SVG_DPI;
     if ( scale > 1 )
     {
         // wxScreenDC uses the DPI of the main screen to determine the text
@@ -368,6 +379,7 @@ void SetScaledScreenDCFont(wxScreenDC& sDC, const wxFont& font)
         sDC.SetFont(scaledFont);
     }
     else
+#endif // !wxHAVE_DPI_INDEPENDENT_PIXELS
     {
         sDC.SetFont(font);
     }
@@ -465,7 +477,7 @@ wxSVGBitmapFileHandler::ProcessBitmap(const wxBitmap& bmp,
 // wxSVGFileDC (specialisations)
 // ----------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxSVGFileDC, wxDC);
+wxIMPLEMENT_ABSTRACT_CLASS(wxSVGFileDC, wxDC);
 
 void wxSVGFileDC::SetBitmapHandler(wxSVGBitmapHandler* handler)
 {
@@ -1276,9 +1288,9 @@ bool wxSVGFileDCImpl::DoBlit(wxCoord xdest, wxCoord ydest,
         wxASSERT_MSG(false, wxS("wxSVGFileDC::DoBlit Call requested nonCopy mode; this is not possible"));
         return false;
     }
-    if (useMask != false)
+    if (useMask)
     {
-        wxASSERT_MSG(false, wxS("wxSVGFileDC::DoBlit Call requested false mask; this is not possible"));
+        wxASSERT_MSG(false, "wxSVGFileDC::DoBlit Call requested mask; this is not possible");
         return false;
     }
     wxBitmap myBitmap(width, height);

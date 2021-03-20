@@ -469,7 +469,7 @@ wxPG_PROP_CLASS_SPECIFIC_3          = 0x00400000
     @subsection wxIntProperty
 
     It derives from wxNumericProperty and displays value as a signed long integer.
-    wxIntProperty seamlessly supports 64-bit integers (i.e. wxLongLong) on overlfow.
+    wxIntProperty seamlessly supports 64-bit integers (i.e. wxLongLong) on overflow.
     To safely convert variant to integer, use code like this:
 
     @code
@@ -581,11 +581,11 @@ wxPG_PROP_CLASS_SPECIFIC_3          = 0x00400000
     a different way in the editor and therefore such sequences may not be
     the same before and after the edition.
 
-    To display custom dialog on button press, you can subclass
-    wxLongStringProperty and implement OnButtonClick, like this:
+    To display a custom dialog on button press, you can subclass
+    wxLongStringProperty and override DisplayEditorDialog, like this:
 
     @code
-        virtual bool OnButtonClick( wxPropertyGrid* propGrid, wxString& value )
+        bool DisplayEditorDialog( wxPropertyGrid* propGrid, wxVariant& value ) wxOVERRIDE
         {
             wxSize dialogSize(...size of your dialog...);
 
@@ -1397,7 +1397,7 @@ public:
         Returns property attribute value, null variant if not found.
 
         @remarks
-        For built-in atrribute returns null variant if extra style
+        For built-in attribute returns null variant if extra style
         ::wxPG_EX_WRITEONLY_BUILTIN_ATTRIBUTES is set.
     */
     wxVariant GetAttribute( const wxString& name ) const;
@@ -1405,7 +1405,7 @@ public:
     /** Returns named attribute, as string, if found. Otherwise @a defVal is returned.
 
         @remarks
-        For built-in atrribute returns @a defVal if extra style
+        For built-in attribute returns @a defVal if extra style
         ::wxPG_EX_WRITEONLY_BUILTIN_ATTRIBUTES is set.
     */
     wxString GetAttribute( const wxString& name, const wxString& defVal ) const;
@@ -1413,7 +1413,7 @@ public:
     /** Returns named attribute, as long, if found. Otherwise @a defVal is returned.
 
         @remarks
-        For built-in atrribute returns @a defVal if extra style
+        For built-in attribute returns @a defVal if extra style
         ::wxPG_EX_WRITEONLY_BUILTIN_ATTRIBUTES is set.
     */
     long GetAttributeAsLong( const wxString& name, long defVal ) const;
@@ -1421,7 +1421,7 @@ public:
     /** Returns named attribute, as double, if found. Otherwise @a defVal is returned.
 
         @remarks
-        For built-in atrribute returns @a defVal if extra style
+        For built-in attribute returns @a defVal if extra style
         ::wxPG_EX_WRITEONLY_BUILTIN_ATTRIBUTES is set.
     */
     double GetAttributeAsDouble( const wxString& name, double defVal ) const;
@@ -2009,6 +2009,8 @@ public:
         @remarks
         Unlike wxPropertyGridInterface::SetPropertyColoursToDefault(),
         this does not automatically update the display.
+
+        @since 3.1.0
     */
     void SetDefaultColours(int flags = wxPG_RECURSE);
 
@@ -2164,6 +2166,8 @@ protected:
 
         @param recursively
             If @true, apply this operation recursively in child properties.
+
+        @since 3.1.0
     */
     void ClearCells(FlagType ignoreWithFlags, bool recursively);
 

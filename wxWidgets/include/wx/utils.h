@@ -154,7 +154,7 @@ WXDLLIMPEXP_BASE bool wxIsPlatformLittleEndian();
 WXDLLIMPEXP_BASE bool wxIsPlatform64Bit();
 
 #ifdef __LINUX__
-// Get linux-distro informations
+// Get linux-distro information
 WXDLLIMPEXP_BASE wxLinuxDistributionInfo wxGetLinuxDistributionInfo();
 #endif
 
@@ -178,7 +178,7 @@ WXDLLIMPEXP_CORE bool wxGetKeyState(wxKeyCode key);
 // in wxMSW.
 WXDLLIMPEXP_CORE bool wxSetDetectableAutoRepeat( bool flag );
 
-// Returns the current state of the mouse position, buttons and modifers
+// Returns the current state of the mouse position, buttons and modifiers
 WXDLLIMPEXP_CORE wxMouseState wxGetMouseState();
 
 #endif // wxUSE_GUI
@@ -274,13 +274,13 @@ inline bool wxPlatformIs(int platform) { return wxPlatform::Is(platform); }
 // ----------------------------------------------------------------------------
 
 // Ensure subsequent IDs don't clash with this one
-WXDLLIMPEXP_BASE void wxRegisterId(int id);
+WXDLLIMPEXP_BASE void wxRegisterId(wxWindowID id);
 
 // Return the current ID
-WXDLLIMPEXP_BASE int wxGetCurrentId();
+WXDLLIMPEXP_BASE wxWindowID wxGetCurrentId();
 
 // Generate a unique ID
-WXDLLIMPEXP_BASE int wxNewId();
+WXDLLIMPEXP_BASE wxWindowID wxNewId();
 
 // ----------------------------------------------------------------------------
 // Various conversions
@@ -802,7 +802,7 @@ inline struct _XDisplay *wxGetX11Display()
 // wxYield(): these functions are obsolete, please use wxApp methods instead!
 // ----------------------------------------------------------------------------
 
-// avoid redeclaring this function here if it had been already declated by
+// avoid redeclaring this function here if it had been already declared by
 // wx/app.h, this results in warnings from g++ with -Wredundant-decls
 #ifndef wx_YIELD_DECLARED
 #define wx_YIELD_DECLARED
@@ -839,7 +839,7 @@ WXDLLIMPEXP_CORE bool wxYieldIfNeeded();
                        size_t *outLen,
                        const wxString& resourceName,
                        const wxChar* resourceType = wxUserResourceStr,
-                       WXHINSTANCE module = 0);
+                       WXHINSTANCE module = NULL);
 
     // This function allocates a new buffer and makes a copy of the resource
     // data, remember to delete[] the buffer. And avoid using it entirely if
@@ -850,7 +850,7 @@ WXDLLIMPEXP_CORE bool wxYieldIfNeeded();
     wxLoadUserResource(const wxString& resourceName,
                        const wxChar* resourceType = wxUserResourceStr,
                        int* pLen = NULL,
-                       WXHINSTANCE module = 0);
+                       WXHINSTANCE module = NULL);
 #endif // __WINDOWS__
 
 #endif

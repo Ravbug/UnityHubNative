@@ -1,4 +1,4 @@
-wxWidgets 3.1.3 Release Notes
+wxWidgets 3.1.4 Release Notes
 =============================
 
 Welcome to the latest development release of wxWidgets, a free and open source
@@ -16,38 +16,44 @@ more about wxWidgets at:
 
 Documentation is available online at:
 
-* https://docs.wxwidgets.org/3.1.3/
+* https://docs.wxwidgets.org/3.1.4/
 
 wxWidgets sources and binaries for the selected platforms are available for
 download from:
 
-* https://github.com/wxWidgets/wxWidgets/releases/tag/v3.1.3/
+* https://www.wxwidgets.org/downloads/
+
+or, for a more more permanent but less convenient to use link, from
+
+* https://github.com/wxWidgets/wxWidgets/releases/tag/v3.1.4/
 
 
-Changes since 3.1.2
+Changes since 3.1.3
 -------------------
 
-There have been almost 2000 commits from 97 unique contributors (52 with
-multiple contributions) since 3.1.2 releases, so it is impossible to summarize
-all the changes in this document without making it too long, please see the
-full changelog at
+In the nine months since the previous release, there have been almost 1700
+commits from 74 unique contributors (37 with multiple contributions), so it is
+impossible to summarize all the changes in this document without making it too
+long, please see the fuller changelog at
 
-https://raw.githubusercontent.com/wxWidgets/wxWidgets/v3.1.3/docs/changes.txt
+https://raw.githubusercontent.com/wxWidgets/wxWidgets/v3.1.4/docs/changes.txt
 
-for more details, but some of the most important changes are:
+for more (but still not all) details, but some of the most important changes are:
 
-- Support for per-monitor DPI and dynamic DPI changes under MSW.
-- More generally, many fixes for various controls appearance in high DPI.
-- Long requested support for freezing rows and/or columns in wxGrid.
-- New XRC handlers for wxDataViewCtrl, wxInfoBar.
-- It is now possible to use gradients when creating wxGraphicsPen.
-- Extended compiler (MSVS 2019) and platforms (macOS 10.14+) support.
-- Significant improvements to the (still experimental) wxQt port.
-- Important bug fixes for focus handling in wxOSX port.
+- wxOSX port now supports the latest macOS 11 on ARM hardware.
+- wxMSW comes with a new Edge-based wxWebView implementation.
+- Better, although still not perfect, per-monitor DPI support in wxMSW.
+- wxGrid was has been significantly improved and is now much user friendlier.
+- AUI appearance enhancements for non-default GTK themes and macOS dark mode.
+- wxWidgets may now be built with C++20 compiler.
+- Improvements to CMake build system.
+- Allow optionally forbidding dangerous implicit wxString conversions.
 
+And, of course, there were many, many bug fixes in all ports, notably including
+fixing several long-standing problems in wxOSX.
 
 Notice that in spite of all the changes, this release remains almost completely
-compatible with 3.1.2 at the API level, so upgrading to it if you're already
+compatible with 3.1.3 at the API level, so upgrading to it if you're already
 using wxWidgets 3 should be straightforward.
 
 
@@ -58,7 +64,7 @@ Compared to the stable 3.0.x series, this version brings too many
 improvements and even more bug fixes to list them all, but here is the
 maximally condensed summary:
 
-- Build system improvements: support for new compilers (up to MSVS 2019, g++ 9)
+- Build system improvements: support for new compilers (up to MSVS 2019, g++ 10)
   with an even simpler way of using wxWidgets from MSVS, with wxwidgets.props
   file, and OS versions as well as an entirely new CMake build system.
 - Support for native dark mode under macOS 10.14 Mojave and later.
@@ -67,7 +73,7 @@ maximally condensed summary:
   wxStaticBox; markup in wxDataViewCtrl items text; better support for high DPI
   monitors; support for ZIP 64 files; much improved accessibility support under
   MSW; Support for non-integer font sizes and arbitrary font weights; LZMA
-  compression support (using liblzma)/
+  compression support (using liblzma).
 - New classes: wxActivityIndicator, wxAddRemoveCtrl,
   wxAppProgressIndicator, wxNativeWindow, wxPowerResourceBlocker,
   wxSecretStore.
@@ -93,7 +99,7 @@ This version of wxWidgets supports the following primary platforms:
 
 * Windows XP, Vista, 7, 8 and 10 (32/64 bits).
 * Most Unix variants using the GTK+ toolkit (version 2.6 or newer)
-* OS X (10.7 or newer) using Cocoa (32/64 bits)
+* macOS (10.10 or newer) using Cocoa (32/64 bits)
 
 There is some support for the following platforms:
 
@@ -112,7 +118,7 @@ Files
 wxWidgets is distributed in source form in several archive formats. ZIP and 7z
 archives are for Microsoft Windows users and contain the files with DOS/Windows
 line endings while the compressed tar archives are for Unix systems (including
-OS X) and contain the files with Unix line endings. Please notice that some
+macOS) and contain the files with Unix line endings. Please notice that some
 Windows tools still don't accept files with Unix line endings and that compiling
 sources with DOS line endings under Unix will fail, so please choose the correct
 file for your system.
@@ -210,4 +216,4 @@ developed by its users and your contributions to it are always welcome!
 
 Have fun!
 
-The wxWidgets Team, October 2019
+The wxWidgets Team, July 2020

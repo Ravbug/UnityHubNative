@@ -945,7 +945,7 @@ static wxString wxCreateTempImpl(
     wxCharBuffer buf(path.fn_str());
 
     // cast is safe because the string length doesn't change
-    int fdTemp = mkstemp( (char*)(const char*) buf );
+    int fdTemp = mkstemp(const_cast<char*>(static_cast<const char*>(buf)));
     if ( fdTemp == -1 )
     {
         // this might be not necessary as mkstemp() on most systems should have
@@ -1518,10 +1518,13 @@ bool wxFileName::Normalize(int flags,
                         continue;
 
                 }
-                else // Normal case, go one step up.
+                else // Normal case, go one step up unless it's .. as well.
                 {
-                    m_dirs.pop_back();
-                    continue;
+                    if (m_dirs.back() != wxT("..") )
+                    {
+                        m_dirs.pop_back();
+                        continue;
+                    }
                 }
             }
         }

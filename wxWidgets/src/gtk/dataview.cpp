@@ -2629,6 +2629,7 @@ public:
         m_window = window;
 
         m_context = window->GTKGetPangoDefaultContext();
+        g_object_ref(m_context);
         m_layout = pango_layout_new( m_context );
         m_fontdesc = pango_font_description_copy(gtk_widget_get_style(widget)->font_desc);
 
@@ -3145,16 +3146,7 @@ static void wxGtkTreeCellDataFunc( GtkTreeViewColumn *WXUNUSED(column),
 
     if (!wx_model->IsVirtualListModel())
     {
-        gboolean visible;
-        if (wx_model->IsContainer( item ))
-        {
-            visible = wx_model->HasContainerColumns( item ) || (column == 0);
-        }
-        else
-        {
-            visible = true;
-        }
-
+        gboolean visible = wx_model->HasValue(item, column);
         GValue gvalue = G_VALUE_INIT;
         g_value_init( &gvalue, G_TYPE_BOOLEAN );
         g_value_set_boolean( &gvalue, visible );

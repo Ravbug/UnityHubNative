@@ -118,15 +118,13 @@ wxCGColorRefData::wxCGColorRefData(CGColorRef col)
     }
     else if (model != kCGColorSpaceModelRGB)
     {
-#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11
-        if ( WX_IS_MACOS_AVAILABLE(10, 11) )
+        if ( WX_IS_MACOS_OR_IOS_AVAILABLE(10, 11, 9, 0) )
         {
             rgbacol = CGColorCreateCopyByMatchingToColorSpace(wxMacGetGenericRGBColorSpace(), kCGRenderingIntentDefault, col, NULL);
             noComp = CGColorGetNumberOfComponents(rgbacol);
             components = CGColorGetComponents(rgbacol);
         }
         else
-#endif
         {
             isRGB = false;
         }
@@ -221,6 +219,13 @@ WX_NSColor wxColour::OSXGetNSColor() const
     wxCHECK_MSG( IsOk(), NULL, "invalid colour" );
 
     return M_COLDATA->GetNSColor();
+}
+
+WX_NSImage wxColour::OSXGetNSPatternImage() const
+{
+    wxCHECK_MSG( IsOk(), NULL, "invalid colour" );
+
+    return M_COLDATA->GetNSPatternImage();
 }
 #endif
 

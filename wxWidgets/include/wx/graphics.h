@@ -104,7 +104,7 @@ class WXDLLIMPEXP_FWD_CORE wxGraphicsBitmap;
 /*
  * notes about the graphics context apis
  *
- * angles : are measured in radians, 0.0 being in direction of positiv x axis, PI/2 being
+ * angles : are measured in radians, 0.0 being in direction of positive x axis, PI/2 being
  * in direction of positive y axis.
  */
 
@@ -218,7 +218,7 @@ public:
     virtual void Set(wxDouble a=1.0, wxDouble b=0.0, wxDouble c=0.0, wxDouble d=1.0,
         wxDouble tx=0.0, wxDouble ty=0.0);
 
-    // gets the component valuess of the matrix
+    // gets the component values of the matrix
     virtual void Get(wxDouble* a=NULL, wxDouble* b=NULL,  wxDouble* c=NULL,
                      wxDouble* d=NULL, wxDouble* tx=NULL, wxDouble* ty=NULL) const;
 
@@ -279,7 +279,7 @@ class wxGraphicsGradientStop
 {
 public:
     wxGraphicsGradientStop(wxColour col = wxTransparentColour,
-                           float pos = 0.)
+                           float pos = 0.0f)
         : m_col(col),
           m_pos(pos)
     {
@@ -371,11 +371,11 @@ public:
     wxGraphicsPenInfo& Width(wxDouble width)
     { m_width = width; return *this; }
 
-    wxGraphicsPenInfo& 
+    wxGraphicsPenInfo&
     LinearGradient(wxDouble x1, wxDouble y1, wxDouble x2, wxDouble y2,
                    const wxColour& c1, const wxColour& c2,
                    const wxGraphicsMatrix& matrix = wxNullGraphicsMatrix)
-    { 
+    {
         m_gradientType = wxGRADIENT_LINEAR;
         m_x1 = x1;
         m_y1 = y1;
@@ -384,14 +384,14 @@ public:
         m_stops.SetStartColour(c1);
         m_stops.SetEndColour(c2);
         m_matrix = matrix;
-        return *this; 
-    }                                      
+        return *this;
+    }
 
-    wxGraphicsPenInfo& 
+    wxGraphicsPenInfo&
     LinearGradient(wxDouble x1, wxDouble y1, wxDouble x2, wxDouble y2,
                    const wxGraphicsGradientStops& stops,
                    const wxGraphicsMatrix& matrix = wxNullGraphicsMatrix)
-    { 
+    {
         m_gradientType = wxGRADIENT_LINEAR;
         m_x1 = x1;
         m_y1 = y1;
@@ -399,42 +399,42 @@ public:
         m_y2 = y2;
         m_stops = stops;
         m_matrix = matrix;
-        return *this; 
+        return *this;
     }
 
-    wxGraphicsPenInfo& 
+    wxGraphicsPenInfo&
     RadialGradient(wxDouble startX, wxDouble startY,
-                   wxDouble endX, wxDouble endY, wxDouble radius, 
+                   wxDouble endX, wxDouble endY, wxDouble radius,
                    const wxColour& oColor, const wxColour& cColor,
                    const wxGraphicsMatrix& matrix = wxNullGraphicsMatrix)
-    { 
+    {
         m_gradientType = wxGRADIENT_RADIAL;
         m_x1 = startX;
-        m_y1 = startY; 
-        m_x2 = endX; 
+        m_y1 = startY;
+        m_x2 = endX;
         m_y2 = endY;
         m_radius = radius;
         m_stops.SetStartColour(oColor);
         m_stops.SetEndColour(cColor);
         m_matrix = matrix;
-        return *this; 
-    }                                      
+        return *this;
+    }
 
-    wxGraphicsPenInfo& 
+    wxGraphicsPenInfo&
     RadialGradient(wxDouble startX, wxDouble startY,
-                   wxDouble endX, wxDouble endY, 
+                   wxDouble endX, wxDouble endY,
                    wxDouble radius, const wxGraphicsGradientStops& stops,
                    const wxGraphicsMatrix& matrix = wxNullGraphicsMatrix)
-    { 
+    {
         m_gradientType = wxGRADIENT_RADIAL;
-        m_x1 = startX; 
-        m_y1 = startY; 
-        m_x2 = endX; 
+        m_x1 = startX;
+        m_y1 = startY;
+        m_x2 = endX;
         m_y2 = endY;
         m_radius = radius;
         m_stops = stops;
         m_matrix = matrix;
-        return *this; 
+        return *this;
     }
 
     // Accessors

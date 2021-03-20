@@ -300,7 +300,7 @@ class WXDLLIMPEXP_CORE wxDataViewCustomRendererBase
 public:
     // Constructor must specify the usual renderer parameters which we simply
     // pass to the base class
-    wxDataViewCustomRendererBase(const wxString& varianttype = "string",
+    wxDataViewCustomRendererBase(const wxString& varianttype = wxASCII_STR("string"),
                                  wxDataViewCellMode mode = wxDATAVIEW_CELL_INERT,
                                  int align = wxDVR_DEFAULT_ALIGNMENT)
         : wxDataViewCustomRendererRealBase(varianttype, mode, align)
@@ -539,7 +539,7 @@ typedef wxDataViewTextRenderer wxDataViewDateRenderer;
 // wxDataViewCheckIconTextRenderer: 3-state checkbox + text + optional icon
 // ----------------------------------------------------------------------------
 
-#ifndef __WXOSX__
+#if defined(wxHAS_GENERIC_DATAVIEWCTRL) || !defined(__WXOSX__)
 
 class WXDLLIMPEXP_CORE wxDataViewCheckIconTextRenderer
     : public wxDataViewCustomRenderer
@@ -591,7 +591,7 @@ private:
     wxDECLARE_DYNAMIC_CLASS_NO_COPY(wxDataViewCheckIconTextRenderer);
 };
 
-#endif // !__WXOSX__
+#endif // ! native __WXOSX__
 
 // this class is obsolete, its functionality was merged in
 // wxDataViewTextRenderer itself now, don't use it any more

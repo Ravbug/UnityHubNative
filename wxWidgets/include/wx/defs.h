@@ -98,7 +98,7 @@
      */
     #pragma warning(disable: 4127) /*  conditional expression is constant */
 
-    /* There are too many false positivies for this one, particularly when
+    /* There are too many false positives for this one, particularly when
        using templates like wxVector<T> */
     /* class 'foo' needs to have dll-interface to be used by clients of
        class 'bar'" */
@@ -285,6 +285,26 @@ typedef short int WXTYPE;
     #define wxOVERRIDE
 #endif /*  HAVE_OVERRIDE */
 
+/* same for more C++11 keywords which don't have such historic baggage as
+   override and so can be detected by just testing for C++11 support (which
+   still requires handling MSVS specially, unfortunately) */
+#if __cplusplus >= 201103L || wxCHECK_VISUALC_VERSION(14)
+    #define wxHAS_MEMBER_DEFAULT
+
+    #define wxHAS_NOEXCEPT
+    #define wxNOEXCEPT noexcept
+#else
+    #define wxNOEXCEPT
+#endif
+
+/*
+    Support for nullptr is available since MSVS 2010, even though it doesn't
+    define __cplusplus as a C++11 compiler.
+ */
+#if __cplusplus >= 201103 || wxCHECK_VISUALC_VERSION(10)
+    #define wxHAS_NULLPTR_T
+#endif
+
 /* wxFALLTHROUGH is used to notate explicit fallthroughs in switch statements */
 
 #if __cplusplus >= 201703L
@@ -327,6 +347,9 @@ typedef short int WXTYPE;
     }
 
     #define wx_truncate_cast(t, x) wx_truncate_cast_impl<t>(x)
+
+#elif defined(__clang__)
+    #define wx_truncate_cast(t, x) static_cast<t>(x)
 
 #elif defined(__VISUALC__) && __VISUALC__ >= 1310
     template <typename T, typename X>
@@ -458,10 +481,9 @@ typedef short int WXTYPE;
 
 #ifndef HAVE_WOSTREAM
     /*
-        Mingw <= 3.4 and all versions of Cygwin don't have std::wostream
+        Cygwin is the only platform which doesn't have std::wostream
      */
-    #if (!defined(__MINGW32__) || wxCHECK_GCC_VERSION(4, 0)) && \
-        !defined(__CYGWIN__)
+    #if !defined(__CYGWIN__)
         #define HAVE_WOSTREAM
     #endif
 #endif /* HAVE_WOSTREAM */
@@ -599,15 +621,11 @@ typedef short int WXTYPE;
  */
 #define wxDEPRECATED(x) wxDEPRECATED_DECL x
 
-#if defined(__GNUC__) && !wxCHECK_GCC_VERSION(3, 4)
-    /*
-        We need to add dummy "inline" to allow gcc < 3.4 to handle the
-        deprecation attribute on the constructors.
-    */
-    #define  wxDEPRECATED_CONSTRUCTOR(x) wxDEPRECATED( inline x)
-#else
-    #define  wxDEPRECATED_CONSTRUCTOR(x) wxDEPRECATED(x)
-#endif
+/*
+    This macro used to be defined differently for gcc < 3.4, but we don't
+    support it any more, so it's just the same thing as wxDEPRECATED now.
+ */
+#define wxDEPRECATED_CONSTRUCTOR(x) wxDEPRECATED(x)
 
 /*
    Macro which marks the function as being deprecated but also defines it
@@ -1914,17 +1932,9 @@ enum wxStandardID
 /*  wxWindowID type                                                              */
 /*  ---------------------------------------------------------------------------- */
 
-/*
- * wxWindowID used to be just a typedef defined here, now it's a class, but we
- * still continue to define it here for compatibility, so that the code using
- * it continues to compile even if it includes just wx/defs.h.
- *
- * Notice that wx/windowid.h can only be included after wxID_XYZ definitions
- * (as it uses them).
- */
-#if defined(__cplusplus) && wxUSE_GUI
-    #include "wx/windowid.h"
-#endif
+/* Note that this is defined even in non-GUI code as the same type is also used
+   for e.g. timer IDs. */
+typedef int wxWindowID;
 
 /*  ---------------------------------------------------------------------------- */
 /*  other constants */
@@ -2762,6 +2772,8 @@ typedef WX_NSPasteboard OSXPasteboard;
 
 #elif wxOSX_USE_IPHONE
 
+DECLARE_WXCOCOA_OBJC_CLASS(UIMenu);
+DECLARE_WXCOCOA_OBJC_CLASS(UIMenuItem);
 DECLARE_WXCOCOA_OBJC_CLASS(UIWindow);
 DECLARE_WXCOCOA_OBJC_CLASS(UImage);
 DECLARE_WXCOCOA_OBJC_CLASS(UIView);
@@ -2776,6 +2788,7 @@ DECLARE_WXCOCOA_OBJC_CLASS(UIPasteboard);
 typedef WX_UIWindow WXWindow;
 typedef WX_UIView WXWidget;
 typedef WX_UIImage WXImage;
+typedef WX_UIMenu WXHMENU;
 typedef WX_EAGLContext WXGLContext;
 typedef WX_NSString WXGLPixelFormat;
 typedef WX_UIWebView OSXWebViewPtr;
@@ -2983,7 +2996,7 @@ typedef const void* WXWidget;
 /*  macros to define a class without copy ctor nor assignment operator */
 /*  --------------------------------------------------------------------------- */
 
-#if defined(__cplusplus) && __cplusplus >= 201103L
+#if defined(__cplusplus) && (__cplusplus >= 201103L || wxCHECK_VISUALC_VERSION(14))
     #define wxMEMBER_DELETE = delete
 #else
     #define wxMEMBER_DELETE

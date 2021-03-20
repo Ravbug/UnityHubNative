@@ -35,6 +35,8 @@
     #include "wx/wxcrtvararg.h"
 #endif
 
+#include "wx/private/spinctrl.h"
+
 #include "wx/msw/private.h"
 #include "wx/msw/private/winstyle.h"
 
@@ -419,6 +421,10 @@ int wxSpinCtrl::GetBase() const
 
 bool wxSpinCtrl::SetBase(int base)
 {
+    // For negative values in the range only base == 10 is allowed
+    if ( !wxSpinCtrlImpl::IsBaseCompatibleWithRange(m_min, m_max, base) )
+        return false;
+
     if ( !::SendMessage(GetHwnd(), UDM_SETBASE, base, 0) )
         return false;
 
@@ -474,7 +480,7 @@ void  wxSpinCtrl::SetValue(int val)
                 (text[1] != 'x' && text[1] != 'X')) )
     {
         ::SetWindowText(GetBuddyHwnd(),
-                        wxPrivate::wxSpinCtrlFormatAsHex(val, m_max).t_str());
+                        wxSpinCtrlImpl::FormatAsHex(val, m_max).t_str());
     }
 
     m_oldValue = GetValue();
@@ -522,12 +528,25 @@ void wxSpinCtrl::SetLayoutDirection(wxLayoutDirection dir)
     SetSize(-1, -1, -1, -1, wxSIZE_AUTO | wxSIZE_FORCE);
 }
 
+WXHWND wxSpinCtrl::MSWGetFocusHWND() const
+{
+    // Return the buddy hwnd because it shuld be focused instead of the
+    // wxSpinCtrl itself.
+    return m_hwndBuddy;
+}
+
 // ----------------------------------------------------------------------------
 // wxSpinButton methods
 // ----------------------------------------------------------------------------
 
 void wxSpinCtrl::SetRange(int minVal, int maxVal)
 {
+    // Negative values in the range are allowed only if base == 10
+    if ( !wxSpinCtrlImpl::IsBaseCompatibleWithRange(minVal, maxVal, GetBase()) )
+    {
+        return;
+    }
+
     // Manually adjust the old value to avoid an event being sent from
     // NormalizeValue() called from inside the base class SetRange() as we're
     // not supposed to generate any events from here.
@@ -653,11 +672,6 @@ bool wxSpinCtrl::Enable(bool enable)
     return true;
 }
 
-void wxSpinCtrl::SetFocus()
-{
-    ::SetFocus(GetBuddyHwnd());
-}
-
 #if wxUSE_TOOLTIPS
 
 void wxSpinCtrl::DoSetToolTip(wxToolTip *tip)
@@ -724,22 +738,14 @@ bool wxSpinCtrl::MSWOnNotify(int WXUNUSED(idCtrl), WXLPARAM lParam, WXLPARAM *re
 
 int wxSpinCtrl::GetOverlap() const
 {
-    if ( !GetHwnd() )
-    {
-        // We can be called from GetSizeFromTextSize() before the window is
-        // created and still need to return something reasonable in this case,
-        // so return the overlap equal to the default border size.
-        return FromDIP(2);
-    }
-
-    // The sign here is correct because the button is positioned inside its
-    // buddy window.
-    return wxGetWindowRect(m_hwndBuddy).right - wxGetWindowRect(GetHwnd()).left;
+    // Don't use FromDIP here. The gap between the control border and the
+    // button seems to be always 1px.
+    return 2;
 }
 
 wxSize wxSpinCtrl::DoGetBestSize() const
 {
-    return wxPrivate::wxSpinCtrlGetBestSize(this, GetMin(), GetMax(), GetBase());
+    return wxSpinCtrlImpl::GetBestSize(this, GetMin(), GetMax(), GetBase());
 }
 
 wxSize wxSpinCtrl::DoGetSizeFromTextSize(int xlen, int ylen) const

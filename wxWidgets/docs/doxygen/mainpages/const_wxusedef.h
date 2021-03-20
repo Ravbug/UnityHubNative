@@ -169,12 +169,14 @@ library:
 @itemdef{wxUSE_MDI_ARCHITECTURE, Use MDI-based document-view classes.}
 @itemdef{wxUSE_MEDIACTRL, Use wxMediaCtrl.}
 @itemdef{wxUSE_MEMORY_TRACING, Use wxWidgets memory leak detection, not recommended if using another memory debugging tool.}
-@itemdef{wxUSE_MENUS, Use wxMenu and related classes.}
+@itemdef{wxUSE_MENUS, Use wxMenu and wxMenuItem.}
+@itemdef{wxUSE_MENUBAR, Use wxMenubar.}
 @itemdef{wxUSE_METAFILE, Use wxMetaFile and related classes.}
 @itemdef{wxUSE_MIMETYPE, Use wxFileType class.}
 @itemdef{wxUSE_MINIFRAME, Use wxMiniFrame class.}
 @itemdef{wxUSE_MOUSEWHEEL, Support mouse wheel events.}
 @itemdef{wxUSE_MSGDLG, Use wxMessageDialog class and wxMessageBox function.}
+@itemdef{wxUSE_NATIVE_DATAVIEWCTRL, Use native wxDataViewCtrl class (this option is new since wxWidgets 3.1.4).}
 @itemdef{wxUSE_NATIVE_STATUSBAR, Use native wxStatusBar class.}
 @itemdef{wxUSE_NOTEBOOK, Use wxNotebook and related classes.}
 @itemdef{wxUSE_NUMBERDLG, Use wxNumberEntryDialog class.}
@@ -322,6 +324,8 @@ library:
 @itemdef{wxUSE_DATEPICKCTRL_GENERIC, Use generic wxDatePickerCtrl implementation in addition to the native one.}
 @itemdef{wxUSE_DC_CACHEING, cache temporary wxDC objects.}
 @itemdef{wxUSE_DDE_FOR_IPC, See wx/ipc.h file.}
+@itemdef{wxUSE_DPI_AWARE_MANIFEST, Set the DPI awareness of the application
+(0=none, 1=system, 2=per-monitor. Used by CMake and when wxUSE_RC_MANIFEST is enabled.}
 @itemdef{wxUSE_ENH_METAFILE, Use wxEnhMetaFile.}
 @itemdef{wxUSE_HOTKEY, Use wxWindow::RegisterHotKey() and wxWindow::UnregisterHotKey}
 @itemdef{wxUSE_INKEDIT, Use InkEdit library. Related to Tablet PCs.}

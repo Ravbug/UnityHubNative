@@ -99,7 +99,7 @@ wxObjectRefData *wxVariant::CreateRefData() const
 
 wxObjectRefData *wxVariant::CloneRefData(const wxObjectRefData *data) const
 {
-    return ((wxVariantData*) data)->Clone();
+    return static_cast<const wxVariantData*>(data)->Clone();
 }
 
 // Assignment
@@ -1982,6 +1982,7 @@ wxVariantData* wxVariantDataList::VariantDataFactory(const wxAny& any)
 {
     wxAnyList src = any.As<wxAnyList>();
     wxVariantList dst;
+    dst.DeleteContents(true);
     wxAnyList::compatibility_iterator node = src.GetFirst();
     while (node)
     {

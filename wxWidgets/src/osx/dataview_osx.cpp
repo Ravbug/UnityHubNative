@@ -104,6 +104,7 @@ bool wxOSXDataViewModelNotifier::ItemAdded(wxDataViewItem const& parent, wxDataV
   wxCHECK_MSG(item.IsOk(),false,"Added item is invalid.");
   noFailureFlag = m_DataViewCtrlPtr->GetDataViewPeer()->Add(parent,item);
   AdjustRowHeight(item);
+  AdjustAutosizedColumns();
   return noFailureFlag;
 }
 
@@ -116,6 +117,7 @@ bool wxOSXDataViewModelNotifier::ItemsAdded(wxDataViewItem const& parent, wxData
   noFailureFlag = m_DataViewCtrlPtr->GetDataViewPeer()->Add(parent,items);
  // adjust row heights:
   AdjustRowHeights(items);
+  AdjustAutosizedColumns();
  // done:
   return noFailureFlag;
 }
@@ -365,6 +367,10 @@ bool wxDataViewCtrl::Create(wxWindow *parent,
                             const wxValidator& validator,
                             const wxString& name)
 {
+  // Remove wxVSCROLL and wxHSCROLL from the style, since the dataview panel has scrollbars
+  // by default, and wxControl::Create trys to make some but crashes in the process
+  style &= ~(wxVSCROLL | wxHSCROLL);
+
   DontCreatePeer();
   if (!(wxControl::Create(parent,id,pos,size,style,validator,name)))
     return false;

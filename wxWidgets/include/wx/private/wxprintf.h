@@ -19,6 +19,7 @@
 #include "wx/log.h"
 #include "wx/utils.h"
 
+#include <limits.h>
 #include <string.h>
 
 // prefer snprintf over sprintf
@@ -189,7 +190,7 @@ template<typename CharType>
 void wxPrintfConvSpec<CharType>::Init()
 {
     m_nMinWidth = 0;
-    m_nMaxWidth = 0xFFFF;
+    m_nMaxWidth = INT_MAX;
     m_pos = 0;
     m_bAlignLeft = false;
     m_pArgPos = m_pArgEnd = NULL;
@@ -854,10 +855,10 @@ struct wxPrintfConvSpecParser
                         wxFAIL_MSG
                         (
                             wxString::Format
-                            (
+                            (wxASCII_STR(
                                 "Format string \"%s\" uses both positional "
                                 "parameters and '*' but this is not currently "
-                                "supported by this implementation, sorry.",
+                                "supported by this implementation, sorry."),
                                 fmt
                             )
                         );
@@ -928,11 +929,11 @@ struct wxPrintfConvSpecParser
             wxFAIL_MSG
             (
                 wxString::Format
-                (
+                (wxASCII_STR(
                     "wxVsnprintf() currently supports only %d arguments, "
                     "but format string \"%s\" defines more of them.\n"
                     "You need to change wxMAX_SVNPRINTF_ARGUMENTS and "
-                    "recompile if more are really needed.",
+                    "recompile if more are really needed."),
                     fmt, wxMAX_SVNPRINTF_ARGUMENTS
                 )
             );

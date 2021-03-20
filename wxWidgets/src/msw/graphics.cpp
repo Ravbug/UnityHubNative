@@ -69,9 +69,6 @@ namespace
 // Local functions
 //-----------------------------------------------------------------------------
 
-inline double dmin(double a, double b) { return a < b ? a : b; }
-inline double dmax(double a, double b) { return a > b ? a : b; }
-
 // translate a wxColour to a Color
 inline Color wxColourToColor(const wxColour& col)
 {
@@ -361,6 +358,14 @@ public:
 
     virtual Brush* GetGDIPlusBrush() { return m_textBrush; }
     virtual Font* GetGDIPlusFont() { return m_font; }
+    virtual FontFamily * GetGDIPlusPrivateFontFamily() const
+    {
+#if wxUSE_PRIVATE_FONTS
+        return m_privateFontFamily;
+#else
+        return NULL;
+#endif // wxUSE_PRIVATE_FONTS
+    }
 
 private :
     // Common part of all ctors, flags here is a combination of values of
@@ -381,6 +386,9 @@ private :
 
     Brush* m_textBrush;
     Font* m_font;
+#if wxUSE_PRIVATE_FONTS
+    FontFamily* m_privateFontFamily;
+#endif // wxUSE_PRIVATE_FONTS
 };
 
 class wxGDIPlusContext : public wxGraphicsContext
@@ -745,7 +753,7 @@ wxGDIPlusPenBrushBaseData::CreateLinearGradientBrush(
     }
 
     SetGradientStops(brush, stops);
-    m_brush = brush;    
+    m_brush = brush;
 }
 
 void
@@ -769,7 +777,7 @@ wxGDIPlusPenBrushBaseData::CreateRadialGradientBrush(
     brush->SetSurroundColors(&col, &count);
 
     // TODO: There doesn't seem to be an equivallent for SetWrapMode, so
-    // the area outside of the gradient's radius is not getting painted. 
+    // the area outside of the gradient's radius is not getting painted.
 
     // Apply the matrix if there is one
     if ( !matrix.IsNull() )
@@ -1086,6 +1094,7 @@ wxGDIPlusFontData::Init(const wxString& name,
     // If the user has registered any private fonts, they should be used in
     // preference to any system-wide ones.
     m_font = NULL;
+    m_privateFontFamily = NULL;
     if ( gs_privateFonts )
     {
         const int count = gs_privateFonts->GetFamilyCount();
@@ -1097,10 +1106,15 @@ wxGDIPlusFontData::Init(const wxString& name,
         for ( int j = 0 ; j < found; j++ )
         {
             wchar_t familyName[LF_FACESIZE];
-            int rc = gs_pFontFamily[j].GetFamilyName(familyName);
-            if ( rc == 0 && name == familyName )
+            Status rc = gs_pFontFamily[j].GetFamilyName(familyName);
+            if ( rc == Ok && name == familyName )
             {
-                m_font = new Font(&gs_pFontFamily[j], sizeInPixels, style, UnitPixel);
+                // Store reference to the cached FontFamily to avoid calling Font::GetFamily()
+                // for private font because calling this method apparently is messing up something
+                // in the array of font families (m_privateFontFamily).
+                m_privateFontFamily = &gs_pFontFamily[j];
+                m_font = new Font(m_privateFontFamily, sizeInPixels, style, UnitPixel);
+
                 break;
             }
         }
@@ -1131,9 +1145,9 @@ wxGDIPlusFontData::wxGDIPlusFontData( wxGraphicsRenderer* renderer,
     if ( font.GetWeight() == wxFONTWEIGHT_BOLD )
         style |= FontStyleBold;
 
-    REAL fontSize = (REAL)(!dpi.y
-        ? font.GetPixelSize().GetHeight()
-        : (font.GetFractionalPointSize() * dpi.y / 72.0f));
+    REAL fontSize = !dpi.y
+        ? REAL(font.GetPixelSize().GetHeight())
+        : REAL(font.GetFractionalPointSize()) * dpi.y / 72.0f;
 
     Init(font.GetFaceName(), fontSize, style, col);
 }
@@ -2228,17 +2242,33 @@ void wxGDIPlusContext::GetTextExtent( const wxString &str, wxDouble *width, wxDo
     // Get the font metrics if we actually need them.
     if ( descent || externalLeading || (height && str.empty()) )
     {
-        FontFamily ffamily ;
-        f->GetFamily(&ffamily) ;
+        // Because it looks that calling to Font::GetFamily() for a private font is
+        // messing up something in the array of cached private font families so
+        // we should avoid calling this method fetch corresponding font family
+        // from the cache instead.
+        FontFamily* pPrivFontFamily = ((wxGDIPlusFontData*)m_font.GetRefData())->GetGDIPlusPrivateFontFamily();
+        FontFamily* pffamily;
+        if ( pPrivFontFamily )
+        {
+            pffamily = pPrivFontFamily;
+        }
+        else
+        {
+            pffamily = new FontFamily;
+            f->GetFamily(pffamily);
+        }
 
         // Notice that we must use the real font style or the results would be
         // incorrect for italic/bold fonts.
         const INT style = f->GetStyle();
         const REAL size = f->GetSize();
-        const REAL emHeight = ffamily.GetEmHeight(style);
-        REAL rDescent = ffamily.GetCellDescent(style) * size / emHeight;
-        REAL rAscent = ffamily.GetCellAscent(style) * size / emHeight;
-        REAL rHeight = ffamily.GetLineSpacing(style) * size / emHeight;
+        const REAL emHeight = pffamily->GetEmHeight(style);
+        REAL rDescent = pffamily->GetCellDescent(style) * size / emHeight;
+        REAL rAscent = pffamily->GetCellAscent(style) * size / emHeight;
+        REAL rHeight = pffamily->GetLineSpacing(style) * size / emHeight;
+
+        if ( !pPrivFontFamily )
+            delete pffamily;
 
         if ( height && str.empty() )
             *height = rHeight;
@@ -2492,9 +2522,6 @@ void wxGDIPlusRenderer::Unload()
 {
     if ( m_gditoken )
     {
-        GdiplusShutdown(m_gditoken);
-        m_gditoken = 0;
-
 #if wxUSE_PRIVATE_FONTS
         if ( gs_privateFonts )
         {
@@ -2505,6 +2532,9 @@ void wxGDIPlusRenderer::Unload()
             gs_pFontFamily = NULL;
         }
 #endif // wxUSE_PRIVATE_FONTS
+
+        GdiplusShutdown(m_gditoken);
+        m_gditoken = 0;
     }
     m_loaded = -1; // next Load() will try again
 }

@@ -2,7 +2,39 @@ NOTE: We are looking for help with a few things:
       https://github.com/libexpat/libexpat/labels/help%20wanted
       If you can help, please get in touch.  Thanks!
 
-Release 2.2.8 Fri Septemper 13 2019
+Release x.x.x xxx xxxxxxxxx xx xxxx
+        Other changes:
+            #360  CMake: Create libexpatw.{dll,so} and expatw.pc (with emphasis
+                    on suffix "w") with -DEXPAT_CHAR_TYPE=(ushort|wchar_t)
+            #360  CMake: Detect and deny unsupported build combinations
+                    involving -DEXPAT_CHAR_TYPE=(ushort|wchar_t)
+            #360  CMake: Install pre-compiled shipped xmlwf.1 manpage in case
+                    of -DEXPAT_BUILD_DOCS=OFF
+            #354  Fix testsuite for -DEXPAT_DTD=OFF and -DEXPAT_NS=OFF, each
+  #354 #355 #356  Address compiler warnings
+
+        Special thanks to:
+            asavah
+            Ma Lin
+            Mohammed Khajapasha
+            Vadim Zeitlin
+
+Release 2.2.9 Wed September 25 2019
+        Other changes:
+                  examples: Drop executable bits from elements.c
+            #349  Windows: Change the name of the Windows DLLs from expat*.dll
+                    to libexpat*.dll once more (regression from 2.2.8, first
+                    fixed in 1.95.3, issue #61 on SourceForge today,
+                    was issue #432456 back then); needs a fix due
+                    case-insensitive file systems on Windows and the fact that
+                    Perl's XML::Parser::Expat compiles into Expat.dll.
+            #347  Windows: Only define _CRT_RAND_S if not defined
+                  Version info bumped from 7:10:6 to 7:11:6
+
+        Special thanks to:
+            Ben Wagner
+
+Release 2.2.8 Fri September 13 2019
         Security fixes:
        #317 #318  CVE-2019-15903 -- Fix heap overflow triggered by
                     XML_GetCurrentLineNumber (or XML_GetCurrentColumnNumber),
@@ -100,10 +132,10 @@ Release 2.2.8 Fri Septemper 13 2019
         Special thanks to:
             David Loffredo
             Joonun Jang
-            Khajapasha Mohammed
             Kishore Kunche
             Marco Maggi
             Mitch Phillips
+            Mohammed Khajapasha
             Rolf Ade
             xantares
             Zhongyuan Zhou

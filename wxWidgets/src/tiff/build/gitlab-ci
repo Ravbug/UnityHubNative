@@ -20,7 +20,7 @@ autoconf_build()
     make distcheck
 }
 
-# Test autoconf build
+# Test cmake build
 cmake_build()
 {
     PATH="$(pwd)/tools/bin:$PATH"

@@ -250,7 +250,7 @@ public:
     // wxWindow::NewControlId(). Otherwise value_if_not_found is used.
     // Macro XRCID(name) is provided for convenient use in event tables.
     static int GetXRCID(const wxString& str_id, int value_if_not_found = wxID_NONE)
-        { return DoGetXRCID(str_id.mb_str(), value_if_not_found); }
+        { return DoGetXRCID(str_id.utf8_str(), value_if_not_found); }
 
     // version for internal use only
     static int DoGetXRCID(const char *str_id, int value_if_not_found = wxID_NONE);
@@ -591,8 +591,10 @@ public:
     wxImageList *GetImageList(const wxString& param = wxT("imagelist")) wxOVERRIDE;
 
 #if wxUSE_ANIMATIONCTRL
-    // Gets an animation.
-    wxAnimation* GetAnimation(const wxString& param = wxT("animation")) wxOVERRIDE;
+    // Gets an animation creating it using the provided control (so that it
+    // will be compatible with it) if any.
+    wxAnimation* GetAnimation(const wxString& param = wxT("animation"),
+                              wxAnimationCtrlBase* ctrl = NULL) wxOVERRIDE;
 #endif
 
     // Gets a font.
@@ -603,7 +605,7 @@ public:
 
     // Gets a file path from the given node, expanding environment variables in
     // it if wxXRC_USE_ENVVARS is in use.
-    wxString GetFilePath(const wxXmlNode* node);
+    wxString GetFilePath(const wxXmlNode* node) wxOVERRIDE;
 
     // Returns the window associated with the handler (may be NULL).
     wxWindow* GetParentAsWindow() const { return m_handler->GetParentAsWindow(); }

@@ -65,7 +65,7 @@ public:
                      underlined, face, encoding);
     }
 
-    wxFont(const wxNativeFontInfo& info, WXHFONT hFont = 0)
+    wxFont(const wxNativeFontInfo& info, WXHFONT hFont = NULL)
     {
         Create(info, hFont);
     }
@@ -90,12 +90,12 @@ public:
                                              encoding));
     }
 
-    bool Create(const wxNativeFontInfo& info, WXHFONT hFont = 0);
+    bool Create(const wxNativeFontInfo& info, WXHFONT hFont = NULL);
 
     virtual ~wxFont();
 
     // implement base class pure virtuals
-    virtual float GetFractionalPointSize() const wxOVERRIDE;
+    virtual double GetFractionalPointSize() const wxOVERRIDE;
     virtual wxSize GetPixelSize() const wxOVERRIDE;
     virtual bool IsUsingSizeInPixels() const wxOVERRIDE;
     virtual wxFontStyle GetStyle() const wxOVERRIDE;
@@ -106,7 +106,7 @@ public:
     virtual wxFontEncoding GetEncoding() const wxOVERRIDE;
     virtual const wxNativeFontInfo *GetNativeFontInfo() const wxOVERRIDE;
 
-    virtual void SetFractionalPointSize(float pointSize) wxOVERRIDE;
+    virtual void SetFractionalPointSize(double pointSize) wxOVERRIDE;
     virtual void SetPixelSize(const wxSize& pixelSize) wxOVERRIDE;
     virtual void SetFamily(wxFontFamily family) wxOVERRIDE;
     virtual void SetStyle(wxFontStyle style) wxOVERRIDE;

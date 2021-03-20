@@ -369,6 +369,16 @@ bool wxDataFormat::operator!=(const wxDataFormat& format) const
     return !(*this == format);
 }
 
+bool wxDataFormat::operator==(NativeFormat format) const
+{
+    return HtmlFormatFixup(*this).m_format == format;
+}
+
+bool wxDataFormat::operator!=(NativeFormat format) const
+{
+    return !(*this == format);
+}
+
 void wxDataFormat::SetId(const wxString& format)
 {
     m_format = (wxDataFormat::NativeFormat)::RegisterClipboardFormat(format.t_str());
@@ -1114,7 +1124,7 @@ bool wxBitmapDataObject2::GetDataHere(void *pBuf) const
 
 bool wxBitmapDataObject2::SetData(size_t WXUNUSED(len), const void *pBuf)
 {
-    HBITMAP hbmp = *(HBITMAP *)pBuf;
+    HBITMAP hbmp = *static_cast<const HBITMAP*>(pBuf);
 
     BITMAP bmp;
     if ( !GetObject(hbmp, sizeof(BITMAP), &bmp) )
@@ -1273,7 +1283,7 @@ bool wxFileDataObject::SetData(size_t WXUNUSED(size),
     // ((char *)&(pDropFiles.pFiles)) + pDropFiles.pFiles. We're also advised
     // to use DragQueryFile to work with this structure, but not told where and
     // how to get HDROP.
-    HDROP hdrop = (HDROP)pData;   // NB: it works, but I'm not sure about it
+    HDROP hdrop = static_cast<HDROP>(const_cast<void*>(pData));   // NB: it works, but I'm not sure about it
 
     // get number of files (magic value -1)
     UINT nFiles = ::DragQueryFile(hdrop, (unsigned)-1, NULL, 0u);

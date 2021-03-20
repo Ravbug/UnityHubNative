@@ -182,8 +182,6 @@
     #cmakedefine01 wxUSE_UNICODE
 #endif
 
-#cmakedefine01 wxUSE_WCHAR_T
-
 
 #cmakedefine01 wxUSE_EXCEPTIONS
 
@@ -338,6 +336,8 @@
 #cmakedefine01 wxUSE_WEBVIEW_IE
 #endif
 
+#cmakedefine01 wxUSE_WEBVIEW_EDGE
+
 #if (defined(__WXGTK__) && !defined(__WXGTK3__)) || defined(__WXOSX__)
 #cmakedefine01 wxUSE_WEBVIEW_WEBKIT
 #else
@@ -413,6 +413,8 @@
 #cmakedefine01 wxUSE_TREECTRL
 #cmakedefine01 wxUSE_TREELISTCTRL
 
+#cmakedefine01 wxUSE_NATIVE_DATAVIEWCTRL
+
 #cmakedefine01 wxUSE_STATUSBAR
 
 #cmakedefine01 wxUSE_NATIVE_STATUSBAR
@@ -466,6 +468,8 @@
 #cmakedefine01 wxUSE_INFOBAR
 
 #cmakedefine01 wxUSE_MENUS
+
+#cmakedefine01 wxUSE_MENUBAR
 
 #cmakedefine01 wxUSE_NOTIFICATION_MESSAGE
 
@@ -628,7 +632,6 @@
 #cmakedefine01 wxUSE_THEME_METAL
 #cmakedefine01 wxUSE_THEME_MONO
 #cmakedefine01 wxUSE_THEME_WIN32
-
 
 /* --- end common options --- */
 
@@ -983,9 +986,6 @@
 /* Define if you have pthread_attr_setstacksize */
 #cmakedefine HAVE_PTHREAD_ATTR_SETSTACKSIZE 1
 
-/* Define if you have shl_load() */
-#cmakedefine HAVE_SHL_LOAD 1
-
 /* Define if you have snprintf() */
 #cmakedefine HAVE_SNPRINTF 1
 
@@ -1087,9 +1087,6 @@
 
 /* Define if wchar_t is distinct type in your compiler. */
 #cmakedefine wxWCHAR_T_IS_REAL_TYPE 1
-
-/* Define if you have the dlerror function.  */
-#cmakedefine HAVE_DLERROR 1
 
 /* Define if you have the dladdr function.  */
 #cmakedefine HAVE_DLADDR 1

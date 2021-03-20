@@ -34,16 +34,21 @@ variable containing the full path to this directory. While this is not
 actually required, this makes using the library more convenient and
 this environment variable is used in the examples below.
 
-NB: If you checked your sources from version control repository and
-didn't obtain them from a release file, you also need to copy
-`include/wx/msw/setup0.h` to `include/wx/msw/setup.h` and to remember
-to update the latter whenever the former changes, otherwise you
-will get compilation errors if any new symbols are added to
-setup0.h file in the repository.
+Upgrading Existing Git Checkout         {#msw_update_setup_h}
+-------------------------------
 
-If you have no intention of modifying setup.h, you may avoid this
-problem by creating a symbolic link to setup0.h instead of making
-a copy of it using mklink, from an admin command prompt:
+If you checked your sources from version control repository and didn't
+obtain them from a release file, you may need to update your
+`include/wx/msw/setup.h` file to add any new options from
+`include/wx/msw/setup0.h` to it. If you hadn't edited `setup.h` file
+manually, you can just delete it to force recreating it by copying
+`setup0.h` to `setup.h` during the next build. If you forget to do it,
+you may get errors during the build due to new options being
+undefined.
+
+If you have no intention of ever modifying `setup.h`, you may avoid this
+problem entirely by creating a symbolic link to `setup0.h` before
+building, e.g. using mklink, from an admin command prompt:
 
     cd %WXWIN%\include\wx\msw\
     mklink setup.h setup0.h
@@ -79,11 +84,13 @@ Microsoft Visual C++ Compilation       {#msw_build_msvs}
 
    to build a release version or
 
-        > nmake /f makefile.vc BUILD=release SHARED=1
+        > nmake /f makefile.vc BUILD=release SHARED=1 TARGET_CPU=X86
 
-   to build a release DLL version. Finally, you can also add
-   `TARGET_CPU=X64` to nmake command line to build Win64 versions
-   (this only works if you are using a 64 bit compiler, of course).
+   to build a 32 bit release DLL version from an x86 command prompt, or
+
+        > nmake /f makefile.vc BUILD=release SHARED=1 TARGET_CPU=X64
+
+   to build a 64 bit release DLL version from an x64 command prompt.
 
    See "Configuring the Build" for more information about the
    additional parameters that can be specified on the command line.
@@ -294,7 +301,7 @@ debug mode, edit makefile.bcc and change /aa to /Tpe in link commands.
 Using the Debugger and IDE in BDS or Turbo Explorer
 ---------------------------------------------------
 
-Doubleclick / open \%WXWIN\%\samples\minimal\borland.bdsproj. The current version
+Double-click / open \%WXWIN\%\samples\minimal\borland.bdsproj. The current version
 is to be used with a dynamic build of wxWidgets-made by running
 make -f Makefile.bcc -DBUILD=debug -DSHARED=1
 in wxWidgets\build\msw. You also need the `wxWidgets\lib\bcc_dll`
@@ -322,6 +329,24 @@ the following preprocessor directive:
 
 (check the samples -- e.g., \wx2\samples\minimal\minimal.cpp -- for
 more details)
+
+
+
+Installing and building wxWidgets using vcpkg         {#msw_install_and_build}
+=============================================
+
+You can download and install wxWidgets using the [vcpkg](https://github.com/Microsoft/vcpkg) 
+dependency manager:
+
+    > git clone https://github.com/Microsoft/vcpkg.git
+    > cd vcpkg
+    > bootstrap-vcpkg.bat
+    > vcpkg integrate install
+    > vcpkg install wxwidgets
+
+The wxWidgets port in vcpkg is kept up to date by Microsoft team members and community 
+contributors. If the version is out of date, please [create an issue or pull request]
+(https://github.com/Microsoft/vcpkg) on the vcpkg repository.
 
 
 
@@ -506,8 +531,15 @@ Building Applications Using wxWidgets  {#msw_build_apps}
 =====================================
 
 If you use MSVS 2010 or later IDE for building your project, simply add
-`wxwidgets.props` property sheet to (all) your project(s) using wxWidgets.
-You don't need to do anything else.
+`wxwidgets.props` property sheet to (all) your project(s) using wxWidgets
+by using "View|Property Manager" menu item to open the property manager
+window and then selecting "Add Existing Property Sheet..." from the context
+menu in this window.
+
+If you've created a new empty project (i.e. chose "Empty Project" in the
+"Create a new project" window shown by MSVS rather than "Windows Desktop"),
+you need to change "Linker|System|SubSystem" in the project properties to
+"Windows", from the default "Console". You don't need to do anything else.
 
 If you want to use CMake for building your project, please see
 @ref overview_cmake.
@@ -573,10 +605,12 @@ application.
 Advanced Library Configurations        {#msw_advanced}
 ===============================
 Build instructions to less common library configurations using different UI
-backends are avaiable here.
+backends are available here.
 
 @subpage plat_msw_msys2 "Building with Win32 MSys2 backend"
 
 @subpage plat_msw_msys2_gtk "Building with Win32 MSys2 GDK backend"
 
 @subpage plat_msw_gtk "Building wxGTK port with Win32 GDK backend"
+
+@subpage plat_msw_msys2_qt "Building with Win32 MSys2 Qt backend"

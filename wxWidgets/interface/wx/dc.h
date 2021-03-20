@@ -14,6 +14,15 @@
     and the corresponding @e dst destination pixel gets combined together to produce
     the final pixel. E.g. @c wxCLEAR and @c wxSET completely ignore the source
     and the destination pixel and always put zeroes or ones in the final surface.
+
+    Note that not all modes are supported under all platforms. Notably wxGTK3
+    and wxMac only support the following modes:
+    - wxCOPY
+    - wxOR
+    - wxNO_OP
+    - wxCLEAR
+    - wxXOR
+    and, in particular, do @em not support the commonly used @c wxINVERT.
 */
 enum wxRasterOperationMode
 {
@@ -155,7 +164,7 @@ struct wxFontMetrics
     In general wxDC methods don't support alpha transparency and the alpha
     component of wxColour is simply ignored and you need to use wxGraphicsContext
     for full transparency support. There are, however, a few exceptions: first,
-    under OS X and GTK+ 3 colours with alpha channel are supported in all the normal
+    under macOS and GTK+ 3 colours with alpha channel are supported in all the normal
     wxDC-derived classes as they use wxGraphicsContext internally. Second,
     under all platforms wxSVGFileDC also fully supports alpha channel. In both
     of these cases the instances of wxPen or wxBrush that are built from
@@ -164,7 +173,7 @@ struct wxFontMetrics
 
     @section dc_transform_support Support for Transformation Matrix
 
-    On some platforms (currently under MSW, GTK+ 3, OS X) wxDC has support for
+    On some platforms (currently under MSW, GTK+ 3, macOS) wxDC has support for
     applying an arbitrary affine transformation matrix to its coordinate system
     (since 3.1.1 this feature is also supported by wxGCDC in all ports).
     Call CanUseTransformMatrix() to check if this support is available and then
@@ -296,7 +305,7 @@ public:
 
     /**
         Draw a bitmap on the device context at the specified point. If
-        @a transparent is @true and the bitmap has a transparency mask, the
+        @a useMask is @true and the bitmap has a transparency mask, the
         bitmap will be drawn transparently.
 
         When drawing a mono-bitmap, the current text foreground colour will be
@@ -883,6 +892,12 @@ public:
         used for the text extent calculation, otherwise the currently selected
         font is used.
 
+        If @a string is empty, its horizontal extent is 0 but, for convenience
+        when using this function for allocating enough space for a possibly
+        multi-line string, its vertical extent is the same as the height of an
+        empty line of text. Please note that this behaviour differs from that
+        of GetTextExtent().
+
         @note This function works with both single-line and multi-line strings.
 
         @beginWxPerlOnly
@@ -944,6 +959,8 @@ public:
         If the optional parameter @a font is specified and valid, then it is
         used for the text extent calculation. Otherwise the currently selected
         font is.
+
+        If @a string is empty, its extent is 0 in both directions, as expected.
 
         @note This function only works with single-line strings.
 
@@ -1504,6 +1521,14 @@ public:
 
     /**
         Sets the current logical function for the device context.
+
+        @note This function is not fully supported in all ports, due to the
+        limitations of the underlying drawing model. Notably, @c wxINVERT which
+        was commonly used for drawing rubber bands or other moving outlines in
+        the past, is not, and will not, be supported by wxGTK3 and wxMac. The
+        suggested alternative is to draw temporarily objects normally and
+        refresh the (affected part of the) window to remove them later.
+
         It determines how a @e source pixel (from a pen or brush colour, or source
         device context if using Blit()) combines with a @e destination pixel in
         the current device context.
@@ -1513,8 +1538,7 @@ public:
 
         The default is @c wxCOPY, which simply draws with the current colour.
         The others combine the current colour and the background using a logical
-        operation. @c wxINVERT is commonly used for drawing rubber bands or moving
-        outlines, since drawing twice reverts to the original colour.
+        operation.
     */
     void SetLogicalFunction(wxRasterOperationMode function);
 
@@ -1624,7 +1648,7 @@ public:
        context, if this wxDC has something that could be thought of in that
        way.  (Not all of them do.)
 
-       For example, on Windows the return value is an HDC, on OS X it is a
+       For example, on Windows the return value is an HDC, on macOS it is a
        CGContextRef and on wxGTK it will be a GdkDrawable.  If the DC is a
        wxGCDC then the return value will be the value returned from
        wxGraphicsContext::GetNativeContext.  A value of NULL is returned if
@@ -1671,6 +1695,21 @@ public:
     void GetLogicalOrigin(wxCoord *x, wxCoord *y) const;
     wxPoint GetLogicalOrigin() const;
     //@}
+
+    /**
+       If supported by the platform and the @a wxDC implementation, this method
+       will return the @a wxGraphicsContext associated with the DC. Otherwise
+       @NULL is returned.
+    */
+    virtual wxGraphicsContext* GetGraphicsContext() const;
+
+    /**
+       Associate a wxGraphicsContext with the DC. Ignored if not supported by
+       the specific @a wxDC implementation. It is unlikely that this will need to
+       be used in application code.
+    */
+    virtual void SetGraphicsContext( wxGraphicsContext* ctx );
+
 };
 
 

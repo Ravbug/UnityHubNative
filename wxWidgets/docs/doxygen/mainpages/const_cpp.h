@@ -39,9 +39,9 @@ Notice that for compatibility reasons, this symbol is defined for console
 applications under Windows as well, but it should only be used in the GUI code
 while <tt>__WINDOWS__</tt> should be used for the platform tests.}
 @itemdef{__WXOSX__, OS X GUI using any Apple widget framework (AppKit or UIKit)}
-@itemdef{__WXOSX_IPHONE__, OS X iPhone (UIKit)}
-@itemdef{__WXOSX_COCOA__, OS X using Cocoa (AppKit)}
-@itemdef{__WXOSX_MAC__, OS X (Cocoa)}
+@itemdef{__WXOSX_IPHONE__, iPhone (UIKit)}
+@itemdef{__WXOSX_COCOA__, macOS using Cocoa (AppKit)}
+@itemdef{__WXOSX_MAC__, macOS (Cocoa)}
 @itemdef{__WXPM__, OS/2 native Presentation Manager (not used any longer).}
 @itemdef{__WXSTUBS__, Stubbed version ('template' wxWin implementation)}
 @itemdef{__WXXT__, Xt; mutually exclusive with WX_MOTIF, not implemented in wxWidgets 2.x}
@@ -59,7 +59,7 @@ versions: Cocoa for the desktop and a very early iPhone port. To summarize:
     <tt>__WXOSX_MAC__</tt>.
 @li If you want to test for wxOSX on the iPhone, use
     <tt>__WXOSX_IPHONE__</tt>.
-@li If you want to test for any port under OS X, including, for
+@li If you want to test for any port under macOS, including, for
     example, wxGTK and also wxBase, use <tt>__DARWIN__</tt> (see below).
 
 The convention is to use the <tt>__WX</tt> prefix for these
@@ -171,6 +171,8 @@ Currently the following symbols exist:
     wxBitmapToggleButton class is available in addition to wxToggleButton.}
 @itemdef{wxHAS_CONFIG_TEMPLATE_RW, Defined if the currently used compiler
     supports template Read() and Write() methods in wxConfig.}
+@itemdef{wxHAS_MEMBER_DEFAULT, Defined if the currently used compiler supports
+    C++11 @c =default.}
 @itemdef{wxHAS_LARGE_FILES, Defined if wxFile supports files more than 4GB in
     size (notice that you must include @c wx/filefn.h before testing for this
     symbol).}
@@ -185,7 +187,11 @@ Currently the following symbols exist:
     decide whether some function should be overloaded for both
     <code>long</code> and <code>long long</code> types.}
 @itemdef{wxHAS_MULTIPLE_FILEDLG_FILTERS, Defined if wxFileDialog supports multiple ('|'-separated) filters.}
+@itemdef{wxHAS_NATIVE_ANIMATIONCTRL, Defined if native wxAnimationCtrl class is being used (this symbol only exists in wxWidgets 3.1.4 and later).}
+@itemdef{wxHAS_NATIVE_DATAVIEWCTRL, Defined if native wxDataViewCtrl class is being used (this symbol only exists in wxWidgets 3.1.4 and later).}
 @itemdef{wxHAS_NATIVE_WINDOW, Defined if wxNativeWindow class is available.}
+@itemdef{wxHAS_NOEXCEPT, Defined if the currently used compiler supports C++11 @c noexcept. @c wxNOEXCEPT is defined as this keyword in this case, and as nothing otherwise.}
+@itemdef{wxHAS_NULLPTR_T, Defined if the currently used compiler supports C++11 @c nullptr.}
 @itemdef{wxHAS_IMAGES_IN_RESOURCES, Defined if <a href="http://en.wikipedia.org/wiki/Resource_(Windows)">
     Windows resource files</a> or OS/2 resource files are available on the current platform.}
 @itemdef{wxHAS_POWER_EVENTS, Defined if wxPowerEvent are ever generated on the current platform.}
@@ -369,6 +375,11 @@ more details.
         set to 1 for compatibility reasons as @c -DwxNO_UNSAFE_WXSTRING_CONV
         can be used only compiling the application code, without rebuilding the
         library. Support for this option appeared in wxWidgets 3.1.1.}
+@itemdef{wxNO_IMPLICIT_WXSTRING_ENCODING,
+        this symbol is not defined by wxWidgets itself, but can be defined by
+        the applications using the library to disable implicit
+        conversions from and to <tt>const char*</tt> in wxString class.
+        Support for this option appeared in wxWidgets 3.1.4.}
 @itemdef{WXMAKINGDLL_XXX,
         used internally and defined when building the
         library @c XXX as a DLL; when a monolithic wxWidgets build is used only a

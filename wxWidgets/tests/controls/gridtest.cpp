@@ -31,90 +31,40 @@
 
 #include "waitforpaint.h"
 
-class GridTestCase : public CppUnit::TestCase
+namespace
+{
+
+// Derive a new class inheriting from wxGrid just to get access to its
+// protected GetCellAttr(). This is not pretty, but we don't have any other way
+// of testing this function.
+class TestableGrid : public wxGrid
 {
 public:
-    GridTestCase() { }
+    explicit TestableGrid(wxWindow* parent)
+        : wxGrid(parent, wxID_ANY)
+    {
+    }
 
-    virtual void setUp() wxOVERRIDE;
-    virtual void tearDown() wxOVERRIDE;
+    wxGridCellAttr* CallGetCellAttr(int row, int col) const
+    {
+        return GetCellAttr(row, col);
+    }
+};
 
-private:
-    CPPUNIT_TEST_SUITE( GridTestCase );
-        WXUISIM_TEST( CellEdit );
-        WXUISIM_TEST( CellClick );
-        WXUISIM_TEST( ReorderedColumnsCellClick );
-        WXUISIM_TEST( CellSelect );
-        WXUISIM_TEST( LabelClick );
-        WXUISIM_TEST( SortClick );
-        WXUISIM_TEST( Size );
-        WXUISIM_TEST( RangeSelect );
-        CPPUNIT_TEST( Cursor );
-        CPPUNIT_TEST( Selection );
-        CPPUNIT_TEST( AddRowCol );
-        CPPUNIT_TEST( DeleteAndAddRowCol );
-        CPPUNIT_TEST( ColumnOrder );
-        CPPUNIT_TEST( ColumnVisibility );
-        CPPUNIT_TEST( LineFormatting );
-        CPPUNIT_TEST( SortSupport );
-        CPPUNIT_TEST( Labels );
-        CPPUNIT_TEST( SelectionMode );
-        CPPUNIT_TEST( CellFormatting );
-        WXUISIM_TEST( Editable );
-        WXUISIM_TEST( ReadOnly );
-        WXUISIM_TEST( ResizeScrolledHeader );
-        WXUISIM_TEST( ColumnMinWidth );
-        WXUISIM_TEST( AutoSizeColumn );
-        CPPUNIT_TEST( PseudoTest_NativeHeader );
-        WXUISIM_TEST( LabelClick );
-        WXUISIM_TEST( SortClick );
-        CPPUNIT_TEST( ColumnOrder );
-        WXUISIM_TEST( ResizeScrolledHeader );
-        WXUISIM_TEST( ColumnMinWidth );
-        WXUISIM_TEST( AutoSizeColumn );
-        CPPUNIT_TEST( DeleteAndAddRowCol );
-        CPPUNIT_TEST( PseudoTest_NativeLabels );
-        WXUISIM_TEST( LabelClick );
-        WXUISIM_TEST( SortClick );
-        CPPUNIT_TEST( ColumnOrder );
-        WXUISIM_TEST( WindowAsEditorControl );
-        WXUISIM_TEST( AutoSizeColumn );
-    CPPUNIT_TEST_SUITE_END();
+} // anonymous namespace
 
-    void CellEdit();
-    void CellClick();
-    void ReorderedColumnsCellClick();
-    void CellSelect();
-    void LabelClick();
-    void SortClick();
-    void Size();
-    void RangeSelect();
-    void Cursor();
-    void Selection();
-    void AddRowCol();
-    void DeleteAndAddRowCol();
-    void ColumnOrder();
-    void ColumnVisibility();
-    void LineFormatting();
-    void SortSupport();
-    void Labels();
-    void SelectionMode();
-    void CellFormatting();
-    void Editable();
-    void ReadOnly();
-    void WindowAsEditorControl();
-    void ResizeScrolledHeader();
-    void ColumnMinWidth();
-    void AutoSizeColumn();
-    void PseudoTest_NativeHeader() { ms_nativeheader = true; }
-    void PseudoTest_NativeLabels() { ms_nativeheader = false;
-                                     ms_nativelabels = true; }
+class GridTestCase
+{
+public:
+    GridTestCase();
+    ~GridTestCase();
 
+protected:
     // The helper function to determine the width of the column label depending
-    // on whether the native column is used.
+    // on whether the native column header is used.
     int GetColumnLabelWidth(wxClientDC& dc, int col, int margin) const
     {
-        if (ms_nativeheader)
+        if ( m_grid->IsUsingNativeHeader() )
             return m_grid->GetGridColHeader()->GetColumnTitleWidth(col);
 
         int w, h;
@@ -124,35 +74,51 @@ private:
 
     void CheckFirstColAutoSize(int expected);
 
-    static bool ms_nativeheader;
-    static bool ms_nativelabels;
+    // Helper to check that the selection is equal to the specified block.
+    void CheckSelection(const wxGridBlockCoords& block)
+    {
+        const wxGridBlocks selected = m_grid->GetSelectedBlocks();
+        wxGridBlocks::iterator it = selected.begin();
 
-    wxGrid *m_grid;
+        REQUIRE( it != selected.end() );
+        CHECK( *it == block );
+        CHECK( ++it == selected.end() );
+    }
+
+    // Or specified ranges.
+    struct RowRange
+    {
+        RowRange(int top, int bottom) : top(top), bottom(bottom) { }
+
+        int top, bottom;
+    };
+
+    typedef wxVector<RowRange> RowRanges;
+
+    void CheckRowSelection(const RowRanges& ranges)
+    {
+        const wxGridBlockCoordsVector sel = m_grid->GetSelectedRowBlocks();
+        REQUIRE( sel.size() == ranges.size() );
+
+        for ( size_t n = 0; n < sel.size(); ++n )
+        {
+            INFO("n = " << n);
+
+            const RowRange& r = ranges[n];
+            CHECK( sel[n] == wxGridBlockCoords(r.top, 0, r.bottom, 1) );
+        }
+    }
+
+    TestableGrid *m_grid;
 
     wxDECLARE_NO_COPY_CLASS(GridTestCase);
 };
 
-// register in the unnamed registry so that these tests are run by default
-CPPUNIT_TEST_SUITE_REGISTRATION( GridTestCase );
-
-// also include in its own registry so that these tests can be run alone
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( GridTestCase, "GridTestCase" );
-
-//initialise the static variable
-bool GridTestCase::ms_nativeheader = false;
-bool GridTestCase::ms_nativelabels = false;
-
-void GridTestCase::setUp()
+GridTestCase::GridTestCase()
 {
-    m_grid = new wxGrid(wxTheApp->GetTopWindow(), wxID_ANY);
+    m_grid = new TestableGrid(wxTheApp->GetTopWindow());
     m_grid->CreateGrid(10, 2);
     m_grid->SetSize(400, 200);
-
-    if( ms_nativeheader )
-        m_grid->UseNativeColHeader();
-
-    if( ms_nativelabels )
-        m_grid->SetUseNativeColLabels();
 
     WaitForPaint waitForPaint(m_grid->GetGridWindow());
 
@@ -165,7 +131,7 @@ void GridTestCase::setUp()
     }
 }
 
-void GridTestCase::tearDown()
+GridTestCase::~GridTestCase()
 {
     // This is just a hack to continue the rest of the tests to run: if we
     // destroy the header control while it has capture, this results in an
@@ -182,11 +148,14 @@ void GridTestCase::tearDown()
     wxDELETE(m_grid);
 }
 
-void GridTestCase::CellEdit()
+TEST_CASE_METHOD(GridTestCase, "Grid::CellEdit", "[grid]")
 {
     // TODO on OSX when running the grid test suite solo this works
     // but not when running it together with other tests
 #if wxUSE_UIACTIONSIMULATOR && !defined(__WXOSX__)
+    if ( !EnableUITests() )
+        return;
+
     EventCounter changing(m_grid, wxEVT_GRID_CELL_CHANGING);
     EventCounter changed(m_grid, wxEVT_GRID_CELL_CHANGED);
     EventCounter created(m_grid, wxEVT_GRID_EDITOR_CREATED);
@@ -200,37 +169,11 @@ void GridTestCase::CellEdit()
 
     sim.Text("abab");
 
-    // We need to wait until the editor is really shown under GTK, consider
-    // that it happens once it gets focus.
-#ifdef __WXGTK__
-    for ( wxStopWatch sw; wxWindow::FindFocus() == m_grid; )
-    {
-        if ( sw.Time() > 250 )
-        {
-            WARN("Editor control not shown until timeout expiration");
-            break;
-        }
-
-        wxYield();
-    }
-#endif // __WXGTK__
+    wxYield();
 
     sim.Char(WXK_RETURN);
 
     wxYield();
-
-#ifdef __WXGTK__
-    for ( wxStopWatch sw; wxWindow::FindFocus() != m_grid; )
-    {
-        if ( sw.Time() > 250 )
-        {
-            WARN("Editor control not hidden until timeout expiration");
-            break;
-        }
-
-        wxYield();
-    }
-#endif // __WXGTK__
 
     CHECK(m_grid->GetCellValue(1, 1) == "abab");
 
@@ -240,7 +183,7 @@ void GridTestCase::CellEdit()
 #endif
 }
 
-void GridTestCase::CellClick()
+TEST_CASE_METHOD(GridTestCase, "Grid::CellClick", "[grid]")
 {
 #if wxUSE_UIACTIONSIMULATOR
     EventCounter lclick(m_grid, wxEVT_GRID_CELL_LEFT_CLICK);
@@ -263,7 +206,7 @@ void GridTestCase::CellClick()
     sim.MouseClick();
     wxYield();
 
-    CPPUNIT_ASSERT_EQUAL(1, lclick.GetCount());
+    CHECK(lclick.GetCount() == 1);
     lclick.Clear();
 
     sim.MouseDblClick();
@@ -271,24 +214,24 @@ void GridTestCase::CellClick()
 
     //A double click event sends a single click event first
     //test to ensure this still happens in the future
-    CPPUNIT_ASSERT_EQUAL(1, lclick.GetCount());
-    CPPUNIT_ASSERT_EQUAL(1, ldclick.GetCount());
+    CHECK(lclick.GetCount() == 1);
+    CHECK(ldclick.GetCount() == 1);
 
     sim.MouseClick(wxMOUSE_BTN_RIGHT);
     wxYield();
 
-    CPPUNIT_ASSERT_EQUAL(1, rclick.GetCount());
+    CHECK(rclick.GetCount() == 1);
     rclick.Clear();
 
     sim.MouseDblClick(wxMOUSE_BTN_RIGHT);
     wxYield();
 
-    CPPUNIT_ASSERT_EQUAL(1, rclick.GetCount());
-    CPPUNIT_ASSERT_EQUAL(1, rdclick.GetCount());
+    CHECK(rclick.GetCount() == 1);
+    CHECK(rdclick.GetCount() == 1);
 #endif
 }
 
-void GridTestCase::ReorderedColumnsCellClick()
+TEST_CASE_METHOD(GridTestCase, "Grid::ReorderedColumnsCellClick", "[grid]")
 {
 #if wxUSE_UIACTIONSIMULATOR
     EventCounter click(m_grid, wxEVT_GRID_CELL_LEFT_CLICK);
@@ -313,11 +256,11 @@ void GridTestCase::ReorderedColumnsCellClick()
     sim.MouseClick();
     wxYield();
 
-    CPPUNIT_ASSERT_EQUAL(1, click.GetCount());
+    CHECK(click.GetCount() == 1);
 #endif
 }
 
-void GridTestCase::CellSelect()
+TEST_CASE_METHOD(GridTestCase, "Grid::CellSelect", "[grid]")
 {
 #if wxUSE_UIACTIONSIMULATOR
     EventCounter cell(m_grid, wxEVT_GRID_SELECT_CELL);
@@ -336,7 +279,7 @@ void GridTestCase::CellSelect()
     sim.MouseClick();
     wxYield();
 
-    CPPUNIT_ASSERT_EQUAL(1, cell.GetCount());
+    CHECK(cell.GetCount() == 1);
 
     cell.Clear();
 
@@ -349,13 +292,20 @@ void GridTestCase::CellSelect()
     sim.MouseDblClick();
     wxYield();
 
-    CPPUNIT_ASSERT_EQUAL(3, cell.GetCount());
+    CHECK(cell.GetCount() == 3);
 #endif
 }
 
-void GridTestCase::LabelClick()
+TEST_CASE_METHOD(GridTestCase, "Grid::LabelClick", "[grid]")
 {
 #if wxUSE_UIACTIONSIMULATOR
+    if ( !EnableUITests() )
+        return;
+
+    SECTION("Default") {}
+    SECTION("Native header") { m_grid->UseNativeColHeader(); }
+    SECTION("Native labels") { m_grid->SetUseNativeColLabels(); }
+
     EventCounter lclick(m_grid, wxEVT_GRID_LABEL_LEFT_CLICK);
     EventCounter ldclick(m_grid, wxEVT_GRID_LABEL_LEFT_DCLICK);
     EventCounter rclick(m_grid, wxEVT_GRID_LABEL_RIGHT_CLICK);
@@ -372,39 +322,46 @@ void GridTestCase::LabelClick()
     sim.MouseClick();
     wxYield();
 
-    CPPUNIT_ASSERT_EQUAL(1, lclick.GetCount());
+    CHECK(lclick.GetCount() == 1);
 
     sim.MouseDblClick();
     wxYield();
 
-    CPPUNIT_ASSERT_EQUAL(1, ldclick.GetCount());
+    CHECK(ldclick.GetCount() == 1);
 
     sim.MouseClick(wxMOUSE_BTN_RIGHT);
     wxYield();
 
-    CPPUNIT_ASSERT_EQUAL(1, rclick.GetCount());
+    CHECK(rclick.GetCount() == 1);
     rclick.Clear();
 
     sim.MouseDblClick(wxMOUSE_BTN_RIGHT);
     wxYield();
 
-    if( ms_nativeheader )
+    if ( m_grid->IsUsingNativeHeader() )
     {
         //Right double click not supported with native headers so we get two
         //right click events
-        CPPUNIT_ASSERT_EQUAL(2, rclick.GetCount());
+        CHECK(rclick.GetCount() == 2);
     }
     else
     {
-        CPPUNIT_ASSERT_EQUAL(1, rclick.GetCount());
-        CPPUNIT_ASSERT_EQUAL(1, rdclick.GetCount());
+        CHECK(rclick.GetCount() == 1);
+        CHECK(rdclick.GetCount() == 1);
     }
 #endif
 }
 
-void GridTestCase::SortClick()
+TEST_CASE_METHOD(GridTestCase, "Grid::SortClick", "[grid]")
 {
 #if wxUSE_UIACTIONSIMULATOR
+    if ( !EnableUITests() )
+        return;
+
+    SECTION("Default") {}
+    SECTION("Native header") { m_grid->UseNativeColHeader(); }
+    SECTION("Native labels") { m_grid->SetUseNativeColLabels(); }
+
     m_grid->SetSortingColumn(0);
 
     EventCounter sort(m_grid, wxEVT_GRID_COL_SORT);
@@ -420,17 +377,25 @@ void GridTestCase::SortClick()
     sim.MouseClick();
     wxYield();
 
-    CPPUNIT_ASSERT_EQUAL(1, sort.GetCount());
+    CHECK(sort.GetCount() == 1);
 #endif
 }
 
-void GridTestCase::Size()
+TEST_CASE_METHOD(GridTestCase, "Grid::Size", "[grid]")
 {
     // TODO on OSX resizing interactively works, but not automated
     // Grid could not pass the test under GTK, OSX, and Universal.
     // So there may has bug in Grid implementation
-#if wxUSE_UIACTIONSIMULATOR && !defined(__WXGTK__) && !defined(__WXOSX__) \
-&& !defined(__WXUNIVERSAL__)
+#if wxUSE_UIACTIONSIMULATOR && !defined(__WXOSX__) && !defined(__WXUNIVERSAL__)
+    if ( !EnableUITests() )
+        return;
+
+#ifdef __WXGTK20__
+    // Works locally, but not when run on Travis CI.
+    if ( IsAutomaticTest() )
+        return;
+#endif
+
     EventCounter colsize(m_grid, wxEVT_GRID_COL_SIZE);
     EventCounter rowsize(m_grid, wxEVT_GRID_ROW_SIZE);
 
@@ -438,7 +403,6 @@ void GridTestCase::Size()
 
     wxPoint pt = m_grid->ClientToScreen(wxPoint(m_grid->GetRowLabelSize() +
                                         m_grid->GetColSize(0), 5));
-
     sim.MouseMove(pt);
     wxYield();
 
@@ -451,21 +415,25 @@ void GridTestCase::Size()
     sim.MouseUp();
     wxYield();
 
-    CPPUNIT_ASSERT_EQUAL(1, colsize.GetCount());
+    CHECK(colsize.GetCount() == 1);
 
     pt = m_grid->ClientToScreen(wxPoint(5, m_grid->GetColLabelSize() +
                                         m_grid->GetRowSize(0)));
 
     sim.MouseDragDrop(pt.x, pt.y, pt.x, pt.y + 50);
+
     wxYield();
 
-    CPPUNIT_ASSERT_EQUAL(1, rowsize.GetCount());
+    CHECK(rowsize.GetCount() == 1);
 #endif
 }
 
-void GridTestCase::RangeSelect()
+TEST_CASE_METHOD(GridTestCase, "Grid::RangeSelect", "[grid]")
 {
 #if wxUSE_UIACTIONSIMULATOR
+    if ( !EnableUITests() )
+        return;
+
     EventCounter select(m_grid, wxEVT_GRID_RANGE_SELECT);
 
     wxUIActionSimulator sim;
@@ -487,16 +455,16 @@ void GridTestCase::RangeSelect()
     sim.MouseUp();
     wxYield();
 
-    CPPUNIT_ASSERT_EQUAL(1, select.GetCount());
+    CHECK(select.GetCount() == 1);
 #endif
 }
 
-void GridTestCase::Cursor()
+TEST_CASE_METHOD(GridTestCase, "Grid::Cursor", "[grid]")
 {
     m_grid->SetGridCursor(1, 1);
 
-    CPPUNIT_ASSERT_EQUAL(1, m_grid->GetGridCursorCol());
-    CPPUNIT_ASSERT_EQUAL(1, m_grid->GetGridCursorRow());
+    CHECK(m_grid->GetGridCursorCol() == 1);
+    CHECK(m_grid->GetGridCursorRow() == 1);
 
     m_grid->MoveCursorDown(false);
     m_grid->MoveCursorLeft(false);
@@ -504,8 +472,8 @@ void GridTestCase::Cursor()
     m_grid->MoveCursorUp(false);
     m_grid->MoveCursorRight(false);
 
-    CPPUNIT_ASSERT_EQUAL(1, m_grid->GetGridCursorCol());
-    CPPUNIT_ASSERT_EQUAL(0, m_grid->GetGridCursorRow());
+    CHECK(m_grid->GetGridCursorCol() == 1);
+    CHECK(m_grid->GetGridCursorRow() == 0);
 
     m_grid->SetCellValue(0, 0, "some text");
     m_grid->SetCellValue(3, 0, "other text");
@@ -517,117 +485,322 @@ void GridTestCase::Cursor()
 
     m_grid->MoveCursorLeftBlock(false);
 
-    CPPUNIT_ASSERT_EQUAL(0, m_grid->GetGridCursorCol());
-    CPPUNIT_ASSERT_EQUAL(0, m_grid->GetGridCursorRow());
+    CHECK(m_grid->GetGridCursorCol() == 0);
+    CHECK(m_grid->GetGridCursorRow() == 0);
 
     m_grid->MoveCursorDownBlock(false);
 
-    CPPUNIT_ASSERT_EQUAL(0, m_grid->GetGridCursorCol());
-    CPPUNIT_ASSERT_EQUAL(3, m_grid->GetGridCursorRow());
+    CHECK(m_grid->GetGridCursorCol() == 0);
+    CHECK(m_grid->GetGridCursorRow() == 3);
 
     m_grid->MoveCursorRightBlock(false);
 
-    CPPUNIT_ASSERT_EQUAL(1, m_grid->GetGridCursorCol());
-    CPPUNIT_ASSERT_EQUAL(3, m_grid->GetGridCursorRow());
+    CHECK(m_grid->GetGridCursorCol() == 1);
+    CHECK(m_grid->GetGridCursorRow() == 3);
 
     m_grid->MoveCursorUpBlock(false);
 
-    CPPUNIT_ASSERT_EQUAL(1, m_grid->GetGridCursorCol());
-    CPPUNIT_ASSERT_EQUAL(0, m_grid->GetGridCursorRow());
+    CHECK(m_grid->GetGridCursorCol() == 1);
+    CHECK(m_grid->GetGridCursorRow() == 0);
 }
 
-void GridTestCase::Selection()
+TEST_CASE_METHOD(GridTestCase, "Grid::KeyboardSelection", "[grid][selection]")
+{
+    m_grid->SetCellValue(1, 1, "R2C2");
+    m_grid->SetCellValue(2, 0, "R3C1");
+    m_grid->SetCellValue(3, 0, "R4C1");
+    m_grid->SetCellValue(4, 0, "R5C1");
+    m_grid->SetCellValue(7, 0, "R8C1");
+
+    CHECK(m_grid->GetGridCursorCoords() == wxGridCellCoords(0, 0));
+
+    m_grid->MoveCursorRight(true);
+    CheckSelection(wxGridBlockCoords(0, 0, 0, 1));
+
+    m_grid->MoveCursorDownBlock(true);
+    CheckSelection(wxGridBlockCoords(0, 0, 2, 1));
+
+    m_grid->MoveCursorDownBlock(true);
+    CheckSelection(wxGridBlockCoords(0, 0, 4, 1));
+
+    m_grid->MoveCursorDownBlock(true);
+    CheckSelection(wxGridBlockCoords(0, 0, 7, 1));
+
+    m_grid->MoveCursorUpBlock(true);
+    CheckSelection(wxGridBlockCoords(0, 0, 4, 1));
+
+    m_grid->MoveCursorLeft(true);
+    CheckSelection(wxGridBlockCoords(0, 0, 4, 0));
+}
+
+TEST_CASE_METHOD(GridTestCase, "Grid::Selection", "[grid]")
 {
     m_grid->SelectAll();
 
-    CPPUNIT_ASSERT(m_grid->IsSelection());
-    CPPUNIT_ASSERT(m_grid->IsInSelection(0, 0));
-    CPPUNIT_ASSERT(m_grid->IsInSelection(9, 1));
+    CHECK(m_grid->IsSelection());
+    CHECK(m_grid->IsInSelection(0, 0));
+    CHECK(m_grid->IsInSelection(9, 1));
 
     m_grid->SelectBlock(1, 0, 3, 1);
 
     wxGridCellCoordsArray topleft = m_grid->GetSelectionBlockTopLeft();
     wxGridCellCoordsArray bottomright = m_grid->GetSelectionBlockBottomRight();
 
-    CPPUNIT_ASSERT_EQUAL(1, topleft.Count());
-    CPPUNIT_ASSERT_EQUAL(1, bottomright.Count());
+    CHECK(topleft.Count() == 1);
+    CHECK(bottomright.Count() == 1);
 
-    CPPUNIT_ASSERT_EQUAL(0, topleft.Item(0).GetCol());
-    CPPUNIT_ASSERT_EQUAL(1, topleft.Item(0).GetRow());
-    CPPUNIT_ASSERT_EQUAL(1, bottomright.Item(0).GetCol());
-    CPPUNIT_ASSERT_EQUAL(3, bottomright.Item(0).GetRow());
+    CHECK(topleft.Item(0).GetCol() == 0);
+    CHECK(topleft.Item(0).GetRow() == 1);
+    CHECK(bottomright.Item(0).GetCol() == 1);
+    CHECK(bottomright.Item(0).GetRow() == 3);
 
     m_grid->SelectCol(1);
 
-    CPPUNIT_ASSERT(m_grid->IsInSelection(0, 1));
-    CPPUNIT_ASSERT(m_grid->IsInSelection(9, 1));
-    CPPUNIT_ASSERT(!m_grid->IsInSelection(3, 0));
+    CHECK(m_grid->IsInSelection(0, 1));
+    CHECK(m_grid->IsInSelection(9, 1));
+    CHECK(!m_grid->IsInSelection(3, 0));
 
     m_grid->SelectRow(4);
 
-    CPPUNIT_ASSERT(m_grid->IsInSelection(4, 0));
-    CPPUNIT_ASSERT(m_grid->IsInSelection(4, 1));
-    CPPUNIT_ASSERT(!m_grid->IsInSelection(3, 0));
+    CHECK(m_grid->IsInSelection(4, 0));
+    CHECK(m_grid->IsInSelection(4, 1));
+    CHECK(!m_grid->IsInSelection(3, 0));
 }
 
-void GridTestCase::AddRowCol()
+TEST_CASE_METHOD(GridTestCase, "Grid::SelectionRange", "[grid]")
 {
-    CPPUNIT_ASSERT_EQUAL(10, m_grid->GetNumberRows());
-    CPPUNIT_ASSERT_EQUAL(2, m_grid->GetNumberCols());
+    const wxGridBlocks empty = m_grid->GetSelectedBlocks();
+    CHECK( empty.begin() == empty.end() );
+
+    m_grid->SelectBlock(1, 0, 3, 1);
+
+    wxGridBlocks sel = m_grid->GetSelectedBlocks();
+    REQUIRE( sel.begin() != sel.end() );
+    CHECK( *sel.begin() == wxGridBlockCoords(1, 0, 3, 1) );
+
+#if __cplusplus >= 201103L || wxCHECK_VISUALC_VERSION(11)
+    m_grid->SelectBlock(4, 0, 7, 1, true);
+    int index = 0;
+    for ( const wxGridBlockCoords& block : m_grid->GetSelectedBlocks() )
+    {
+        switch ( index )
+        {
+        case 0:
+            CHECK(block == wxGridBlockCoords(1, 0, 3, 1));
+            break;
+        case 1:
+            CHECK(block == wxGridBlockCoords(4, 0, 7, 1));
+            break;
+        default:
+            FAIL("Unexpected iterations count");
+            break;
+        }
+        ++index;
+    }
+#endif
+}
+
+TEST_CASE_METHOD(GridTestCase, "Grid::SelectEmptyGrid", "[grid]")
+{
+    for ( int i = 0; i < 2; ++i )
+    {
+        SECTION(i == 0 ? "No rows" : "No columns")
+        {
+
+            if ( i == 0 )
+            {
+                m_grid->DeleteRows(0, 10);
+                REQUIRE( m_grid->GetNumberRows() == 0 );
+            }
+            else
+            {
+                m_grid->DeleteCols(0, 2);
+                REQUIRE( m_grid->GetNumberCols() == 0 );
+            }
+
+            SECTION("Move right")
+            {
+                m_grid->MoveCursorRight(true);
+            }
+            SECTION("Move down")
+            {
+                m_grid->MoveCursorDown(true);
+            }
+            SECTION("Select row")
+            {
+                m_grid->SelectRow(1);
+            }
+            SECTION("Select column")
+            {
+                m_grid->SelectCol(1);
+            }
+        }
+    }
+
+    CHECK( m_grid->GetSelectedCells().Count() == 0 );
+    CHECK( m_grid->GetSelectionBlockTopLeft().Count() == 0 );
+    CHECK( m_grid->GetSelectionBlockBottomRight().Count() == 0 );
+    CHECK( m_grid->GetSelectedRows().Count() == 0 );
+    CHECK( m_grid->GetSelectedCols().Count() == 0 );
+}
+
+TEST_CASE_METHOD(GridTestCase, "Grid::ScrollWhenSelect", "[grid]")
+{
+    m_grid->AppendCols(10);
+
+    REQUIRE( m_grid->GetGridCursorCol() == 0 );
+    REQUIRE( m_grid->GetGridCursorRow() == 0 );
+    REQUIRE( m_grid->IsVisible(0, 0) );
+    REQUIRE( !m_grid->IsVisible(0, 4) );
+
+    for ( int i = 0; i < 4; ++i )
+    {
+        m_grid->MoveCursorRight(true);
+    }
+    CHECK( m_grid->IsVisible(0, 4) );
+
+    m_grid->ClearSelection();
+    m_grid->GoToCell(1, 1);
+    for ( int i = 0; i < 8; ++i )
+    {
+        m_grid->MoveCursorDown(true);
+    }
+    CHECK( m_grid->IsVisible(9, 1) );
+}
+
+TEST_CASE_METHOD(GridTestCase, "Grid::MoveGridCursorUsingEndKey", "[grid]")
+{
+#if wxUSE_UIACTIONSIMULATOR
+    if ( !EnableUITests() )
+        return;
+
+    wxUIActionSimulator sim;
+
+    m_grid->AppendCols(10);
+
+    REQUIRE( m_grid->GetGridCursorCol() == 0 );
+    REQUIRE( m_grid->GetGridCursorRow() == 0 );
+    REQUIRE( m_grid->IsVisible(0, 0) );
+
+    // Hide the last row.
+    m_grid->HideRow(9);
+    // Hide the last column.
+    m_grid->HideCol(11);
+    // Move the penult column.
+    m_grid->SetColPos(10, 5);
+
+    m_grid->SetFocus();
+
+    sim.KeyDown(WXK_END, wxMOD_CONTROL);
+    sim.KeyUp(WXK_END, wxMOD_CONTROL);
+    wxYield();
+
+    CHECK( m_grid->GetGridCursorRow() == 8 );
+    CHECK( m_grid->GetGridCursorCol() == 9 );
+    CHECK( m_grid->IsVisible(8, 9) );
+#endif
+}
+
+TEST_CASE_METHOD(GridTestCase, "Grid::SelectUsingEndKey", "[grid]")
+{
+#if wxUSE_UIACTIONSIMULATOR
+    if ( !EnableUITests() )
+        return;
+
+    wxUIActionSimulator sim;
+
+    m_grid->AppendCols(10);
+
+    REQUIRE( m_grid->GetGridCursorCol() == 0 );
+    REQUIRE( m_grid->GetGridCursorRow() == 0 );
+    REQUIRE( m_grid->IsVisible(0, 0) );
+
+    m_grid->SetFocus();
+
+    sim.KeyDown(WXK_END, wxMOD_CONTROL | wxMOD_SHIFT);
+    sim.KeyUp(WXK_END, wxMOD_CONTROL | wxMOD_SHIFT);
+    wxYield();
+
+    wxGridCellCoordsArray topleft = m_grid->GetSelectionBlockTopLeft();
+    wxGridCellCoordsArray bottomright = m_grid->GetSelectionBlockBottomRight();
+
+    CHECK( topleft.Count() == 1 );
+    CHECK( bottomright.Count() == 1 );
+
+    CHECK( topleft.Item(0).GetCol() == 0 );
+    CHECK( topleft.Item(0).GetRow() == 0 );
+    CHECK( bottomright.Item(0).GetCol() == 11 );
+    CHECK( bottomright.Item(0).GetRow() == 9 );
+
+    CHECK( m_grid->IsVisible(8, 9) );
+#endif
+}
+
+TEST_CASE_METHOD(GridTestCase, "Grid::AddRowCol", "[grid]")
+{
+    CHECK(m_grid->GetNumberRows() == 10);
+    CHECK(m_grid->GetNumberCols() == 2);
 
     m_grid->AppendCols();
     m_grid->AppendRows();
 
-    CPPUNIT_ASSERT_EQUAL(11, m_grid->GetNumberRows());
-    CPPUNIT_ASSERT_EQUAL(3, m_grid->GetNumberCols());
+    CHECK(m_grid->GetNumberRows() == 11);
+    CHECK(m_grid->GetNumberCols() == 3);
 
     m_grid->AppendCols(2);
     m_grid->AppendRows(2);
 
-    CPPUNIT_ASSERT_EQUAL(13, m_grid->GetNumberRows());
-    CPPUNIT_ASSERT_EQUAL(5, m_grid->GetNumberCols());
+    CHECK(m_grid->GetNumberRows() == 13);
+    CHECK(m_grid->GetNumberCols() == 5);
 
     m_grid->InsertCols(1, 2);
     m_grid->InsertRows(2, 3);
 
-    CPPUNIT_ASSERT_EQUAL(16, m_grid->GetNumberRows());
-    CPPUNIT_ASSERT_EQUAL(7, m_grid->GetNumberCols());
+    CHECK(m_grid->GetNumberRows() == 16);
+    CHECK(m_grid->GetNumberCols() == 7);
 }
 
-void GridTestCase::DeleteAndAddRowCol()
+TEST_CASE_METHOD(GridTestCase, "Grid::DeleteAndAddRowCol", "[grid]")
 {
-    CPPUNIT_ASSERT_EQUAL(10, m_grid->GetNumberRows());
-    CPPUNIT_ASSERT_EQUAL(2, m_grid->GetNumberCols());
+    SECTION("Default") {}
+    SECTION("Native header") { m_grid->UseNativeColHeader(); }
+
+    CHECK(m_grid->GetNumberRows() == 10);
+    CHECK(m_grid->GetNumberCols() == 2);
 
     m_grid->DeleteRows(0, 10);
     m_grid->DeleteCols(0, 2);
 
-    CPPUNIT_ASSERT_EQUAL(0, m_grid->GetNumberRows());
-    CPPUNIT_ASSERT_EQUAL(0, m_grid->GetNumberCols());
+    CHECK(m_grid->GetNumberRows() == 0);
+    CHECK(m_grid->GetNumberCols() == 0);
 
     m_grid->AppendRows(5);
     m_grid->AppendCols(3);
 
-    CPPUNIT_ASSERT_EQUAL(5, m_grid->GetNumberRows());
-    CPPUNIT_ASSERT_EQUAL(3, m_grid->GetNumberCols());
+    CHECK(m_grid->GetNumberRows() == 5);
+    CHECK(m_grid->GetNumberCols() == 3);
 
     // The order of functions calls can be important
     m_grid->DeleteCols(0, 3);
     m_grid->DeleteRows(0, 5);
 
-    CPPUNIT_ASSERT_EQUAL(0, m_grid->GetNumberRows());
-    CPPUNIT_ASSERT_EQUAL(0, m_grid->GetNumberCols());
+    CHECK(m_grid->GetNumberRows() == 0);
+    CHECK(m_grid->GetNumberCols() == 0);
 
     // Different functions calls order
     m_grid->AppendCols(3);
     m_grid->AppendRows(5);
 }
 
-void GridTestCase::ColumnOrder()
+TEST_CASE_METHOD(GridTestCase, "Grid::ColumnOrder", "[grid]")
 {
+    SECTION("Default") {}
+    SECTION("Native header") { m_grid->UseNativeColHeader(); }
+    SECTION("Native labels") { m_grid->SetUseNativeColLabels(); }
+
     m_grid->AppendCols(2);
 
-    CPPUNIT_ASSERT_EQUAL(4, m_grid->GetNumberCols());
+    CHECK(m_grid->GetNumberCols() == 4);
 
     wxArrayInt neworder;
     neworder.push_back(1);
@@ -637,114 +810,163 @@ void GridTestCase::ColumnOrder()
 
     m_grid->SetColumnsOrder(neworder);
 
-    CPPUNIT_ASSERT_EQUAL(0, m_grid->GetColPos(1));
-    CPPUNIT_ASSERT_EQUAL(1, m_grid->GetColPos(3));
-    CPPUNIT_ASSERT_EQUAL(2, m_grid->GetColPos(2));
-    CPPUNIT_ASSERT_EQUAL(3, m_grid->GetColPos(0));
+    CHECK(m_grid->GetColPos(1) == 0);
+    CHECK(m_grid->GetColPos(3) == 1);
+    CHECK(m_grid->GetColPos(2) == 2);
+    CHECK(m_grid->GetColPos(0) == 3);
 
-    CPPUNIT_ASSERT_EQUAL(1, m_grid->GetColAt(0));
-    CPPUNIT_ASSERT_EQUAL(3, m_grid->GetColAt(1));
-    CPPUNIT_ASSERT_EQUAL(2, m_grid->GetColAt(2));
-    CPPUNIT_ASSERT_EQUAL(0, m_grid->GetColAt(3));
+    CHECK(m_grid->GetColAt(0) == 1);
+    CHECK(m_grid->GetColAt(1) == 3);
+    CHECK(m_grid->GetColAt(2) == 2);
+    CHECK(m_grid->GetColAt(3) == 0);
 
     m_grid->ResetColPos();
 
-    CPPUNIT_ASSERT_EQUAL(0, m_grid->GetColPos(0));
-    CPPUNIT_ASSERT_EQUAL(1, m_grid->GetColPos(1));
-    CPPUNIT_ASSERT_EQUAL(2, m_grid->GetColPos(2));
-    CPPUNIT_ASSERT_EQUAL(3, m_grid->GetColPos(3));
+    CHECK(m_grid->GetColPos(0) == 0);
+    CHECK(m_grid->GetColPos(1) == 1);
+    CHECK(m_grid->GetColPos(2) == 2);
+    CHECK(m_grid->GetColPos(3) == 3);
 }
 
-void GridTestCase::ColumnVisibility()
+TEST_CASE_METHOD(GridTestCase, "Grid::ColumnVisibility", "[grid]")
 {
     m_grid->AppendCols(3);
-    CPPUNIT_ASSERT( m_grid->IsColShown(1) );
+    CHECK( m_grid->IsColShown(1) );
 
     m_grid->HideCol(1);
-    CPPUNIT_ASSERT( !m_grid->IsColShown(1) );
-    CPPUNIT_ASSERT( m_grid->IsColShown(2) );
+    CHECK( !m_grid->IsColShown(1) );
+    CHECK( m_grid->IsColShown(2) );
 
     m_grid->ShowCol(1);
-    CPPUNIT_ASSERT( m_grid->IsColShown(1) );
+    CHECK( m_grid->IsColShown(1) );
 }
 
-void GridTestCase::LineFormatting()
+TEST_CASE_METHOD(GridTestCase, "Grid::LineFormatting", "[grid]")
 {
-    CPPUNIT_ASSERT(m_grid->GridLinesEnabled());
+    CHECK(m_grid->GridLinesEnabled());
 
     m_grid->EnableGridLines(false);
 
-    CPPUNIT_ASSERT(!m_grid->GridLinesEnabled());
+    CHECK(!m_grid->GridLinesEnabled());
 
     m_grid->EnableGridLines();
 
     m_grid->SetGridLineColour(*wxRED);
 
-    CPPUNIT_ASSERT_EQUAL(m_grid->GetGridLineColour(), *wxRED);
+    CHECK(*wxRED == m_grid->GetGridLineColour());
 }
 
-void GridTestCase::SortSupport()
+TEST_CASE_METHOD(GridTestCase, "Grid::SortSupport", "[grid]")
 {
-    CPPUNIT_ASSERT_EQUAL(wxNOT_FOUND, m_grid->GetSortingColumn());
+    CHECK(m_grid->GetSortingColumn() == wxNOT_FOUND);
 
     m_grid->SetSortingColumn(1);
 
-    CPPUNIT_ASSERT(!m_grid->IsSortingBy(0));
-    CPPUNIT_ASSERT(m_grid->IsSortingBy(1));
-    CPPUNIT_ASSERT(m_grid->IsSortOrderAscending());
+    CHECK(!m_grid->IsSortingBy(0));
+    CHECK(m_grid->IsSortingBy(1));
+    CHECK(m_grid->IsSortOrderAscending());
 
     m_grid->SetSortingColumn(0, false);
 
-    CPPUNIT_ASSERT(m_grid->IsSortingBy(0));
-    CPPUNIT_ASSERT(!m_grid->IsSortingBy(1));
-    CPPUNIT_ASSERT(!m_grid->IsSortOrderAscending());
+    CHECK(m_grid->IsSortingBy(0));
+    CHECK(!m_grid->IsSortingBy(1));
+    CHECK(!m_grid->IsSortOrderAscending());
 
     m_grid->UnsetSortingColumn();
 
-    CPPUNIT_ASSERT(!m_grid->IsSortingBy(0));
-    CPPUNIT_ASSERT(!m_grid->IsSortingBy(1));
+    CHECK(!m_grid->IsSortingBy(0));
+    CHECK(!m_grid->IsSortingBy(1));
 }
 
-void GridTestCase::Labels()
+TEST_CASE_METHOD(GridTestCase, "Grid::Labels", "[grid]")
 {
-    CPPUNIT_ASSERT_EQUAL("A", m_grid->GetColLabelValue(0));
-    CPPUNIT_ASSERT_EQUAL("1", m_grid->GetRowLabelValue(0));
+    CHECK(m_grid->GetColLabelValue(0) == "A");
+    CHECK(m_grid->GetRowLabelValue(0) == "1");
 
     m_grid->SetColLabelValue(0, "Column 1");
     m_grid->SetRowLabelValue(0, "Row 1");
 
-    CPPUNIT_ASSERT_EQUAL("Column 1", m_grid->GetColLabelValue(0));
-    CPPUNIT_ASSERT_EQUAL("Row 1", m_grid->GetRowLabelValue(0));
+    CHECK(m_grid->GetColLabelValue(0) == "Column 1");
+    CHECK(m_grid->GetRowLabelValue(0) == "Row 1");
 
     m_grid->SetLabelTextColour(*wxGREEN);
     m_grid->SetLabelBackgroundColour(*wxRED);
 
-    CPPUNIT_ASSERT_EQUAL(*wxGREEN, m_grid->GetLabelTextColour());
-    CPPUNIT_ASSERT_EQUAL(*wxRED, m_grid->GetLabelBackgroundColour());
+    CHECK(m_grid->GetLabelTextColour() == *wxGREEN);
+    CHECK(m_grid->GetLabelBackgroundColour() == *wxRED);
 
     m_grid->SetColLabelTextOrientation(wxVERTICAL);
 
-    CPPUNIT_ASSERT_EQUAL(static_cast<int>(wxVERTICAL),
-                         static_cast<int>(m_grid->GetColLabelTextOrientation()));
+    CHECK(m_grid->GetColLabelTextOrientation() == wxVERTICAL);
 }
 
-void GridTestCase::SelectionMode()
+TEST_CASE_METHOD(GridTestCase, "Grid::SelectionMode", "[grid]")
 {
     //We already test this mode in Select
-    CPPUNIT_ASSERT_EQUAL(wxGrid::wxGridSelectCells,
-                         m_grid->GetSelectionMode());
+    CHECK(m_grid->GetSelectionMode() == wxGrid::wxGridSelectCells);
+
+    // Select an individual cell and an entire row.
+    m_grid->SelectBlock(3, 1, 3, 1);
+    m_grid->SelectRow(5, true /* add to selection */);
+
+    // Test that after switching to row selection mode only the row remains
+    // selected.
+    m_grid->SetSelectionMode(wxGrid::wxGridSelectRows);
+    CHECK( m_grid->IsInSelection(5, 0) );
+    CHECK( m_grid->IsInSelection(5, 1) );
+    CHECK( !m_grid->IsInSelection(3, 1) );
 
     //Test row selection be selecting a single cell and checking the whole
     //row is selected
-    m_grid->SetSelectionMode(wxGrid::wxGridSelectRows);
+    m_grid->ClearSelection();
     m_grid->SelectBlock(3, 1, 3, 1);
 
     wxArrayInt selectedRows = m_grid->GetSelectedRows();
-    CPPUNIT_ASSERT_EQUAL(1, selectedRows.Count());
-    CPPUNIT_ASSERT_EQUAL(3, selectedRows[0]);
+    CHECK(selectedRows.Count() == 1);
+    CHECK(selectedRows[0] == 3);
 
-    CPPUNIT_ASSERT_EQUAL(wxGrid::wxGridSelectRows,
-                         m_grid->GetSelectionMode());
+    // Check that overlapping selection blocks are handled correctly.
+    m_grid->ClearSelection();
+    m_grid->SelectBlock(0, 0, 4, 1);
+    m_grid->SelectBlock(2, 0, 6, 1, true /* add to selection */);
+    CHECK( m_grid->GetSelectedRows().size() == 7 );
+
+    CHECK( m_grid->GetSelectedColBlocks().empty() );
+
+    RowRanges rowRanges;
+    rowRanges.push_back(RowRange(0, 6));
+    CheckRowSelection(rowRanges);
+
+    m_grid->SelectBlock(6, 0, 8, 1);
+    m_grid->SelectBlock(1, 0, 4, 1, true /* add to selection */);
+    m_grid->SelectBlock(0, 0, 2, 1, true /* add to selection */);
+    CHECK( m_grid->GetSelectedRows().size() == 8 );
+
+    rowRanges.clear();
+    rowRanges.push_back(RowRange(0, 4));
+    rowRanges.push_back(RowRange(6, 8));
+    CheckRowSelection(rowRanges);
+
+    // Select all odd rows.
+    m_grid->ClearSelection();
+    rowRanges.clear();
+    for ( int i = 1; i < m_grid->GetNumberRows(); i += 2 )
+    {
+        m_grid->SelectBlock(i, 0, i, 1, true);
+        rowRanges.push_back(RowRange(i, i));
+    }
+
+    CheckRowSelection(rowRanges);
+
+    // Now select another block overlapping 2 of them and bordering 2 others.
+    m_grid->SelectBlock(2, 0, 6, 1, true);
+
+    rowRanges.clear();
+    rowRanges.push_back(RowRange(1, 7));
+    rowRanges.push_back(RowRange(9, 9));
+    CheckRowSelection(rowRanges);
+
+    CHECK(m_grid->GetSelectionMode() == wxGrid::wxGridSelectRows);
 
 
     //Test column selection be selecting a single cell and checking the whole
@@ -752,15 +974,20 @@ void GridTestCase::SelectionMode()
     m_grid->SetSelectionMode(wxGrid::wxGridSelectColumns);
     m_grid->SelectBlock(3, 1, 3, 1);
 
-    wxArrayInt selectedCols = m_grid->GetSelectedCols();
-    CPPUNIT_ASSERT_EQUAL(1, selectedCols.Count());
-    CPPUNIT_ASSERT_EQUAL(1, selectedCols[0]);
+    CHECK( m_grid->GetSelectedRowBlocks().empty() );
 
-    CPPUNIT_ASSERT_EQUAL(wxGrid::wxGridSelectColumns,
-                         m_grid->GetSelectionMode());
+    wxArrayInt selectedCols = m_grid->GetSelectedCols();
+    CHECK(selectedCols.Count() == 1);
+    CHECK(selectedCols[0] == 1);
+
+    wxGridBlockCoordsVector colBlocks = m_grid->GetSelectedColBlocks();
+    CHECK( colBlocks.size() == 1 );
+    CHECK( colBlocks.at(0) == wxGridBlockCoords(0, 1, 9, 1) );
+
+    CHECK(m_grid->GetSelectionMode() == wxGrid::wxGridSelectColumns);
 }
 
-void GridTestCase::CellFormatting()
+TEST_CASE_METHOD(GridTestCase, "Grid::CellFormatting", "[grid]")
 {
     //Check that initial alignment is default
     int horiz, cellhoriz, vert, cellvert;
@@ -768,56 +995,100 @@ void GridTestCase::CellFormatting()
     m_grid->GetDefaultCellAlignment(&horiz, &vert);
     m_grid->GetCellAlignment(0, 0, &cellhoriz, &cellvert);
 
-    CPPUNIT_ASSERT_EQUAL(cellhoriz, horiz);
-    CPPUNIT_ASSERT_EQUAL(cellvert, vert);
+    CHECK(horiz == cellhoriz);
+    CHECK(vert == cellvert);
 
     //Check initial text colour and background colour are default
     wxColour text, back;
 
     back = m_grid->GetDefaultCellBackgroundColour();
 
-    CPPUNIT_ASSERT_EQUAL(back, m_grid->GetCellBackgroundColour(0, 0));
+    CHECK(m_grid->GetCellBackgroundColour(0, 0) == back);
 
     back = m_grid->GetDefaultCellTextColour();
 
-    CPPUNIT_ASSERT_EQUAL(back, m_grid->GetCellTextColour(0, 0));
+    CHECK(m_grid->GetCellTextColour(0, 0) == back);
 
 #if WXWIN_COMPATIBILITY_2_8
     m_grid->SetCellAlignment(wxALIGN_CENTRE, 0, 0);
     m_grid->GetCellAlignment(0, 0, &cellhoriz, &cellvert);
 
-    CPPUNIT_ASSERT_EQUAL(static_cast<int>(wxALIGN_CENTRE), cellhoriz);
-    CPPUNIT_ASSERT_EQUAL(static_cast<int>(wxALIGN_CENTRE), cellvert);
+    CHECK(cellhoriz == wxALIGN_CENTRE);
+    CHECK(cellvert == wxALIGN_CENTRE);
 #endif // WXWIN_COMPATIBILITY_2_8
 
     m_grid->SetCellAlignment(0, 0, wxALIGN_LEFT, wxALIGN_BOTTOM);
     m_grid->GetCellAlignment(0, 0, &cellhoriz, &cellvert);
 
-    CPPUNIT_ASSERT_EQUAL(static_cast<int>(wxALIGN_LEFT), cellhoriz);
-    CPPUNIT_ASSERT_EQUAL(static_cast<int>(wxALIGN_BOTTOM), cellvert);
+    CHECK(cellhoriz == wxALIGN_LEFT);
+    CHECK(cellvert == wxALIGN_BOTTOM);
 
 #if WXWIN_COMPATIBILITY_2_8
     m_grid->SetCellTextColour(*wxRED, 0, 0);
-    CPPUNIT_ASSERT_EQUAL(*wxRED, m_grid->GetCellTextColour(0, 0));
+    CHECK(m_grid->GetCellTextColour(0, 0) == *wxRED);
 #endif // WXWIN_COMPATIBILITY_2_8
 
     m_grid->SetCellTextColour(0, 0, *wxGREEN);
-    CPPUNIT_ASSERT_EQUAL(*wxGREEN, m_grid->GetCellTextColour(0, 0));
+    CHECK(m_grid->GetCellTextColour(0,0) == *wxGREEN);
 }
 
-void GridTestCase::Editable()
+TEST_CASE_METHOD(GridTestCase, "Grid::GetNonDefaultAlignment", "[grid]")
+{
+    // GetNonDefaultAlignment() is used by several renderers having their own
+    // preferred alignment, so check that if we don't reset the alignment
+    // explicitly, it doesn't override the alignment used by default.
+    wxGridCellAttrPtr attr;
+    int hAlign = wxALIGN_RIGHT,
+        vAlign = wxALIGN_INVALID;
+
+    attr = m_grid->CallGetCellAttr(0, 0);
+    REQUIRE( attr );
+
+    // Check that the specified alignment is preserved, while the unspecified
+    // component is filled with the default value (which is "top" by default).
+    attr->GetNonDefaultAlignment(&hAlign, &vAlign);
+    CHECK( hAlign == wxALIGN_RIGHT );
+    CHECK( vAlign == wxALIGN_TOP );
+
+    // Now change the defaults and check that the unspecified alignment
+    // component is filled with the new default.
+    m_grid->SetDefaultCellAlignment(wxALIGN_CENTRE_HORIZONTAL,
+                                    wxALIGN_CENTRE_VERTICAL);
+
+    vAlign = wxALIGN_INVALID;
+
+    attr = m_grid->CallGetCellAttr(0, 0);
+    REQUIRE( attr );
+
+    attr->GetNonDefaultAlignment(&hAlign, &vAlign);
+    CHECK( hAlign == wxALIGN_RIGHT );
+    CHECK( vAlign == wxALIGN_CENTRE_VERTICAL );
+
+    // This is only indirectly related, but test here for CanOverflow() working
+    // correctly for the cells with non-default alignment, as this used to be
+    // broken.
+    m_grid->SetCellAlignment(0, 0, wxALIGN_INVALID, wxALIGN_CENTRE);
+    attr = m_grid->CallGetCellAttr(0, 0);
+    REQUIRE( attr );
+    CHECK( attr->CanOverflow() );
+}
+
+TEST_CASE_METHOD(GridTestCase, "Grid::Editable", "[grid]")
 {
 #if wxUSE_UIACTIONSIMULATOR
+    if ( !EnableUITests() )
+        return;
+
     //As the grid is not editable we shouldn't create an editor
     EventCounter created(m_grid, wxEVT_GRID_EDITOR_CREATED);
 
     wxUIActionSimulator sim;
 
-    CPPUNIT_ASSERT(m_grid->IsEditable());
+    CHECK(m_grid->IsEditable());
 
     m_grid->EnableEditing(false);
 
-    CPPUNIT_ASSERT(!m_grid->IsEditable());
+    CHECK(!m_grid->IsEditable());
 
     m_grid->SetFocus();
     m_grid->SetGridCursor(1, 1);
@@ -828,38 +1099,32 @@ void GridTestCase::Editable()
     sim.Char(WXK_RETURN);
     wxYield();
 
-    CPPUNIT_ASSERT_EQUAL(0, created.GetCount());
+    CHECK(created.GetCount() == 0);
 #endif
 }
 
-void GridTestCase::ReadOnly()
+TEST_CASE_METHOD(GridTestCase, "Grid::ReadOnly", "[grid]")
 {
 #if wxUSE_UIACTIONSIMULATOR
+    if ( !EnableUITests() )
+        return;
+
     //As the cell is readonly we shouldn't create an editor
     EventCounter created(m_grid, wxEVT_GRID_EDITOR_CREATED);
 
     wxUIActionSimulator sim;
 
-    CPPUNIT_ASSERT(!m_grid->IsReadOnly(1, 1));
+    CHECK(!m_grid->IsReadOnly(1, 1));
 
     m_grid->SetReadOnly(1, 1);
 
-    CPPUNIT_ASSERT(m_grid->IsReadOnly(1, 1));
+    CHECK(m_grid->IsReadOnly(1, 1));
 
     m_grid->SetFocus();
 
-#ifdef __WXGTK__
-    // This is a mystery, but we somehow get WXK_RETURN generated by the
-    // previous test (Editable) in this one. In spite of wxYield() in that
-    // test, the key doesn't get dispatched there and we have to consume it
-    // here before setting the current grid cell, as getting WXK_RETURN later
-    // would move the selection down, to a non read-only cell.
-    wxYield();
-#endif // __WXGTK__
-
     m_grid->SetGridCursor(1, 1);
 
-    CPPUNIT_ASSERT(m_grid->IsCurrentCellReadOnly());
+    CHECK(m_grid->IsCurrentCellReadOnly());
 
     sim.Text("abab");
     wxYield();
@@ -867,13 +1132,16 @@ void GridTestCase::ReadOnly()
     sim.Char(WXK_RETURN);
     wxYield();
 
-    CPPUNIT_ASSERT_EQUAL(0, created.GetCount());
+    CHECK(created.GetCount() == 0);
 #endif
 }
 
-void GridTestCase::WindowAsEditorControl()
+TEST_CASE_METHOD(GridTestCase, "Grid::WindowAsEditorControl", "[grid]")
 {
 #if wxUSE_UIACTIONSIMULATOR
+    if ( !EnableUITests() )
+        return;
+
     // A very simple editor using a window not derived from wxControl as the
     // editor.
     class TestEditor : public wxGridCellEditor
@@ -927,14 +1195,26 @@ void GridTestCase::WindowAsEditorControl()
 
     wxYield();
 
-    CPPUNIT_ASSERT_EQUAL(1, created.GetCount());
+    CHECK(created.GetCount() == 1);
 #endif
 }
 
-void GridTestCase::ResizeScrolledHeader()
+TEST_CASE_METHOD(GridTestCase, "Grid::ResizeScrolledHeader", "[grid]")
 {
     // TODO this test currently works only under Windows unfortunately
-#if wxUSE_UIACTIONSIMULATOR && defined(__WXMSW__)
+#if wxUSE_UIACTIONSIMULATOR && (defined(__WXMSW__) || defined(__WXGTK__))
+    if ( !EnableUITests() )
+        return;
+
+#ifdef __WXGTK20__
+    // Works locally, but not when run on Travis CI.
+    if ( IsAutomaticTest() )
+        return;
+#endif
+
+    SECTION("Default") {}
+    SECTION("Native header") { m_grid->UseNativeColHeader(); }
+
     int const startwidth = m_grid->GetColSize(0);
     int const draglength = 100;
 
@@ -966,20 +1246,41 @@ void GridTestCase::ResizeScrolledHeader()
 
     wxYield();
 
-    CPPUNIT_ASSERT_EQUAL(startwidth + draglength, m_grid->GetColSize(0));
+    CHECK(m_grid->GetColSize(0) == startwidth + draglength);
 #endif
 }
 
-void GridTestCase::ColumnMinWidth()
+TEST_CASE_METHOD(GridTestCase, "Grid::ColumnMinWidth", "[grid]")
 {
     // TODO this test currently works only under Windows unfortunately
-#if wxUSE_UIACTIONSIMULATOR && defined(__WXMSW__)
+#if wxUSE_UIACTIONSIMULATOR && (defined(__WXMSW__) || defined(__WXGTK__))
+    if ( !EnableUITests() )
+        return;
+
+#ifdef __WXGTK20__
+    // Works locally, but not when run on Travis CI.
+    if ( IsAutomaticTest() )
+        return;
+#endif
+
+    SECTION("Default") {}
+    SECTION("Native header")
+    {
+        // For some unknown reason, this test fails under AppVeyor even though
+        // it passes locally, so disable it there. If anybody can reproduce the
+        // problem locally, where it can be debugged, please let us know.
+        if ( IsAutomaticTest() )
+            return;
+
+        m_grid->UseNativeColHeader();
+    }
+
     int const startminwidth = m_grid->GetColMinimalAcceptableWidth();
     m_grid->SetColMinimalAcceptableWidth(startminwidth*2);
     int const newminwidth = m_grid->GetColMinimalAcceptableWidth();
     int const startwidth = m_grid->GetColSize(0);
 
-    CPPUNIT_ASSERT(m_grid->GetColMinimalAcceptableWidth() < startwidth);
+    CHECK(m_grid->GetColMinimalAcceptableWidth() < startwidth);
 
     wxRect rect = m_grid->CellToRect(0, 1);
     wxPoint point = m_grid->CalcScrolledPosition(rect.GetPosition());
@@ -1001,10 +1302,7 @@ void GridTestCase::ColumnMinWidth()
     sim.MouseUp();
     wxYield();
 
-    if ( ms_nativeheader )
-        CPPUNIT_ASSERT_EQUAL(startwidth, m_grid->GetColSize(0));
-    else
-        CPPUNIT_ASSERT_EQUAL(newminwidth, m_grid->GetColSize(0));
+    CHECK(m_grid->GetColSize(0) == newminwidth);
 #endif
 }
 
@@ -1016,14 +1314,18 @@ void GridTestCase::CheckFirstColAutoSize(int expected)
     CHECK(m_grid->GetColSize(0) == expected);
 }
 
-void GridTestCase::AutoSizeColumn()
+TEST_CASE_METHOD(GridTestCase, "Grid::AutoSizeColumn", "[grid]")
 {
+    SECTION("Default") {}
+    SECTION("Native header") { m_grid->UseNativeColHeader(); }
+    SECTION("Native labels") { m_grid->SetUseNativeColLabels(); }
+
     // Hardcoded extra margin for the columns used in grid.cpp.
     const int margin = m_grid->FromDIP(10);
 
-    wxGridCellAttr *attr = m_grid->GetOrCreateCellAttr(0, 0);
-    wxGridCellRenderer *renderer = attr->GetRenderer(m_grid, 0, 0);
-    REQUIRE(renderer != NULL);
+    wxGridCellAttrPtr attr(m_grid->GetOrCreateCellAttr(0, 0));
+    wxGridCellRendererPtr renderer(attr->GetRenderer(m_grid, 0, 0));
+    REQUIRE(renderer);
 
     wxClientDC dcCell(m_grid->GetGridWindow());
 
@@ -1095,6 +1397,192 @@ void GridTestCase::AutoSizeColumn()
         // We can't be sure which size will be greater because of different fonts
         // so just calculate the maximum width.
         CheckFirstColAutoSize( wxMax(labelWidth, cellWidth) );
+    }
+}
+
+// Test wxGridBlockCoords here because it'a a part of grid sources.
+
+std::ostream& operator<<(std::ostream& os, const wxGridBlockCoords& block) {
+    os << "wxGridBlockCoords(" <<
+        block.GetTopRow() << ", " << block.GetLeftCol() << ", " <<
+        block.GetBottomRow() << ", " << block.GetRightCol() << ")";
+    return os;
+}
+
+TEST_CASE("GridBlockCoords::Canonicalize", "[grid]")
+{
+    const wxGridBlockCoords block =
+        wxGridBlockCoords(4, 3, 2, 1).Canonicalize();
+
+    CHECK(block.GetTopRow() == 2);
+    CHECK(block.GetLeftCol() == 1);
+    CHECK(block.GetBottomRow() == 4);
+    CHECK(block.GetRightCol() == 3);
+}
+
+TEST_CASE("GridBlockCoords::Intersects", "[grid]")
+{
+    // Inside.
+    CHECK(wxGridBlockCoords(1, 1, 3, 3).Intersects(wxGridBlockCoords(1, 2, 2, 3)));
+
+    // Intersects.
+    CHECK(wxGridBlockCoords(1, 1, 3, 3).Intersects(wxGridBlockCoords(2, 2, 4, 4)));
+
+    // Doesn't intersects.
+    CHECK(!wxGridBlockCoords(1, 1, 3, 3).Intersects(wxGridBlockCoords(4, 4, 6, 6)));
+}
+
+TEST_CASE("GridBlockCoords::Contains", "[grid]")
+{
+    // Inside.
+    CHECK(wxGridBlockCoords(1, 1, 3, 3).Contains(wxGridCellCoords(2, 2)));
+
+    // Outside.
+    CHECK(!wxGridBlockCoords(1, 1, 3, 3).Contains(wxGridCellCoords(5, 5)));
+
+    wxGridBlockCoords block1(1, 1, 5, 5);
+    wxGridBlockCoords block2(1, 1, 3, 3);
+    wxGridBlockCoords block3(2, 2, 7, 7);
+    wxGridBlockCoords block4(10, 10, 12, 12);
+
+    CHECK( block1.Contains(block2));
+    CHECK(!block2.Contains(block1));
+    CHECK(!block1.Contains(block3));
+    CHECK(!block1.Contains(block4));
+    CHECK(!block3.Contains(block1));
+    CHECK(!block4.Contains(block1));
+}
+
+TEST_CASE("GridBlockCoords::Difference", "[grid]")
+{
+    SECTION("Subtract contained block (splitted horizontally)")
+    {
+        const wxGridBlockCoords block1(1, 1, 7, 7);
+        const wxGridBlockCoords block2(3, 3, 5, 5);
+        const wxGridBlockDiffResult result =
+            block1.Difference(block2, wxHORIZONTAL);
+
+        CHECK(result.m_parts[0] == wxGridBlockCoords(1, 1, 2, 7));
+        CHECK(result.m_parts[1] == wxGridBlockCoords(6, 1, 7, 7));
+        CHECK(result.m_parts[2] == wxGridBlockCoords(3, 1, 5, 2));
+        CHECK(result.m_parts[3] == wxGridBlockCoords(3, 6, 5, 7));
+    }
+
+    SECTION("Subtract contained block (splitted vertically)")
+    {
+        const wxGridBlockCoords block1(1, 1, 7, 7);
+        const wxGridBlockCoords block2(3, 3, 5, 5);
+        const wxGridBlockDiffResult result =
+            block1.Difference(block2, wxVERTICAL);
+
+        CHECK(result.m_parts[0] == wxGridBlockCoords(1, 1, 7, 2));
+        CHECK(result.m_parts[1] == wxGridBlockCoords(1, 6, 7, 7));
+        CHECK(result.m_parts[2] == wxGridBlockCoords(1, 3, 2, 5));
+        CHECK(result.m_parts[3] == wxGridBlockCoords(6, 3, 7, 5));
+    }
+
+    SECTION("Blocks intersect by the corner (splitted horizontally)")
+    {
+        const wxGridBlockCoords block1(1, 1, 5, 5);
+        const wxGridBlockCoords block2(3, 3, 7, 7);
+        const wxGridBlockDiffResult result =
+            block1.Difference(block2, wxHORIZONTAL);
+
+        CHECK(result.m_parts[0] == wxGridBlockCoords(1, 1, 2, 5));
+        CHECK(result.m_parts[1] == wxGridNoBlockCoords);
+        CHECK(result.m_parts[2] == wxGridBlockCoords(3, 1, 5, 2));
+        CHECK(result.m_parts[3] == wxGridNoBlockCoords);
+    }
+
+    SECTION("Blocks intersect by the corner (splitted vertically)")
+    {
+        const wxGridBlockCoords block1(1, 1, 5, 5);
+        const wxGridBlockCoords block2(3, 3, 7, 7);
+        const wxGridBlockDiffResult result =
+            block1.Difference(block2, wxVERTICAL);
+
+        CHECK(result.m_parts[0] == wxGridBlockCoords(1, 1, 5, 2));
+        CHECK(result.m_parts[1] == wxGridNoBlockCoords);
+        CHECK(result.m_parts[2] == wxGridBlockCoords(1, 3, 2, 5));
+        CHECK(result.m_parts[3] == wxGridNoBlockCoords);
+    }
+
+    SECTION("Blocks are the same")
+    {
+        const wxGridBlockCoords block1(1, 1, 3, 3);
+        const wxGridBlockCoords block2(1, 1, 3, 3);
+        const wxGridBlockDiffResult result =
+            block1.Difference(block2, wxHORIZONTAL);
+
+        CHECK(result.m_parts[0] == wxGridNoBlockCoords);
+        CHECK(result.m_parts[1] == wxGridNoBlockCoords);
+        CHECK(result.m_parts[2] == wxGridNoBlockCoords);
+        CHECK(result.m_parts[3] == wxGridNoBlockCoords);
+    }
+
+    SECTION("Blocks doesn't intersects")
+    {
+        const wxGridBlockCoords block1(1, 1, 3, 3);
+        const wxGridBlockCoords block2(5, 5, 7, 7);
+        const wxGridBlockDiffResult result =
+            block1.Difference(block2, wxHORIZONTAL);
+
+        CHECK(result.m_parts[0] == wxGridBlockCoords(1, 1, 3, 3));
+        CHECK(result.m_parts[1] == wxGridNoBlockCoords);
+        CHECK(result.m_parts[2] == wxGridNoBlockCoords);
+        CHECK(result.m_parts[3] == wxGridNoBlockCoords);
+    }
+}
+
+
+TEST_CASE("GridBlockCoords::SymDifference", "[grid]")
+{
+    SECTION("With contained block")
+    {
+        const wxGridBlockCoords block1(1, 1, 7, 7);
+        const wxGridBlockCoords block2(3, 3, 5, 5);
+        const wxGridBlockDiffResult result = block1.SymDifference(block2);
+
+        CHECK(result.m_parts[0] == wxGridBlockCoords(1, 1, 2, 7));
+        CHECK(result.m_parts[1] == wxGridBlockCoords(6, 1, 7, 7));
+        CHECK(result.m_parts[2] == wxGridBlockCoords(3, 1, 5, 2));
+        CHECK(result.m_parts[3] == wxGridBlockCoords(3, 6, 5, 7));
+    }
+
+    SECTION("Blocks intersect by the corner")
+    {
+        const wxGridBlockCoords block1(1, 1, 5, 5);
+        const wxGridBlockCoords block2(3, 3, 7, 7);
+        const wxGridBlockDiffResult result = block1.SymDifference(block2);
+
+        CHECK(result.m_parts[0] == wxGridBlockCoords(1, 1, 2, 5));
+        CHECK(result.m_parts[1] == wxGridBlockCoords(6, 3, 7, 7));
+        CHECK(result.m_parts[2] == wxGridBlockCoords(3, 1, 5, 2));
+        CHECK(result.m_parts[3] == wxGridBlockCoords(3, 6, 5, 7));
+    }
+
+    SECTION("Blocks are the same")
+    {
+        const wxGridBlockCoords block1(1, 1, 3, 3);
+        const wxGridBlockCoords block2(1, 1, 3, 3);
+        const wxGridBlockDiffResult result = block1.SymDifference(block2);
+
+        CHECK(result.m_parts[0] == wxGridNoBlockCoords);
+        CHECK(result.m_parts[1] == wxGridNoBlockCoords);
+        CHECK(result.m_parts[2] == wxGridNoBlockCoords);
+        CHECK(result.m_parts[3] == wxGridNoBlockCoords);
+    }
+
+    SECTION("Blocks doesn't intersects")
+    {
+        const wxGridBlockCoords block1(1, 1, 3, 3);
+        const wxGridBlockCoords block2(5, 5, 7, 7);
+        const wxGridBlockDiffResult result = block1.SymDifference(block2);
+
+        CHECK(result.m_parts[0] == wxGridBlockCoords(1, 1, 3, 3));
+        CHECK(result.m_parts[1] == wxGridBlockCoords(5, 5, 7, 7));
+        CHECK(result.m_parts[2] == wxGridNoBlockCoords);
+        CHECK(result.m_parts[3] == wxGridNoBlockCoords);
     }
 }
 
