@@ -7,17 +7,22 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIGURATION>)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIGURATION>)
 
+if(MSVC)
+  add_definitions(/MP)
+  add_definitions(/Qpar)
+endif()
+
 file(GLOB source "source/*.cpp" "source/*.hpp" "source/*.h")
 if(APPLE)
     set(macfiles "source/wxmac.icns" CACHE INERNAL "")
 elseif(WIN32)
-	set(winfiles "windows.rc" CACHE INTERNAL "")
+	set(winfiles "source/windows.rc" CACHE INTERNAL "")
 endif()
 add_executable("${PROJECT_NAME}" WIN32 ${source} ${macfiles} ${winfiles})
 
 #wxwidgets
 set(wxBUILD_SHARED OFF CACHE INTERNAL "")
-add_subdirectory("wxWidgets")
+add_subdirectory("wxWidgets" EXCLUDE_FROM_ALL)
 
 target_link_libraries("${PROJECT_NAME}"
     PUBLIC 
@@ -32,13 +37,14 @@ set_target_properties("${PROJECT_NAME}" PROPERTIES
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_LIST_DIR}/source/Info.plist"
 )
 set_source_files_properties("${CMAKE_CURRENT_LIST_DIR}/source/wxmac.icns" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-INSTALL(CODE 
+if(APPLE)
+	INSTALL(CODE 
 		"include(BundleUtilities)
 		fixup_bundle(\"${CMAKE_INSTALL_PREFIX}/$<CONFIGURATION>/${APPNAME}.app\" \"\" \"\")
 		" 
 		COMPONENT Runtime
 	)
-
+endif()
 # windows app
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DPI_AWARE "PerMonitor")
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT "${PROJECT_NAME}")
