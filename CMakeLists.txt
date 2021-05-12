@@ -40,7 +40,7 @@ set_source_files_properties("${CMAKE_CURRENT_LIST_DIR}/source/wxmac.icns" PROPER
 if(APPLE)
 	INSTALL(CODE 
 		"include(BundleUtilities)
-		fixup_bundle(\"${CMAKE_INSTALL_PREFIX}/$<CONFIGURATION>/${APPNAME}.app\" \"\" \"\")
+		fixup_bundle(\"${CMAKE_INSTALL_PREFIX}/$<CONFIGURATION>/${PROJECT_NAME}.app\" \"\" \"\")
 		" 
 		COMPONENT Runtime
 	)
