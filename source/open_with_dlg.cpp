@@ -5,6 +5,7 @@
 //
 
 #include "interface_derived.hpp"
+using namespace std;
 
 wxBEGIN_EVENT_TABLE(OpenWithDlg, wxDialog)
 EVT_BUTTON(wxID_CANCEL,OpenWithDlg::OnCancel)

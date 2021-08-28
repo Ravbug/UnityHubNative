@@ -15,6 +15,7 @@
 #else
 #include <dirent.h>
 #endif
+using namespace std;
 
 #define LEARN_TAB 2
 #define WEBVIEW 2000

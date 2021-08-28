@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.17)
 
 project("UnityHubNative")
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIGURATION>)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIGURATION>)
 
@@ -14,6 +12,7 @@ endif()
 
 file(GLOB source "source/*.cpp" "source/*.hpp" "source/*.h")
 add_executable("${PROJECT_NAME}" WIN32 ${source} "source/wxmac.icns" "source/windows.rc")
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 
 #wxwidgets
 set(wxBUILD_SHARED OFF CACHE INTERNAL "")

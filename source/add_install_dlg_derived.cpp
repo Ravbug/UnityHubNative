@@ -150,11 +150,11 @@ void AddNewInstallDlg::InstallSelected(wxCommandEvent&){
         
         thread th([=]{
             // download the file
-            string url = "https://download.unity3d.com/download_unity/" + data.hashcode +
+            string url = "https://download.unity3d.com/download_unity/" + data.hashcode + "/UnityDownloadAssistant" +
             #ifdef __APPLE__
-            "/UnityDownloadAssistant.dmg";
+                ".dmg";
             #elif defined _WIN32
-                
+                ".exe";
             #elif __linux__
                 
             #else
@@ -170,7 +170,7 @@ void AddNewInstallDlg::InstallSelected(wxCommandEvent&){
             }
             else{
                 // write the file to temp location
-                auto outpath = fmt::format("{}{}{}{}{}", cachedir,dirsep,"UnityDownloadAssistant",data.hashcode,".dmg");
+                auto outpath = fmt::format("{}{}{}{}.{}", cachedir,dirsep,"UnityDownloadAssistant",data.hashcode,installerExt);
                 ofstream outfile(outpath, std::ios::binary);
                 outfile.write(r.text.c_str(),r.text.size());
                 

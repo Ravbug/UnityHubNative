@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "interface.h"
 #include "globals.h"
+#include "interface.h"
 #include <functional>
 #include <wx/webview.h>
 #include <wx/timer.h>
@@ -23,32 +23,30 @@
 #define TIMER 2001
 
 
-using namespace std;
-
 class MainFrameDerived : public MainFrame{
 public:
 	//constructor (takes no args)
 	MainFrameDerived();
 	
-	static string GetPathFromDialog(const string& message);
+	static std::string GetPathFromDialog(const std::string& message);
 	
 private:
 	void AddProject(const project& p);
-	project LoadProject(const string& path);
+	project LoadProject(const std::string& path);
 	void SaveProjects();
 	void OpenProject(const long& index);
 	void OpenProject(const project& p, const editor& e);
 	void SaveEditorVersions();
-	void LoadEditorPath(const string& path);
+	void LoadEditorPath(const std::string& path);
 	void LoadEditorVersions();
 	void ReloadData();
 	
 	//will store the list of projects
-	vector<project> projects;
-	vector<string> installPaths;
-	vector<editor> editors;
+	std::vector<project> projects;
+	std::vector<std::string> installPaths;
+	std::vector<editor> editors;
 	wxWebView* learnView = NULL;
-	const string homeurl = "https://learn.unity.com";
+	const std::string homeurl = "https://learn.unity.com";
 	wxString lastURL = wxString(homeurl);
 	wxTimer* timeout;
 	
@@ -127,8 +125,8 @@ private:
 	Locates a Unity install path and adds it to the list and UI
 	*/
 	void OnLocateInstall(wxCommandEvent& event){
-		string msg = "Select the folder containing Unity installs";
-		string path = GetPathFromDialog(msg);
+		std::string msg = "Select the folder containing Unity installs";
+		std::string path = GetPathFromDialog(msg);
 		if (path != ""){
 			LoadEditorPath(path);
 		}
@@ -142,7 +140,7 @@ private:
 		int id = installsList->GetSelection();
 		if (id != wxNOT_FOUND){
 			editor& e = editors[id];
-			string path = e.path + dirsep + e.name;
+			std::string path = e.path + dirsep + e.name;
 			reveal_in_explorer(path);
 		}
 	}
@@ -167,18 +165,18 @@ private:
  CreateProjectDialog derived class
  Defines the functionality for the project creation dialog
  */
-typedef std::function<void(const string&,const project&)> DialogCallback;
+typedef std::function<void(const std::string&,const project&)> DialogCallback;
 class CreateProjectDialogD : CreateProjectDialog{
 public:
-	CreateProjectDialogD(wxWindow* parent, const vector<editor>& versions, const DialogCallback& callback);
+	CreateProjectDialogD(wxWindow* parent, const std::vector<editor>& versions, const DialogCallback& callback);
 	void show(){
 		this->ShowModal();
 	}
 private:
-	string validateForm();
+	std::string validateForm();
 	void loadTemplates(const editor& e);
 	DialogCallback callback;
-	vector<editor> editors;
+	std::vector<editor> editors;
 	
 	//events
 	void OnCancel(wxCommandEvent& event){
@@ -195,12 +193,12 @@ private:
 typedef std::function<void(const project&, const editor&)> OpenWithCallback;
 class OpenWithDlg : OpenWithEditorDlgBase{
 public:
-	OpenWithDlg(wxWindow* parent, const project& project, const vector<editor>& versions,  const OpenWithCallback& callback);
+	OpenWithDlg(wxWindow* parent, const project& project, const std::vector<editor>& versions,  const OpenWithCallback& callback);
 	void show(){
 		this->ShowModal();
 	}
 private:
-	vector<editor> editors;
+	std::vector<editor> editors;
 	project p;
 	OpenWithCallback callback;
 	

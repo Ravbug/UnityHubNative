@@ -12,6 +12,8 @@
 #endif
 #include <wx/msgdlg.h>
 
+using namespace std;
+
 //Declare events here
 wxBEGIN_EVENT_TABLE(CreateProjectDialogD, wxDialog)
 EVT_BUTTON(wxID_CANCEL,CreateProjectDialogD::OnCancel)
