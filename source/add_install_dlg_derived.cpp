@@ -137,21 +137,36 @@ void AddNewInstallDlg::PopulateWithFilter(const std::function<bool (const versio
 void AddNewInstallDlg::InstallSelected(wxCommandEvent&){
     // get the selected item
     auto item = versionsListCtrl->GetSelection();
+    auto data = *(reinterpret_cast<version*>(versionsListCtrl->GetItemData(item)));
     if (item.IsOk()){
-        auto& data = *(reinterpret_cast<version*>(versionsListCtrl->GetItemData(item)));
-
-    
-    // download the file
-#ifdef __APPLE__
-    
-#elif defined _WIN32
-    
-#elif __linux__
-    
-#else
-#error This platform is not supported.
         
-#endif
+        thread th([&]{
+            // download the file
+            string url = "https://download.unity3d.com/download_unity/" + data.hashcode +
+            #ifdef __APPLE__
+            "/UnityDownloadAssistant.dmg";
+            #elif defined _WIN32
+                
+            #elif __linux__
+                
+            #else
+            #error This platform is not supported.
+                    
+            #endif
+            
+            auto r = cpr::Get(cpr::Url{url});
+            
+            if (r.status_code != 200){
+                // TODO: post that download failed
+                throw runtime_error("Unable to download installer");
+            }
+            else{
+                // write the file to temp location
+            }
+        });
+        th.detach();
+
+
     }
     else{
         wxMessageBox("Select a version", "Error", wxOK | wxICON_ERROR);
