@@ -10,7 +10,7 @@ using namespace std;
 #include <sys/stat.h>
 #include <wx/listctrl.h>
 #include <string>
-
+#include <filesystem>
 
 //data file names
 static const string projectsFile = "projects.txt";
@@ -29,6 +29,8 @@ struct editor{
 	//the location to store application data
 	static const string datapath = getpwuid(getuid())->pw_dir + string("/Library/Application Support/UnityHubNative");
 	static const char dirsep = '/';
+
+    static const string cachedir = getpwuid(getuid())->pw_dir + string("/Library/Caches/com.ravbug.UnityHubNative");
 
 	//where to find various Unity things on macOS
 	static const string executable = "Unity.app/Contents/MacOS/Unity";

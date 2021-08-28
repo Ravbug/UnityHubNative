@@ -128,6 +128,7 @@ class AddNewInstallDlgBase : public wxDialog
 	private:
 
 	protected:
+		wxBoxSizer* installSearchSizer;
 		wxSearchCtrl* versionSearchCtrl;
 		wxDataViewListCtrl* versionsListCtrl;
 		wxDataViewColumn* versionCol;

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.17)
 
 project("UnityHubNative")
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIGURATION>)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIGURATION>)
@@ -23,13 +23,17 @@ set(CPR_BUILD_TESTS OFF CACHE INTERNAL "")
 set(CPR_GENERATE_COVERAGE OFF CACHE INTERNAL "")
 add_subdirectory("cpr" EXCLUDE_FROM_ALL)
 
+add_subdirectory("fmt" EXCLUDE_FROM_ALL)
+
 target_link_libraries("${PROJECT_NAME}"
     PUBLIC 
     wx::base
 	wx::core
 	wx::webview
 	cpr
+	fmt
 )
+target_include_directories(${PROJECT_NAME} PUBLIC "fmt/include")
 
 # mac app
 set_target_properties("${PROJECT_NAME}" PROPERTIES 

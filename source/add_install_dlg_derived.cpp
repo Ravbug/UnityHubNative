@@ -3,14 +3,19 @@
 #include <cpr/cpr.h>
 #include <unordered_map>
 #include <sstream>
+#include <fstream>
+#include <fmt/format.h>
 
 using namespace std;
 #define UPDATEEVT 2004
+#define REENABLEEVT 2005
 wxDEFINE_EVENT(updateEvt, wxCommandEvent);
+wxDEFINE_EVENT(reenableEvt, wxCommandEvent);
 
 //Declare events here
 wxBEGIN_EVENT_TABLE(AddNewInstallDlg, wxDialog)
 EVT_COMMAND(UPDATEEVT, updateEvt, AddNewInstallDlg::PopulateTable)
+EVT_COMMAND(REENABLEEVT, reenableEvt, AddNewInstallDlg::Reenable)
 EVT_BUTTON(wxID_FILE,AddNewInstallDlg::InstallSelected)
 EVT_SEARCHCTRL_SEARCH_BTN(wxID_FIND,AddNewInstallDlg::Filter)
 wxEND_EVENT_TABLE()
@@ -40,6 +45,7 @@ void AddNewInstallDlg::PopulateTable(wxCommandEvent&){
     installBtn->SetLabel("Install Selected");
     installBtn->Enable();
     installBtn->Fit();
+    installSearchSizer->Layout();
 }
 
 
@@ -138,9 +144,11 @@ void AddNewInstallDlg::InstallSelected(wxCommandEvent&){
     // get the selected item
     auto item = versionsListCtrl->GetSelection();
     auto data = *(reinterpret_cast<version*>(versionsListCtrl->GetItemData(item)));
+    installBtn->Disable();
+    installBtn->SetLabel("Downloading...");
     if (item.IsOk()){
         
-        thread th([&]{
+        thread th([=]{
             // download the file
             string url = "https://download.unity3d.com/download_unity/" + data.hashcode +
             #ifdef __APPLE__
@@ -162,6 +170,15 @@ void AddNewInstallDlg::InstallSelected(wxCommandEvent&){
             }
             else{
                 // write the file to temp location
+                auto outpath = fmt::format("{}{}{}{}{}", cachedir,dirsep,"UnityDownloadAssistant",data.hashcode,".dmg");
+                ofstream outfile(outpath, std::ios::binary);
+                outfile.write(r.text.c_str(),r.text.size());
+                
+                // open the file
+                launch_process(fmt::format("open \"{}\"", outpath));
+                wxCommandEvent evt(reenableEvt);
+                evt.SetId(REENABLEEVT);
+                wxPostEvent(this, evt);
             }
         });
         th.detach();
@@ -171,4 +188,9 @@ void AddNewInstallDlg::InstallSelected(wxCommandEvent&){
     else{
         wxMessageBox("Select a version", "Error", wxOK | wxICON_ERROR);
     }
+}
+
+void AddNewInstallDlg::Reenable(wxCommandEvent &){
+    installBtn->Enable();
+    installBtn->SetLabel("Install Selected");
 }

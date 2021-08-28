@@ -376,7 +376,6 @@ AddNewInstallDlgBase::AddNewInstallDlgBase( wxWindow* parent, wxWindowID id, con
 {
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 
-	wxBoxSizer* installSearchSizer;
 	installSearchSizer = new wxBoxSizer( wxVERTICAL );
 
 	versionSearchCtrl = new wxSearchCtrl( this, wxID_FIND, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_NOHIDESEL|wxTE_PROCESS_ENTER );

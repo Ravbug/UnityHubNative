@@ -238,6 +238,7 @@ private:
     void PopulateTable(wxCommandEvent&);
     void InstallSelected(wxCommandEvent&);
     void Filter(wxCommandEvent&);
+    void Reenable(wxCommandEvent&);
     
     void PopulateWithFilter(const std::function<bool(const version&)>);
     wxDECLARE_EVENT_TABLE();
