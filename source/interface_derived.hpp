@@ -236,6 +236,7 @@ private:
     void GetAllVersions();
     void PopulateTable(wxCommandEvent&);
     void InstallSelected(wxCommandEvent&);
+    void InstallSelectedWithHub(wxCommandEvent&);
     void Filter(wxCommandEvent&);
     void Reenable(wxCommandEvent&);
     

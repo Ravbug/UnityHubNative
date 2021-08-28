@@ -17,6 +17,7 @@ wxBEGIN_EVENT_TABLE(AddNewInstallDlg, wxDialog)
 EVT_COMMAND(UPDATEEVT, updateEvt, AddNewInstallDlg::PopulateTable)
 EVT_COMMAND(REENABLEEVT, reenableEvt, AddNewInstallDlg::Reenable)
 EVT_BUTTON(wxID_FILE,AddNewInstallDlg::InstallSelected)
+EVT_BUTTON(INSTALLVIAHUB,AddNewInstallDlg::InstallSelectedWithHub)
 EVT_SEARCHCTRL_SEARCH_BTN(wxID_FIND,AddNewInstallDlg::Filter)
 wxEND_EVENT_TABLE()
 
@@ -44,6 +45,7 @@ void AddNewInstallDlg::PopulateTable(wxCommandEvent&){
 
     installBtn->SetLabel("Install Selected");
     installBtn->Enable();
+    installViaHubBtn->Enable();
     installBtn->Fit();
     installSearchSizer->Layout();
 }
@@ -190,7 +192,17 @@ void AddNewInstallDlg::InstallSelected(wxCommandEvent&){
     }
 }
 
+void AddNewInstallDlg::InstallSelectedWithHub(wxCommandEvent &){
+    auto item = versionsListCtrl->GetSelection();
+    auto data = *(reinterpret_cast<version*>(versionsListCtrl->GetItemData(item)));
+    
+    auto url = fmt::format("unityhub://{}/{}", data.name,data.hashcode);
+    
+    wxLaunchDefaultBrowser(url);
+}
+
 void AddNewInstallDlg::Reenable(wxCommandEvent &){
     installBtn->Enable();
+    installViaHubBtn->Enable();
     installBtn->SetLabel("Install Selected");
 }

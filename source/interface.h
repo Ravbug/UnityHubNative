@@ -47,6 +47,7 @@
 #define Nav_Home 1008
 #define wxID_TOP 1009
 #define VERSIONS_LIST 1010
+#define INSTALLVIAHUB 1011
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class MainFrame
@@ -134,6 +135,7 @@ class AddNewInstallDlgBase : public wxDialog
 		wxDataViewColumn* versionCol;
 		wxDataViewColumn* dateCol;
 		wxButton* installBtn;
+		wxButton* installViaHubBtn;
 
 	public:
 

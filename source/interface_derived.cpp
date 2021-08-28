@@ -150,7 +150,9 @@ void MainFrameDerived::ReloadData(){
 	}
 	else{
 		//add default data
-		LoadEditorPath(defaultInstall);
+        for(const auto& path : defaultInstall){
+            LoadEditorPath(path);
+        }
 	}
 }
 
@@ -512,21 +514,12 @@ void MainFrameDerived::OnOpenHub(wxCommandEvent &event){
 void MainFrameDerived::OnUninstall(wxCommandEvent &){
     auto selected = installsList->GetSelection();
     if (selected != -1){
-        auto name = installsList->GetString(selected);
-        
-        auto pathsep = name.find_last_of("-");
-        
-        string_view container(name.data() + pathsep + 2,name.size() - pathsep - 2);
-        string_view version(name.data(),pathsep - 2);
+        auto editor = editors[selected];
         
 #ifdef __APPLE__
         // delete the folder
-        auto path = fmt::format("{}/{}",container,version);
-        int answer = wxMessageBox(fmt::format("Will delete {}, is this ok?", path), "Confirm deletion", wxYES | wxNO | wxICON_ERROR);
-        if (answer == wxYES){
-            std::filesystem::remove_all(path);
-            ReloadData();
-        }
+        int answer = wxMessageBox("Opening editor location in Finder. To uninstall an editor, simply delete its version folder.", "Notice", wxOK | wxICON_INFORMATION);
+        reveal_in_explorer(editor.path);
 #elif defined _WIN32
         // execute the uninstaller
 #endif

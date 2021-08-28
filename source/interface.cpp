@@ -390,10 +390,21 @@ AddNewInstallDlgBase::AddNewInstallDlgBase( wxWindow* parent, wxWindowID id, con
 	dateCol = versionsListCtrl->AppendTextColumn( wxT("Date"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	installSearchSizer->Add( versionsListCtrl, 1, wxALL|wxEXPAND, 5 );
 
+	wxBoxSizer* btnPairSizer;
+	btnPairSizer = new wxBoxSizer( wxHORIZONTAL );
+
 	installBtn = new wxButton( this, wxID_FILE, wxT("Loading..."), wxDefaultPosition, wxDefaultSize, 0 );
 	installBtn->Enable( false );
 
-	installSearchSizer->Add( installBtn, 0, wxALL|wxALIGN_RIGHT, 5 );
+	btnPairSizer->Add( installBtn, 0, wxALL, 5 );
+
+	installViaHubBtn = new wxButton( this, INSTALLVIAHUB, wxT("Install Via Hub"), wxDefaultPosition, wxDefaultSize, 0 );
+	installViaHubBtn->Enable( false );
+
+	btnPairSizer->Add( installViaHubBtn, 0, wxALL, 5 );
+
+
+	installSearchSizer->Add( btnPairSizer, 0, wxALIGN_RIGHT, 5 );
 
 
 	this->SetSizer( installSearchSizer );

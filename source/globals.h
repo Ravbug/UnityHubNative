@@ -33,7 +33,7 @@ struct editor{
 
 	//where to find various Unity things on macOS
 	static const std::string executable = "Unity.app/Contents/MacOS/Unity";
-	static const std::string defaultInstall = "/Applications/Unity/Hub/Editor";
+    static const std::vector<std::string> defaultInstall = {"/Applications/Unity/Hub/Editor","/Applications/Unity/"};
 	//TODO: make this a preference?
 	static const std::string hubDefault = "/Applications/Unity Hub.app";
 	static const std::string templatesDir = "Unity.app/Contents/Resources/PackageManager/ProjectTemplates/";
@@ -57,7 +57,7 @@ struct editor{
 
 	//where to find various Unity things on windows
 	static const std::string executable = "Editor\\Unity.exe";
-	static const std::string defaultInstall = "\\Program Files\\Unity\\Hub\\Editor";
+    static const std::vector<std::string> defaultInstall = {"\\Program Files\\Unity\\Hub\\Editor"};
 	
 	static const std::string hubDefault = "\\Program Files\\Unity Hub\\Unity Hub.exe";
 	static const std::string templatesDir = "Editor\\Data\\Resources\\PackageManager\\ProjectTemplates\\";
@@ -122,7 +122,7 @@ struct editor{
 	static const char dirsep = '/';
 	
 	static const std::string executable = "Editor/Unity";
-	static const std::string defaultInstall =  getpwuid(getuid())->pw_dir +string("/Unity/Hub/Editor");
+    static const std::vector<std::string> defaultInstall = {getpwuid(getuid())->pw_dir +string("/Unity/Hub/Editor")};
 	//TODO: make this a preference?
 	static const std::string hubDefault = "/Applications/Unity Hub.app";
 	static const std::string templatesDir = "Editor/Data/Resources/PackageManager/ProjectTemplates/";
