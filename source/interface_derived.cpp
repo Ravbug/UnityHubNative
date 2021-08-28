@@ -522,10 +522,8 @@ void MainFrameDerived::OnUninstall(wxCommandEvent &){
 		reveal_in_explorer(editor.path);
 #elif defined _WIN32
 		// execute the uninstaller
-		if (wxMessageBox(fmt::format("Uninstall Unity {} from \"{}\"?", editor.name, editor.path), "Confirm Uninstallation", wxYES | wxNO | wxICON_INFORMATION) == wxYES) {
-			auto uninstaller_path = std::filesystem::path(editor.path) / editor.name / "Editor\\Uninstall.exe";
-			ShellExecute(0, 0, uninstaller_path.c_str(), NULL, 0, SW_SHOW);
-		}
+		auto uninstaller_path = std::filesystem::path(editor.path) / editor.name / "Editor\\Uninstall.exe";
+		ShellExecute(0, 0, uninstaller_path.c_str(), NULL, 0, SW_SHOW);
 #endif
     }
    
