@@ -25,10 +25,10 @@ struct editor{
 #if defined __APPLE__
 	#include <pwd.h>
 	//the location to store application data
-	static const std::string datapath = getpwuid(getuid())->pw_dir + string("/Library/Application Support/UnityHubNative");
+	static const std::string datapath = getpwuid(getuid())->pw_dir + std::string("/Library/Application Support/UnityHubNative");
 	static const char dirsep = '/';
 
-    static const std::string cachedir = getpwuid(getuid())->pw_dir + string("/Library/Caches/com.ravbug.UnityHubNative");
+    static const std::string cachedir = getpwuid(getuid())->pw_dir + std::string("/Library/Caches/com.ravbug.UnityHubNative");
 	static const std::string installerExt = "dmg";
 
 	//where to find various Unity things on macOS
@@ -160,7 +160,7 @@ inline bool file_exists(const std::string& name){
 inline void launch_process(const std::string& command) {
 #if defined __APPLE__ || defined __linux__
 	//the '&' runs the command nonblocking, and >/dev/null 2>&1 destroys output
-	FILE* stream = popen(string(command + null_device + " &").c_str(), "r");
+	FILE* stream = popen(std::string(command + null_device + " &").c_str(), "r");
 	pclose(stream);
 
 #elif _WIN32
@@ -172,10 +172,10 @@ inline void launch_process(const std::string& command) {
 
 inline void reveal_in_explorer(const std::string& path){
 #if defined __APPLE__
-	string command = "open \"" + path + "\"";
+	std::string command = "open \"" + path + "\"";
 
 #elif defined __linux__
-	string command = "xdg-open \"" + path + "\"";
+	std::string command = "xdg-open \"" + path + "\"";
 	
 #elif defined _WIN32
 	//do not surround the paths in quotes, it will not work

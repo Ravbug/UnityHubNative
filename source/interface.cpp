@@ -108,7 +108,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	launchHubBtn = new wxButton( installs_pane, wxID_BACKWARD, wxT("Add New"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer5->Add( launchHubBtn, 0, wxALL|wxEXPAND, 5 );
 
-	removeInstallBtn = new wxButton( installs_pane, wxID_ANY, wxT("Remove"), wxDefaultPosition, wxDefaultSize, 0 );
+	removeInstallBtn = new wxButton( installs_pane, wxID_NO, wxT("Uninstall"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer5->Add( removeInstallBtn, 0, wxALL|wxEXPAND, 5 );
 
 	wxButton* reloadInstalls;

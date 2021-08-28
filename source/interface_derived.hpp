@@ -92,6 +92,7 @@ private:
 	void OnRevealProject(wxCommandEvent& event);
 	void OnOpenWith(wxCommandEvent& event);
 	void OnPageChanging(wxBookCtrlEvent& event);
+    void OnUninstall(wxCommandEvent&);
 	void OnUpdate(wxCommandEvent& event){
 		wxLaunchDefaultBrowser("https://github.com/ravbug/unityhubnative/releases/latest");
 	}

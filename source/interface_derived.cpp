@@ -15,6 +15,8 @@
 #else
 #include <dirent.h>
 #endif
+
+#include <fmt/format.h>
 using namespace std;
 
 #define LEARN_TAB 2
@@ -38,6 +40,7 @@ EVT_BUTTON(wxID_NEW,MainFrameDerived::OnCreateProject)
 EVT_BUTTON(wxID_FIND,MainFrameDerived::OnLocateInstall)
 EVT_BUTTON(wxID_CLEAR,MainFrameDerived::OnRemoveInstallPath)
 EVT_BUTTON(wxID_DELETE,MainFrameDerived::OnRemoveProject)
+EVT_BUTTON(wxID_NO,MainFrameDerived::OnUninstall)
 EVT_BUTTON(wxID_JUMP_TO,MainFrameDerived::OnRevealProject)
 EVT_BUTTON(wxID_BACKWARD,MainFrameDerived::OnOpenHub)
 EVT_BUTTON(wxID_RELOAD,MainFrameDerived::OnReloadEditors)
@@ -504,4 +507,29 @@ void MainFrameDerived::OnOpenHub(wxCommandEvent &event){
     //
     AddNewInstallDlg dlg(this);
     dlg.Show();
+}
+
+void MainFrameDerived::OnUninstall(wxCommandEvent &){
+    auto selected = installsList->GetSelection();
+    if (selected != -1){
+        auto name = installsList->GetString(selected);
+        
+        auto pathsep = name.find_last_of("-");
+        
+        string_view container(name.data() + pathsep + 2,name.size() - pathsep - 2);
+        string_view version(name.data(),pathsep - 2);
+        
+#ifdef __APPLE__
+        // delete the folder
+        auto path = fmt::format("{}/{}",container,version);
+        int answer = wxMessageBox(fmt::format("Will delete {}, is this ok?", path), "Confirm deletion", wxYES | wxNO | wxICON_ERROR);
+        if (answer == wxYES){
+            std::filesystem::remove_all(path);
+            ReloadData();
+        }
+#elif defined _WIN32
+        // execute the uninstaller
+#endif
+    }
+   
 }
