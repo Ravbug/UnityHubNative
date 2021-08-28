@@ -13,28 +13,29 @@ if(MSVC)
 endif()
 
 file(GLOB source "source/*.cpp" "source/*.hpp" "source/*.h")
-if(APPLE)
-    set(macfiles "source/wxmac.icns" CACHE INERNAL "")
-elseif(WIN32)
-	set(winfiles "source/windows.rc" CACHE INTERNAL "")
-endif()
-add_executable("${PROJECT_NAME}" WIN32 ${source} ${macfiles} ${winfiles})
+add_executable("${PROJECT_NAME}" WIN32 ${source} "source/wxmac.icns" "source/windows.rc")
 
 #wxwidgets
 set(wxBUILD_SHARED OFF CACHE INTERNAL "")
 add_subdirectory("wxWidgets" EXCLUDE_FROM_ALL)
+
+set(CPR_BUILD_TESTS OFF CACHE INTERNAL "")
+set(CPR_GENERATE_COVERAGE OFF CACHE INTERNAL "")
+add_subdirectory("cpr" EXCLUDE_FROM_ALL)
 
 target_link_libraries("${PROJECT_NAME}"
     PUBLIC 
     wx::base
 	wx::core
 	wx::webview
+	cpr
 )
 
 # mac app
 set_target_properties("${PROJECT_NAME}" PROPERTIES 
     MACOSX_BUNDLE ON
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_LIST_DIR}/source/Info.plist"
+	XCODE_GENERATE_SCHEME ON
 )
 set_source_files_properties("${CMAKE_CURRENT_LIST_DIR}/source/wxmac.icns" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 if(APPLE)

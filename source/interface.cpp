@@ -105,8 +105,11 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* bSizer5;
 	bSizer5 = new wxBoxSizer( wxVERTICAL );
 
-	launchHubBtn = new wxButton( installs_pane, wxID_BACKWARD, wxT("Manage"), wxDefaultPosition, wxDefaultSize, 0 );
+	launchHubBtn = new wxButton( installs_pane, wxID_BACKWARD, wxT("Add New"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer5->Add( launchHubBtn, 0, wxALL|wxEXPAND, 5 );
+
+	removeInstallBtn = new wxButton( installs_pane, wxID_ANY, wxT("Remove"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer5->Add( removeInstallBtn, 0, wxALL|wxEXPAND, 5 );
 
 	wxButton* reloadInstalls;
 	reloadInstalls = new wxButton( installs_pane, wxID_RELOAD, wxT("Reload"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -366,5 +369,40 @@ OpenWithEditorDlgBase::OpenWithEditorDlgBase( wxWindow* parent, wxWindowID id, c
 }
 
 OpenWithEditorDlgBase::~OpenWithEditorDlgBase()
+{
+}
+
+AddNewInstallDlgBase::AddNewInstallDlgBase( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
+{
+	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+
+	wxBoxSizer* installSearchSizer;
+	installSearchSizer = new wxBoxSizer( wxVERTICAL );
+
+	versionSearchCtrl = new wxSearchCtrl( this, wxID_FIND, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_NOHIDESEL|wxTE_PROCESS_ENTER );
+	#ifndef __WXMAC__
+	versionSearchCtrl->ShowSearchButton( true );
+	#endif
+	versionSearchCtrl->ShowCancelButton( false );
+	installSearchSizer->Add( versionSearchCtrl, 0, wxALL|wxEXPAND, 5 );
+
+	versionsListCtrl = new wxDataViewListCtrl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
+	versionCol = versionsListCtrl->AppendTextColumn( wxT("Version"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	dateCol = versionsListCtrl->AppendTextColumn( wxT("Date"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	installSearchSizer->Add( versionsListCtrl, 1, wxALL|wxEXPAND, 5 );
+
+	installBtn = new wxButton( this, wxID_FILE, wxT("Loading..."), wxDefaultPosition, wxDefaultSize, 0 );
+	installBtn->Enable( false );
+
+	installSearchSizer->Add( installBtn, 0, wxALL|wxALIGN_RIGHT, 5 );
+
+
+	this->SetSizer( installSearchSizer );
+	this->Layout();
+
+	this->Centre( wxBOTH );
+}
+
+AddNewInstallDlgBase::~AddNewInstallDlgBase()
 {
 }

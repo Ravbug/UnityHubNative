@@ -31,6 +31,8 @@
 #include <wx/textctrl.h>
 #include <wx/choice.h>
 #include <wx/dialog.h>
+#include <wx/srchctrl.h>
+#include <wx/dataview.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -59,6 +61,7 @@ class MainFrame : public wxFrame
 		wxListBox* installsList;
 		wxListBox* installsPathsList;
 		wxButton* launchHubBtn;
+		wxButton* removeInstallBtn;
 		wxPanel* learn_pane;
 		wxGridBagSizer* learnSizer;
 		wxButton* backBtn;
@@ -114,6 +117,27 @@ class OpenWithEditorDlgBase : public wxDialog
 
 		OpenWithEditorDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Open With Specific Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxCAPTION|wxCLOSE_BOX|wxRESIZE_BORDER|wxSTAY_ON_TOP );
 		~OpenWithEditorDlgBase();
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Class AddNewInstallDlgBase
+///////////////////////////////////////////////////////////////////////////////
+class AddNewInstallDlgBase : public wxDialog
+{
+	private:
+
+	protected:
+		wxSearchCtrl* versionSearchCtrl;
+		wxDataViewListCtrl* versionsListCtrl;
+		wxDataViewColumn* versionCol;
+		wxDataViewColumn* dateCol;
+		wxButton* installBtn;
+
+	public:
+
+		AddNewInstallDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Install New Editor Version"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 300,200 ), long style = wxCAPTION|wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER|wxSTAY_ON_TOP );
+		~AddNewInstallDlgBase();
 
 };
 

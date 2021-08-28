@@ -14,6 +14,7 @@
 #include <wx/webview.h>
 #include <wx/timer.h>
 #include <wx/msgdlg.h>
+#include <functional>
 
 #if defined __linux__
 #include "wxlin.xpm"
@@ -155,9 +156,7 @@ private:
 			reveal_in_explorer(installPaths[id]);
 		}
 	}
-	void OnOpenHub(wxCommandEvent& event){
-		reveal_in_explorer(hubDefault);
-	}
+    void OnOpenHub(wxCommandEvent& event);
 	void OnReloadEditors(wxCommandEvent& event){
 		this->LoadEditorVersions();
 	}
@@ -219,4 +218,27 @@ private:
 	void OnOpen(wxCommandEvent& event);
 	
 	wxDECLARE_EVENT_TABLE();
+};
+
+class AddNewInstallDlg : AddNewInstallDlgBase{
+public:
+    AddNewInstallDlg(wxWindow* parent);
+    
+    void Show(){
+        this->ShowModal();
+    }
+private:
+    struct version{
+        std::string name, hashcode, date;
+        version(const decltype(name)& name, const decltype(hashcode)& hashcode, const decltype(date)& date) : name(name), hashcode(hashcode), date(date){}
+    };
+    
+    std::vector<version> versions;
+    void GetAllVersions();
+    void PopulateTable(wxCommandEvent&);
+    void InstallSelected(wxCommandEvent&);
+    void Filter(wxCommandEvent&);
+    
+    void PopulateWithFilter(const std::function<bool(const version&)>);
+    wxDECLARE_EVENT_TABLE();
 };

@@ -498,3 +498,9 @@ void MainFrameDerived::LoadEditorVersions(){
 		}
 	}
 }
+
+void MainFrameDerived::OnOpenHub(wxCommandEvent &event){
+    //
+    AddNewInstallDlg dlg(this);
+    dlg.Show();
+}
