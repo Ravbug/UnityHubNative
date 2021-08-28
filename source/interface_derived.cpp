@@ -513,15 +513,19 @@ void MainFrameDerived::OnOpenHub(wxCommandEvent &event){
 
 void MainFrameDerived::OnUninstall(wxCommandEvent &){
     auto selected = installsList->GetSelection();
-    if (selected != -1){
-        auto editor = editors[selected];
-        
+	if (selected != -1) {
+		auto editor = editors[selected];
+
 #ifdef __APPLE__
-        // delete the folder
-        int answer = wxMessageBox("Opening editor location in Finder. To uninstall an editor, simply delete its version folder.", "Notice", wxOK | wxICON_INFORMATION);
-        reveal_in_explorer(editor.path);
+		// delete the folder
+		wxMessageBox("Opening editor location in Finder. To uninstall an editor, simply delete its version folder.", "Notice", wxOK | wxICON_INFORMATION);
+		reveal_in_explorer(editor.path);
 #elif defined _WIN32
-        // execute the uninstaller
+		// execute the uninstaller
+		if (wxMessageBox(fmt::format("Uninstall Unity {} from \"{}\"?", editor.name, editor.path), "Confirm Uninstallation", wxYES | wxNO | wxICON_INFORMATION) == wxYES) {
+			auto uninstaller_path = std::filesystem::path(editor.path) / editor.name / "Editor\\Uninstall.exe";
+			ShellExecute(0, 0, uninstaller_path.c_str(), NULL, 0, SW_SHOW);
+		}
 #endif
     }
    
