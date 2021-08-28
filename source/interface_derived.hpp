@@ -239,6 +239,7 @@ private:
     void InstallSelectedWithHub(wxCommandEvent&);
     void Filter(wxCommandEvent&);
     void Reenable(wxCommandEvent&);
+	void ExecuteProc(wxCommandEvent&);
     
     void PopulateWithFilter(const std::function<bool(const version&)>);
     wxDECLARE_EVENT_TABLE();

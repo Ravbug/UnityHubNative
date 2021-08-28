@@ -28,7 +28,7 @@ struct editor{
 	static const std::string datapath = getpwuid(getuid())->pw_dir + std::string("/Library/Application Support/UnityHubNative");
 	static const char dirsep = '/';
 
-    static const std::string cachedir = getpwuid(getuid())->pw_dir + std::string("/Library/Caches/com.ravbug.UnityHubNative");
+    static const std::string cachedir = getpwuid(getuid())->pw_dir + std::string("/Library/Caches/com.ravbug.UnityHubNative/");
 	static const std::string installerExt = "dmg";
 
 	//where to find various Unity things on macOS
@@ -46,8 +46,6 @@ struct editor{
 #define popen _popen
 #define pclose _pclose
 #define mkdir _mkdir
-#include <Windows.h>
-#include <gdiplus.h>	
 #include <wx/wx.h>
 	static const std::string datapath = getenv("HOMEPATH") + std::string("\\AppData\\Roaming\\UnityHubNative");
 	static const char dirsep = '\\';
@@ -66,11 +64,13 @@ struct editor{
 	@returns the calculated display scale factor using GDI+
 	*/
 	inline float get_WIN_dpi_multiple() {
+		return 1;
+		/*
 		FLOAT dpiX;
 		HDC screen = GetDC(0);
 		dpiX = static_cast<FLOAT>(GetDeviceCaps(screen, LOGPIXELSX));
 		ReleaseDC(0, screen);
-		return dpiX / 96;
+		return dpiX / 96;*/
 	}
 
 	/**
@@ -157,7 +157,7 @@ inline bool file_exists(const std::string& name){
  @param command the shell command to run on the system
  @note The command passed to this function must be correct for the system it is running on. If it is not correct, the function will appear to do nothing.
  */
-inline void launch_process(const std::string& command) {
+inline void launch_process(const std::string& command, int flags = 0) {
 #if defined __APPLE__ || defined __linux__
 	//the '&' runs the command nonblocking, and >/dev/null 2>&1 destroys output
 	FILE* stream = popen(std::string(command + null_device + " &").c_str(), "r");
@@ -165,7 +165,7 @@ inline void launch_process(const std::string& command) {
 
 #elif _WIN32
 	//call wxExecute with the Async flag
-	wxExecute(wxString(command),0);
+	wxExecute(wxString(command),flags);
 
 #endif
 }

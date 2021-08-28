@@ -9,13 +9,16 @@
 using namespace std;
 #define UPDATEEVT 2004
 #define REENABLEEVT 2005
+#define EXECUTEEVT 2006
 wxDEFINE_EVENT(updateEvt, wxCommandEvent);
 wxDEFINE_EVENT(reenableEvt, wxCommandEvent);
+wxDEFINE_EVENT(executeEvt, wxCommandEvent);
 
 //Declare events here
 wxBEGIN_EVENT_TABLE(AddNewInstallDlg, wxDialog)
 EVT_COMMAND(UPDATEEVT, updateEvt, AddNewInstallDlg::PopulateTable)
 EVT_COMMAND(REENABLEEVT, reenableEvt, AddNewInstallDlg::Reenable)
+EVT_COMMAND(EXECUTEEVT, executeEvt, AddNewInstallDlg::ExecuteProc)
 EVT_BUTTON(wxID_FILE,AddNewInstallDlg::InstallSelected)
 EVT_BUTTON(INSTALLVIAHUB,AddNewInstallDlg::InstallSelectedWithHub)
 EVT_SEARCHCTRL_SEARCH_BTN(wxID_FIND,AddNewInstallDlg::Filter)
@@ -172,12 +175,20 @@ void AddNewInstallDlg::InstallSelected(wxCommandEvent&){
             }
             else{
                 // write the file to temp location
-                auto outpath = fmt::format("{}{}{}{}.{}", cachedir,dirsep,"UnityDownloadAssistant",data.hashcode,installerExt);
+                auto outpath = fmt::format("{}{}{}.{}", cachedir,"UnityDownloadAssistant",data.hashcode,installerExt);
                 ofstream outfile(outpath, std::ios::binary);
                 outfile.write(r.text.c_str(),r.text.size());
                 
                 // open the file
-                launch_process(fmt::format("open \"{}\"", outpath));
+                wxCommandEvent lnevt(executeEvt);
+#ifdef __APPLE__
+                lnevt.SetString(fmt::format("open \"{}\"", outpath));
+#elif defined _WIN32
+                lnevt.SetString(fmt::format("\"{}\"", outpath));
+#endif
+                lnevt.SetId(EXECUTEEVT);
+                wxPostEvent(this,lnevt);
+
                 wxCommandEvent evt(reenableEvt);
                 evt.SetId(REENABLEEVT);
                 wxPostEvent(this, evt);
@@ -205,4 +216,14 @@ void AddNewInstallDlg::Reenable(wxCommandEvent &){
     installBtn->Enable();
     installViaHubBtn->Enable();
     installBtn->SetLabel("Install Selected");
+}
+
+void AddNewInstallDlg::ExecuteProc(wxCommandEvent& evt)
+{
+    auto cmd = evt.GetString();
+#ifdef _WIN32
+    ShellExecute(0, 0, cmd.c_str(), NULL, 0, SW_SHOW);
+#else
+    launch_process(cmd.ToStdString());
+#endif
 }
