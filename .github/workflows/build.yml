@@ -10,7 +10,7 @@ jobs:
         with:
           submodules: true
       - name: Install Dependencies
-        run: sudo apt-get update && sudo apt-get install cmake clang ninja-build libx11-dev libgtk-3-dev libssl-dev webkit2gtk-driver -y --no-install-recommends
+        run: sudo apt-get update && sudo apt-get install cmake clang ninja-build libx11-dev libgtk-3-dev libssl-dev webkit2gtk-driver libsecret-1-dev libc6-dev libsoup2.4-dev libxtst-dev libwebkit2gtk-4.0-dev -y --no-install-recommends
       - name: Build
         run: mkdir -p build; cd build; cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release .. && cmake --build . --config release --target install
       - name: Compress App
