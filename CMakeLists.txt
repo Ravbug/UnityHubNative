@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.17)   
+cmake_minimum_required(VERSION 3.16)   
 
 project("UnityHubNative")
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
