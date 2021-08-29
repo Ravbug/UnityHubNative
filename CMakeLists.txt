@@ -10,6 +10,8 @@ if(MSVC)
   add_definitions(/Qpar)
 endif()
 
+set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE INTERNAL "")
+
 file(GLOB source "source/*.cpp" "source/*.hpp" "source/*.h")
 add_executable("${PROJECT_NAME}" WIN32 ${source} "source/wxmac.icns" "source/windows.rc")
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
