@@ -52,3 +52,12 @@ endif()
 # windows app
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DPI_AWARE "PerMonitor")
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT "${PROJECT_NAME}")
+
+ # Strip binary for release builds
+ if (CMAKE_BUILD_TYPE STREQUAL Release)
+ if(LINUX OR MSVC)
+	 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_STRIP} ${CMAKE_BUILD_TYPE}/${PROJECT_NAME})
+ elseif(APPLE)
+	 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_STRIP} ${CMAKE_BUILD_TYPE}/${PROJECT_NAME}.app/Contents/MacOS/${PROJECT_NAME})
+ endif()
+endif ()
