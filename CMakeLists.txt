@@ -15,6 +15,8 @@ set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE INTERNAL "")
 if(UNIX AND NOT APPLE)
 	set(LINUX TRUE CACHE INTERNAL "")
 endif()
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/wxWidgets/build/cmake/modules" CACHE INTERNAL "")
+message("module path = ${CMAKE_MODULE_PATH}")
 
 file(GLOB source "source/*.cpp" "source/*.hpp" "source/*.h")
 add_executable("${PROJECT_NAME}" WIN32 ${source} "source/wxmac.icns" "source/windows.rc")
