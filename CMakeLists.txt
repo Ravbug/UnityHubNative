@@ -11,6 +11,10 @@ if(MSVC)
 endif()
 
 set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE INTERNAL "")
+# linux detection
+if(UNIX AND NOT APPLE)
+	set(LINUX TRUE CACHE INTERNAL "")
+endif()
 
 file(GLOB source "source/*.cpp" "source/*.hpp" "source/*.h")
 add_executable("${PROJECT_NAME}" WIN32 ${source} "source/wxmac.icns" "source/windows.rc")
@@ -49,6 +53,20 @@ if(APPLE)
 		fixup_bundle(\"${CMAKE_INSTALL_PREFIX}/$<CONFIGURATION>/${PROJECT_NAME}.app\" \"\" \"\")
 		" 
 		COMPONENT Runtime
+	)
+elseif(LINUX)
+INSTALL(CODE 
+	"include(../../appimage.cmake)
+	make_appimage(
+		EXE \"${CMAKE_INSTALL_PREFIX}/$<CONFIGURATION>/${PROJECT_NAME}\"
+		NAME \"${PROJECT_NAME}\"
+		ICON \"wxlin\"
+		DIR_ICON \"wxlin.xpm\"
+		OUTPUT_NAME \"${CMAKE_INSTALL_PREFIX}/$<CONFIGURATION>/${PROJECT_NAME}.AppImage\"
+		ASSETS \"\"
+	)
+	" 
+	COMPONENT Runtime
 	)
 endif()
 # windows app
