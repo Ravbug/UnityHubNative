@@ -2,4 +2,6 @@
 
 mkdir build
 cd build
-cmake ..
+mkdir win
+cd win
+cmake ..\..
