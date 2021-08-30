@@ -16,7 +16,7 @@ It launches many times faster, uses far less memory and CPU, and is a fraction o
 - View Unity installs by double clicking them in the list views in the Editor Versions section
 - Update projects to a Unity version of your choosing
 
-UnityHubNative does not have every feature that the official hub has, namely installing / managing Unity Installs. There is a Manage button in the Editor Versions page which will launch the official hub. In addition, you cannot uninstall the official Unity Hub. This app serves as a shortcut to get into your projects faster. 
+UnityHubNative does not have every feature that the official hub has, namely managing licenses. In addition, depending on your license, you may not be able to uninstall the official Unity Hub. UnityHubNative serves as a shortcut to get into your projects faster. 
 
 ## Installation
 This application is self-contained on Windows and macOS.
