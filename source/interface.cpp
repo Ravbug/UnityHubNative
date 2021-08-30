@@ -374,7 +374,7 @@ OpenWithEditorDlgBase::~OpenWithEditorDlgBase()
 
 AddNewInstallDlgBase::AddNewInstallDlgBase( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
 {
-	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+	this->SetSizeHints( wxSize( 250,200 ), wxDefaultSize );
 
 	installSearchSizer = new wxBoxSizer( wxVERTICAL );
 
