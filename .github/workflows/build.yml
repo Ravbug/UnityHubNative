@@ -1,5 +1,5 @@
 name: Build-Release
-on: workflow_dispatch
+on: push
 jobs:
   build-linux:
     name: Build App for Linux x64
