@@ -17,7 +17,9 @@
 #endif
 
 #include <fmt/format.h>
+#include <filesystem>
 using namespace std;
+using namespace std::filesystem;
 
 #define LEARN_TAB 2
 #define WEBVIEW 2000
@@ -73,7 +75,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 		int status = mkdir(datapath.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 		menuReveal->SetItemLabel("Reveal In Finder\tCtrl-F");
 	#elif defined _WIN32
-		int status = mkdir(datapath.c_str());
+		int status = mkdir(datapath.string().c_str());
 		//on windows also make the main window background white
 		this->SetBackgroundColour(*wxWHITE);
 		//high DPI scaling fixes
@@ -106,8 +108,8 @@ void MainFrameDerived::ReloadData(){
 	editors.clear();
 	
 	//check that projects file exists in folder
-	string p = string(datapath + dirsep + projectsFile);
-	if (file_exists(p)){
+	path p = datapath / projectsFile;
+	if (filesystem::exists(p)){
 		ifstream in;
 		in.open(p);
 		string line;
@@ -140,8 +142,8 @@ void MainFrameDerived::ReloadData(){
 	}
 	
 	//check that the installs path file exists in the folder
-	p = string(datapath + dirsep + editorPathsFile);
-	if (file_exists(p)){
+	p = datapath / editorPathsFile;
+	if (filesystem::exists(p)){
 		//load the editors
 		ifstream in; in.open(p); string line;
 		while (getline(in, line)){
@@ -232,14 +234,14 @@ void MainFrameDerived::OnPageChanging(wxBookCtrlEvent& event){
  Loads an editor search path into the app, updating the UI and the vector
  @param path the string path to laod
  */
-void MainFrameDerived::LoadEditorPath(const string& path){
+void MainFrameDerived::LoadEditorPath(const std::filesystem::path& path){
 	//add to internal structure and to file
 	installPaths.push_back(path);
 	SaveEditorVersions();
 	
 	//add to the UI
 	wxArrayString a;
-	a.Add(path);
+	a.Add(path.string());
 	
 	installsPathsList->Append(a);
 }
@@ -289,7 +291,7 @@ void MainFrameDerived::OnRevealProject(wxCommandEvent& event){
 	long selectedIndex = wxListCtrl_get_selected(projectsList);
 	if (selectedIndex > -1){
 		project& p = projects[selectedIndex];
-		reveal_in_explorer(p.path);
+		reveal_in_explorer(p.path.string());
 	}
 }
 
@@ -318,13 +320,13 @@ void MainFrameDerived::OpenProject(const long& index){
 	//get the project
 	project p = projects[index];
 	
-	for(string path : installPaths){
-		string editorPath = path + dirsep + p.version + dirsep + executable;
+	for(auto& path : installPaths){
+		auto editorPath = path / p.version / executable;
 		
 		//check that the unity editor exists at that location
-		if (file_exists(editorPath)){
+		if (filesystem::exists(editorPath)){
 					
-			string cmd = "\"" + editorPath + "\" -projectpath \"" + p.path + "\"";
+			string cmd = "\"" + editorPath.string() + "\" -projectpath \"" + p.path.string() + "\"";
 			
 			//start the process
 			launch_process(cmd);
@@ -343,7 +345,7 @@ void MainFrameDerived::OpenProject(const long& index){
  @param e the editor version to use when opening the project
  */
 void MainFrameDerived::OpenProject(const project& p, const editor& e){
-	string cmd = "\"" + e.path + dirsep + e.name + dirsep + executable + "\" -projectpath \"" + p.path + "\"";
+	string cmd = "\"" + (e.path / e.name / executable).string() + "\" -projectpath \"" + p.path.string() + "\"";
 	launch_process(cmd);
 }
 
@@ -408,18 +410,18 @@ project MainFrameDerived::LoadProject(const string &path){
  */
 void MainFrameDerived::SaveProjects(){
 	ofstream file;
-	file.open(datapath + dirsep + projectsFile);
+	file.open(datapath / projectsFile);
 	for (project& p : projects){
-		file << p.path << endl;
+		file << p.path.string() << endl;
 	}
 	file.close();
 }
 
 void MainFrameDerived::SaveEditorVersions(){
 	ofstream file;
-	file.open(datapath + dirsep + editorPathsFile);
-	for (string& p : installPaths){
-		file << p << endl;
+	file.open(datapath / editorPathsFile);
+	for (auto& p : installPaths){
+		file << p.string() << endl;
 	}
 	file.close();
 	LoadEditorVersions();
@@ -454,7 +456,7 @@ void MainFrameDerived::AddProject(const project& p){
 	projectsList->SetItem(i);
 	
 	i.SetColumn(3);
-	i.SetText(p.path);
+	i.SetText(p.path.string());
 	projectsList->SetItem(i);
 	
 	//resize columns
@@ -473,9 +475,9 @@ void MainFrameDerived::LoadEditorVersions(){
 	editors.clear();
 	
 	//iterate over the search paths
-	for (string& path : installPaths){
+	for (auto& path : installPaths){
 		//open the folder
-		DIR* dir = opendir(path.c_str());
+		DIR* dir = opendir(path.string().c_str());
 		if(dir != nullptr){
 			struct dirent *entry = readdir(dir);
 			//loop over the contents
@@ -485,10 +487,10 @@ void MainFrameDerived::LoadEditorVersions(){
 				//is this a folder?
 				if (entry->d_type == DT_DIR){
 					//does this folder have a valid executable inside?
-					string p = string(path + dirsep + entry->d_name + dirsep + executable);
-					if (file_exists(p)){
+					auto p = path / entry->d_name / executable;
+					if (filesystem::exists(p)){
 						//add it to the list
-						a.Add(string(entry->d_name) + " - " + path);
+						a.Add(string(entry->d_name) + " - " + path.string());
 						
 						//add it to the backing datastructure
 						editor e = {entry->d_name, path};

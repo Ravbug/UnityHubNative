@@ -19,7 +19,7 @@ OpenWithDlg::OpenWithDlg(wxWindow* parent, const project& project, const vector<
 	//populate list ctrl in reverse so ids match
 	wxArrayString a;
 	for (const editor& e : versions){
-		a.Add(e.name + " - " + e.path);
+		a.Add(e.name + " - " + e.path.string());
 	}
 	editorsListBox->InsertItems( a, 0);
 

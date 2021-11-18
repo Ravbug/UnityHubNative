@@ -37,13 +37,13 @@ private:
 	void OpenProject(const long& index);
 	void OpenProject(const project& p, const editor& e);
 	void SaveEditorVersions();
-	void LoadEditorPath(const std::string& path);
+	void LoadEditorPath(const std::filesystem::path& path);
 	void LoadEditorVersions();
 	void ReloadData();
 	
 	//will store the list of projects
 	std::vector<project> projects;
-	std::vector<std::string> installPaths;
+	std::vector<std::filesystem::path> installPaths;
 	std::vector<editor> editors;
 	wxWebView* learnView = NULL;
 	const std::string homeurl = "https://learn.unity.com";
@@ -141,8 +141,8 @@ private:
 		int id = installsList->GetSelection();
 		if (id != wxNOT_FOUND){
 			editor& e = editors[id];
-			std::string path = e.path + dirsep + e.name;
-			reveal_in_explorer(path);
+			std::filesystem::path path = e.path / e.name;
+			reveal_in_explorer(path.string());
 		}
 	}
 	/**
@@ -152,7 +152,7 @@ private:
 	void OnRevealInstallLocation(wxCommandEvent& event){
 		int id = installsPathsList->GetSelection();
 		if (id != wxNOT_FOUND){
-			reveal_in_explorer(installPaths[id]);
+			reveal_in_explorer(installPaths[id].string());
 		}
 	}
     void OnOpenHub(wxCommandEvent& event);

@@ -70,8 +70,8 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 	if (message == ""){
 		//assemble the command that will create the project described by the dialog
 		editor& e = editors[unityVersionChoice->GetSelection()];
-		string executablePath = e.path + dirsep + e.name + dirsep + executable;
-		string executableTemplatesPath = e.path + dirsep + e.name + dirsep + templatesDir;
+		auto executablePath = e.path / e.name / executable;
+		auto executableTemplatesPath = e.path / e.name / templatesDir;
 		string projName = projNameTxt->GetValue().ToStdString();
 		string projPath = projLocTxt->GetValue().ToStdString();
 		
@@ -86,9 +86,9 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 		#if defined __APPLE__
 			string command = "\"" + executablePath + "\" -createproject \"" + projPath + dirsep + projName + "\" -cloneFromTemplate \"" + executableTemplatesPath + templatePrefix + "." + templateName + "\"";
 		#elif defined _WIN32
-			string fullProj = "\"" + projPath + dirsep + projName + "\"";
-			string fullTemplate = "\"" + executableTemplatesPath + templatePrefix + "." + templateName + "\"";
-			string command = "\"" + executablePath + "\" -createproject " + fullProj + " -cloneFromTemplate " + fullTemplate;
+			auto fullProj = std::filesystem::path("\"") / projPath / projName / "\"";
+			auto fullTemplate = std::filesystem::path("\"") / executableTemplatesPath / (templatePrefix + "." + templateName + "\"");
+			string command = "\"" + executablePath.string() + "\" -createproject " + fullProj.string() + " -cloneFromTemplate " + fullTemplate.string();
 		#elif defined __linux__
 			string command = "\"" + executablePath + "\" -createproject \"" + projPath + dirsep + projName + "\" -cloneFromTemplate \"" + executableTemplatesPath + templatePrefix + "." + templateName + "\"";
 		#endif
@@ -139,8 +139,8 @@ void CreateProjectDialogD::loadTemplates(const editor& e){
 	templateCtrl->ClearAll();
 	
 	//open the folder
-	string templatesFolder = e.path + dirsep + e.name + dirsep + templatesDir;
-	DIR* dir = opendir(templatesFolder.c_str());
+	auto templatesFolder = e.path /e.name / templatesDir;
+	DIR* dir = opendir(templatesFolder.string().c_str());
 	struct dirent *entry = readdir(dir);
 	//loop over the contents
 	while (entry != NULL)

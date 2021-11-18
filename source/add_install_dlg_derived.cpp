@@ -175,7 +175,7 @@ void AddNewInstallDlg::InstallSelected(wxCommandEvent&){
             }
             else{
                 // write the file to temp location
-                auto outpath = fmt::format("{}{}{}.{}", cachedir,"UnityDownloadAssistant",data.hashcode,installerExt);
+                auto outpath = fmt::format("{}{}{}.{}", cachedir.string(), "UnityDownloadAssistant", data.hashcode, installerExt);
                 ofstream outfile(outpath, std::ios::binary);
                 outfile.write(r.text.c_str(),r.text.size());
                 

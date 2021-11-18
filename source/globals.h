@@ -19,7 +19,7 @@ static const std::string AppVersion = "v1.4";
 //structure for representing an editor and for locating it
 struct editor{
 	std::string name;
-	std::string path;
+	std::filesystem::path path;
 };
 
 #if defined __APPLE__
@@ -46,19 +46,20 @@ struct editor{
 #define popen _popen
 #define pclose _pclose
 #define mkdir _mkdir
-#include <wx/wx.h>
-	static const std::string datapath = getenv("HOMEPATH") + std::string("\\AppData\\Roaming\\UnityHubNative");
+#include <wx/wx.h> 
+	static const std::string homedir = getenv("HOMEPATH");
+	static const std::filesystem::path datapath = std::filesystem::path(homedir) / std::filesystem::path("AppData\\Roaming\\UnityHubNative");
 	static const char dirsep = '\\';
 
-	static const std::string cachedir = std::filesystem::temp_directory_path().string();
+	static const std::filesystem::path cachedir = std::filesystem::temp_directory_path();
 	static const std::string installerExt = "exe";
 
 	//where to find various Unity things on windows
-	static const std::string executable = "Editor\\Unity.exe";
-    static const std::vector<std::string> defaultInstall = {"\\Program Files\\Unity\\Hub\\Editor"};
+	static const std::filesystem::path executable = "Editor\\Unity.exe";
+    static const std::vector<std::filesystem::path> defaultInstall = {"\\Program Files\\Unity\\Hub\\Editor"};
 	
-	static const std::string hubDefault = "\\Program Files\\Unity Hub\\Unity Hub.exe";
-	static const std::string templatesDir = "Editor\\Data\\Resources\\PackageManager\\ProjectTemplates\\";
+	static const std::filesystem::path hubDefault = "\\Program Files\\Unity Hub\\Unity Hub.exe";
+	static const std::filesystem::path templatesDir = "Editor\\Data\\Resources\\PackageManager\\ProjectTemplates\\";
 	
 	/**
 	@returns the calculated display scale factor using GDI+
@@ -137,7 +138,7 @@ struct project{
 	std::string name;
 	std::string version;
 	std::string modifiedDate;
-	std::string path;
+	std::filesystem::path path;
 };
 
 /**
