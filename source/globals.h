@@ -142,17 +142,6 @@ struct project{
 };
 
 /**
- Determines if a file exists at a path using stat()
- @param name the path to the file
- @return true if the file exists, false if it does not
- */
-inline bool file_exists(const std::string& name){
-	struct stat buffer;
-	return (stat (name.c_str(), &buffer) == 0);
-}
-
-
-/**
  Launches a shell command as a separate, non-connected process. The output of this
  command is not captured (sent to the system's null device)
  @param command the shell command to run on the system

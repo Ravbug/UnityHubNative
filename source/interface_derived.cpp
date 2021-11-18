@@ -373,8 +373,9 @@ string MainFrameDerived::GetPathFromDialog(const string& message)
  @note Surround this function in a try/catch, because it throws if it cannot succeed.
  */
 project MainFrameDerived::LoadProject(const string &path){
+	std::filesystem::path p_as_fs(path);
 	//error if the file does not exist
-	if (!file_exists(path)){
+	if (!filesystem::exists(p_as_fs)){
 		throw runtime_error(path + " does not exist.");
 	}
 	
@@ -382,8 +383,8 @@ project MainFrameDerived::LoadProject(const string &path){
 	string name = path.substr(path.find_last_of(dirsep)+1);
 	
 	//Load ProjectSettings/ProjectVersion.txt to get the editor version, if it exists
-	string projSettings = string(path + dirsep + "ProjectSettings" + dirsep + "ProjectVersion.txt");
-	if (!file_exists(projSettings)){
+	std::filesystem::path projSettings = std::filesystem::path(path) / "ProjectSettings" / "ProjectVersion.txt";
+	if (!filesystem::exists(projSettings)){
 		throw runtime_error("No ProjectVersion.txt found at " + path + "\n\nEnsure the folder you selected is the root folder of a complete Unity project.");
 	}
 	

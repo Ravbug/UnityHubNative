@@ -88,12 +88,12 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 		#elif defined _WIN32
 			auto fullProj = std::filesystem::path("\"") / projPath / projName / "\"";
 			auto fullTemplate = std::filesystem::path("\"") / executableTemplatesPath / (templatePrefix + "." + templateName + "\"");
-			string command = "\"" + executablePath.string() + "\" -createproject " + fullProj.string() + " -cloneFromTemplate " + fullTemplate.string();
+			string command = "\"" + executablePath.string() + "\" -createproject " + fullProj.string() + " -cloneFromTemplate \"" + fullTemplate.string();
 		#elif defined __linux__
 			string command = "\"" + executablePath + "\" -createproject \"" + projPath + dirsep + projName + "\" -cloneFromTemplate \"" + executableTemplatesPath + templatePrefix + "." + templateName + "\"";
 		#endif
 		//TODO: return this command to what summoned this dialog
-		project p = {projName,e.name,"",projPath + dirsep + projName};
+		project p = {projName,e.name,"",filesystem::path(projPath) / filesystem::path(projName)};
 		this->callback(command,p);
 		
 		//close and dispose self
