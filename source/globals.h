@@ -25,18 +25,18 @@ struct editor{
 #if defined __APPLE__
 	#include <pwd.h>
 	//the location to store application data
-	static const std::string datapath = getpwuid(getuid())->pw_dir + std::string("/Library/Application Support/UnityHubNative");
+	static const std::filesystem::path datapath = std::filesystem::path(getpwuid(getuid())->pw_dir) / "Library/Application Support/UnityHubNative";
 	static const char dirsep = '/';
 
-    static const std::string cachedir = getpwuid(getuid())->pw_dir + std::string("/Library/Caches/com.ravbug.UnityHubNative/");
+    static const std::filesystem::path cachedir = std::filesystem::path(getpwuid(getuid())->pw_dir) / "/Library/Caches/com.ravbug.UnityHubNative/";
 	static const std::string installerExt = "dmg";
 
 	//where to find various Unity things on macOS
-	static const std::string executable = "Unity.app/Contents/MacOS/Unity";
-    static const std::vector<std::string> defaultInstall = {"/Applications/Unity/Hub/Editor","/Applications/Unity/"};
+	static const std::filesystem::path executable = "Unity.app/Contents/MacOS/Unity";
+    static const std::vector<std::filesystem::path> defaultInstall = {"/Applications/Unity/Hub/Editor","/Applications/Unity/"};
 	//TODO: make this a preference?
-	static const std::string hubDefault = "/Applications/Unity Hub.app";
-	static const std::string templatesDir = "Unity.app/Contents/Resources/PackageManager/ProjectTemplates/";
+	static const std::filesystem::path hubDefault = "/Applications/Unity Hub.app";
+	static const std::filesystem::path templatesDir = "Unity.app/Contents/Resources/PackageManager/ProjectTemplates/";
 
 	//for stream redirecting to dev/null
 	static const std::string null_device = ">/dev/null 2>&1";
