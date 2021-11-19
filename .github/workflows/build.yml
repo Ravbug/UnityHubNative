@@ -11,8 +11,10 @@ jobs:
           submodules: true
       - name: Install Dependencies
         run: sudo apt-get update && sudo apt-get install cmake clang ninja-build libx11-dev libgtk-3-dev libssl-dev webkit2gtk-driver libsecret-1-dev libc6-dev libsoup2.4-dev libxtst-dev libwebkit2gtk-4.0-dev -y --no-install-recommends
-      - name: Build
-        run: mkdir -p build; cd build; cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release .. && cmake --build . --config release --target install
+      - name: Configure
+        run: mkdir -p build; cd build; cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
+	  - name: Build
+	    run: cd build; cmake --build . --config release --target install
       - name: Compress App
         run: cd build/Release && zip -r -9 UnityHubNative-Linux.zip *.AppImage
       - name: Archive and upload artifacts
@@ -29,8 +31,10 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: true
-      - name: Build
-        run: mkdir -p build; cd build; cmake -G "Xcode" -DCMAKE_BUILD_TYPE=Release .. && cmake --build . --config release --target install
+      - name: Configure
+        run: mkdir -p build; cd build; cmake -G "Xcode" -DCMAKE_BUILD_TYPE=Release ..
+	  - name: Builld 
+		run: cd build; cmake --build . --config release --target install
       - name: Compress App
         run: cd build/release && zip -r -9 UnityHubNative-macOS.zip *.app
       - name: Archive and upload artifacts
@@ -47,12 +51,14 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: true
-      - name: Build
-        run: mkdir build; cd build; cmake -DCMAKE_BUILD_TYPE=Release .. ; cmake .. ; cmake --build . --config release --target install
+      - name: Configure
+        run: mkdir build; cd build; cmake -DCMAKE_BUILD_TYPE=Release .. ; 
+	  - name: Build
+	    run: cd build; cmake --build . --config release --target install
       - name: Compress App
         run: cd build\Release ; Compress-Archive -Path .\*.exe -DestinationPath UnityHubNative-win64.zip
       - name: Archive and upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: UnityHubNative-win64
-          path: build\release\UnityHubNative-win64
+          path: build\release\UnityHubNative-win64.zip
