@@ -118,16 +118,16 @@ struct editor{
 
 #elif defined __linux__
 	#include <pwd.h>
-	static const std::string datapath = getpwuid(getuid())->pw_dir + string("/UnityHubNative");
+	static const std::filesystem::path datapath = std::filesystem::path(getpwuid(getuid())->pw_dir) / "UnityHubNative";
 	static const std::string null_device = ">/dev/null 2>&1";
 	static const char dirsep = '/';
 	
-	static const std::string executable = "Editor/Unity";
-    static const std::vector<std::string> defaultInstall = {getpwuid(getuid())->pw_dir +string("/Unity/Hub/Editor")};
+	static const std::filesyste::path executable = "Editor/Unity";
+    static const std::vector<std::filesystem::path> defaultInstall = {std::filesystem::path(getpwuid(getuid())->pw_dir) / "Unity/Hub/Editor"};
 	//TODO: make this a preference?
-	static const std::string hubDefault = "/Applications/Unity Hub.app";
-	static const std::string templatesDir = "Editor/Data/Resources/PackageManager/ProjectTemplates/";
-	
+	static const std::filesystem::path hubDefault = "";
+	static const std::filesystem::path templatesDir = "Editor/Data/Resources/PackageManager/ProjectTemplates/";
+	static const std::filesystem::path cachedir = std::filesystem::temp_directory_path();
 #else
 	//disalow compilation for unsupported platforms
 #error You are compiling on an unsupported operating system. Currently only macOS, Windows, and Linux are supported. If you know how to support your system, submit a pull request.

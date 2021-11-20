@@ -55,6 +55,7 @@ void AddNewInstallDlg::PopulateTable(wxCommandEvent&){
 
 
 void AddNewInstallDlg::GetAllVersions(){
+#ifndef __linux__
     // version date info
     unordered_map<string,string> versionDates;
     {
@@ -122,6 +123,7 @@ void AddNewInstallDlg::GetAllVersions(){
             wxPostEvent(this, evt);
         }
     }
+#endif
 }
 
 void AddNewInstallDlg::Filter(wxCommandEvent& evt){
@@ -146,6 +148,7 @@ void AddNewInstallDlg::PopulateWithFilter(const std::function<bool (const versio
 }
 
 void AddNewInstallDlg::InstallSelected(wxCommandEvent&){
+#ifndef __linux__ 
     // get the selected item
     auto item = versionsListCtrl->GetSelection();
     auto data = *(reinterpret_cast<version*>(versionsListCtrl->GetItemData(item)));
@@ -201,6 +204,7 @@ void AddNewInstallDlg::InstallSelected(wxCommandEvent&){
     else{
         wxMessageBox("Select a version", "Error", wxOK | wxICON_ERROR);
     }
+#endif
 }
 
 void AddNewInstallDlg::InstallSelectedWithHub(wxCommandEvent &){

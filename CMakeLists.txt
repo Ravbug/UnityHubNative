@@ -18,6 +18,7 @@ set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE INTERNAL "")
 # linux detection
 if(UNIX AND NOT APPLE)
 	set(LINUX TRUE CACHE INTERNAL "")
+	add_definitions(-Wno-write-strings)
 endif()
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/wxWidgets/build/cmake/modules" CACHE INTERNAL "")
 message("module path = ${CMAKE_MODULE_PATH}")
