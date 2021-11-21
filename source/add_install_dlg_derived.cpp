@@ -177,6 +177,13 @@ void AddNewInstallDlg::InstallSelected(wxCommandEvent&){
                 throw runtime_error("Unable to download installer");
             }
             else{
+                // create the temp location if it does not exist
+                #if defined __APPLE__ || defined __linux__
+                    int status = mkdir(cachedir.string().c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+                #elif defined _WIN32
+                    int status = mkdir(cachedir.string().c_str());
+                #endif
+                
                 // write the file to temp location
                 auto outpath = fmt::format("{}{}{}.{}", cachedir.string(), "UnityDownloadAssistant", data.hashcode, installerExt);
                 ofstream outfile(outpath, std::ios::binary);
