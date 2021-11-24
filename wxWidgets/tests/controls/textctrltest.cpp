@@ -14,9 +14,6 @@
 
 #if wxUSE_TEXTCTRL
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/app.h"
@@ -169,14 +166,16 @@ long TextCtrlTestCase::ms_style = 0;
 
 void TextCtrlTestCase::CreateText(long extraStyles)
 {
+    const long style = ms_style | extraStyles;
+    const int h = (style & wxTE_MULTILINE) ? TEXT_HEIGHT : -1;
     m_text = new wxTextCtrl(wxTheApp->GetTopWindow(), wxID_ANY, "",
-                            wxDefaultPosition, wxSize(400, TEXT_HEIGHT),
-                            ms_style | extraStyles);
+                            wxDefaultPosition, wxSize(400, h),
+                            style);
 }
 
 void TextCtrlTestCase::setUp()
 {
-    CreateText(ms_style);
+    CreateText(0);
 }
 
 void TextCtrlTestCase::tearDown()
@@ -345,7 +344,7 @@ void TextCtrlTestCase::Redirector()
 void TextCtrlTestCase::HitTestSingleLine()
 {
 #ifdef __WXQT__
-	WARN("Does not work under WxQt");
+    WARN("Does not work under WxQt");
 #else
     m_text->ChangeValue("Hit me");
 
@@ -516,7 +515,7 @@ void TextCtrlTestCase::Style()
     CHECK( style.GetTextColour() == *wxRED );
     CHECK( style.GetBackgroundColour() == *wxWHITE );
 #else
-	WARN("Does not work under WxQt or OSX");
+    WARN("Does not work under WxQt or OSX");
 #endif
 }
 
@@ -1430,6 +1429,37 @@ TEST_CASE("wxTextCtrl::EventsOnCreate", "[wxTextCtrl][event]")
     // in TextEntryTestCase::TextChangeEvents()).
     text->SetValue("Bye");
     CHECK( updated.GetCount() == 1 );
+}
+
+TEST_CASE("wxTextCtrl::InitialCanUndo", "[wxTextCtrl][undo]")
+{
+    wxWindow* const parent = wxTheApp->GetTopWindow();
+
+    const long styles[] = { 0, wxTE_RICH, wxTE_RICH2 };
+
+    for ( size_t n = 0; n < WXSIZEOF(styles); n++ )
+    {
+        const long style = styles[n];
+
+#ifdef __MINGW32_TOOLCHAIN__
+        if ( style == wxTE_RICH2 )
+        {
+            // We can't call ITextDocument::Undo() in wxMSW code when using
+            // MinGW32, so this test would always fail with it.
+            WARN("Skipping test known to fail with MinGW-32.");
+        }
+        continue;
+#endif // __MINGW32_TOOLCHAIN__
+
+        INFO("wxTextCtrl with style " << style);
+
+        wxScopedPtr<wxTextCtrl> text(new wxTextCtrl(parent, wxID_ANY, "",
+                                                    wxDefaultPosition,
+                                                    wxDefaultSize,
+                                                    style));
+
+        CHECK( !text->CanUndo() );
+    }
 }
 
 #endif //wxUSE_TEXTCTRL

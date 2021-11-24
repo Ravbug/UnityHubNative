@@ -29,6 +29,7 @@
 # Usage examples (see details below):
 # nmake -f makefile.vc
 # nmake -f makefile.vc DEBUG=1
+# nmake -f makefile.vc clean
 #
 #
 ###### Edit the following lines to choose a feature set you need. #######
@@ -108,6 +109,11 @@ CHECK_JPEG_YCBCR_SUBSAMPLING = 1
 ####################### Compiler related options. #######################
 #
 
+
+# Indicate if the compiler provides strtoll/strtoull (default 1)
+# Users of MSVC++ 14.0 ("Visual Studio 2015") and later should set this to 1
+HAVE_STRTOLL = 1
+
 #
 # Pick debug or optimized build flags.  We default to an optimized build
 # with no debugging information.
@@ -118,7 +124,7 @@ OPTFLAGS =	/MDd /EHsc /W3 /D_CRT_SECURE_NO_DEPRECATE
 !ELSE
 OPTFLAGS =	/Ox /MD /EHsc /W3 /D_CRT_SECURE_NO_DEPRECATE
 !ENDIF
-#OPTFLAGS = 	/Zi 
+#OPTFLAGS = 	/Zi
 
 #
 # Uncomment following line to enable using Windows Common RunTime Library
@@ -139,7 +145,7 @@ LD	=	link /nologo
 
 CFLAGS  =	$(OPTFLAGS) $(INCL) $(EXTRAFLAGS)
 CXXFLAGS =	$(OPTFLAGS) $(INCL) $(EXTRAFLAGS)
-EXTRAFLAGS =
+EXTRAFLAGS = -DHAVE_CONFIG_H
 LIBS	=
 
 # Name of the output shared library

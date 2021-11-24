@@ -225,8 +225,8 @@ int          g_lastButtonNumber = 0;
 
 #ifdef __WXGTK3__
 static GList* gs_sizeRevalidateList;
-static bool gs_inSizeAllocate;
 #endif
+bool g_inSizeAllocate;
 
 #if GTK_CHECK_VERSION(3,14,0)
     #define wxGTK_HAS_GESTURES_SUPPORT
@@ -309,6 +309,7 @@ static wxPoint gs_lastGesturePoint;
 // the trace mask used for the focus debugging messages
 #define TRACE_FOCUS wxT("focus")
 
+#if wxUSE_LOG_TRACE
 // Function used to dump a brief description of a window.
 static
 wxString wxDumpWindow(wxWindowGTK* win)
@@ -326,6 +327,7 @@ wxString wxDumpWindow(wxWindowGTK* win)
 
     return s;
 }
+#endif // wxUSE_LOG_TRACE
 
 // A handy function to run from under gdb to show information about the given
 // GtkWidget. Right now it only shows its type, we could enhance it to show
@@ -1018,7 +1020,11 @@ wxTranslateGTKKeyEventToWx(wxKeyEvent& event,
             }
 
 #ifdef GDK_WINDOWING_X11
-            if (GDK_IS_X11_DISPLAY(gdk_window_get_display(gdk_event->window)))
+#ifdef __WXGTK3__
+            if (strcmp("GdkX11Window", g_type_name(G_TYPE_FROM_INSTANCE(gdk_event->window))) == 0)
+#else
+            if (true)
+#endif
             {
                 // we want to always get the same key code when the same key is
                 // pressed regardless of the state of the modifiers, i.e. on a
@@ -1793,6 +1799,9 @@ static void SendSetCursorEvent(wxWindowGTK* win, int x, int y)
     for ( ;; )
     {
         wxSetCursorEvent event(posClient.x, posClient.y);
+        event.SetId(win->GetId());
+        event.SetEventObject(win);
+
         if (w->GTKProcessEvent(event))
         {
             win->GTKUpdateCursor(false, false, &event.GetCursor());
@@ -2279,9 +2288,12 @@ size_allocate(GtkWidget* WXUNUSED_IN_GTK2(widget), GtkAllocation* alloc, wxWindo
         win->m_width  = a.width;
         win->m_height = a.height;
         {
+            const bool save_inSizeAllocate = g_inSizeAllocate;
+            g_inSizeAllocate = true;
             wxSizeEvent event(win->GetSize(), win->GetId());
             event.SetEventObject(win);
             win->GTKProcessEvent(event);
+            g_inSizeAllocate = save_inSizeAllocate;
         }
     }
 }
@@ -2324,22 +2336,6 @@ static void frame_clock_layout(GdkFrameClock*, wxWindow* win)
     win->GTKSizeRevalidate();
 }
 #endif // GTK_CHECK_VERSION(3,8,0)
-
-#ifdef __WXGTK3__
-//-----------------------------------------------------------------------------
-// "check-resize"
-//-----------------------------------------------------------------------------
-
-static void check_resize(GtkContainer*, wxWindow*)
-{
-    gs_inSizeAllocate = true;
-}
-
-static void check_resize_after(GtkContainer*, wxWindow*)
-{
-    gs_inSizeAllocate = false;
-}
-#endif // __WXGTK3__
 
 } // extern "C"
 
@@ -2468,7 +2464,7 @@ wxWindow *wxGetActiveWindow()
 
 // Under Unix this is implemented using X11 functions in utilsx11.cpp but we
 // need to have this function under Windows too, so provide at least a stub.
-#ifndef GDK_WINDOWING_X11
+#ifdef GDK_WINDOWING_WIN32
 bool wxGetKeyState(wxKeyCode WXUNUSED(key))
 {
     wxFAIL_MSG(wxS("Not implemented under Windows"));
@@ -2635,8 +2631,6 @@ void wxWindowGTK::GTKCreateScrolledWindowWith(GtkWidget* view)
 
     m_scrollBar[ScrollDir_Horz] = GTK_RANGE(gtk_scrolled_window_get_hscrollbar(scrolledWindow));
     m_scrollBar[ScrollDir_Vert] = GTK_RANGE(gtk_scrolled_window_get_vscrollbar(scrolledWindow));
-    if (GetLayoutDirection() == wxLayout_RightToLeft)
-        gtk_range_set_inverted( m_scrollBar[ScrollDir_Horz], TRUE );
 
     gtk_container_add( GTK_CONTAINER(m_widget), view );
 
@@ -2811,6 +2805,8 @@ void wxWindowGTK::PostCreation()
 {
     wxASSERT_MSG( (m_widget != NULL), wxT("invalid window") );
 
+    SetLayoutDirection(wxLayout_Default);
+
     GTKConnectFreezeWidget(m_widget);
     if (m_wxwindow && m_wxwindow != m_widget)
         GTKConnectFreezeWidget(m_wxwindow);
@@ -2905,13 +2901,6 @@ void wxWindowGTK::PostCreation()
         g_signal_connect(m_wxwindow ? m_wxwindow : m_widget, "size_allocate",
             G_CALLBACK(size_allocate), this);
     }
-#ifdef __WXGTK3__
-    else
-    {
-        g_signal_connect(m_widget, "check-resize", G_CALLBACK(check_resize), this);
-        g_signal_connect_after(m_widget, "check-resize", G_CALLBACK(check_resize_after), this);
-    }
-#endif
 
 #if GTK_CHECK_VERSION(2, 8, 0)
     if ( wx_is_at_least_gtk2(8) )
@@ -2938,8 +2927,6 @@ void wxWindowGTK::PostCreation()
     GTKApplyWidgetStyle();
 
     InheritAttributes();
-
-    SetLayoutDirection(wxLayout_Default);
 
     // if the window had been disabled before being created, it should be
     // created in the initially disabled state
@@ -3736,7 +3723,7 @@ void wxWindowGTK::DoMoveWindow(int x, int y, int width, int height)
         pizza->move(m_widget, x, y, width, height);
         if (
 #ifdef __WXGTK3__
-            !gs_inSizeAllocate &&
+            !g_inSizeAllocate &&
 #endif
             gtk_widget_get_visible(m_widget))
         {
@@ -3753,7 +3740,7 @@ void wxWindowGTK::DoMoveWindow(int x, int y, int width, int height)
     // size-allocate can generate wxSizeEvent and size event handlers often
     // call SetSize(), directly or indirectly. It should be fine to call
     // gtk_widget_size_allocate() immediately in this case.
-    if (gs_inSizeAllocate && gtk_widget_get_visible(m_widget) && width > 0 && height > 0)
+    if (g_inSizeAllocate && gtk_widget_get_visible(m_widget) && width > 0 && height > 0)
     {
         // obligatory size request before size allocate to avoid GTK3 warnings
         GtkRequisition req;
@@ -4383,6 +4370,13 @@ double wxWindowGTK::GetContentScaleFactor() const
     return scaleFactor;
 }
 
+double wxWindowGTK::GetDPIScaleFactor() const
+{
+    // Under GTK 3 DPI scale factor is the same as content scale factor, while
+    // under GTK 2 both are always 1, so they're still the same.
+    return GetContentScaleFactor();
+}
+
 void wxWindowGTK::GTKDisableFocusOutEvent()
 {
     g_signal_handlers_block_by_func( m_focusWidget,
@@ -4728,6 +4722,9 @@ void wxWindowGTK::SetLayoutDirection(wxLayoutDirection dir)
 
     GTKSetLayout(m_widget, dir);
 
+    if (GtkRange* range = m_scrollBar[ScrollDir_Horz])
+        gtk_range_set_inverted(range, dir == wxLayout_RightToLeft);
+
     if (m_wxwindow && (m_wxwindow != m_widget))
         GTKSetLayout(m_wxwindow, dir);
 }
@@ -5072,10 +5069,12 @@ bool wxWindowGTK::DoIsExposed( int x, int y ) const
 
 bool wxWindowGTK::DoIsExposed( int x, int y, int w, int h ) const
 {
+#ifndef __WXGTK3__
     if (GetLayoutDirection() == wxLayout_RightToLeft)
         return m_updateRegion.Contains(x-w, y, w, h) != wxOutRegion;
-    else
-        return m_updateRegion.Contains(x, y, w, h) != wxOutRegion;
+#endif
+
+    return m_updateRegion.Contains(x, y, w, h) != wxOutRegion;
 }
 
 #ifdef __WXGTK3__
@@ -5093,6 +5092,13 @@ void wxWindowGTK::GTKSendPaintEvents(const GdkRegion* region)
         cairo_rectangle(cr, rect.x, rect.y, rect.width, rect.height);
         cairo_clip(cr);
     }
+    if (GetLayoutDirection() == wxLayout_RightToLeft)
+    {
+        // wxDC is mirrored for RTL
+        const int w = gdk_window_get_width(gtk_widget_get_window(m_wxwindow));
+        cairo_translate(cr, w, 0);
+        cairo_scale(cr, -1, 1);
+    }
     double x1, y1, x2, y2;
     cairo_clip_extents(cr, &x1, &y1, &x2, &y2);
 
@@ -5101,7 +5107,6 @@ void wxWindowGTK::GTKSendPaintEvents(const GdkRegion* region)
 
     m_paintContext = cr;
     m_updateRegion = wxRegion(int(x1), int(y1), int(x2 - x1), int(y2 - y1));
-    m_nativeUpdateRegion = m_updateRegion;
 #else // !__WXGTK3__
     m_updateRegion = wxRegion(region);
 #if wxGTK_HAS_COMPOSITING_SUPPORT
@@ -5113,6 +5118,7 @@ void wxWindowGTK::GTKSendPaintEvents(const GdkRegion* region)
 
     m_nativeUpdateRegion = m_updateRegion;
 
+#ifndef __WXGTK3__
     if (GetLayoutDirection() == wxLayout_RightToLeft)
     {
         // Transform m_updateRegion under RTL
@@ -5135,6 +5141,7 @@ void wxWindowGTK::GTKSendPaintEvents(const GdkRegion* region)
             ++upd;
         }
     }
+#endif
 
     switch ( GetBackgroundStyle() )
     {
@@ -5165,7 +5172,7 @@ void wxWindowGTK::GTKSendPaintEvents(const GdkRegion* region)
         case wxBG_STYLE_ERASE:
             {
 #ifdef __WXGTK3__
-                wxGTKCairoDC dc(cr, static_cast<wxWindow*>(this));
+                wxGTKCairoDC dc(cr, static_cast<wxWindow*>(this), GetLayoutDirection());
 #else
                 wxWindowDC dc( (wxWindow*)this );
                 dc.SetDeviceClippingRegion( m_updateRegion );
@@ -5189,7 +5196,7 @@ void wxWindowGTK::GTKSendPaintEvents(const GdkRegion* region)
                     break;
                 }
             }
-            // fall through
+            wxFALLTHROUGH;
 
         case wxBG_STYLE_SYSTEM:
             if ( GetThemeEnabled() )

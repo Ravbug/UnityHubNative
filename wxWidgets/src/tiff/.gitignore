@@ -58,6 +58,8 @@ test/strip_rw
 test/defer_strile_loading
 test/defer_strile_writing
 test/testtypes
+test/custom_dir_EXIF_231
+test/rational_precision2double
 test/*.log
 test/*.trs
 test/o-*

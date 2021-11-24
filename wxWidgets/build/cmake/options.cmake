@@ -15,10 +15,13 @@ wx_option(wxBUILD_SAMPLES "Build only important samples (SOME) or ALL" OFF
 wx_option(wxBUILD_TESTS "Build console tests (CONSOLE_ONLY) or ALL" OFF
     STRINGS CONSOLE_ONLY ALL OFF)
 wx_option(wxBUILD_DEMOS "Build demos" OFF)
+wx_option(wxBUILD_BENCHMARKS "Build benchmarks" OFF)
 wx_option(wxBUILD_PRECOMP "Use precompiled headers")
+mark_as_advanced(wxBUILD_PRECOMP)
 wx_option(wxBUILD_INSTALL "Create install/uninstall target for wxWidgets")
 wx_option(wxBUILD_COMPATIBILITY
     "enable compatibilty with earlier wxWidgets versions" 3.0 STRINGS 2.8 3.0 3.1)
+mark_as_advanced(wxBUILD_COMPATIBILITY)
 # Allow user specified setup.h folder
 set(wxBUILD_CUSTOM_SETUP_HEADER_PATH "" CACHE PATH "Include path containing custom wx/setup.h")
 mark_as_advanced(wxBUILD_CUSTOM_SETUP_HEADER_PATH)
@@ -32,10 +35,12 @@ mark_as_advanced(wxBUILD_DEBUG_LEVEL)
 
 if(NOT APPLE)
     wx_option(wxBUILD_USE_STATIC_RUNTIME "Link using the static runtime library" OFF)
+    mark_as_advanced(wxBUILD_USE_STATIC_RUNTIME)
 endif()
 
 if(MSVC)
     wx_option(wxBUILD_MSVC_MULTIPROC "Enable multi-processor compilation for MSVC")
+    mark_as_advanced(wxBUILD_MSVC_MULTIPROC)
 endif()
 
 if(NOT MSVC OR MSVC_VERSION GREATER 1800)
@@ -64,6 +69,8 @@ else()
 endif()
 wx_option(wxBUILD_STRIPPED_RELEASE "remove debug symbols in release build" ${wxBUILD_STRIPPED_RELEASE_DEFAULT})
 mark_as_advanced(wxBUILD_STRIPPED_RELEASE)
+wx_option(wxBUILD_PIC "Enable position independent code (PIC)." ON)
+mark_as_advanced(wxBUILD_PIC)
 wx_option(wxUSE_NO_RTTI "disable RTTI support" OFF)
 
 # STL options
@@ -107,6 +114,7 @@ if(UNIX)
     wx_option(wxUSE_XTEST "use XTest extension")
     wx_option(wxUSE_LIBMSPACK "use libmspack (CHM help files loading)")
     wx_option(wxUSE_LIBGNOMEVFS "use GNOME VFS for associating MIME types")
+    wx_option(wxUSE_GLCANVAS_EGL "use EGL backend for wxGLCanvas")
 
     set(wxTHIRD_PARTY_LIBRARIES ${wxTHIRD_PARTY_LIBRARIES} wxUSE_LIBSDL "use SDL for audio on Unix")
     set(wxTHIRD_PARTY_LIBRARIES ${wxTHIRD_PARTY_LIBRARIES} wxUSE_LIBMSPACK "use libmspack (CHM help files loading)")
@@ -178,6 +186,22 @@ wx_option(wxUSE_TEXTBUFFER "use wxTextBuffer class")
 wx_option(wxUSE_TEXTFILE "use wxTextFile class")
 wx_option(wxUSE_TIMER "use wxTimer class")
 wx_option(wxUSE_VARIANT "use wxVariant class")
+
+# WebRequest options
+wx_option(wxUSE_WEBREQUEST "use wxWebRequest class")
+if(WIN32)
+    wx_option(wxUSE_WEBREQUEST_WINHTTP "use wxWebRequest WinHTTP backend")
+endif()
+if(APPLE)
+    wx_option(wxUSE_WEBREQUEST_URLSESSION "use wxWebRequest URLSession backend")
+endif()
+if(APPLE OR WIN32)
+    set(wxUSE_WEBREQUEST_CURL_DEFAULT OFF)
+else()
+    set(wxUSE_WEBREQUEST_CURL_DEFAULT ON)
+endif()
+wx_option(wxUSE_WEBREQUEST_CURL "use wxWebRequest libcurl backend" ${wxUSE_WEBREQUEST_CURL_DEFAULT})
+
 wx_option(wxUSE_ZIPSTREAM "use wxZip streams")
 
 # URL-related classes
@@ -232,9 +256,6 @@ wx_option(wxUSE_AFM_FOR_POSTSCRIPT "in wxPostScriptDC class use AFM (adobe font 
 wx_option(wxUSE_PRINTING_ARCHITECTURE "use printing architecture")
 wx_option(wxUSE_SVG "use wxSVGFileDC device context")
 wx_option(wxUSE_WEBVIEW "use wxWebView library")
-if(APPLE)
-    wx_option(wxUSE_WEBKIT "use wxWebKitCtrl (Mac-only, use wxWebView instead)")
-endif()
 
 # wxDC is implemented in terms of wxGraphicsContext in wxOSX so the latter
 # can't be disabled, don't even provide an option to do it
@@ -361,6 +382,7 @@ wx_option(wxUSE_COMMON_DIALOGS "use all common dialogs")
 wx_option(wxUSE_ABOUTDLG "use wxAboutBox")
 wx_option(wxUSE_CHOICEDLG "use wxChoiceDialog")
 wx_option(wxUSE_COLOURDLG "use wxColourDialog")
+wx_option(wxUSE_CREDENTIALDLG "use wxCredentialEntryDialog")
 wx_option(wxUSE_FILEDLG "use wxFileDialog")
 wx_option(wxUSE_FINDREPLDLG "use wxFindReplaceDialog")
 wx_option(wxUSE_FONTDLG "use wxFontDialog")
@@ -418,6 +440,19 @@ wx_option(wxUSE_ICO_CUR "use Windows ICO and CUR formats")
 # ---------------------------------------------------------------------------
 
 if(WIN32)
+    if(MSVC_VERSION GREATER 1600 AND NOT CMAKE_VS_PLATFORM_TOOLSET MATCHES "_xp$")
+        set(wxUSE_WINRT_DEFAULT ON)
+    else()
+        set(wxUSE_WINRT_DEFAULT OFF)
+    endif()
+    if(MSVC_VERSION GREATER 1800 AND NOT CMAKE_VS_PLATFORM_TOOLSET MATCHES "_xp$" AND
+        EXISTS "${wxSOURCE_DIR}/3rdparty/webview2")
+        set(wxUSE_WEBVIEW_EDGE_DEFAULT ON)
+    else()
+        set(wxUSE_WEBVIEW_EDGE_DEFAULT OFF)
+    endif()
+
+    wx_option(wxUSE_ACCESSIBILITY "enable accessibility support")
     wx_option(wxUSE_ACTIVEX " enable wxActiveXContainer class (Win32 only)")
     wx_option(wxUSE_CRASHREPORT "enable wxCrashReport::Generate() to create mini dumps (Win32 only)")
     wx_option(wxUSE_DC_CACHEING "cache temporary wxDC objects (Win32 only)")
@@ -427,16 +462,10 @@ if(WIN32)
     wx_option(wxUSE_POSTSCRIPT_ARCHITECTURE_IN_MSW "use PS printing in wxMSW (Win32 only)")
     wx_option(wxUSE_TASKBARICON_BALLOONS "enable wxTaskBarIcon::ShowBalloon() method (Win32 only)")
     wx_option(wxUSE_UXTHEME "enable support for Windows XP themed look (Win32 only)")
+    wx_option(wxUSE_WEBVIEW_EDGE "use wxWebView Edge (Chromium) backend (Windows 7+ only)" ${wxUSE_WEBVIEW_EDGE_DEFAULT})
     wx_option(wxUSE_WEBVIEW_IE "use wxWebView IE backend (Win32 only)")
-    wx_option(wxUSE_WEBVIEW_EDGE "use wxWebView Edge (Chromium) backend (Windows 7+ only)" OFF)
-    wx_option(wxUSE_WXDIB "use wxDIB class (Win32 only)")
-    if(MSVC_VERSION GREATER 1600 AND NOT CMAKE_VS_PLATFORM_TOOLSET MATCHES "_xp$")
-        set(wxUSE_WINRT_DEFAULT ON)
-    else()
-        set(wxUSE_WINRT_DEFAULT OFF)
-    endif()
     wx_option(wxUSE_WINRT "enable WinRT support" ${wxUSE_WINRT_DEFAULT})
-    wx_option(wxUSE_ACCESSIBILITY "enable accessibility support")
+    wx_option(wxUSE_WXDIB "use wxDIB class (Win32 only)")
 endif()
 
 # this one is not really MSW-specific but it exists mainly to be turned off

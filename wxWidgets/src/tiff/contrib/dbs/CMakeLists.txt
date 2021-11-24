@@ -41,3 +41,14 @@ target_link_libraries(tiff-rgb tiff port)
 add_subdirectory(xtiff)
 
 extra_dist(README)
+
+if(WEBP_SUPPORT AND EMSCRIPTEN)
+  # Emscripten is pretty finnicky about linker flags.
+  # It needs --shared-memory if and only if atomics or bulk-memory is used.
+  foreach(target tiff-bi
+                 tiff-grayscale
+                 tiff-palette
+                 tiff-rgb)
+    target_link_options(${target} PUBLIC "-Wl,--shared-memory")
+  endforeach()
+endif()

@@ -120,6 +120,7 @@ build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = xmlwf$(EXEEXT)
 @MINGW_TRUE@@UNICODE_TRUE@am__append_1 = -mwindows
+@MINGW_TRUE@@UNICODE_TRUE@am__append_2 = -municode
 subdir = xmlwf
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
@@ -222,7 +223,11 @@ am__DIST_COMMON = $(srcdir)/Makefile.in \
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
+AM_CFLAGS = @AM_CFLAGS@
+AM_CPPFLAGS = @AM_CPPFLAGS@
+AM_CXXFLAGS = @AM_CXXFLAGS@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
+AM_LDFLAGS = @AM_LDFLAGS@
 AR = @AR@
 AS = @AS@
 AUTOCONF = @AUTOCONF@
@@ -293,7 +298,7 @@ SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 VERSION = @VERSION@
-_EXPAT_TARGET = @_EXPAT_TARGET@
+_EXPAT_OUTPUT_NAME = @_EXPAT_OUTPUT_NAME@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -355,8 +360,8 @@ xmlwf_SOURCES = \
     codepage.c \
     @FILEMAP@.c
 
-xmlwf_CPPFLAGS = -I$(srcdir)/../lib $(am__append_1)
-@MINGW_TRUE@@UNICODE_TRUE@xmlwf_LDFLAGS = -municode
+xmlwf_CPPFLAGS = @AM_CPPFLAGS@ -I$(srcdir)/../lib $(am__append_1)
+xmlwf_LDFLAGS = @AM_LDFLAGS@ $(am__append_2)
 EXTRA_DIST = \
     codepage.h \
     ct.c \
@@ -382,9 +387,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign xmlwf/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu xmlwf/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign xmlwf/Makefile
+	  $(AUTOMAKE) --gnu xmlwf/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \

@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/string.h"
@@ -474,7 +471,7 @@ bool wxICOFileHandler::LoadIcon(wxIcon *icon,
     else
 #endif
     // were we asked for a large icon?
-    const wxWindow* win = wxTheApp ? wxTheApp->GetTopWindow() : NULL;
+    const wxWindow* win = wxApp::GetMainTopWindow();
     if ( desiredWidth == wxGetSystemMetrics(SM_CXICON, win) &&
          desiredHeight == wxGetSystemMetrics(SM_CYICON, win) )
     {
@@ -669,7 +666,7 @@ wxSize wxGetHiconSize(HICON hicon)
     if ( !size.x )
     {
         // use default icon size on this hardware
-        const wxWindow* win = wxTheApp ? wxTheApp->GetTopWindow() : NULL;
+        const wxWindow* win = wxApp::GetMainTopWindow();
         size.x = wxGetSystemMetrics(SM_CXICON, win);
         size.y = wxGetSystemMetrics(SM_CYICON, win);
     }

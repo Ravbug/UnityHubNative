@@ -441,7 +441,7 @@ protected:
     wxEnumProperty with wxString value and writable combo box editor.
 
     @remarks
-    Uses int value, similar to wxEnumProperty, unless text entered by user is
+    Uses int value, similar to wxEnumProperty, unless text entered by user
     is not in choices (in which case string value is used).
 */
 class wxEditEnumProperty : public wxEnumProperty
@@ -595,7 +595,7 @@ protected:
 };
 
 
-// Indicates first bit useable by derived properties.
+// Indicates first bit usable by derived properties.
 #define wxPG_PROP_SHOW_FULL_FILENAME  wxPG_PROP_CLASS_SPECIFIC_1
 
 /** @class wxFileProperty

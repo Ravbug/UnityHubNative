@@ -3,7 +3,109 @@
     hardcoded definitions for MSVC, Xcode and MinGW when using makefiles.
  */
 
-#ifdef __APPLE__
+#ifdef _WIN32
+
+/* Define to 1 if you have the <assert.h> header file. */
+#define HAVE_ASSERT_H 1
+
+/* Define to 1 if you have the <fcntl.h> header file. */
+#define HAVE_FCNTL_H 1
+
+/* Define as 0 or 1 according to the floating point format suported by the
+   machine */
+#define HAVE_IEEEFP 1
+
+/* Define to 1 if you have the `jbg_newlen' function. */
+#define HAVE_JBG_NEWLEN 1
+
+/* Define to 1 if you have the <string.h> header file. */
+#define HAVE_STRING_H 1
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#define HAVE_SYS_TYPES_H 1
+
+/* Define to 1 if you have the <io.h> header file. */
+#define HAVE_IO_H 1
+
+/* Define to 1 if you have the <search.h> header file. */
+#define HAVE_SEARCH_H 1
+
+/* Define to 1 if you have the `setmode' function. */
+#define HAVE_SETMODE 1
+
+/* Define to 1 if you have the `snprintf' function. */
+#define HAVE_SNPRINTF 1
+
+/* The size of a `int', as computed by sizeof. */
+#define SIZEOF_INT 4
+
+/* The size of a `long', as computed by sizeof. */
+#define SIZEOF_LONG 4
+
+/* Signed 64-bit type formatter */
+#define TIFF_INT64_FORMAT "%I64d"
+
+/* Signed 64-bit type */
+#define TIFF_INT64_T signed __int64
+
+/* Unsigned 64-bit type formatter */
+#define TIFF_UINT64_FORMAT "%I64u"
+
+/* Unsigned 64-bit type */
+#define TIFF_UINT64_T unsigned __int64
+
+/* Set the native cpu bit order */
+#define HOST_FILLORDER FILLORDER_LSB2MSB
+
+/*
+    Use _snprintf() with older versions of MSVC and MinGW.
+
+    Note that we can't do this unconditionally as starting from the version
+    which does have it (MSVS 2015 a.k.a. MSVC 14 a.k.a. _MSC_VER 19.00), it
+    doesn't allow redefining snprintf any longer.
+
+    Also, MinGW-w32 6.3 uses macro-hackery in its stdio.h which breaks if it is
+    redefined so, again, only do this for earlier versions.
+ */
+#if (defined(_MSC_VER) && _MSC_VER < 1900) || \
+    (defined(__MINGW32__) && __GNUC__ < 6)
+# define snprintf _snprintf
+#endif
+
+/* Define to 1 if your processor stores words with the most significant byte
+   first (like Motorola and SPARC, unlike Intel and VAX). */
+/* #undef WORDS_BIGENDIAN */
+
+/* Define to `__inline__' or `__inline' if that's what the C compiler
+   calls it, or to nothing if 'inline' is not supported under any name.  */
+#ifndef __cplusplus
+# ifndef inline
+#  define inline __inline
+# endif
+#endif
+
+#if !defined (__BORLANDC__) && !defined (__WATCOMC__)
+   #define lfind _lfind
+#endif
+
+#ifdef _WIN32_WCE
+#   undef HAVE_FCNTL_H
+#   undef HAVE_SYS_TYPES_H
+
+    /*
+       CE headers don't define these standard constants (not even underscored
+       versions), provide our own replacements as they seem to be only used in
+       libtiff own code anyhow.
+     */
+#   define   O_RDONLY    0x0000
+#   define   O_WRONLY    0x0001
+#   define   O_RDWR      0x0002
+#   define   O_CREAT     0x0100
+#   define   O_TRUNC     0x0200
+#   define   O_EXCL      0x0400
+#endif /* _WIN32_WCE */
+
+#else /* !_WIN32 */
 
 /* Define to 1 if you have the <assert.h> header file. */
 #define HAVE_ASSERT_H 1
@@ -330,109 +432,7 @@
 /* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
 #define TIME_WITH_SYS_TIME 1
 
-#else /* __APPLE__ */
-
-/* Define to 1 if you have the <assert.h> header file. */
-#define HAVE_ASSERT_H 1
-
-/* Define to 1 if you have the <fcntl.h> header file. */
-#define HAVE_FCNTL_H 1
-
-/* Define as 0 or 1 according to the floating point format suported by the
-   machine */
-#define HAVE_IEEEFP 1
-
-/* Define to 1 if you have the `jbg_newlen' function. */
-#define HAVE_JBG_NEWLEN 1
-
-/* Define to 1 if you have the <string.h> header file. */
-#define HAVE_STRING_H 1
-
-/* Define to 1 if you have the <sys/types.h> header file. */
-#define HAVE_SYS_TYPES_H 1
-
-/* Define to 1 if you have the <io.h> header file. */
-#define HAVE_IO_H 1
-
-/* Define to 1 if you have the <search.h> header file. */
-#define HAVE_SEARCH_H 1
-
-/* Define to 1 if you have the `setmode' function. */
-#define HAVE_SETMODE 1
-
-/* Define to 1 if you have the `snprintf' function. */
-#define HAVE_SNPRINTF 1
-
-/* The size of a `int', as computed by sizeof. */
-#define SIZEOF_INT 4
-
-/* The size of a `long', as computed by sizeof. */
-#define SIZEOF_LONG 4
-
-/* Signed 64-bit type formatter */
-#define TIFF_INT64_FORMAT "%I64d"
-
-/* Signed 64-bit type */
-#define TIFF_INT64_T signed __int64
-
-/* Unsigned 64-bit type formatter */
-#define TIFF_UINT64_FORMAT "%I64u"
-
-/* Unsigned 64-bit type */
-#define TIFF_UINT64_T unsigned __int64
-
-/* Set the native cpu bit order */
-#define HOST_FILLORDER FILLORDER_LSB2MSB
-
-/*
-    Use _snprintf() with older versions of MSVC and MinGW.
-
-    Note that we can't do this unconditionally as starting from the version
-    which does have it (MSVS 2015 a.k.a. MSVC 14 a.k.a. _MSC_VER 19.00), it
-    doesn't allow redefining snprintf any longer.
-
-    Also, MinGW-w32 6.3 uses macro-hackery in its stdio.h which breaks if it is
-    redefined so, again, only do this for earlier versions.
- */
-#if (defined(_MSC_VER) && _MSC_VER < 1900) || \
-    (defined(__MINGW32__) && __GNUC__ < 6)
-# define snprintf _snprintf
-#endif
-
-/* Define to 1 if your processor stores words with the most significant byte
-   first (like Motorola and SPARC, unlike Intel and VAX). */
-/* #undef WORDS_BIGENDIAN */
-
-/* Define to `__inline__' or `__inline' if that's what the C compiler
-   calls it, or to nothing if 'inline' is not supported under any name.  */
-#ifndef __cplusplus
-# ifndef inline
-#  define inline __inline
-# endif
-#endif
-
-#if !defined (__BORLANDC__) && !defined (__WATCOMC__)
-   #define lfind _lfind
-#endif
-
-#ifdef _WIN32_WCE
-#   undef HAVE_FCNTL_H
-#   undef HAVE_SYS_TYPES_H
-
-    /*
-       CE headers don't define these standard constants (not even underscored
-       versions), provide our own replacements as they seem to be only used in
-       libtiff own code anyhow.
-     */
-#   define   O_RDONLY    0x0000
-#   define   O_WRONLY    0x0001
-#   define   O_RDWR      0x0002
-#   define   O_CREAT     0x0100
-#   define   O_TRUNC     0x0200
-#   define   O_EXCL      0x0400
-#endif /* _WIN32_WCE */
-
-#endif /* __APPLE__/!__APPLE__ */
+#endif /* _WIN32/!_WIN32 */
 /*
  * Local Variables:
  * mode: c

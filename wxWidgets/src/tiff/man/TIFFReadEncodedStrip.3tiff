@@ -30,7 +30,7 @@ file
 .SH SYNOPSIS
 .B "#include <tiffio.h>"
 .sp
-.BI "tsize_t TIFFReadEncodedStrip(TIFF *" tif ", tstrip_t " strip ", tdata_t " buf ", tsize_t " size ")"
+.BI "tmsize_t TIFFReadEncodedStrip(TIFF *" tif ", uint32 " strip ", void *" buf ", tmsize_t " size ")"
 .SH DESCRIPTION
 Read the specified strip of data and place up to
 .I size

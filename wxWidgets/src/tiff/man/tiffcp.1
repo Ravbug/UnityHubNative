@@ -151,6 +151,17 @@ e.g.
 for
 .SM Deflate
 encoding with maximum compression level and floating point predictor.
+.IP
+For the
+.SM Deflate
+codec, and in a libtiff build with libdeflate enabled, ``p12`` is
+actually the maximum level.
+.IP
+For the
+.SM Deflate
+codec, and in a libtiff build with libdeflate enabled, ``s0`` can be used to
+require zlib to be used, and ``s1`` for libdeflate (defaults to libdeflate when
+it is available).
 .TP
 .B \-f
 Specify the bit fill order to use in writing output data.
@@ -247,6 +258,10 @@ Note that
 .B \-,=
 with whitespace immediately following will disable
 the special meaning of the `,' entirely.  See examples.
+.TP
+.BI \-m " size"
+Set maximum memory allocation size (in MiB). The default is 256MiB.
+Set to 0 to disable the limit.
 .SH EXAMPLES
 The following concatenates two files and writes the result using 
 .SM LZW

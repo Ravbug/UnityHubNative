@@ -5022,7 +5022,7 @@ public:
     int GetIMEInteraction() const;
 
     /**
-        Choose to display the the IME in a winow or inline.
+        Choose to display the IME in a winow or inline.
 
         The input should be one of the
         @link wxStyledTextCtrl::wxSTC_IME_WINDOWED wxSTC_IME_* @endlink constants.
@@ -5517,12 +5517,12 @@ public:
     int GetIndicatorValue() const;
 
     /**
-        Turn a indicator on over a range.
+        Turn an indicator on over a range.
     */
     void IndicatorFillRange(int start, int lengthFill);
 
     /**
-        Turn a indicator off over a range.
+        Turn an indicator off over a range.
     */
     void IndicatorClearRange(int start, int lengthClear);
 
@@ -5576,7 +5576,7 @@ public:
     //@{
 
     /**
-        Display a auto-completion list.
+        Display an auto-completion list.
         The lengthEntered parameter indicates how many characters before
         the caret should be used to provide context.
     */
@@ -8124,7 +8124,7 @@ public:
 
     @c wxEVT_STC_HOTSPOT_RELEASE_CLICK
 
-    - Generated when a click over a hotspot has been released.
+    - Generated when a click-over hotspot has been released.
 
     - Valid event functions:
     @link wxStyledTextEvent::GetModifiers GetModifiers@endlink,
@@ -8135,7 +8135,7 @@ public:
 
     @c wxEVT_STC_INDICATOR_CLICK
 
-    - Generated when a indicator has been clicked.
+    - Generated when an indicator has been clicked.
 
     - Valid event functions:
     @link wxStyledTextEvent::GetModifiers GetModifiers@endlink,
@@ -8146,7 +8146,7 @@ public:
 
     @c wxEVT_STC_INDICATOR_RELEASE
 
-    - Generated when a click over a indicator has been released.
+    - Generated when a click over an indicator has been released.
 
     - Valid event functions:
     @link wxStyledTextEvent::GetModifiers GetModifiers@endlink,

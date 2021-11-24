@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#if defined(__BORLANDC__)
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/msw/wrapcctl.h"
@@ -605,6 +602,12 @@ bool wxGUIAppTraits::WriteToStderr(const wxString& WXUNUSED(text))
 }
 
 #endif // wxUSE_DYNLIB_CLASS/!wxUSE_DYNLIB_CLASS
+
+WXHWND wxGUIAppTraits::GetMainHWND() const
+{
+    const wxWindow* const w = wxApp::GetMainTopWindow();
+    return w ? w->GetHWND() : NULL;
+}
 
 // ===========================================================================
 // wxApp implementation

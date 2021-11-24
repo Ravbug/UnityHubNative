@@ -123,3 +123,30 @@ if(HAVE_OPENGL)
   install(TARGETS tiffgt
           RUNTIME DESTINATION "${CMAKE_INSTALL_FULL_BINDIR}")
 endif()
+
+if(WEBP_SUPPORT AND EMSCRIPTEN)
+  # Emscripten is pretty finnicky about linker flags.
+  # It needs --shared-memory if and only if atomics or bulk-memory is used.
+  foreach(target fax2ps
+                 fax2tiff
+                 pal2rgb
+                 ppm2tiff
+                 raw2tiff
+                 rgb2ycbcr
+                 thumbnail
+                 tiff2bw
+                 tiff2pdf
+                 tiff2ps
+                 tiff2rgba
+                 tiffcmp
+                 tiffcp
+                 tiffcrop
+                 tiffdither
+                 tiffdump
+                 tiffinfo
+                 tiffmedian
+                 tiffset
+                 tiffsplit)
+    target_link_options(${target} PUBLIC "-Wl,--shared-memory")
+  endforeach()
+endif()

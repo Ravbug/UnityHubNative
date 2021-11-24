@@ -148,11 +148,15 @@ int test(int classictif, int height, int tiled)
                     assert(err == 0);
 
                     size = TIFFGetStrileByteCountWithErr(tif, j, &err);
+                    (void)size;
                     assert(size == 256);
                     assert(err == 0);
 
                     fseek(f, offset, SEEK_SET);
-                    fread(inputbuffer, 256, 1, f);
+                    {
+                        size_t nread = fread(inputbuffer, 256, 1, f);
+                        (void)nread;
+                    }
 
                     memset(tilebuffer,0, 256);
                     ret = TIFFReadFromUserBuffer(tif, j,
@@ -204,12 +208,15 @@ int test(int classictif, int height, int tiled)
                     assert(err == 0);
 
                     size = TIFFGetStrileByteCountWithErr(tif, j, &err);
+                    (void)size;
                     assert(size == 1);
                     assert(err == 0);
 
                     fseek(f, offset, SEEK_SET);
-                    fread(inputbuffer, 1, 1, f);
-
+                    {
+                        size_t nread = fread(inputbuffer, 1, 1, f);
+                        (void)nread;
+                    }
                     memset(tilebuffer,0, 1);
                     ret = TIFFReadFromUserBuffer(tif, j,
                                                     inputbuffer, 1,

@@ -18,11 +18,8 @@
               **************************************************
 
     If you get an error saying "wxUSE_FOO must be defined", it means that you
-    are not using the correct up-to-date version of setup.h. This happens most
-    often when using git or snapshots and a new symbol was added to setup0.h
-    and you haven't updated your local setup.h to reflect it. If this is the
-    case, you need to propagate the changes from setup0.h to your setup.h and,
-    if using makefiles under MSW, also remove setup.h under the build directory
+    are not using the correct up-to-date version of setup.h. If you're building
+    using makefiles under MSW, also remove setup.h under the build directory
     (lib/$(COMPILER)_{lib,dll}/msw[u][d][dll]/wx) so that the new setup.h is
     copied there.
 
@@ -1247,6 +1244,14 @@
 #   endif
 #endif /* !defined(wxUSE_VALIDATORS) */
 
+#ifndef wxUSE_WEBREQUEST
+#   ifdef wxABORT_ON_CONFIG_ERROR
+#       error "wxUSE_WEBREQUEST must be defined, please read comment near the top of this file."
+#   else
+#       define wxUSE_WEBREQUEST 0
+#   endif
+#endif /* !defined(wxUSE_WEBREQUEST) */
+
 #ifndef wxUSE_WEBVIEW
 #   ifdef wxABORT_ON_CONFIG_ERROR
 #       error "wxUSE_WEBVIEW must be defined, please read comment near the top of this file."
@@ -2136,6 +2141,7 @@
 #   if wxUSE_FONTDLG || \
        wxUSE_FILEDLG || \
        wxUSE_CHOICEDLG || \
+       wxUSE_CREDENTIALDLG || \
        wxUSE_NUMBERDLG || \
        wxUSE_TEXTDLG || \
        wxUSE_DIRDLG || \
@@ -2318,6 +2324,15 @@
 #       define wxUSE_WEBVIEW 0
 #   endif
 #endif /* wxUSE_WEBVIEW && !any web view backend */
+
+#if wxUSE_WEBREQUEST && !(wxUSE_WEBREQUEST_WINHTTP || wxUSE_WEBREQUEST_URLSESSION || wxUSE_WEBREQUEST_CURL)
+#   ifdef wxABORT_ON_CONFIG_ERROR
+#       error "wxUSE_WEBREQUEST requires at least one backend"
+#   else
+#       undef wxUSE_WEBREQUEST
+#       define wxUSE_WEBREQUEST 0
+#   endif
+#endif /* wxUSE_WEBREQUEST && !any web request backend */
 
 #if wxUSE_PREFERENCES_EDITOR
     /*

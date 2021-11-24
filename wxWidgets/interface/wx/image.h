@@ -60,6 +60,21 @@ enum wxImageResizeQuality
     wxIMAGE_QUALITY_HIGH
 };
 
+
+/**
+    Constants for wxImage::Paste() for specifying alpha blending option.
+
+    @since 3.1.5
+*/
+enum wxImageAlphaBlendMode
+{
+    /// Overwrite the original alpha values with the ones being pasted.
+    wxIMAGE_ALPHA_BLEND_OVER = 0,
+
+    /// Compose the original alpha values with the ones being pasted.
+    wxIMAGE_ALPHA_BLEND_COMPOSE = 1
+};
+
 /**
     Possible values for PNG image type option.
 
@@ -803,8 +818,17 @@ public:
 
     /**
         Copy the data of the given @a image to the specified position in this image.
+
+        Takes care of the mask colour and out of bounds problems.
+
+        @param alphaBlend
+            This parameter (new in wx 3.1.5) determines whether the alpha values
+            of the original image replace (default) or are composed with the
+            alpha channel of this image. Notice that alpha blending overrides
+            the mask handling.
     */
-    void Paste(const wxImage& image, int x, int y);
+    void Paste(const wxImage& image, int x, int y,
+               wxImageAlphaBlendMode alphaBlend = wxIMAGE_ALPHA_BLEND_OVER);
 
     /**
         Replaces the colour specified by @e r1,g1,b1 by the colour @e r2,g2,b2.
@@ -1247,12 +1271,12 @@ public:
             (http://www.libpng.org/pub/png/libpng-1.2.5-manual.html) for possible values
             (e.g. PNG_FILTER_NONE, PNG_FILTER_SUB, PNG_FILTER_UP, etc).
         @li @c wxIMAGE_OPTION_PNG_COMPRESSION_LEVEL: Compression level (0..9) for
-            saving a PNG file. An high value creates smaller-but-slower PNG file.
+            saving a PNG file. A high value creates smaller-but-slower PNG file.
             Note that unlike other formats (e.g. JPEG) the PNG format is always
             lossless and thus this compression level doesn't tradeoff the image
             quality.
         @li @c wxIMAGE_OPTION_PNG_COMPRESSION_MEM_LEVEL: Compression memory usage
-            level (1..9) for saving a PNG file. An high value means the saving
+            level (1..9) for saving a PNG file. A high value means the saving
             process consumes more memory, but may create smaller PNG file.
         @li @c wxIMAGE_OPTION_PNG_COMPRESSION_STRATEGY: Possible values are 0 for
             default strategy, 1 for filter, and 2 for Huffman-only.

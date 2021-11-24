@@ -40,13 +40,20 @@
 #include "tiffio.h"
 #include "tiffiop.h"
 
+#ifndef EXIT_SUCCESS
+#define EXIT_SUCCESS 0
+#endif
+#ifndef EXIT_FAILURE
+#define EXIT_FAILURE 1
+#endif
+
 /* x% weighting -> fraction of full color */
 #define	PCT(x)	(((x)*256+50)/100)
 int	RED = PCT(30);		/* 30% */
 int	GREEN = PCT(59);	/* 59% */
 int	BLUE = PCT(11);		/* 11% */
 
-static	void usage(void);
+static	void usage(int code);
 static	int processCompressOptions(char*);
 
 static void
@@ -133,11 +140,11 @@ main(int argc, char* argv[])
         inbuf = (unsigned char *) NULL;
         outbuf = (unsigned char *) NULL;
 
-	while ((c = getopt(argc, argv, "c:r:R:G:B:")) != -1)
+	while ((c = getopt(argc, argv, "c:r:R:G:B:h")) != -1)
 		switch (c) {
 		case 'c':		/* compression scheme */
 			if (!processCompressOptions(optarg))
-				usage();
+				usage(EXIT_FAILURE);
 			break;
 		case 'r':		/* rows/strip */
 			rowsperstrip = atoi(optarg);
@@ -151,15 +158,17 @@ main(int argc, char* argv[])
 		case 'B':
 			BLUE = PCT(atoi(optarg));
 			break;
+		case 'h':
+			usage(EXIT_SUCCESS);
 		case '?':
-			usage();
+			usage(EXIT_FAILURE);
 			/*NOTREACHED*/
 		}
 	if (argc - optind < 2)
-		usage();
+		usage(EXIT_FAILURE);
 	in = TIFFOpen(argv[optind], "r");
 	if (in == NULL)
-		return (-1);
+		return (EXIT_FAILURE);
 	photometric = 0;
 	TIFFGetField(in, TIFFTAG_PHOTOMETRIC, &photometric);
 	if (photometric != PHOTOMETRIC_RGB && photometric != PHOTOMETRIC_PALETTE ) {
@@ -306,7 +315,7 @@ main(int argc, char* argv[])
                 _TIFFfree(outbuf);
         TIFFClose(in);
 	TIFFClose(out);
-	return (0);
+	return (EXIT_SUCCESS);
 
  tiff2bw_error:
         if (inbuf)
@@ -317,7 +326,7 @@ main(int argc, char* argv[])
                 TIFFClose(out);
         if (in)
                 TIFFClose(in);
-        return (-1);
+        return (EXIT_FAILURE);
 }
 
 static int
@@ -338,7 +347,7 @@ processCompressOptions(char* opt)
                     else if (cp[1] == 'r' )
 			jpegcolormode = JPEGCOLORMODE_RAW;
                     else
-                        usage();
+                        usage(EXIT_FAILURE);
 
                     cp = strchr(cp+1,':');
                 }
@@ -492,7 +501,7 @@ cpTags(TIFF* in, TIFF* out)
 }
 #undef NTAGS
 
-char* stuff[] = {
+const char* stuff[] = {
 "usage: tiff2bw [options] input.tif output.tif",
 "where options are:",
 " -R %		use #% from red channel",
@@ -515,16 +524,15 @@ NULL
 };
 
 static void
-usage(void)
+usage(int code)
 {
-	char buf[BUFSIZ];
 	int i;
+	FILE * out = (code == EXIT_SUCCESS) ? stdout : stderr;
 
-	setbuf(stderr, buf);
-        fprintf(stderr, "%s\n\n", TIFFGetVersion());
+        fprintf(out, "%s\n\n", TIFFGetVersion());
 	for (i = 0; stuff[i] != NULL; i++)
-		fprintf(stderr, "%s\n", stuff[i]);
-	exit(-1);
+		fprintf(out, "%s\n", stuff[i]);
+	exit(code);
 }
 
 /* vim: set ts=8 sts=8 sw=8 noet: */

@@ -37,7 +37,7 @@
 #else
 #  ifdef HAVE_EXPAT_CONFIG_H
 #    include <expat_config.h>
-#  elif defined( __APPLE__ )
+#  else
 #    include "macconfig.h"
 #  endif
 #endif /* ndef _WIN32 */

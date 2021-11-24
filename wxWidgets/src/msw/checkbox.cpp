@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_CHECKBOX
 
@@ -250,11 +247,11 @@ int wxCheckBox::MSWGetButtonCheckedFlag() const
             return wxCONTROL_CHECKED;
 
         case wxCHK_UNDETERMINED:
-            return wxCONTROL_PRESSED;
+            return wxCONTROL_UNDETERMINED;
 
         case wxCHK_UNCHECKED:
             // no extra styles needed
-            return 0;
+            return wxCONTROL_NONE;
     }
 
     wxFAIL_MSG( wxT("unexpected Get3StateValue() return value") );

@@ -23,7 +23,7 @@ class WXDLLIMPEXP_WEBVIEW wxWebViewEdge : public wxWebView
 {
 public:
 
-    wxWebViewEdge() {}
+    wxWebViewEdge();
 
     wxWebViewEdge(wxWindow* parent,
         wxWindowID id,
@@ -31,10 +31,7 @@ public:
         const wxPoint& pos = wxDefaultPosition,
         const wxSize& size = wxDefaultSize,
         long style = 0,
-        const wxString& name = wxWebViewNameStr)
-    {
-        Create(parent, id, url, pos, size, style, name);
-    }
+        const wxString& name = wxWebViewNameStr);
 
     ~wxWebViewEdge();
 
@@ -60,9 +57,6 @@ public:
     virtual void Stop() wxOVERRIDE;
     virtual void Reload(wxWebViewReloadFlags flags = wxWEBVIEW_RELOAD_DEFAULT) wxOVERRIDE;
 
-    virtual wxString GetPageSource() const wxOVERRIDE;
-    virtual wxString GetPageText() const wxOVERRIDE;
-
     virtual bool IsBusy() const wxOVERRIDE;
     virtual wxString GetCurrentURL() const wxOVERRIDE;
     virtual wxString GetCurrentTitle() const wxOVERRIDE;
@@ -73,18 +67,8 @@ public:
 
     virtual void Print() wxOVERRIDE;
 
-    virtual wxWebViewZoom GetZoom() const wxOVERRIDE;
     virtual float GetZoomFactor() const wxOVERRIDE;
-    virtual void SetZoom(wxWebViewZoom zoom) wxOVERRIDE;
     virtual void SetZoomFactor(float zoom) wxOVERRIDE;
-
-    //Clipboard functions
-    virtual bool CanCut() const wxOVERRIDE;
-    virtual bool CanCopy() const wxOVERRIDE;
-    virtual bool CanPaste() const wxOVERRIDE;
-    virtual void Cut() wxOVERRIDE;
-    virtual void Copy() wxOVERRIDE;
-    virtual void Paste() wxOVERRIDE;
 
     //Undo / redo functionality
     virtual bool CanUndo() const wxOVERRIDE;
@@ -92,20 +76,9 @@ public:
     virtual void Undo() wxOVERRIDE;
     virtual void Redo() wxOVERRIDE;
 
-    //Find function
-    virtual long Find(const wxString& text, int flags = wxWEBVIEW_FIND_DEFAULT) wxOVERRIDE;
-
     //Editing functions
     virtual void SetEditable(bool enable = true) wxOVERRIDE;
     virtual bool IsEditable() const wxOVERRIDE;
-
-    //Selection
-    virtual void SelectAll() wxOVERRIDE;
-    virtual bool HasSelection() const wxOVERRIDE;
-    virtual void DeleteSelection() wxOVERRIDE;
-    virtual wxString GetSelectedText() const wxOVERRIDE;
-    virtual wxString GetSelectedSource() const wxOVERRIDE;
-    virtual void ClearSelection() wxOVERRIDE;
 
     virtual void EnableContextMenu(bool enable = true) wxOVERRIDE;
     virtual bool IsContextMenuEnabled() const wxOVERRIDE;
@@ -113,18 +86,20 @@ public:
     virtual void EnableAccessToDevTools(bool enable = true) wxOVERRIDE;
     virtual bool IsAccessToDevToolsEnabled() const wxOVERRIDE;
 
-    bool QueryCommandEnabled(const wxString& command) const;
-    void ExecCommand(const wxString& command);
+    virtual bool SetUserAgent(const wxString& userAgent) wxOVERRIDE;
 
-    virtual bool RunScript(const wxString& javascript, wxString* output = NULL) wxOVERRIDE;
+    virtual bool RunScript(const wxString& javascript, wxString* output = NULL) const wxOVERRIDE;
+    virtual bool AddScriptMessageHandler(const wxString& name) wxOVERRIDE;
+    virtual bool RemoveScriptMessageHandler(const wxString& name) wxOVERRIDE;
+    virtual bool AddUserScript(const wxString& javascript,
+        wxWebViewUserScriptInjectionTime injectionTime = wxWEBVIEW_INJECT_AT_DOCUMENT_START) wxOVERRIDE;
+    virtual void RemoveAllUserScripts() wxOVERRIDE;
 
     virtual void RegisterHandler(wxSharedPtr<wxWebViewHandler> handler) wxOVERRIDE;
 
     virtual void* GetNativeBackend() const wxOVERRIDE;
 
-    // ---- Edge-specific methods
-
-    static bool IsAvailable();
+    static void MSWSetBrowserExecutableDir(const wxString& path);
 
 protected:
     virtual void DoSetPage(const wxString& html, const wxString& baseUrl) wxOVERRIDE;
@@ -134,7 +109,9 @@ private:
 
     void OnSize(wxSizeEvent& event);
 
-    bool RunScriptSync(const wxString& javascript, wxString* output = NULL);
+    void OnTopLevelParentIconized(wxIconizeEvent& event);
+
+    bool RunScriptSync(const wxString& javascript, wxString* output = NULL) const;
 
     wxDECLARE_DYNAMIC_CLASS(wxWebViewEdge);
 };
@@ -153,6 +130,8 @@ public:
     {
         return new wxWebViewEdge(parent, id, url, pos, size, style, name);
     }
+    virtual bool IsAvailable() wxOVERRIDE;
+    virtual wxVersionInfo GetVersionInfo() wxOVERRIDE;
 };
 
 #endif // wxUSE_WEBVIEW && wxUSE_WEBVIEW_EDGE && defined(__WXMSW__)

@@ -12,6 +12,7 @@ EXPORTS	TIFFAccessTagMethods
 	TIFFCreateCustomDirectory
 	TIFFCreateDirectory
 	TIFFCreateEXIFDirectory
+	TIFFCreateGPSDirectory
 	TIFFCurrentDirOffset
 	TIFFCurrentDirectory
 	TIFFCurrentRow
@@ -86,6 +87,7 @@ EXPORTS	TIFFAccessTagMethods
 	TIFFReadCustomDirectory
 	TIFFReadDirectory
 	TIFFReadEXIFDirectory
+	TIFFReadGPSDirectory
 	TIFFReadEncodedStrip
 	TIFFReadEncodedTile
 	TIFFReadFromUserBuffer
@@ -171,5 +173,7 @@ EXPORTS	TIFFAccessTagMethods
 	_TIFFmemcpy
 	_TIFFmemset
 	_TIFFrealloc
-        _TIFFMultiply32
-        _TIFFMultiply64
+	_TIFFMultiply32
+	_TIFFMultiply64
+	_TIFFGetExifFields
+	_TIFFGetGpsFields

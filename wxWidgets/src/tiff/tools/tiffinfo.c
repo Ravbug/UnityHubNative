@@ -42,15 +42,22 @@
 
 #include "tiffiop.h"
 
+#ifndef EXIT_SUCCESS
+#define EXIT_SUCCESS 0
+#endif
+#ifndef EXIT_FAILURE
+#define EXIT_FAILURE 1
+#endif
+
 static TIFFErrorHandler old_error_handler = 0;
-static int status = 0;                  /* exit status */
+static int status = EXIT_SUCCESS;       /* exit status */
 static int showdata = 0;		/* show data */
 static int rawdata = 0;			/* show raw/decoded data */
 static int showwords = 0;		/* show data as bytes/words */
 static int readdata = 0;		/* read data in file */
 static int stoponerr = 1;		/* stop on first read error */
 
-static	void usage(void);
+static	void usage(int);
 static	void tiffinfo(TIFF*, uint16, long, int);
 
 static void
@@ -58,7 +65,7 @@ PrivateErrorHandler(const char* module, const char* fmt, va_list ap)
 {
         if (old_error_handler)
                 (*old_error_handler)(module,fmt,ap);
-	status = 1;
+	status = EXIT_FAILURE;
 }
 
 int
@@ -75,7 +82,7 @@ main(int argc, char* argv[])
 	uint64 diroff = 0;
 	int chopstrips = 0;		/* disable strip chopping */
 
-	while ((c = getopt(argc, argv, "f:o:cdDSjilmrsvwz0123456789")) != -1)
+	while ((c = getopt(argc, argv, "f:o:cdDSjilmrsvwz0123456789h")) != -1)
 		switch (c) {
 		case '0': case '1': case '2': case '3':
 		case '4': case '5': case '6': case '7':
@@ -97,7 +104,7 @@ main(int argc, char* argv[])
 			else if (streq(optarg, "msb2lsb"))
 				order = FILLORDER_MSB2LSB;
 			else
-				usage();
+				usage(EXIT_FAILURE);
 			break;
 		case 'i':
 			stoponerr = 0;
@@ -122,12 +129,15 @@ main(int argc, char* argv[])
 		case 'z':
 			chopstrips = 1;
 			break;
+		case 'h':
+			usage(EXIT_SUCCESS);
+			/*NOTREACHED*/
 		case '?':
-			usage();
+			usage(EXIT_FAILURE);
 			/*NOTREACHED*/
 		}
 	if (optind >= argc)
-		usage();
+		usage(EXIT_FAILURE);
 
 	old_error_handler = TIFFSetErrorHandler(PrivateErrorHandler);
 
@@ -162,7 +172,7 @@ main(int argc, char* argv[])
 	return (status);
 }
 
-char* stuff[] = {
+static const char* stuff[] = {
 "usage: tiffinfo [options] input...",
 "where options are:",
 " -D		read data",
@@ -182,16 +192,15 @@ NULL
 };
 
 static void
-usage(void)
+usage(int code)
 {
-	char buf[BUFSIZ];
 	int i;
+	FILE * out = (code == EXIT_SUCCESS) ? stdout : stderr;
 
-	setbuf(stderr, buf);
-        fprintf(stderr, "%s\n\n", TIFFGetVersion());
+        fprintf(out, "%s\n\n", TIFFGetVersion());
 	for (i = 0; stuff[i] != NULL; i++)
-		fprintf(stderr, "%s\n", stuff[i]);
-	exit(-1);
+		fprintf(out, "%s\n", stuff[i]);
+	exit(code);
 }
 
 static void
@@ -407,11 +416,11 @@ ShowRawWords(uint16* pp, uint32 n)
 	putchar('\n');
 }
 
-void
-TIFFReadRawData(TIFF* tif, int bitrev)
+static void
+TIFFReadRawDataStriped(TIFF* tif, int bitrev)
 {
 	tstrip_t nstrips = TIFFNumberOfStrips(tif);
-	const char* what = TIFFIsTiled(tif) ? "Tile" : "Strip";
+	const char* what = "Strip";
 	uint64* stripbc=NULL;
 
 	TIFFGetField(tif, TIFFTAG_STRIPBYTECOUNTS, &stripbc);
@@ -452,6 +461,66 @@ TIFFReadRawData(TIFF* tif, int bitrev)
 		}
 		if (buf != NULL)
 			_TIFFfree(buf);
+	}
+}
+
+static void
+TIFFReadRawDataTiled(TIFF* tif, int bitrev)
+{
+	const char* what = "Tile";
+	uint32 ntiles = TIFFNumberOfTiles(tif);
+	uint64 *tilebc;
+
+	TIFFGetField(tif, TIFFTAG_TILEBYTECOUNTS, &tilebc);
+	if (tilebc != NULL && ntiles > 0) {
+		uint64 bufsize = 0;
+		tdata_t buf = NULL;
+		uint32 t;
+
+		for (t = 0; t < ntiles; t++) {
+			if (buf == NULL || tilebc[t] > bufsize) {
+				buf = _TIFFrealloc(buf, (tmsize_t)tilebc[t]);
+				bufsize = tilebc[t];
+			}
+			if (buf == NULL) {
+				fprintf(stderr,
+				   "Cannot allocate buffer to read tile %lu\n",
+				    (unsigned long) t);
+				break;
+			}
+			if (TIFFReadRawTile(tif, t, buf, (tmsize_t)tilebc[t]) < 0) {
+				fprintf(stderr, "Error reading tile %lu\n",
+				    (unsigned long) t);
+				if (stoponerr)
+					break;
+			} else if (showdata) {
+				if (bitrev) {
+					TIFFReverseBits(buf, (tmsize_t)tilebc[t]);
+					printf("%s %lu: (bit reversed)\n ",
+					    what, (unsigned long) t);
+				} else {
+					printf("%s %lu:\n ", what,
+					    (unsigned long) t);
+				}
+				if (showwords) {
+					ShowRawWords((uint16*) buf, (uint32)(tilebc[t]>>1));
+				} else {
+					ShowRawBytes((unsigned char*) buf, (uint32) tilebc[t]);
+				}
+			}
+		}
+		if (buf != NULL)
+			_TIFFfree(buf);
+	}
+}
+
+void
+TIFFReadRawData(TIFF* tif, int bitrev)
+{
+	if (TIFFIsTiled(tif)) {
+		TIFFReadRawDataTiled(tif, bitrev);
+	} else {
+		TIFFReadRawDataStriped(tif, bitrev);
 	}
 }
 

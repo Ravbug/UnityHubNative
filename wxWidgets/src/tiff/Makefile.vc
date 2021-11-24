@@ -31,6 +31,9 @@
 all:	port lib tools
 
 port::
+	cd libtiff
+	$(MAKE) /f Makefile.vc tif_config.h
+	cd..
 	cd port
 	$(MAKE) /f Makefile.vc
 	cd..

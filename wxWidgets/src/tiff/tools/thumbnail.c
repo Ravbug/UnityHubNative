@@ -39,6 +39,13 @@
 
 #include "tiffio.h"
 
+#ifndef EXIT_SUCCESS
+#define EXIT_SUCCESS 0
+#endif
+#ifndef EXIT_FAILURE
+#define EXIT_FAILURE 1
+#endif
+
 #ifndef HAVE_GETOPT
 extern int getopt(int argc, char * const argv[], const char *optstring);
 #endif
@@ -67,7 +74,7 @@ static	uint8* thumbnail;
 static	int cpIFD(TIFF*, TIFF*);
 static	int generateThumbnail(TIFF*, TIFF*);
 static	void initScale();
-static	void usage(void);
+static	void usage(int code);
 
 #if !HAVE_DECL_OPTARG
 extern	char* optarg;
@@ -94,11 +101,11 @@ main(int argc, char* argv[])
 				   streq(optarg, "linear")? LINEAR :
 							    EXP;
 			break;
-	default:	usage();
+	default:	usage(EXIT_FAILURE);
 	}
     }
     if (argc-optind != 2)
-	usage();
+	usage(EXIT_FAILURE);
 
     out = TIFFOpen(argv[optind+1], "w");
     if (out == NULL)
@@ -111,7 +118,7 @@ main(int argc, char* argv[])
     if (!thumbnail) {
 	    TIFFError(TIFFFileName(in),
 		      "Can't allocate space for thumbnail buffer.");
-	    return 1;
+	    return EXIT_FAILURE;
     }
 
     if (in != NULL) {
@@ -125,10 +132,10 @@ main(int argc, char* argv[])
 	(void) TIFFClose(in);
     }
     (void) TIFFClose(out);
-    return 0;
+    return EXIT_SUCCESS;
 bad:
     (void) TIFFClose(out);
-    return 1;
+    return EXIT_FAILURE;
 }
 
 #define	CopyField(tag, v) \
@@ -650,7 +657,7 @@ generateThumbnail(TIFF* in, TIFF* out)
             TIFFWriteDirectory(out) != -1);
 }
 
-char* stuff[] = {
+const char* stuff[] = {
 "usage: thumbnail [options] input.tif output.tif",
 "where options are:",
 " -h #		specify thumbnail image height (default is 274)",
@@ -667,16 +674,15 @@ NULL
 };
 
 static void
-usage(void)
+usage(int code)
 {
-	char buf[BUFSIZ];
 	int i;
+	FILE * out = (code == EXIT_SUCCESS) ? stdout : stderr;
 
-	setbuf(stderr, buf);
-        fprintf(stderr, "%s\n\n", TIFFGetVersion());
+        fprintf(out, "%s\n\n", TIFFGetVersion());
 	for (i = 0; stuff[i] != NULL; i++)
-		fprintf(stderr, "%s\n", stuff[i]);
-	exit(-1);
+		fprintf(out, "%s\n", stuff[i]);
+	exit(code);
 }
 
 /* vim: set ts=8 sts=8 sw=8 noet: */

@@ -139,6 +139,13 @@ enum
     wxSEND_EVENT_POST = 1
 };
 
+// Flags for WXSetInitialFittingClientSize().
+enum
+{
+    wxSIZE_SET_CURRENT = 0x0001, // Set the current size.
+    wxSIZE_SET_MIN     = 0x0002  // Set the size as the minimum allowed size.
+};
+
 // ----------------------------------------------------------------------------
 // (pseudo)template list classes
 // ----------------------------------------------------------------------------
@@ -537,7 +544,7 @@ public:
 
     // Return the ratio of the DPI used by this window to the standard DPI,
     // e.g. 1 for standard DPI screens and 2 for "200% scaling".
-    double GetDPIScaleFactor() const;
+    virtual double GetDPIScaleFactor() const;
 
     // return the size of the left/right and top/bottom borders in x and y
     // components of the result respectively
@@ -655,7 +662,7 @@ public:
         // state, i.e. the state in which the window would be if all its
         // parents were enabled (use IsEnabled() above to get the effective
         // window state)
-    bool IsThisEnabled() const { return m_isEnabled; }
+    virtual bool IsThisEnabled() const { return m_isEnabled; }
 
     // returns true if the window is visible, i.e. IsShown() returns true
     // if called on it and all its parents up to the first TLW
@@ -766,6 +773,9 @@ public:
 
         // call this when the return value of AcceptsFocus() changes
     virtual void SetCanFocus(bool WXUNUSED(canFocus)) { }
+
+        // call to customize visible focus indicator if possible in the port
+    virtual void EnableVisibleFocus(bool WXUNUSED(enabled)) { }
 
         // navigates inside this window
     bool NavigateIn(int flags = wxNavigationKeyEvent::IsForward)
@@ -963,6 +973,13 @@ public:
 
         // Get the DPI used by the given window or wxSize(0, 0) if unknown.
     virtual wxSize GetDPI() const;
+
+    // Some ports need to modify the font object when the DPI of the window it
+    // is used with changes, this function can be used to do it.
+    //
+    // Currently it is only used in wxMSW and is not considered to be part of
+    // wxWidgets public API.
+    virtual void WXAdjustFontToOwnPPI(wxFont& WXUNUSED(font)) const { }
 
         // DPI-independent pixels, or DIPs, are pixel values for the standard
         // 96 DPI display, they are scaled to take the current resolution into
@@ -1530,6 +1547,13 @@ public:
     // Note that the event may end up being sent to a different window, if this
     // window is part of a composite control.
     bool WXSendContextMenuEvent(const wxPoint& posInScreenCoords);
+
+    // This internal function needs to be called to set the fitting client size
+    // (i.e. the minimum size determined by the window sizer) when the size
+    // that we really need to use is not known until the window is actually
+    // shown, as is the case for TLWs with recent GTK versions, as it will
+    // update the size again when it does become known, if necessary.
+    virtual void WXSetInitialFittingClientSize(int flags);
 
         // get the handle of the window for the underlying window system: this
         // is only used for wxWin itself or for user code which wants to call

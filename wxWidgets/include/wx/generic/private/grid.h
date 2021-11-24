@@ -24,55 +24,9 @@
 WX_DEFINE_ARRAY_WITH_DECL_PTR(wxGridCellAttr *, wxArrayAttrs,
                                  class WXDLLIMPEXP_ADV);
 
-struct wxGridCellWithAttr
-{
-    wxGridCellWithAttr(int row, int col, wxGridCellAttr *attr_)
-        : coords(row, col), attr(attr_)
-    {
-        wxASSERT( attr );
-    }
-
-    wxGridCellWithAttr(const wxGridCellWithAttr& other)
-        : coords(other.coords),
-          attr(other.attr)
-    {
-        attr->IncRef();
-    }
-
-    wxGridCellWithAttr& operator=(const wxGridCellWithAttr& other)
-    {
-        coords = other.coords;
-        if (attr != other.attr)
-        {
-            attr->DecRef();
-            attr = other.attr;
-            attr->IncRef();
-        }
-        return *this;
-    }
-
-    void ChangeAttr(wxGridCellAttr* new_attr)
-    {
-        if (attr != new_attr)
-        {
-            // "Delete" (i.e. DecRef) the old attribute.
-            attr->DecRef();
-            attr = new_attr;
-            // Take ownership of the new attribute, i.e. no IncRef.
-        }
-    }
-
-    ~wxGridCellWithAttr()
-    {
-        attr->DecRef();
-    }
-
-    wxGridCellCoords coords;
-    wxGridCellAttr  *attr;
-};
-
-WX_DECLARE_OBJARRAY_WITH_DECL(wxGridCellWithAttr, wxGridCellWithAttrArray,
-                              class WXDLLIMPEXP_ADV);
+WX_DECLARE_HASH_MAP_WITH_DECL(wxLongLong_t, wxGridCellAttr*,
+                              wxIntegerHash, wxIntegerEqual,
+                              wxGridCoordsToAttrMap, class WXDLLIMPEXP_CORE);
 
 
 // ----------------------------------------------------------------------------
@@ -468,16 +422,18 @@ private:
 class WXDLLIMPEXP_ADV wxGridCellAttrData
 {
 public:
+    ~wxGridCellAttrData();
+
     void SetAttr(wxGridCellAttr *attr, int row, int col);
     wxGridCellAttr *GetAttr(int row, int col) const;
     void UpdateAttrRows( size_t pos, int numRows );
     void UpdateAttrCols( size_t pos, int numCols );
 
 private:
-    // searches for the attr for given cell, returns wxNOT_FOUND if not found
-    int FindIndex(int row, int col) const;
+    // Tries to search for the attr for given cell.
+    wxGridCoordsToAttrMap::iterator FindIndex(int row, int col) const;
 
-    wxGridCellWithAttrArray m_attrs;
+    mutable wxGridCoordsToAttrMap m_attrs;
 };
 
 // this class stores attributes set for rows or columns
@@ -1083,6 +1039,61 @@ wxGetContentRect(wxSize contentSize,
                  const wxRect& cellRect,
                  int hAlign,
                  int vAlign);
+
+namespace wxGridPrivate
+{
+
+#if wxUSE_DATETIME
+
+// This is used as TryGetValueAsDate() parameter.
+class DateParseParams
+{
+public:
+    // Unfortunately we have to provide the default ctor (and also make the
+    // members non-const) because we use these objects as out-parameters as
+    // they are not fully declared in the public headers. The factory functions
+    // below must be used to create a really usable object.
+    DateParseParams() : fallbackParseDate(false) { }
+
+    // Use these functions to really initialize the object.
+    static DateParseParams WithFallback(const wxString& format)
+    {
+        return DateParseParams(format, true);
+    }
+
+    static DateParseParams WithoutFallback(const wxString& format)
+    {
+        return DateParseParams(format, false);
+    }
+
+    // The usual format, e.g. "%x" or "%Y-%m-%d".
+    wxString format;
+
+    // Whether fall back to ParseDate() is allowed.
+    bool fallbackParseDate;
+
+private:
+    DateParseParams(const wxString& format_, bool fallbackParseDate_)
+        : format(format_),
+          fallbackParseDate(fallbackParseDate_)
+    {
+    }
+};
+
+// Helper function trying to get a date from the given cell: if possible, get
+// the date value from the table directly, otherwise get the string value for
+// this cell and try to parse it using the specified date format and, if this
+// doesn't work and fallbackParseDate is true, try using ParseDate() as a
+// fallback. If this still fails, returns false.
+bool
+TryGetValueAsDate(wxDateTime& result,
+                  const DateParseParams& params,
+                  const wxGrid& grid,
+                  int row, int col);
+
+#endif // wxUSE_DATETIME
+
+} // namespace wxGridPrivate
 
 #endif // wxUSE_GRID
 #endif // _WX_GENERIC_GRID_PRIVATE_H_

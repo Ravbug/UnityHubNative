@@ -39,6 +39,13 @@
 #include "tiffio.h"
 #include "tiffiop.h"
 
+#ifndef EXIT_SUCCESS
+#define EXIT_SUCCESS 0
+#endif
+#ifndef EXIT_FAILURE
+#define EXIT_FAILURE 1
+#endif
+
 #define	streq(a,b)	(strcmp(a,b) == 0)
 #define	strneq(a,b,n)	(strncmp(a,b,n) == 0)
 
@@ -49,7 +56,7 @@ uint32	imagewidth;
 uint32	imagelength;
 int	threshold = 128;
 
-static	void usage(void);
+static	void usage(int code);
 
 /* 
  * Floyd-Steinberg error propragation with threshold.
@@ -166,7 +173,7 @@ processG3Options(char* cp)
 			else if (strneq(cp, "fill", 4))
 				group3options |= GROUP3OPT_FILLBITS;
 			else
-				usage();
+				usage(EXIT_FAILURE);
 		} while ((cp = strchr(cp, ':')));
 	}
 }
@@ -213,11 +220,11 @@ main(int argc, char* argv[])
 	extern char *optarg;
 #endif
 
-	while ((c = getopt(argc, argv, "c:f:r:t:")) != -1)
+	while ((c = getopt(argc, argv, "c:f:r:t:h")) != -1)
 		switch (c) {
 		case 'c':		/* compression scheme */
 			if (!processCompressOptions(optarg))
-				usage();
+				usage(EXIT_FAILURE);
 			break;
 		case 'f':		/* fill order */
 			if (streq(optarg, "lsb2msb"))
@@ -225,7 +232,7 @@ main(int argc, char* argv[])
 			else if (streq(optarg, "msb2lsb"))
 				fillorder = FILLORDER_MSB2LSB;
 			else
-				usage();
+				usage(EXIT_FAILURE);
 			break;
 		case 'r':		/* rows/strip */
 			rowsperstrip = atoi(optarg);
@@ -237,29 +244,31 @@ main(int argc, char* argv[])
 			else if (threshold > 255)
 				threshold = 255;
 			break;
+		case 'h':
+			usage(EXIT_SUCCESS);
 		case '?':
-			usage();
+			usage(EXIT_FAILURE);
 			/*NOTREACHED*/
 		}
 	if (argc - optind < 2)
-		usage();
+		usage(EXIT_FAILURE);
 	in = TIFFOpen(argv[optind], "r");
 	if (in == NULL)
-		return (-1);
+		return (EXIT_FAILURE);
 	TIFFGetField(in, TIFFTAG_SAMPLESPERPIXEL, &samplesperpixel);
 	if (samplesperpixel != 1) {
 		fprintf(stderr, "%s: Not a b&w image.\n", argv[0]);
-		return (-1);
+		return (EXIT_FAILURE);
 	}
 	TIFFGetField(in, TIFFTAG_BITSPERSAMPLE, &bitspersample);
 	if (bitspersample != 8) {
 		fprintf(stderr,
 		    " %s: Sorry, only handle 8-bit samples.\n", argv[0]);
-		return (-1);
+		return (EXIT_FAILURE);
 	}
 	out = TIFFOpen(argv[optind+1], "w");
 	if (out == NULL)
-		return (-1);
+		return (EXIT_FAILURE);
 	CopyField(TIFFTAG_IMAGEWIDTH, imagewidth);
 	TIFFGetField(in, TIFFTAG_IMAGELENGTH, &imagelength);
 	TIFFSetField(out, TIFFTAG_IMAGELENGTH, imagelength-1);
@@ -293,10 +302,10 @@ main(int argc, char* argv[])
 	fsdither(in, out);
 	TIFFClose(in);
 	TIFFClose(out);
-	return (0);
+	return (EXIT_SUCCESS);
 }
 
-char* stuff[] = {
+static const char* stuff[] = {
 "usage: tiffdither [options] input.tif output.tif",
 "where options are:",
 " -r #		make each strip have no more than # rows",
@@ -323,16 +332,15 @@ NULL
 };
 
 static void
-usage(void)
+usage(int code)
 {
-	char buf[BUFSIZ];
 	int i;
+	FILE * out = (code == EXIT_SUCCESS) ? stdout : stderr;
 
-	setbuf(stderr, buf);
-        fprintf(stderr, "%s\n\n", TIFFGetVersion());
+        fprintf(out, "%s\n\n", TIFFGetVersion());
 	for (i = 0; stuff[i] != NULL; i++)
-		fprintf(stderr, "%s\n", stuff[i]);
-	exit(-1);
+		fprintf(out, "%s\n", stuff[i]);
+	exit(code);
 }
 
 /* vim: set ts=8 sts=8 sw=8 noet: */

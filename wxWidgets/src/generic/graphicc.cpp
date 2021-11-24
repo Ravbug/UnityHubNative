@@ -10,9 +10,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_GRAPHICS_CONTEXT
 
@@ -444,17 +441,23 @@ public:
 
     virtual bool ShouldOffset() const wxOVERRIDE
     {
-        if ( !m_enableOffset )
+        if (!m_enableOffset || m_pen.IsNull())
             return false;
 
-        int penwidth = 0 ;
-        if ( !m_pen.IsNull() )
-        {
-            penwidth = (int)((wxCairoPenData*)m_pen.GetRefData())->GetWidth();
-            if ( penwidth == 0 )
-                penwidth = 1;
-        }
-        return ( penwidth % 2 ) == 1;
+        const double width = static_cast<wxCairoPenData*>(m_pen.GetRefData())->GetWidth();
+
+        // always offset for 1-pixel width
+        if (width <= 0)
+            return true;
+
+        // no offset if overall scale is not odd integer
+        double x = GetContentScaleFactor(), y = x;
+        cairo_user_to_device_distance(m_context, &x, &y);
+        if (!wxIsSameDouble(fmod(wxMin(fabs(x), fabs(y)), 2.0), 1.0))
+            return false;
+
+        // offset if pen width is odd integer
+        return wxIsSameDouble(fmod(width, 2.0), 1.0);
     }
 
     virtual void Clip( const wxRegion &region ) wxOVERRIDE;
@@ -590,6 +593,8 @@ public:
         m_data(renderer, image)
     {
         Init(cairo_create(m_data.GetCairoSurface()));
+        m_width = image.GetWidth();
+        m_height = image.GetHeight();
     }
 
     virtual ~wxCairoImageContext()
@@ -775,7 +780,7 @@ void wxCairoPenBrushBaseData::AddGradientStops(const wxGraphicsGradientStops& st
         cairo_pattern_add_color_stop_rgba
         (
             m_pattern,
-            stop.GetPosition(),
+            double(stop.GetPosition()),
             col.Red()/255.0,
             col.Green()/255.0,
             col.Blue()/255.0,
@@ -845,8 +850,6 @@ wxCairoPenData::wxCairoPenData( wxGraphicsRenderer* renderer, const wxGraphicsPe
 {
     Init();
     m_width = info.GetWidth();
-    if (m_width <= 0.0)
-        m_width = 0.1;
 
     switch ( info.GetCap() )
     {
@@ -1018,7 +1021,14 @@ void wxCairoPenData::Apply( wxGraphicsContext* context )
     wxCairoPenBrushBaseData::Apply(context);
 
     cairo_t * ctext = (cairo_t*) context->GetNativeContext();
-    cairo_set_line_width(ctext,m_width);
+    double width = m_width;
+    if (width <= 0)
+    {
+        double x = context->GetContentScaleFactor(), y = x;
+        cairo_user_to_device_distance(ctext, &x, &y);
+        width = 1 / wxMin(fabs(x), fabs(y));
+    }
+    cairo_set_line_width(ctext, width);
     cairo_set_line_cap(ctext,m_cap);
     cairo_set_line_join(ctext,m_join);
     cairo_set_dash(ctext, m_lengths, m_count, 0);
@@ -1713,7 +1723,7 @@ wxCairoBitmapData::wxCairoBitmapData(wxGraphicsRenderer* renderer,
                                      const wxImage& image)
     : wxGraphicsBitmapData(renderer)
 {
-    const cairo_format_t bufferFormat = image.HasAlpha()
+    const cairo_format_t bufferFormat = image.HasAlpha() || image.HasMask()
                                             ? CAIRO_FORMAT_ARGB32
                                             : CAIRO_FORMAT_RGB24;
 
@@ -1735,13 +1745,16 @@ wxCairoBitmapData::wxCairoBitmapData(wxGraphicsRenderer* renderer,
 
             for ( int x = 0; x < m_width; x++ )
             {
-                const unsigned char a = *alpha++;
+                const unsigned char a = alpha ? *alpha : wxALPHA_OPAQUE;
 
-                *dst++ = a                      << 24 |
-                         Premultiply(a, src[0]) << 16 |
-                         Premultiply(a, src[1]) <<  8 |
-                         Premultiply(a, src[2]);
+                *dst++ = a                    << 24 |
+                         ((a * src[0]) / 255) << 16 |
+                         ((a * src[1]) / 255) <<  8 |
+                         ((a * src[2]) / 255);
                 src += 3;
+
+                if ( alpha )
+                    alpha++;
             }
 
             dst = rowStartDst + stride / 4;
@@ -1762,6 +1775,37 @@ wxCairoBitmapData::wxCairoBitmapData(wxGraphicsRenderer* renderer,
             }
 
             dst = rowStartDst + stride / 4;
+        }
+    }
+
+    // if there is a mask, set the alpha bytes in the target buffer to
+    // fully transparent or retain original value
+    if ( image.HasMask() )
+    {
+        unsigned char mr = image.GetMaskRed();
+        unsigned char mg = image.GetMaskGreen();
+        unsigned char mb = image.GetMaskBlue();
+
+        dst = reinterpret_cast<wxUint32*>(m_buffer);
+        src = image.GetData();
+
+        if ( bufferFormat == CAIRO_FORMAT_ARGB32 )
+        {
+            for ( int y = 0; y < m_height; y++ )
+            {
+                wxUint32* const rowStartDst = dst;
+
+                for ( int x = 0; x < m_width; x++ )
+                {
+                    if ( src[0] == mr && src[1] == mg && src[2] == mb )
+                        *dst = 0;
+
+                    dst++;
+                    src += 3;
+                }
+
+                dst = rowStartDst + stride / 4;
+            }
         }
     }
 
@@ -1879,21 +1923,26 @@ wxCairoBitmapData::~wxCairoBitmapData()
 class wxCairoOffsetHelper
 {
 public :
-    wxCairoOffsetHelper( cairo_t* ctx , bool offset )
+    wxCairoOffsetHelper(cairo_t* ctx, double scaleFactor, bool offset)
     {
         m_ctx = ctx;
-        m_offset = offset;
-        if ( m_offset )
-             cairo_translate( m_ctx, 0.5, 0.5 );
+        m_offset = 0;
+        if (offset)
+        {
+             double x = scaleFactor, y = x;
+             cairo_user_to_device_distance(ctx, &x, &y);
+             m_offset = 0.5 / wxMin(fabs(x), fabs(y));
+             cairo_translate(m_ctx, m_offset, m_offset);
+        }
     }
     ~wxCairoOffsetHelper( )
     {
-        if ( m_offset )
-            cairo_translate( m_ctx, -0.5, -0.5 );
+        if (m_offset > 0)
+            cairo_translate(m_ctx, -m_offset, -m_offset);
     }
-public :
+private:
     cairo_t* m_ctx;
-    bool m_offset;
+    double m_offset;
 } ;
 
 #if wxUSE_PRINTING_ARCHITECTURE
@@ -1943,7 +1992,7 @@ wxCairoContext::wxCairoContext( wxGraphicsRenderer* renderer, const wxWindowDC& 
     m_width = width;
     m_height = height;
 
-    m_enableOffset = dc.GetContentScaleFactor() <= 1;
+    EnableOffset();
 
 #ifdef __WXMSW__
     HDC hdc = (HDC)dc.GetHDC();
@@ -1996,7 +2045,7 @@ wxCairoContext::wxCairoContext( wxGraphicsRenderer* renderer, const wxMemoryDC& 
     m_width = width;
     m_height = height;
 
-    m_enableOffset = dc.GetContentScaleFactor() <= 1;
+    SetContentScaleFactor(dc.GetContentScaleFactor());
 
 #ifdef __WXMSW__
     wxBitmap bmp = dc.GetSelectedBitmap();
@@ -2319,7 +2368,7 @@ wxCairoContext::wxCairoContext(wxGraphicsRenderer* renderer, HWND hWnd)
 {
     // See remarks for wxWindowBase::GetContentScaleFactor
     double scaleY = ::GetDeviceCaps((HDC)m_mswWindowHDC, LOGPIXELSY) / 96.0f;
-    m_enableOffset = scaleY <= 1.0;
+    SetContentScaleFactor(scaleY);
 
     m_mswStateSavedDC = 0;
     m_mswSurface = cairo_win32_surface_create((HDC)m_mswWindowHDC);
@@ -2360,7 +2409,7 @@ wxCairoContext::wxCairoContext( wxGraphicsRenderer* renderer, wxWindow *window)
     , m_mswWindowHDC(GetHwndOf(window))
 #endif
 {
-    m_enableOffset = window->GetContentScaleFactor() <= 1;
+    EnableOffset();
 #ifdef __WXGTK__
     // something along these lines (copied from dcclient)
 
@@ -2572,7 +2621,7 @@ void wxCairoContext::StrokePath( const wxGraphicsPath& path )
 {
     if ( !m_pen.IsNull() )
     {
-        wxCairoOffsetHelper helper( m_context, ShouldOffset() ) ;
+        wxCairoOffsetHelper helper(m_context, GetContentScaleFactor(), ShouldOffset());
         cairo_path_t* cp = (cairo_path_t*) path.GetNativePath() ;
         cairo_append_path(m_context,cp);
         ((wxCairoPenData*)m_pen.GetRefData())->Apply(this);
@@ -2585,7 +2634,7 @@ void wxCairoContext::FillPath( const wxGraphicsPath& path , wxPolygonFillMode fi
 {
     if ( !m_brush.IsNull() )
     {
-        wxCairoOffsetHelper helper( m_context, ShouldOffset() ) ;
+        wxCairoOffsetHelper helper(m_context, GetContentScaleFactor(), ShouldOffset());
         cairo_path_t* cp = (cairo_path_t*) path.GetNativePath() ;
         cairo_append_path(m_context,cp);
         ((wxCairoBrushData*)m_brush.GetRefData())->Apply(this);
@@ -2614,7 +2663,7 @@ void wxCairoContext::DrawRectangle( wxDouble x, wxDouble y, wxDouble w, wxDouble
     }
     if ( !m_pen.IsNull() )
     {
-        wxCairoOffsetHelper helper( m_context, ShouldOffset() ) ;
+        wxCairoOffsetHelper helper(m_context, GetContentScaleFactor(), ShouldOffset());
         ((wxCairoPenData*)m_pen.GetRefData())->Apply(this);
         cairo_rectangle(m_context, x, y, w, h);
         cairo_stroke(m_context);
@@ -2940,6 +2989,13 @@ bool wxCairoContext::SetAntialiasMode(wxAntialiasMode antialias)
             return false;
     }
     cairo_set_antialias(m_context, antialiasMode);
+
+    cairo_font_options_t* options = cairo_font_options_create();
+    cairo_get_font_options(m_context, options);
+    cairo_font_options_set_antialias(options, antialiasMode);
+    cairo_set_font_options(m_context, options);
+    cairo_font_options_destroy(options);
+
     return true;
 }
 
@@ -3015,7 +3071,7 @@ void wxCairoContext::EndLayer()
     float opacity = m_layerOpacities.back();
     m_layerOpacities.pop_back();
     cairo_pop_group_to_source(m_context);
-    cairo_paint_with_alpha(m_context,opacity);
+    cairo_paint_with_alpha(m_context, double(opacity));
 }
 
 //-----------------------------------------------------------------------------

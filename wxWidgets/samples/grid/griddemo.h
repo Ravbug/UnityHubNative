@@ -49,6 +49,8 @@ class GridFrame : public wxFrame
     void AutoSizeCols( wxCommandEvent& );
     void CellOverflow( wxCommandEvent& );
     void ResizeCell( wxCommandEvent& );
+    void ToggleCheckeredCells( wxCommandEvent& );
+    void ToggleColouredCells( wxCommandEvent& );
     void SetLabelColour( wxCommandEvent& );
     void SetLabelTextColour( wxCommandEvent& );
     void SetLabelFont(wxCommandEvent &);
@@ -76,6 +78,7 @@ class GridFrame : public wxFrame
     void SelectRows( wxCommandEvent& );
     void SelectCols( wxCommandEvent& );
     void SelectRowsOrCols( wxCommandEvent& );
+    void SelectNone( wxCommandEvent& );
 
     void FreezeOrThaw( wxCommandEvent& );
 
@@ -110,6 +113,7 @@ class GridFrame : public wxFrame
     void OnColAutoSize( wxGridSizeEvent& );
     void OnSelectCell( wxGridEvent& );
     void OnRangeSelected( wxGridRangeSelectEvent& );
+    void OnRangeSelecting( wxGridRangeSelectEvent& );
     void OnCellValueChanging( wxGridEvent& );
     void OnCellValueChanged( wxGridEvent& );
     void OnCellBeginDrag( wxGridEvent& );
@@ -129,7 +133,8 @@ public:
     ~GridFrame();
 
     void OnQuit( wxCommandEvent& );
-    void About( wxCommandEvent& );
+    void OnClear( wxCommandEvent& );
+    void OnAbout( wxCommandEvent& );
     void OnVTable( wxCommandEvent& );
     void OnBugsTable( wxCommandEvent& );
     void OnTabularTable( wxCommandEvent& );
@@ -150,6 +155,8 @@ public:
         ID_TOGGLEGRIDLINES,
         ID_AUTOSIZECOLS,
         ID_CELLOVERFLOW,
+        ID_TOGGLE_CHECKERED_CELLS,
+        ID_TOGGLE_COLOURED_CELLS,
         ID_HIDECOL,
         ID_SHOWCOL,
         ID_HIDEROW,
@@ -190,6 +197,7 @@ public:
         ID_SELROWS,
         ID_SELCOLS,
         ID_SELROWSORCOLS,
+        ID_SELNONE,
         ID_SET_CELL_FG_COLOUR,
         ID_SET_CELL_BG_COLOUR,
         ID_VTABLE,

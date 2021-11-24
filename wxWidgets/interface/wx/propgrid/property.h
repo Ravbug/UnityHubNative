@@ -360,12 +360,12 @@ wxPG_PROP_USES_COMMON_VALUE         = 0x00020000,
 */
 wxPG_PROP_AUTO_UNSPECIFIED          = 0x00040000,
 
-/** Indicates the bit useable by derived properties.
+/** Indicates the bit usable by derived properties.
     @hideinitializer
 */
 wxPG_PROP_CLASS_SPECIFIC_1          = 0x00080000,
 
-/** Indicates the bit useable by derived properties.
+/** Indicates the bit usable by derived properties.
     @hideinitializer
 */
 wxPG_PROP_CLASS_SPECIFIC_2          = 0x00100000,
@@ -375,7 +375,7 @@ wxPG_PROP_CLASS_SPECIFIC_2          = 0x00100000,
 */
 wxPG_PROP_BEING_DELETED             = 0x00200000
 
-/** Indicates the bit useable by derived properties.
+/** Indicates the bit usable by derived properties.
     @hideinitializer
 */
 wxPG_PROP_CLASS_SPECIFIC_3          = 0x00400000
@@ -1016,7 +1016,7 @@ public:
         @param value
             Int to get the value from.
         @param flags
-            If has ::wxPG_FULL_VALUE, then the value given is a actual value and not an index.
+            If has ::wxPG_FULL_VALUE, then the value given is an actual value and not an index.
 
         @return @true if value was changed.
     */
@@ -2784,7 +2784,7 @@ public:
     void EnsureData();
 
     /**
-        Gets a unsigned number identifying this list.
+        Gets an unsigned number identifying this list.
     */
     wxPGChoicesId GetId() const;
 

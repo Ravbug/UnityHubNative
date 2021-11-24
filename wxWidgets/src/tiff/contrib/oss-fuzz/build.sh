@@ -45,18 +45,30 @@ if [ "$ARCHITECTURE" = "i386" ]; then
 else
     make lib
 fi
+
 mv "$SRC"/jbigkit/libjbig/*.a "$WORK/lib/"
 mv "$SRC"/jbigkit/libjbig/*.h "$WORK/include/"
 popd
+
+if [ "$ARCHITECTURE" != "i386" ]; then
+    apt-get install -y liblzma-dev
+fi
 
 cmake . -DCMAKE_INSTALL_PREFIX=$WORK -DBUILD_SHARED_LIBS=off
 make -j$(nproc)
 make install
 
-$CXX $CXXFLAGS -std=c++11 -I$WORK/include \
-    $SRC/libtiff/contrib/oss-fuzz/tiff_read_rgba_fuzzer.cc -o $OUT/tiff_read_rgba_fuzzer \
-    $LIB_FUZZING_ENGINE $WORK/lib/libtiffxx.a $WORK/lib/libtiff.a $WORK/lib/libz.a $WORK/lib/libjpeg.a \
-    $WORK/lib/libjbig.a $WORK/lib/libjbig85.a
+if [ "$ARCHITECTURE" = "i386" ]; then
+    $CXX $CXXFLAGS -std=c++11 -I$WORK/include \
+        $SRC/libtiff/contrib/oss-fuzz/tiff_read_rgba_fuzzer.cc -o $OUT/tiff_read_rgba_fuzzer \
+        $LIB_FUZZING_ENGINE $WORK/lib/libtiffxx.a $WORK/lib/libtiff.a $WORK/lib/libz.a $WORK/lib/libjpeg.a \
+        $WORK/lib/libjbig.a $WORK/lib/libjbig85.a
+else
+    $CXX $CXXFLAGS -std=c++11 -I$WORK/include \
+        $SRC/libtiff/contrib/oss-fuzz/tiff_read_rgba_fuzzer.cc -o $OUT/tiff_read_rgba_fuzzer \
+        $LIB_FUZZING_ENGINE $WORK/lib/libtiffxx.a $WORK/lib/libtiff.a $WORK/lib/libz.a $WORK/lib/libjpeg.a \
+        $WORK/lib/libjbig.a $WORK/lib/libjbig85.a -Wl,-Bstatic -llzma -Wl,-Bdynamic
+fi
 
 mkdir afl_testcases
 (cd afl_testcases; tar xf "$SRC/afl_testcases.tgz")

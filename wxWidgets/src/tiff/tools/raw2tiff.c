@@ -59,6 +59,13 @@
 #include "tiffiop.h"
 #include "tiffio.h"
 
+#ifndef EXIT_SUCCESS
+#define EXIT_SUCCESS 0
+#endif
+#ifndef EXIT_FAILURE
+#define EXIT_FAILURE 1
+#endif
+
 #ifndef HAVE_GETOPT
 extern int getopt(int argc, char * const argv[], const char *optstring);
 #endif
@@ -81,7 +88,7 @@ static void swapBytesInScanline(void *, uint32, TIFFDataType);
 static int guessSize(int, TIFFDataType, _TIFF_off_t, uint32, int,
 		     uint32 *, uint32 *);
 static double correlation(void *, void *, uint32, TIFFDataType);
-static void usage(void);
+static void usage(int);
 static	int processCompressOptions(char*);
 
 int
@@ -114,7 +121,7 @@ main(int argc, char* argv[])
 		switch (c) {
 		case 'c':		/* compression scheme */
 			if (!processCompressOptions(optarg))
-				usage();
+				usage(EXIT_FAILURE);
 			break;
 		case 'r':		/* rows/strip */
 			rowsperstrip = atoi(optarg);
@@ -193,24 +200,24 @@ main(int argc, char* argv[])
 			outfilename = optarg;
 			break;
 		case 'h':
-			usage();
+			usage(EXIT_SUCCESS);
 		default:
 			break;
 		}
         }
 
         if (argc - optind < 2)
-		usage();
+		usage(EXIT_FAILURE);
 
         fd = open(argv[optind], O_RDONLY|O_BINARY, 0);
 	if (fd < 0) {
 		fprintf(stderr, "%s: %s: Cannot open input file.\n",
 			argv[0], argv[optind]);
-		return (-1);
+		return (EXIT_FAILURE);
 	}
 
 	if (guessSize(fd, dtype, hdr_size, nbands, swab, &width, &length) < 0)
-		return 1;
+		return EXIT_FAILURE;
 
 	if (outfilename == NULL)
 		outfilename = argv[optind+1];
@@ -218,7 +225,7 @@ main(int argc, char* argv[])
 	if (out == NULL) {
 		fprintf(stderr, "%s: %s: Cannot open file for output.\n",
 			argv[0], outfilename);
-		return (-1);
+		return (EXIT_FAILURE);
 	}
 	TIFFSetField(out, TIFFTAG_IMAGEWIDTH, width);
 	TIFFSetField(out, TIFFTAG_IMAGELENGTH, length);
@@ -336,7 +343,7 @@ main(int argc, char* argv[])
 	if (buf1)
 		_TIFFfree(buf1);
 	TIFFClose(out);
-	return (0);
+	return (EXIT_SUCCESS);
 }
 
 static void
@@ -372,7 +379,7 @@ guessSize(int fd, TIFFDataType dtype, _TIFF_off_t hdr_size, uint32 nbands,
 	_TIFF_stat_s filestat;
 	uint32	    w, h, scanlinesize, imagesize;
 	uint32	    depth = TIFFDataWidth(dtype);
-	float	    cor_coef = 0, tmp;
+	double	    cor_coef = 0, tmp;
 
 	if (_TIFF_fstat_f(fd, &filestat) == -1) {
                 fprintf(stderr, "Failed to obtain file size.\n");
@@ -419,22 +426,28 @@ guessSize(int fd, TIFFDataType dtype, _TIFF_off_t hdr_size, uint32 nbands,
 		     w++) {
 			if (imagesize % w == 0) {
 				scanlinesize = w * depth;
+				h = imagesize / w;
+				if (h < 2)
+					continue;
+				/* reads 2 lines at the middle of the image and calculate their correlation.
+				 * it works for h >= 2. (in this case it will compare line 0 and line 1 */
 				buf1 = _TIFFmalloc(scanlinesize);
 				buf2 = _TIFFmalloc(scanlinesize);
-				h = imagesize / w;
                                 do {
-                                        if (_TIFF_lseek_f(fd, hdr_size + (int)(h/2)*scanlinesize,
+                                        if (_TIFF_lseek_f(fd, hdr_size + (int)((h - 1)/2)*scanlinesize,
                                                   SEEK_SET) == (_TIFF_off_t)-1) {
                                                 fprintf(stderr, "seek error.\n");
                                                 fail=1;
                                                 break;
                                         }
+                                        /* read line (h-1)/2 */
                                         if (read(fd, buf1, scanlinesize) !=
                                             (long) scanlinesize) {
                                                 fprintf(stderr, "read error.\n");
                                                 fail=1;
                                                 break;
                                         }
+                                        /* read line ((h-1)/2)+1 */
                                         if (read(fd, buf2, scanlinesize) !=
                                             (long) scanlinesize) {
                                                 fprintf(stderr, "read error.\n");
@@ -445,11 +458,15 @@ guessSize(int fd, TIFFDataType dtype, _TIFF_off_t hdr_size, uint32 nbands,
                                                 swapBytesInScanline(buf1, w, dtype);
                                                 swapBytesInScanline(buf2, w, dtype);
                                         }
-                                        tmp = (float) fabs(correlation(buf1, buf2,
-                                                                       w, dtype));
-                                        if (tmp > cor_coef) {
-                                                cor_coef = tmp;
+                                        if (0 == memcmp(buf1, buf2, scanlinesize)) {
                                                 *width = w, *length = h;
+                                        } else {
+                                                tmp = fabs(correlation(buf1, buf2,
+                                                                       w, dtype));
+                                                if (tmp > cor_coef) {
+                                                        cor_coef = tmp;
+                                                        *width = w, *length = h;
+                                                }
                                         }
                                 } while (0);
 
@@ -564,6 +581,7 @@ correlation(void *buf1, void *buf2, uint32 n_elem, TIFFDataType dtype)
 	M2 /= n_elem;
 	D1 -= M1 * M1 * n_elem;
 	D2 -= M2 * M2 * n_elem;
+	if (D1 * D2 == 0.0) return 0.0;	/* avoid divide by zero */
 	K = (K - M1 * M2 * n_elem) / sqrt(D1 * D2);
 
 	return K;
@@ -587,7 +605,7 @@ processCompressOptions(char* opt)
                     else if (cp[1] == 'r' )
 			jpegcolormode = JPEGCOLORMODE_RAW;
                     else
-                        usage();
+                        usage(EXIT_FAILURE);
 
                     cp = strchr(cp+1,':');
                 }
@@ -606,7 +624,7 @@ processCompressOptions(char* opt)
 	return (1);
 }
 
-static char* stuff[] = {
+static const char* stuff[] = {
 "raw2tiff --- tool for converting raw byte sequences in TIFF images",
 "usage: raw2tiff [options] input.raw output.tif",
 "where options are:",
@@ -667,16 +685,15 @@ NULL
 };
 
 static void
-usage(void)
+usage(int code)
 {
-	char buf[BUFSIZ];
 	int i;
+	FILE * out = (code == EXIT_SUCCESS) ? stdout : stderr;
 
-	setbuf(stderr, buf);
-        fprintf(stderr, "%s\n\n", TIFFGetVersion());
+        fprintf(out, "%s\n\n", TIFFGetVersion());
 	for (i = 0; stuff[i] != NULL; i++)
-		fprintf(stderr, "%s\n", stuff[i]);
-	exit(-1);
+		fprintf(out, "%s\n", stuff[i]);
+	exit(code);
 }
 
 /* vim: set ts=8 sts=8 sw=8 noet: */

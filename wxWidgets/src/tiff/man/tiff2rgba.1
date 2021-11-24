@@ -87,6 +87,10 @@ Drop the alpha component from the output file, producing a pure RGB file.
 Currently this does not work if the
 .B \-b
 flag is also in effect.
+.TP
+.BI \-M " size"
+Set maximum memory allocation size (in MiB). The default is 256MiB.
+Set to 0 to disable the limit.
 .SH "SEE ALSO"
 .BR tiff2bw (1),
 .BR TIFFReadRGBAImage (3t),

@@ -533,6 +533,13 @@ TIFFSetupStrips(TIFF* tif)
 		    isUnspecified(tif, FIELD_ROWSPERSTRIP) ?
 			td->td_samplesperpixel : TIFFNumberOfStrips(tif);
 	td->td_nstrips = td->td_stripsperimage;
+        /* TIFFWriteDirectoryTagData has a limitation to 0x80000000U bytes */
+        if( td->td_nstrips >= 0x80000000U / ((tif->tif_flags&TIFF_BIGTIFF)?0x8U:0x4U) )
+        {
+            TIFFErrorExt(tif->tif_clientdata, "TIFFSetupStrips",
+                         "Too large Strip/Tile Offsets/ByteCounts arrays");
+            return 0;
+        }
 	if (td->td_planarconfig == PLANARCONFIG_SEPARATE)
 		td->td_stripsperimage /= td->td_samplesperpixel;
 	td->td_stripoffset_p = (uint64 *)
@@ -661,6 +668,10 @@ TIFFWriteBufferSetup(TIFF* tif, void* bp, tmsize_t size)
 	if (size == (tmsize_t)(-1)) {
 		size = (isTiled(tif) ?
 		    tif->tif_tilesize : TIFFStripSize(tif));
+
+                /* Adds 10% margin for cases where compression would expand a bit */
+                if( size < TIFF_TMSIZE_T_MAX - size / 10 )
+                    size += size / 10;
 		/*
 		 * Make raw data buffer at least 8K
 		 */

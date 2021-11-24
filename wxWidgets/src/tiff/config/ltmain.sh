@@ -31,7 +31,7 @@
 
 PROGRAM=libtool
 PACKAGE=libtool
-VERSION=2.4.6
+VERSION="2.4.6 Debian-2.4.6-9"
 package_revision=2.4.6
 
 
@@ -1370,7 +1370,7 @@ func_lt_ver ()
 #! /bin/sh
 
 # Set a version string for this script.
-scriptversion=2014-01-07.03; # UTC
+scriptversion=2015-10-07.11; # UTC
 
 # A portable, pluggable option parser for Bourne shell.
 # Written by Gary V. Vaughan, 2010
@@ -1530,6 +1530,8 @@ func_run_hooks ()
 {
     $debug_cmd
 
+    _G_rc_run_hooks=false
+
     case " $hookable_fns " in
       *" $1 "*) ;;
       *) func_fatal_error "'$1' does not support hook funcions.n" ;;
@@ -1538,16 +1540,16 @@ func_run_hooks ()
     eval _G_hook_fns=\$$1_hooks; shift
 
     for _G_hook in $_G_hook_fns; do
-      eval $_G_hook '"$@"'
-
-      # store returned options list back into positional
-      # parameters for next 'cmd' execution.
-      eval _G_hook_result=\$${_G_hook}_result
-      eval set dummy "$_G_hook_result"; shift
+      if eval $_G_hook '"$@"'; then
+        # store returned options list back into positional
+        # parameters for next 'cmd' execution.
+        eval _G_hook_result=\$${_G_hook}_result
+        eval set dummy "$_G_hook_result"; shift
+        _G_rc_run_hooks=:
+      fi
     done
 
-    func_quote_for_eval ${1+"$@"}
-    func_run_hooks_result=$func_quote_for_eval_result
+    $_G_rc_run_hooks && func_run_hooks_result=$_G_hook_result
 }
 
 
@@ -1557,10 +1559,16 @@ func_run_hooks ()
 ## --------------- ##
 
 # In order to add your own option parsing hooks, you must accept the
-# full positional parameter list in your hook function, remove any
-# options that you action, and then pass back the remaining unprocessed
+# full positional parameter list in your hook function, you may remove/edit
+# any options that you action, and then pass back the remaining unprocessed
 # options in '<hooked_function_name>_result', escaped suitably for
-# 'eval'.  Like this:
+# 'eval'.  In this case you also must return $EXIT_SUCCESS to let the
+# hook's caller know that it should pay attention to
+# '<hooked_function_name>_result'.  Returning $EXIT_FAILURE signalizes that
+# arguments are left untouched by the hook and therefore caller will ignore the
+# result variable.
+#
+# Like this:
 #
 #    my_options_prep ()
 #    {
@@ -1570,9 +1578,11 @@ func_run_hooks ()
 #        usage_message=$usage_message'
 #      -s, --silent       don'\''t print informational messages
 #    '
-#
-#        func_quote_for_eval ${1+"$@"}
-#        my_options_prep_result=$func_quote_for_eval_result
+#        # No change in '$@' (ignored completely by this hook).  There is
+#        # no need to do the equivalent (but slower) action:
+#        # func_quote_for_eval ${1+"$@"}
+#        # my_options_prep_result=$func_quote_for_eval_result
+#        false
 #    }
 #    func_add_hook func_options_prep my_options_prep
 #
@@ -1581,25 +1591,37 @@ func_run_hooks ()
 #    {
 #        $debug_cmd
 #
+#        args_changed=false
+#
 #        # Note that for efficiency, we parse as many options as we can
 #        # recognise in a loop before passing the remainder back to the
 #        # caller on the first unrecognised argument we encounter.
 #        while test $# -gt 0; do
 #          opt=$1; shift
 #          case $opt in
-#            --silent|-s) opt_silent=: ;;
+#            --silent|-s) opt_silent=:
+#                         args_changed=:
+#                         ;;
 #            # Separate non-argument short options:
 #            -s*)         func_split_short_opt "$_G_opt"
 #                         set dummy "$func_split_short_opt_name" \
 #                             "-$func_split_short_opt_arg" ${1+"$@"}
 #                         shift
+#                         args_changed=:
 #                         ;;
-#            *)            set dummy "$_G_opt" "$*"; shift; break ;;
+#            *)           # Make sure the first unrecognised option "$_G_opt"
+#                         # is added back to "$@", we could need that later
+#                         # if $args_changed is true.
+#                         set dummy "$_G_opt" ${1+"$@"}; shift; break ;;
 #          esac
 #        done
 #
-#        func_quote_for_eval ${1+"$@"}
-#        my_silent_option_result=$func_quote_for_eval_result
+#        if $args_changed; then
+#          func_quote_for_eval ${1+"$@"}
+#          my_silent_option_result=$func_quote_for_eval_result
+#        fi
+#
+#        $args_changed
 #    }
 #    func_add_hook func_parse_options my_silent_option
 #
@@ -1611,14 +1633,30 @@ func_run_hooks ()
 #        $opt_silent && $opt_verbose && func_fatal_help "\
 #    '--silent' and '--verbose' options are mutually exclusive."
 #
-#        func_quote_for_eval ${1+"$@"}
-#        my_option_validation_result=$func_quote_for_eval_result
+#        false
 #    }
 #    func_add_hook func_validate_options my_option_validation
 #
-# You'll alse need to manually amend $usage_message to reflect the extra
+# You'll also need to manually amend $usage_message to reflect the extra
 # options you parse.  It's preferable to append if you can, so that
 # multiple option parsing hooks can be added safely.
+
+
+# func_options_finish [ARG]...
+# ----------------------------
+# Finishing the option parse loop (call 'func_options' hooks ATM).
+func_options_finish ()
+{
+    $debug_cmd
+
+    _G_func_options_finish_exit=false
+    if func_run_hooks func_options ${1+"$@"}; then
+      func_options_finish_result=$func_run_hooks_result
+      _G_func_options_finish_exit=:
+    fi
+
+    $_G_func_options_finish_exit
+}
 
 
 # func_options [ARG]...
@@ -1630,17 +1668,28 @@ func_options ()
 {
     $debug_cmd
 
-    func_options_prep ${1+"$@"}
-    eval func_parse_options \
-        ${func_options_prep_result+"$func_options_prep_result"}
-    eval func_validate_options \
-        ${func_parse_options_result+"$func_parse_options_result"}
+    _G_rc_options=false
 
-    eval func_run_hooks func_options \
-        ${func_validate_options_result+"$func_validate_options_result"}
+    for my_func in options_prep parse_options validate_options options_finish
+    do
+      if eval func_$my_func '${1+"$@"}'; then
+        eval _G_res_var='$'"func_${my_func}_result"
+        eval set dummy "$_G_res_var" ; shift
+        _G_rc_options=:
+      fi
+    done
 
-    # save modified positional parameters for caller
-    func_options_result=$func_run_hooks_result
+    # Save modified positional parameters for caller.  As a top-level
+    # options-parser function we always need to set the 'func_options_result'
+    # variable (regardless the $_G_rc_options value).
+    if $_G_rc_options; then
+      func_options_result=$_G_res_var
+    else
+      func_quote_for_eval ${1+"$@"}
+      func_options_result=$func_quote_for_eval_result
+    fi
+
+    $_G_rc_options
 }
 
 
@@ -1649,9 +1698,9 @@ func_options ()
 # All initialisations required before starting the option parse loop.
 # Note that when calling hook functions, we pass through the list of
 # positional parameters.  If a hook function modifies that list, and
-# needs to propogate that back to rest of this script, then the complete
+# needs to propagate that back to rest of this script, then the complete
 # modified list must be put in 'func_run_hooks_result' before
-# returning.
+# returning $EXIT_SUCCESS (otherwise $EXIT_FAILURE is returned).
 func_hookable func_options_prep
 func_options_prep ()
 {
@@ -1661,10 +1710,14 @@ func_options_prep ()
     opt_verbose=false
     opt_warning_types=
 
-    func_run_hooks func_options_prep ${1+"$@"}
+    _G_rc_options_prep=false
+    if func_run_hooks func_options_prep ${1+"$@"}; then
+      _G_rc_options_prep=:
+      # save modified positional parameters for caller
+      func_options_prep_result=$func_run_hooks_result
+    fi
 
-    # save modified positional parameters for caller
-    func_options_prep_result=$func_run_hooks_result
+    $_G_rc_options_prep
 }
 
 
@@ -1678,18 +1731,20 @@ func_parse_options ()
 
     func_parse_options_result=
 
+    _G_rc_parse_options=false
     # this just eases exit handling
     while test $# -gt 0; do
       # Defer to hook functions for initial option parsing, so they
       # get priority in the event of reusing an option name.
-      func_run_hooks func_parse_options ${1+"$@"}
-
-      # Adjust func_parse_options positional parameters to match
-      eval set dummy "$func_run_hooks_result"; shift
+      if func_run_hooks func_parse_options ${1+"$@"}; then
+        eval set dummy "$func_run_hooks_result"; shift
+        _G_rc_parse_options=:
+      fi
 
       # Break out of the loop if we already parsed every option.
       test $# -gt 0 || break
 
+      _G_match_parse_options=:
       _G_opt=$1
       shift
       case $_G_opt in
@@ -1704,7 +1759,10 @@ func_parse_options ()
 		      ;;
 
         --warnings|--warning|-W)
-                      test $# = 0 && func_missing_arg $_G_opt && break
+                      if test $# = 0 && func_missing_arg $_G_opt; then
+                        _G_rc_parse_options=:
+                        break
+                      fi
                       case " $warning_categories $1" in
                         *" $1 "*)
                           # trailing space prevents matching last $1 above
@@ -1757,15 +1815,25 @@ func_parse_options ()
                       shift
                       ;;
 
-        --)           break ;;
+        --)           _G_rc_parse_options=: ; break ;;
         -*)           func_fatal_help "unrecognised option: '$_G_opt'" ;;
-        *)            set dummy "$_G_opt" ${1+"$@"}; shift; break ;;
+        *)            set dummy "$_G_opt" ${1+"$@"}; shift
+                      _G_match_parse_options=false
+                      break
+                      ;;
       esac
+
+      $_G_match_parse_options && _G_rc_parse_options=:
     done
 
-    # save modified positional parameters for caller
-    func_quote_for_eval ${1+"$@"}
-    func_parse_options_result=$func_quote_for_eval_result
+
+    if $_G_rc_parse_options; then
+      # save modified positional parameters for caller
+      func_quote_for_eval ${1+"$@"}
+      func_parse_options_result=$func_quote_for_eval_result
+    fi
+
+    $_G_rc_parse_options
 }
 
 
@@ -1778,16 +1846,21 @@ func_validate_options ()
 {
     $debug_cmd
 
+    _G_rc_validate_options=false
+
     # Display all warnings if -W was not given.
     test -n "$opt_warning_types" || opt_warning_types=" $warning_categories"
 
-    func_run_hooks func_validate_options ${1+"$@"}
+    if func_run_hooks func_validate_options ${1+"$@"}; then
+      # save modified positional parameters for caller
+      func_validate_options_result=$func_run_hooks_result
+      _G_rc_validate_options=:
+    fi
 
     # Bail if the options were screwed!
     $exit_cmd $EXIT_FAILURE
 
-    # save modified positional parameters for caller
-    func_validate_options_result=$func_run_hooks_result
+    $_G_rc_validate_options
 }
 
 
@@ -2068,12 +2141,12 @@ include the following information:
        compiler:       $LTCC
        compiler flags: $LTCFLAGS
        linker:         $LD (gnu? $with_gnu_ld)
-       version:        $progname (GNU libtool) 2.4.6
+       version:        $progname $scriptversion Debian-2.4.6-9
        automake:       `($AUTOMAKE --version) 2>/dev/null |$SED 1q`
        autoconf:       `($AUTOCONF --version) 2>/dev/null |$SED 1q`
 
 Report bugs to <bug-libtool@gnu.org>.
-GNU libtool home page: <http://www.gnu.org/software/libtool/>.
+GNU libtool home page: <http://www.gnu.org/s/libtool/>.
 General help using GNU software: <http://www.gnu.org/gethelp/>."
     exit 0
 }
@@ -2270,6 +2343,8 @@ libtool_options_prep ()
     nonopt=
     preserve_args=
 
+    _G_rc_lt_options_prep=:
+
     # Shorthand for --mode=foo, only valid as the first argument
     case $1 in
     clean|clea|cle|cl)
@@ -2293,11 +2368,18 @@ libtool_options_prep ()
     uninstall|uninstal|uninsta|uninst|unins|unin|uni|un|u)
       shift; set dummy --mode uninstall ${1+"$@"}; shift
       ;;
+    *)
+      _G_rc_lt_options_prep=false
+      ;;
     esac
 
-    # Pass back the list of options.
-    func_quote_for_eval ${1+"$@"}
-    libtool_options_prep_result=$func_quote_for_eval_result
+    if $_G_rc_lt_options_prep; then
+      # Pass back the list of options.
+      func_quote_for_eval ${1+"$@"}
+      libtool_options_prep_result=$func_quote_for_eval_result
+    fi
+
+    $_G_rc_lt_options_prep
 }
 func_add_hook func_options_prep libtool_options_prep
 
@@ -2309,9 +2391,12 @@ libtool_parse_options ()
 {
     $debug_cmd
 
+    _G_rc_lt_parse_options=false
+
     # Perform our own loop to consume as many options as possible in
     # each iteration.
     while test $# -gt 0; do
+      _G_match_lt_parse_options=:
       _G_opt=$1
       shift
       case $_G_opt in
@@ -2386,15 +2471,22 @@ libtool_parse_options ()
                         func_append preserve_args " $_G_opt"
                         ;;
 
-	# An option not handled by this hook function:
-        *)		set dummy "$_G_opt" ${1+"$@"};	shift; break  ;;
+        # An option not handled by this hook function:
+        *)              set dummy "$_G_opt" ${1+"$@"} ; shift
+                        _G_match_lt_parse_options=false
+                        break
+                        ;;
       esac
+      $_G_match_lt_parse_options && _G_rc_lt_parse_options=:
     done
 
+    if $_G_rc_lt_parse_options; then
+      # save modified positional parameters for caller
+      func_quote_for_eval ${1+"$@"}
+      libtool_parse_options_result=$func_quote_for_eval_result
+    fi
 
-    # save modified positional parameters for caller
-    func_quote_for_eval ${1+"$@"}
-    libtool_parse_options_result=$func_quote_for_eval_result
+    $_G_rc_lt_parse_options
 }
 func_add_hook func_parse_options libtool_parse_options
 
@@ -2418,7 +2510,7 @@ libtool_validate_options ()
     case $host in
       # Solaris2 added to fix http://debbugs.gnu.org/cgi/bugreport.cgi?bug=16452
       # see also: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=59788
-      *cygwin* | *msys* | *mingw* | *pw32* | *cegcc* | *solaris2* | *os2*)
+      *cygwin* | *mingw* | *pw32* | *cegcc* | *solaris2* | *os2*)
         # don't eliminate duplications in $postdeps and $predeps
         opt_duplicate_compiler_generated_deps=:
         ;;
@@ -3439,7 +3531,7 @@ func_mode_compile ()
 
     # On Cygwin there's no "real" PIC flag so we must build both object types
     case $host_os in
-    cygwin* | msys* | mingw* | pw32* | os2* | cegcc*)
+    cygwin* | mingw* | pw32* | os2* | cegcc*)
       pic_mode=default
       ;;
     esac
@@ -4313,7 +4405,7 @@ func_mode_install ()
 	      'exit $?'
 	  tstripme=$stripme
 	  case $host_os in
-	  cygwin* | msys* | mingw* | pw32* | cegcc*)
+	  cygwin* | mingw* | pw32* | cegcc*)
 	    case $realname in
 	    *.dll.a)
 	      tstripme=
@@ -4426,7 +4518,7 @@ func_mode_install ()
 
 	# Do a test to see if this is really a libtool program.
 	case $host in
-	*cygwin* | *msys* | *mingw*)
+	*cygwin* | *mingw*)
 	    if func_ltwrapper_executable_p "$file"; then
 	      func_ltwrapper_scriptname "$file"
 	      wrapper=$func_ltwrapper_scriptname_result
@@ -4501,7 +4593,7 @@ func_mode_install ()
 	# remove .exe since cygwin /usr/bin/install will append another
 	# one anyway
 	case $install_prog,$host in
-	*/usr/bin/install*,*cygwin*|*/usr/bin/install*,*msys*)
+	*/usr/bin/install*,*cygwin*)
 	  case $file:$destfile in
 	  *.exe:*.exe)
 	    # this is ok
@@ -4654,7 +4746,7 @@ extern \"C\" {
 	      $RM $export_symbols
 	      eval "$SED -n -e '/^: @PROGRAM@ $/d' -e 's/^.* \(.*\)$/\1/p' "'< "$nlist" > "$export_symbols"'
 	      case $host in
-	      *cygwin* | *msys* | *mingw* | *cegcc* )
+	      *cygwin* | *mingw* | *cegcc* )
                 eval "echo EXPORTS "'> "$output_objdir/$outputname.def"'
                 eval 'cat "$export_symbols" >> "$output_objdir/$outputname.def"'
 	        ;;
@@ -4666,7 +4758,7 @@ extern \"C\" {
 	      eval '$GREP -f "$output_objdir/$outputname.exp" < "$nlist" > "$nlist"T'
 	      eval '$MV "$nlist"T "$nlist"'
 	      case $host in
-	        *cygwin* | *msys* | *mingw* | *cegcc* )
+	        *cygwin* | *mingw* | *cegcc* )
 	          eval "echo EXPORTS "'> "$output_objdir/$outputname.def"'
 	          eval 'cat "$nlist" >> "$output_objdir/$outputname.def"'
 	          ;;
@@ -4680,7 +4772,7 @@ extern \"C\" {
 	  func_basename "$dlprefile"
 	  name=$func_basename_result
           case $host in
-	    *cygwin* | *msys* | *mingw* | *cegcc* )
+	    *cygwin* | *mingw* | *cegcc* )
 	      # if an import library, we need to obtain dlname
 	      if func_win32_import_lib_p "$dlprefile"; then
 	        func_tr_sh "$dlprefile"
@@ -4855,7 +4947,7 @@ static const void *lt_preloaded_setup() {
 	# Transform the symbol file into the correct name.
 	symfileobj=$output_objdir/${my_outputname}S.$objext
 	case $host in
-	*cygwin* | *msys* | *mingw* | *cegcc* )
+	*cygwin* | *mingw* | *cegcc* )
 	  if test -f "$output_objdir/$my_outputname.def"; then
 	    compile_command=`$ECHO "$compile_command" | $SED "s%@SYMFILE@%$output_objdir/$my_outputname.def $symfileobj%"`
 	    finalize_command=`$ECHO "$finalize_command" | $SED "s%@SYMFILE@%$output_objdir/$my_outputname.def $symfileobj%"`
@@ -5538,7 +5630,6 @@ EOF
 # include <unistd.h>
 # include <stdint.h>
 # ifdef __CYGWIN__
-#  include <process.h>
 #  include <io.h>
 # endif
 #endif
@@ -5555,8 +5646,8 @@ EOF
 
 /* declarations of non-ANSI functions */
 #if defined __MINGW32__
-# if defined(__STRICT_ANSI__) && !defined(__MINGW64_VERSION_MAJOR) || defined(_POSIX_)
-int _putenv (const char *);
+# ifdef __STRICT_ANSI__
+_CRTIMP int _putenv (const char *);
 # endif
 #elif defined __CYGWIN__
 # ifdef __STRICT_ANSI__
@@ -5754,7 +5845,7 @@ main (int argc, char *argv[])
 	{
 EOF
 	    case $host in
-	      *mingw* | *cygwin* | *msys* )
+	      *mingw* | *cygwin* )
 		# make stdout use "unix" line endings
 		echo "          setmode(1,_O_BINARY);"
 		;;
@@ -6457,41 +6548,6 @@ EOF
 }
 # end: func_emit_cwrapperexe_src
 
-# func_emit_exe_manifest
-# emit a Win32 UAC manifest for executable on stdout
-# Must ONLY be called from within func_mode_link because
-# it depends on a number of variable set therein.
-func_emit_exe_manifest ()
-{
-    cat <<EOF
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <assemblyIdentity version="1.0.0.0"
-EOF
-
-    case $host in
-    i?86-*-* )   echo '     processorArchitecture="x86"' ;;
-    ia64-*-* )   echo '     processorArchitecture="ia64"' ;;
-    x86_64-*-* ) echo '     processorArchitecture="amd64"' ;;
-    *)           echo '     processorArchitecture="*"' ;;
-    esac
-
-    cat <<EOF
-     name="$host_os.$PROGRAM.$outputname"
-     type="win32"/>
-
-  <!-- Identify the application security requirements. -->
-  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
-    <security>
-      <requestedPrivileges>
-        <requestedExecutionLevel level="asInvoker" uiAccess="false"/>
-      </requestedPrivileges>
-    </security>
-  </trustInfo>
-</assembly>
-EOF
-}
-
 # func_win32_import_lib_p ARG
 # True if ARG is an import lib, as indicated by $file_magic_cmd
 func_win32_import_lib_p ()
@@ -6528,7 +6584,7 @@ func_mode_link ()
     $debug_cmd
 
     case $host in
-    *-*-cygwin* | *-*-msys* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-cegcc*)
+    *-*-cygwin* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-cegcc*)
       # It is impossible to link a dll without this setting, and
       # we shouldn't force the makefile maintainer to figure out
       # what system we are compiling for in order to pass an extra
@@ -7027,7 +7083,7 @@ func_mode_link ()
 	  ;;
 	esac
 	case $host in
-	*-*-cygwin* | *-*-msys* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-cegcc*)
+	*-*-cygwin* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-cegcc*)
 	  testbindir=`$ECHO "$dir" | $SED 's*/lib$*/bin*'`
 	  case :$dllsearchpath: in
 	  *":$dir:"*) ;;
@@ -7047,7 +7103,7 @@ func_mode_link ()
       -l*)
 	if test X-lc = "X$arg" || test X-lm = "X$arg"; then
 	  case $host in
-	  *-*-cygwin* | *-*-msys* | *-*-mingw* | *-*-pw32* | *-*-beos* | *-cegcc* | *-*-haiku*)
+	  *-*-cygwin* | *-*-mingw* | *-*-pw32* | *-*-beos* | *-cegcc* | *-*-haiku*)
 	    # These systems don't actually have a C or math library (as such)
 	    continue
 	    ;;
@@ -7130,7 +7186,7 @@ func_mode_link ()
 
       -no-install)
 	case $host in
-	*-*-cygwin* | *-*-msys* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-*-darwin* | *-cegcc*)
+	*-*-cygwin* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-*-darwin* | *-cegcc*)
 	  # The PATH hackery in wrapper scripts is required on Windows
 	  # and Darwin in order for the loader to find any dlls it needs.
 	  func_warning "'-no-install' is ignored for $host"
@@ -7308,15 +7364,14 @@ func_mode_link ()
       # -tp=*                Portland pgcc target processor selection
       # --sysroot=*          for sysroot support
       # -O*, -g*, -flto*, -fwhopr*, -fuse-linker-plugin GCC link-time optimization
+      # -specs=*             GCC specs files
       # -stdlib=*            select c++ std lib with clang
-      # -{shared,static}-libgcc, -static-{libgfortran|libstdc++}
-      #                      link against specified runtime library
+      # -fsanitize=*         Clang/GCC memory and address sanitizer
+      # -fuse-ld=*           Linker select flags for GCC
       -64|-mips[0-9]|-r[0-9][0-9]*|-xarch=*|-xtarget=*|+DA*|+DD*|-q*|-m*| \
       -t[45]*|-txscale*|-p|-pg|--coverage|-fprofile-*|-F*|@*|-tp=*|--sysroot=*| \
       -O*|-g*|-flto*|-fwhopr*|-fuse-linker-plugin|-fstack-protector*|-stdlib=*| \
-      -ftree-parallelize-loops=*|-fcilkplus|-fgnu-tm|-ffast-math| \
-      -funsafe-math-optimizations|-fvtable-verify*| \
-      -shared-libgcc|-static-libgcc|-static-libgfortran|-static-libstdc++)
+      -specs=*|-fsanitize=*|-fuse-ld=*)
         func_quote_for_eval "$arg"
 	arg=$func_quote_for_eval_result
         func_append compile_command " $arg"
@@ -7609,7 +7664,10 @@ func_mode_link ()
 	case $pass in
 	dlopen) libs=$dlfiles ;;
 	dlpreopen) libs=$dlprefiles ;;
-	link) libs="$deplibs %DEPLIBS% $dependency_libs" ;;
+	link)
+	  libs="$deplibs %DEPLIBS%"
+	  test "X$link_all_deplibs" != Xno && libs="$libs $dependency_libs"
+	  ;;
 	esac
       fi
       if test lib,dlpreopen = "$linkmode,$pass"; then
@@ -7803,15 +7861,8 @@ func_mode_link ()
 	  fi
 	  case $linkmode in
 	  lib)
-	    # Linking convenience modules and compiler provided static libraries
-	    # into shared libraries is allowed, but linking other static
-	    # libraries is non-portable.
-	    case $deplib in
-	      */libgcc*.$libext | */libclang_rt*.$libext)
-		deplibs="$deplib $deplibs"
-		continue
-	      ;;
-	    esac
+	    # Linking convenience modules into shared libraries is allowed,
+	    # but linking other static libraries is non-portable.
 	    case " $dlpreconveniencelibs " in
 	    *" $deplib "*) ;;
 	    *)
@@ -7935,19 +7986,19 @@ func_mode_link ()
 	    # It is a libtool convenience library, so add in its objects.
 	    func_append convenience " $ladir/$objdir/$old_library"
 	    func_append old_convenience " $ladir/$objdir/$old_library"
+	    tmp_libs=
+	    for deplib in $dependency_libs; do
+	      deplibs="$deplib $deplibs"
+	      if $opt_preserve_dup_deps; then
+		case "$tmp_libs " in
+		*" $deplib "*) func_append specialdeplibs " $deplib" ;;
+		esac
+	      fi
+	      func_append tmp_libs " $deplib"
+	    done
 	  elif test prog != "$linkmode" && test lib != "$linkmode"; then
 	    func_fatal_error "'$lib' is not a convenience library"
 	  fi
-	  tmp_libs=
-	  for deplib in $dependency_libs; do
-	    deplibs="$deplib $deplibs"
-	    if $opt_preserve_dup_deps; then
-	      case "$tmp_libs " in
-	      *" $deplib "*) func_append specialdeplibs " $deplib" ;;
-	      esac
-	    fi
-	    func_append tmp_libs " $deplib"
-	  done
 	  continue
 	fi # $pass = conv
 
@@ -8036,7 +8087,7 @@ func_mode_link ()
 	  fi
 	  case $host in
 	    # special handling for platforms with PE-DLLs.
-	    *cygwin* | *msys* | *mingw* | *cegcc* )
+	    *cygwin* | *mingw* | *cegcc* )
 	      # Linker will automatically link against shared library if both
 	      # static and shared are present.  Therefore, ensure we extract
 	      # symbols from the import library if a shared library is present
@@ -8180,7 +8231,7 @@ func_mode_link ()
 	if test -n "$library_names" &&
 	   { test no = "$use_static_libs" || test -z "$old_library"; }; then
 	  case $host in
-	  *cygwin* | *msys* | *mingw* | *cegcc* | *os2*)
+	  *cygwin* | *mingw* | *cegcc* | *os2*)
 	      # No point in relinking DLLs because paths are not encoded
 	      func_append notinst_deplibs " $lib"
 	      need_relink=no
@@ -8250,7 +8301,7 @@ func_mode_link ()
 	    elif test -n "$soname_spec"; then
 	      # bleh windows
 	      case $host in
-	      *cygwin* | *msys* | mingw* | *cegcc* | *os2*)
+	      *cygwin* | mingw* | *cegcc* | *os2*)
 	        func_arith $current - $age
 		major=$func_arith_result
 		versuffix=-$major
@@ -8571,9 +8622,7 @@ func_mode_link ()
 		  eval libdir=`$SED -n -e 's/^libdir=\(.*\)$/\1/p' $deplib`
 		  test -z "$libdir" && \
 		    func_fatal_error "'$deplib' is not a valid libtool archive"
-		  abs_inode=`ls -i "$deplib" | awk '{print $1}'`
-		    lib_inode=`ls -i "$libdir/$(basename $deplib)" | awk '{print $1}'`
-		  test "$abs_inode" != "$lib_inode" && \
+		  test "$absdir" != "$libdir" && \
 		    func_warning "'$deplib' seems to be moved"
 
 		  path=-L$absdir
@@ -8873,6 +8922,9 @@ func_mode_link ()
 	    revision=$number_minor
 	    lt_irix_increment=no
 	    ;;
+	  *)
+	    func_fatal_configuration "$modename: unknown library version type '$version_type'"
+	    ;;
 	  esac
 	  ;;
 	no)
@@ -9162,7 +9214,7 @@ func_mode_link ()
       if test yes = "$build_libtool_libs"; then
 	if test -n "$rpath"; then
 	  case $host in
-	  *-*-cygwin* | *-*-msys* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-*-beos* | *-cegcc* | *-*-haiku*)
+	  *-*-cygwin* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-*-beos* | *-cegcc* | *-*-haiku*)
 	    # these systems don't actually have a c library (as such)!
 	    ;;
 	  *-*-rhapsody* | *-*-darwin1.[012])
@@ -9676,7 +9728,7 @@ EOF
 
 	orig_export_symbols=
 	case $host_os in
-	cygwin* | msys* | mingw* | cegcc*)
+	cygwin* | mingw* | cegcc*)
 	  if test -n "$export_symbols" && test -z "$export_symbols_regex"; then
 	    # exporting using user supplied symfile
 	    func_dll_def_p "$export_symbols" || {
@@ -9874,7 +9926,20 @@ EOF
 	  last_robj=
 	  k=1
 
-	  if test -n "$save_libobjs" && test : != "$skipped_export" && test -n "$file_list_spec"; then
+	  if test -n "$save_libobjs" && test : != "$skipped_export" && test yes = "$with_gnu_ld"; then
+	    output=$output_objdir/$output_la.lnkscript
+	    func_verbose "creating GNU ld script: $output"
+	    echo 'INPUT (' > $output
+	    for obj in $save_libobjs
+	    do
+	      func_to_tool_file "$obj"
+	      $ECHO "$func_to_tool_file_result" >> $output
+	    done
+	    echo ')' >> $output
+	    func_append delfiles " $output"
+	    func_to_tool_file "$output"
+	    output=$func_to_tool_file_result
+	  elif test -n "$save_libobjs" && test : != "$skipped_export" && test -n "$file_list_spec"; then
 	    output=$output_objdir/$output_la.lnk
 	    func_verbose "creating linker input file list: $output"
 	    : > $output
@@ -9893,19 +9958,6 @@ EOF
 	    func_append delfiles " $output"
 	    func_to_tool_file "$output"
 	    output=$firstobj\"$file_list_spec$func_to_tool_file_result\"
-	  elif test -n "$save_libobjs" && test : != "$skipped_export" && test yes = "$with_gnu_ld"; then
-	    output=$output_objdir/$output_la.lnkscript
-	    func_verbose "creating GNU ld script: $output"
-	    echo 'INPUT (' > $output
-	    for obj in $save_libobjs
-	    do
-	      func_to_tool_file "$obj"
-	      $ECHO "$func_to_tool_file_result" >> $output
-	    done
-	    echo ')' >> $output
-	    func_append delfiles " $output"
-	    func_to_tool_file "$output"
-	    output=$func_to_tool_file_result
 	  else
 	    if test -n "$save_libobjs"; then
 	      func_verbose "creating reloadable object files..."
@@ -10235,7 +10287,7 @@ EOF
 
     prog)
       case $host in
-	*cygwin* | *msys*) func_stripname '' '.exe' "$output"
+	*cygwin*) func_stripname '' '.exe' "$output"
 	          output=$func_stripname_result.exe;;
       esac
       test -n "$vinfo" && \
@@ -10346,7 +10398,7 @@ EOF
 	  esac
 	fi
 	case $host in
-	*-*-cygwin* | *-*-msys* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-cegcc*)
+	*-*-cygwin* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-cegcc*)
 	  testbindir=`$ECHO "$libdir" | $SED -e 's*/lib$*/bin*'`
 	  case :$dllsearchpath: in
 	  *":$libdir:"*) ;;
@@ -10424,7 +10476,7 @@ EOF
         # Disable wrappers for cegcc and mingw32ce hosts, we are cross compiling anyway.
         wrappers_required=false
         ;;
-      *cygwin* | *msys* | *mingw* )
+      *cygwin* | *mingw* )
         test yes = "$build_libtool_libs" || wrappers_required=false
         ;;
       *)
@@ -10570,21 +10622,21 @@ EOF
 	esac
 	# test for cygwin because mv fails w/o .exe extensions
 	case $host in
-	  *cygwin* | *msys*)
+	  *cygwin*)
 	    exeext=.exe
 	    func_stripname '' '.exe' "$outputname"
 	    outputname=$func_stripname_result ;;
 	  *) exeext= ;;
 	esac
 	case $host in
-	  *cygwin* | *msys* | *mingw* )
+	  *cygwin* | *mingw* )
 	    func_dirname_and_basename "$output" "" "."
 	    output_name=$func_basename_result
 	    output_path=$func_dirname_result
 	    cwrappersource=$output_path/$objdir/lt-$output_name.c
 	    cwrapper=$output_path/$output_name.exe
 	    $RM $cwrappersource $cwrapper
-	    trap "$RM $cwrappersource $cwrapper $cwrapper.manifest; exit $EXIT_FAILURE" 1 2 15
+	    trap "$RM $cwrappersource $cwrapper; exit $EXIT_FAILURE" 1 2 15
 
 	    func_emit_cwrapperexe_src > $cwrappersource
 
@@ -10604,16 +10656,6 @@ EOF
 	    $opt_dry_run || {
 	      # note: this script will not be executed, so do not chmod.
 	      if test "x$build" = "x$host"; then
-		# Create the UAC manifests first if necessary (but the
-		# manifest files must have executable permission regardless).
-		case $output_name in
-		  *instal*|*patch*|*setup*|*update*)
-		    func_emit_exe_manifest > $cwrapper.manifest
-		    func_emit_exe_manifest > $output_path/$objdir/$output_name.exe.manifest
-		    chmod +x $cwrapper.manifest
-		    chmod +x $output_path/$objdir/$output_name.exe.manifest
-		  ;;
-		esac
 		$cwrapper --lt-dump-script > $func_ltwrapper_scriptname_result
 	      else
 		func_emit_wrapper no > $func_ltwrapper_scriptname_result
@@ -10919,7 +10961,7 @@ EOF
 	  # tests/bindir.at for full details.
 	  tdlname=$dlname
 	  case $host,$output,$installed,$module,$dlname in
-	    *cygwin*,*lai,yes,no,*.dll | *msys*,*lai,yes,no,*.dll | *mingw*,*lai,yes,no,*.dll | *cegcc*,*lai,yes,no,*.dll)
+	    *cygwin*,*lai,yes,no,*.dll | *mingw*,*lai,yes,no,*.dll | *cegcc*,*lai,yes,no,*.dll)
 	      # If a -bindir argument was supplied, place the dll there.
 	      if test -n "$bindir"; then
 		func_relative_path "$install_libdir" "$bindir"
@@ -11138,9 +11180,8 @@ func_mode_uninstall ()
 	    # note $name still contains .exe if it was in $file originally
 	    # as does the version of $file that was added into $rmfiles
 	    func_append rmfiles " $odir/$name $odir/${name}S.$objext"
-	    func_append rmfiles " ${name}.manifest $objdir/${name}.manifest"
 	    if test yes = "$fast_install" && test -n "$relink_command"; then
-	      func_append rmfiles " $odir/lt-$name $objdir/lt-${name}.manifest"
+	      func_append rmfiles " $odir/lt-$name"
 	    fi
 	    if test "X$noexename" != "X$name"; then
 	      func_append rmfiles " $odir/lt-$noexename.c"

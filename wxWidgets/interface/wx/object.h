@@ -481,7 +481,7 @@ public:
 
 /**
 
-    This is an helper template class primarily written to avoid memory leaks because
+    This is a helper template class primarily written to avoid memory leaks because
     of missing calls to wxRefCounter::DecRef() and wxObjectRefData::DecRef().
 
     Despite the name this template can actually be used as a smart pointer for any
@@ -583,19 +583,25 @@ public:
         @a ptr is a pointer to the reference counted object to which this class points.
         If @a ptr is not NULL @b T::IncRef() will be called on the object.
     */
-    wxObjectDataPtr<T>(T* ptr = NULL);
+    wxObjectDataPtr(T* ptr = NULL);
 
+    //@{
     /**
         This copy constructor increases the count of the reference counted object to
         which @a tocopy points and then this class will point to, as well.
+
+        Using @a U different from @c T is only supported since wxWidgets 3.1.5.
     */
-    wxObjectDataPtr<T>(const wxObjectDataPtr<T>& tocopy);
+    template <typename U>
+    wxObjectDataPtr(const wxObjectDataPtr<U>& tocopy);
+    wxObjectDataPtr(const wxObjectDataPtr<T>& tocopy);
+    //@}
 
 
     /**
         Decreases the reference count of the object to which this class points.
     */
-    ~wxObjectDataPtr<T>();
+    ~wxObjectDataPtr();
 
     /**
         Gets a pointer to the reference counted object to which this class points.
@@ -649,7 +655,11 @@ public:
     //@{
     /**
         Assignment operator.
+
+        Using @a U different from @c T is only supported since wxWidgets 3.1.5.
     */
+    template <typename U>
+    wxObjectDataPtr<T>& operator=(const wxObjectDataPtr<U>& tocopy);
     wxObjectDataPtr<T>& operator=(const wxObjectDataPtr<T>& tocopy);
     wxObjectDataPtr<T>& operator=(T* ptr);
     //@}

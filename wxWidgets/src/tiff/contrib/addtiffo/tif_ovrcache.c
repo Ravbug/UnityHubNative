@@ -166,6 +166,7 @@ static void TIFFWriteOvrRow( TIFFOvrCache * psCache )
 /* -------------------------------------------------------------------- */
     nBaseDirOffset = TIFFCurrentDirOffset( psCache->hTIFF );
     nRet = TIFFSetSubDirectory( psCache->hTIFF, psCache->nDirOffset );
+    (void) nRet;
     assert( nRet == 1 );
 
 /* -------------------------------------------------------------------- */

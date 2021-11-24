@@ -86,7 +86,7 @@ class wxCocoaDataViewControl;
 class wxDataViewColumnNativeData
 {
 public:
-    wxDataViewColumnNativeData() : m_NativeColumnPtr(NULL)
+    wxDataViewColumnNativeData() : m_NativeColumnPtr(NULL), m_isLast(false), m_prevWidth(0)
     {
     }
 
@@ -105,9 +105,32 @@ public:
         m_NativeColumnPtr = newNativeColumnPtr;
     }
 
+    bool GetIsLast() const
+    {
+        return m_isLast;
+    }
+
+    void SetIsLast(bool isLast)
+    {
+        m_isLast = isLast;
+    }
+
+    int GetPrevWidth() const
+    {
+        return m_prevWidth;
+    }
+
+    void SetPrevWidth(int prevWidth)
+    {
+        m_prevWidth = prevWidth;
+    }
+
 private:
     // not owned by us
     NSTableColumn* m_NativeColumnPtr;
+
+    bool m_isLast;
+    int m_prevWidth;
 };
 
 // ============================================================================
@@ -514,6 +537,7 @@ public:
     virtual int  GetSelections(wxDataViewItemArray& sel)   const;
     virtual bool IsSelected(const wxDataViewItem& item) const;
     virtual void Select(const wxDataViewItem& item);
+    virtual void Select(const wxDataViewItemArray& items);
     virtual void SelectAll();
     virtual void Unselect(const wxDataViewItem& item);
     virtual void UnselectAll();
@@ -529,7 +553,7 @@ public:
     //
     virtual void DoSetIndent(int indent);
 
-    virtual void DoExpand(const wxDataViewItem& item);
+    virtual void DoExpand(const wxDataViewItem& item, bool expandChildren);
 
     virtual void HitTest(const wxPoint& point,
                          wxDataViewItem& item,
@@ -547,7 +571,7 @@ public:
     // Cocoa-specific helpers
     id GetItemAtRow(int row) const;
 
-    virtual void SetFont(const wxFont& font, const wxColour& foreground, long windowStyle, bool ignoreBlack = true);
+    virtual void SetFont(const wxFont& font);
 
 private:
     void InitOutlineView(long style);
@@ -556,6 +580,9 @@ private:
     wxCocoaOutlineDataSource* m_DataSource;
 
     wxCocoaOutlineView* m_OutlineView;
+
+    // Width of expander in pixels, computed on demand.
+    int m_expanderWidth;
 };
 
 #endif // _WX_DATAVIEWCTRL_COCOOA_H_

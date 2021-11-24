@@ -133,6 +133,7 @@ const char wxFileSelectorDefaultWildcardStr[];
     @style{wxFD_OVERWRITE_PROMPT}
            For save dialog only: prompt for a confirmation if a file will be
            overwritten.
+           This style is always enabled on wxOSX and cannot be disabled.
     @style{wxFD_NO_FOLLOW}
            Directs the dialog to return the path and file name of the selected
            shortcut file, not its target as it does by default. Currently this
@@ -235,10 +236,11 @@ public:
         control to update its state depending on the currently selected file
         type filter.
 
-        Currently this function is fully implemented only under MSW and
+        Currently this function is fully implemented under macOS and MSW and
         always returns @c wxNOT_FOUND elsewhere.
 
-        @since 3.1.3
+        @since 3.1.3 - MSW
+        @since 3.1.5 - macOS
 
         @return The 0-based index of the currently selected file type filter or
             wxNOT_FOUND if nothing is selected.

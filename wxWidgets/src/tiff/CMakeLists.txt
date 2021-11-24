@@ -43,17 +43,13 @@ if (POLICY CMP0054)
 endif(POLICY CMP0054)
 
 # Read version information from configure.ac.
-FILE(READ "${CMAKE_CURRENT_SOURCE_DIR}/configure.ac" configure)
-STRING(REGEX REPLACE ";" "\\\\;" configure "${configure}")
-STRING(REGEX REPLACE "\n" ";" configure "${configure}")
+FILE(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/configure.ac" configure REGEX "^LIBTIFF_.*=")
 foreach(line ${configure})
   foreach(var LIBTIFF_MAJOR_VERSION LIBTIFF_MINOR_VERSION LIBTIFF_MICRO_VERSION LIBTIFF_ALPHA_VERSION
           LIBTIFF_CURRENT LIBTIFF_REVISION LIBTIFF_AGE)
-    if(NOT ${var})
-      string(REGEX MATCH "^${var}=(.*)" ${var}_MATCH "${line}")
-      if(${var}_MATCH)
-        string(REGEX REPLACE "^${var}=(.*)" "\\1" ${var} "${line}")
-      endif()
+    if(NOT ${var} AND line MATCHES "^${var}=(.*)")
+      set(${var} "${CMAKE_MATCH_1}")
+      break()
     endif()
   endforeach()
 endforeach()
@@ -207,7 +203,9 @@ else()
 endif()
 
 # Find libm, if available
-find_library(M_LIBRARY m)
+if(NOT MINGW)
+  find_library(M_LIBRARY m)
+endif()
 
 check_include_file(assert.h    HAVE_ASSERT_H)
 check_include_file(dlfcn.h     HAVE_DLFCN_H)
@@ -404,6 +402,9 @@ endif()
 # CPU endianness
 include(TestBigEndian)
 test_big_endian(HOST_BIG_ENDIAN)
+if(HOST_BIG_ENDIAN)
+  add_definitions(-DWORDS_BIGENDIAN)
+endif()
 
 # IEEE floating point
 set(HAVE_IEEEFP 1)
@@ -456,6 +457,33 @@ if(ZLIB_FOUND)
   set(ZLIB_SUPPORT 1)
 endif()
 set(ZIP_SUPPORT ${ZLIB_SUPPORT})
+
+
+# libdeflate
+option(libdeflate "use libdeflate (optional for faster Deflate support, still requires zlib)" ON)
+if (libdeflate)
+  set(DEFLATE_FOUND 0)
+  find_path(DEFLATE_INCLUDE_DIR libdeflate.h)
+  set(DEFLATE_NAMES ${DEFLATE_NAMES} deflate)
+  find_library(DEFLATE_LIBRARY NAMES ${DEFLATE_NAMES})
+  if (DEFLATE_INCLUDE_DIR AND DEFLATE_LIBRARY)
+    set(DEFLATE_FOUND 1)
+    set(DEFLATE_LIBRARIES ${DEFLATE_LIBRARY})
+  endif()
+endif()
+set(LIBDEFLATE_SUPPORT FALSE)
+if(DEFLATE_FOUND)
+  set(LIBDEFLATE_SUPPORT TRUE)
+endif()
+
+if(LIBDEFLATE_SUPPORT AND NOT ZIP_SUPPORT)
+    message(WARNING "libdeflate available but zlib is not. libdeflate cannot be used")
+    set(LIBDEFLATE_SUPPORT FALSE)
+endif()
+
+set(LIBDEFLATE_SUPPORT ${LIBDEFLATE_SUPPORT})
+
+
 # Option for Pixar log-format algorithm
 
 # Pixar log format
@@ -654,6 +682,9 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libtiff-4.pc
 if(ZLIB_INCLUDE_DIRS)
   list(APPEND TIFF_INCLUDES ${ZLIB_INCLUDE_DIRS})
 endif()
+if(DEFLATE_INCLUDE_DIR)
+  list(APPEND TIFF_INCLUDES ${DEFLATE_INCLUDE_DIR})
+endif()
 if(JPEG_INCLUDE_DIR)
   list(APPEND TIFF_INCLUDES ${JPEG_INCLUDE_DIR})
 endif()
@@ -675,11 +706,14 @@ endif()
 
 # Libraries required by libtiff
 set(TIFF_LIBRARY_DEPS)
-if(M_LIBRARY)
-  list(APPEND TIFF_LIBRARY_DEPS ${M_LIBRARY})
+if(NOT MINGW AND M_LIBRARY)
+  list(APPEND TIFF_LIBRARY_DEPS "m")
 endif()
 if(ZLIB_LIBRARIES)
   list(APPEND TIFF_LIBRARY_DEPS ${ZLIB_LIBRARIES})
+endif()
+if(DEFLATE_LIBRARIES)
+  list(APPEND TIFF_LIBRARY_DEPS ${DEFLATE_LIBRARIES})
 endif()
 if(JPEG_LIBRARIES)
   list(APPEND TIFF_LIBRARY_DEPS ${JPEG_LIBRARIES})
@@ -736,6 +770,7 @@ message(STATUS "  LogLuv high dynamic range encoding: ${logluv}")
 message(STATUS "")
 message(STATUS " Support for external codecs:")
 message(STATUS "  ZLIB support:                       ${zlib} (requested) ${ZLIB_FOUND} (availability)")
+message(STATUS "  libdeflate support:                 ${libdeflate} (requested) ${LIBDEFLATE_SUPPORT} (availability)")
 message(STATUS "  Pixar log-format algorithm:         ${pixarlog} (requested) ${PIXARLOG_SUPPORT} (availability)")
 message(STATUS "  JPEG support:                       ${jpeg} (requested) ${JPEG_FOUND} (availability)")
 message(STATUS "  Old JPEG support:                   ${old-jpeg} (requested) ${JPEG_FOUND} (availability)")

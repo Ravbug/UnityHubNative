@@ -1,11 +1,16 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML>
 <HEAD>
 <TITLE>
 Modifying The TIFF Library
 </TITLE>
+<style type="text/css">
+body {
+font-family: Arial, Helvetica, Sans;
+}
+</style>
 </HEAD>
-<BODY BGCOLOR=white> 
-<FONT FACE="Arial, Helvetica, Sans">
+<BODY>
 
 <H1>
 Defining New TIFF Tags
@@ -198,8 +203,8 @@ If tag definitions are only required for writing custom tags, you can just
 call TIFFMergeFieldInfo() before setting new tags.  The whole extender
 architecture can then be avoided.<p>
 
-<A NAME=AddingTags><P><H2>Adding New Builtin Tags</H2></A>
-
+<H2 id="AddingTags">Adding New Builtin Tags</H2>
+<P>
 A similar approach is taken to the above.  However, the TIFFFieldInfo 
 should be added to the tiffFieldInfo[] list in tif_dirinfo.c.  Ensure that
 new tags are added in sorted order by the tag number.<p>
@@ -238,8 +243,8 @@ about data types.  Use the typedefs (<TT>uint16</TT>, etc. when dealing with
 data on disk and <TT>t*_t</TT> when stuff is in memory) and be careful about
 passing items through printf or similar vararg interfaces.
 
-<A NAME=AddingCODECTags><P><H2>Adding New Codec-private Tags</H2></A>
-
+<H2 id="AddingCODECTags">Adding New Codec-private Tags</H2>
+<P>
 To add tags that are meaningful <EM>only when a particular compression
 algorithm is used</EM> follow these steps:
 

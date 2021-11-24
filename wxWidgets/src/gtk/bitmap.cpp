@@ -756,6 +756,27 @@ bool wxBitmap::CreateFromImageAsPixbuf(const wxImage& image)
         }
     }
 
+    if ( image.HasMask() )
+    {
+        const size_t out_size = size_t((width + 7) / 8) * unsigned(height);
+        wxByte* out = new wxByte[out_size];
+        memset(out, 0xff, out_size);
+        const wxByte r_mask = image.GetMaskRed();
+        const wxByte g_mask = image.GetMaskGreen();
+        const wxByte b_mask = image.GetMaskBlue();
+        const wxByte* in = image.GetData();
+        unsigned bit_index = 0;
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++, in += 3, bit_index++)
+                if (in[0] == r_mask && in[1] == g_mask && in[2] == b_mask)
+                    out[bit_index >> 3] ^= 1 << (bit_index & 7);
+            bit_index = (bit_index + 7) & ~7u;
+        }
+        SetMask(new wxMask(gdk_bitmap_create_from_data(wxGetTopLevelGDK(), reinterpret_cast<char*>(out), width, height)));
+        delete[] out;
+    }
+
     return true;
 }
 #endif
@@ -836,7 +857,7 @@ wxImage wxBitmap::ConvertToImage() const
     // prefer pixbuf if available, it will preserve alpha and should be quicker
     if (HasPixbuf())
     {
-        GdkPixbuf *pixbuf = GetPixbuf();
+        GdkPixbuf *pixbuf = GetPixbufNoMask();
         unsigned char* alpha = NULL;
         if (gdk_pixbuf_get_has_alpha(pixbuf))
         {
@@ -883,8 +904,8 @@ wxImage wxBitmap::ConvertToImage() const
         if (pixmap_invert != NULL)
             g_object_unref(pixmap_invert);
     }
-    // convert mask, unless there is already alpha
-    if (GetMask() && !image.HasAlpha())
+    // convert mask, even there is already alpha. Image can have both.
+    if ( GetMask() )
     {
         // we hard code the mask colour for now but we could also make an
         // effort (and waste time) to choose a colour not present in the

@@ -12,9 +12,6 @@
 
 #include "testprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_DATETIME
 
@@ -868,7 +865,7 @@ void DateTimeTestCase::TestTimeFormat()
     CPPUNIT_ASSERT( dt.ParseFormat("12:23:45.000", "%H:%M:%S.%l") );
     CPPUNIT_ASSERT_EQUAL( 0, dt.GetMillisecond() );
 
-    // test another format modifier not testes above.
+    // test another format modifier not tested above.
     CPPUNIT_ASSERT( dt.ParseFormat("23", "%e") );
     CPPUNIT_ASSERT_EQUAL( 23, dt.GetDay() );
 

@@ -416,6 +416,10 @@ public:
     void PasswordEntry(wxCommandEvent& event);
 #endif // wxUSE_TEXTDLG
 
+#ifdef wxUSE_CREDENTIALDLG
+    void CredentialEntry(wxCommandEvent& event);
+#endif // wxUSE_CREDENTIALDLG
+
 #if wxUSE_NUMBERDLG
     void NumericEntry(wxCommandEvent& event);
 #endif // wxUSE_NUMBERDLG
@@ -429,6 +433,7 @@ public:
     void FileSave(wxCommandEvent& event);
     void FileSaveWindowModal(wxCommandEvent& event);
     void FileSaveWindowModalClosed(wxWindowModalDialogEvent& event);
+    void MacToggleAlwaysShowTypes(wxCommandEvent& event);
 #endif // wxUSE_FILEDLG
 
 #if USE_FILEDLG_GENERIC
@@ -602,6 +607,7 @@ enum
     DIALOGS_LINE_ENTRY,
     DIALOGS_TEXT_ENTRY,
     DIALOGS_PASSWORD_ENTRY,
+    DIALOGS_CREDENTIAL_ENTRY,
     DIALOGS_FILE_OPEN,
     DIALOGS_FILE_OPEN2,
     DIALOGS_FILES_OPEN,
@@ -611,6 +617,7 @@ enum
     DIALOGS_FILE_OPEN_GENERIC,
     DIALOGS_FILES_OPEN_GENERIC,
     DIALOGS_FILE_SAVE_GENERIC,
+    DIALOGS_MAC_TOGGLE_ALWAYS_SHOW_TYPES,
     DIALOGS_DIR_CHOOSE,
     DIALOGS_DIR_CHOOSE_WINDOW_MODAL,
     DIALOGS_DIRNEW_CHOOSE,

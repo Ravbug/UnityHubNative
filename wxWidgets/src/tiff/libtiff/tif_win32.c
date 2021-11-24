@@ -155,9 +155,11 @@ _tiffCloseProc(thandle_t fd)
 static uint64
 _tiffSizeProc(thandle_t fd)
 {
-	ULARGE_INTEGER m;
-	m.LowPart=GetFileSize(fd,&m.HighPart);
-	return(m.QuadPart);
+	LARGE_INTEGER m;
+	if (GetFileSizeEx(fd,&m))
+		return(m.QuadPart);
+	else
+		return(0);
 }
 
 static int
@@ -189,7 +191,7 @@ _tiffMapProc(thandle_t fd, void** pbase, toff_t* psize)
 
 	size = _tiffSizeProc(fd);
 	sizem = (tmsize_t)size;
-	if ((uint64)sizem!=size)
+	if (!size || (uint64)sizem!=size)
 		return (0);
 
 	/* By passing in 0 for the maximum file size, it specifies that we

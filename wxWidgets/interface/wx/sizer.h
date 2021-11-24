@@ -400,7 +400,7 @@ public:
     virtual bool Detach(wxSizer* sizer);
 
     /**
-        Detach a item at position @a index from the sizer without destroying it.
+        Detach an item at position @a index from the sizer without destroying it.
 
         This method does not cause any layout or resizing to take place, call Layout()
         to update the layout "on screen" after detaching a child from the sizer.
@@ -465,38 +465,41 @@ public:
        Returns the number of items in the sizer.
 
        If you just need to test whether the sizer is empty or not you can also
-       use IsEmpty() function.
+       use the IsEmpty() function.
     */
     size_t GetItemCount() const;
 
     /**
-        Finds wxSizerItem which holds the given @a window.
+        Finds the wxSizerItem which holds the given @a window.
         Use parameter @a recursive to search in subsizers too.
-        Returns pointer to item or @NULL.
+
+        @return Pointer to the item or @NULL if there is no item with the window.
     */
     wxSizerItem* GetItem(wxWindow* window, bool recursive = false);
 
     /**
-        Finds wxSizerItem which holds the given @a sizer.
+        Finds the wxSizerItem which holds the given @a sizer.
         Use parameter @a recursive to search in subsizers too.
-        Returns pointer to item or @NULL.
+
+        @return Pointer to the item or @NULL if the given sizer is not in the sizer.
     */
 
     wxSizerItem* GetItem(wxSizer* sizer, bool recursive = false);
 
     /**
-        Finds wxSizerItem which is located in the sizer at position @a index.
-        Use parameter @a recursive to search in subsizers too.
-        Returns pointer to item or @NULL.
+        Finds the wxSizerItem which is located in the sizer at position @a index.
+
+        @return Pointer to the item or @NULL if there is no item at that index.
     */
     wxSizerItem* GetItem(size_t index);
 
     /**
-        Finds item of the sizer which has the given @e id.
+        Finds the item in the sizer which has the given @e id.
         This @a id is not the window id but the id of the wxSizerItem itself.
         This is mainly useful for retrieving the sizers created from XRC resources.
         Use parameter @a recursive to search in subsizers too.
-        Returns pointer to item or @NULL.
+
+        @return Pointer to item or @NULL if no item has that id.
     */
     wxSizerItem* GetItemById(int id, bool recursive = false);
 
@@ -1455,6 +1458,9 @@ public:
         them anyhow. For 2D sizers, centering an item in one direction is quite
         different from centering it in both directions however.
 
+        Note that, unlike Align(), this method doesn't change the vertical
+        alignment.
+
         @see CentreVertical()
 
         @since 3.1.0
@@ -1466,6 +1472,9 @@ public:
 
         The remarks in CentreHorizontal() documentation also apply to this
         function.
+
+        Note that, unlike Align(), this method doesn't change the horizontal
+        alignment.
 
         @since 3.1.0
      */
@@ -1886,7 +1895,7 @@ public:
     itself as a convenience. In any case, the sizer owns the wxStaticBox control
     and will delete it in the wxStaticBoxSizer destructor.
 
-    Note that since wxWidgets 2.9.1 you are encouraged to create the windows
+    Note that since wxWidgets 2.9.1 you are strongly encouraged to create the windows
     which are added to wxStaticBoxSizer as children of wxStaticBox itself, see
     this class documentation for more details.
 

@@ -45,6 +45,7 @@ void WXDLLIMPEXP_CORE wxOSXSetImageSize(WX_NSImage image, CGFloat width, CGFloat
 wxBitmap WXDLLIMPEXP_CORE wxOSXCreateSystemBitmap(const wxString& id, const wxString &client, const wxSize& size);
 WXWindow WXDLLIMPEXP_CORE wxOSXGetMainWindow();
 WXWindow WXDLLIMPEXP_CORE wxOSXGetKeyWindow();
+WXImage WXDLLIMPEXP_CORE wxOSXGetNSImageFromNSCursor(const WXHCURSOR cursor);
 
 class WXDLLIMPEXP_FWD_CORE wxDialog;
 
@@ -101,6 +102,7 @@ public :
 
     virtual void        SetBackgroundColour(const wxColour&) wxOVERRIDE;
     virtual bool        SetBackgroundStyle(wxBackgroundStyle style) wxOVERRIDE;
+    virtual void        SetForegroundColour(const wxColour& col) wxOVERRIDE;
 
     virtual void        GetContentArea( int &left, int &top, int &width, int &height ) const wxOVERRIDE;
     virtual void        Move(int x, int y, int width, int height) wxOVERRIDE;
@@ -110,6 +112,8 @@ public :
 
     virtual void        SetNeedsDisplay( const wxRect* where = NULL ) wxOVERRIDE;
     virtual bool        GetNeedsDisplay() const wxOVERRIDE;
+
+    virtual void        EnableFocusRing(bool enabled) wxOVERRIDE;
 
     virtual void        SetDrawingEnabled(bool enabled) wxOVERRIDE;
 
@@ -148,7 +152,7 @@ public :
     void                PulseGauge() wxOVERRIDE;
     void                SetScrollThumb( wxInt32 value, wxInt32 thumbSize ) wxOVERRIDE;
 
-    void                SetFont( const wxFont & font, const wxColour& foreground, long windowStyle, bool ignoreBlack = true ) wxOVERRIDE;
+    void                SetFont(const wxFont & font) wxOVERRIDE;
     void                SetToolTip( wxToolTip* tooltip ) wxOVERRIDE;
 
     void                InstallEventHandler( WXWidget control = NULL ) wxOVERRIDE;
@@ -168,23 +172,13 @@ public :
     void                SetupCoordinates(wxCoord &x, wxCoord &y, NSEvent *nsEvent);
     virtual bool        SetupCursor(NSEvent* event);
 
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_10
-    #ifdef API_AVAILABLE
-        #define WX_AVAILABLE_10_10 API_AVAILABLE(macos(10.10))
-    #else
-        #define WX_AVAILABLE_10_10
-    #endif
-
-    WX_AVAILABLE_10_10 virtual void        PanGestureEvent(NSPanGestureRecognizer *panGestureRecognizer);
-    WX_AVAILABLE_10_10 virtual void        ZoomGestureEvent(NSMagnificationGestureRecognizer *magnificationGestureRecognizer);
-    WX_AVAILABLE_10_10 virtual void        RotateGestureEvent(NSRotationGestureRecognizer *rotationGestureRecognizer);
-    WX_AVAILABLE_10_10 virtual void        LongPressEvent(NSPressGestureRecognizer *pressGestureRecognizer);
-    WX_AVAILABLE_10_10 virtual void        TouchesBegan(NSEvent *event);
-    WX_AVAILABLE_10_10 virtual void        TouchesMoved(NSEvent *event);
-    WX_AVAILABLE_10_10 virtual void        TouchesEnded(NSEvent *event);
-
-    #undef WX_AVAILABLE_10_10
-#endif // __MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_10
+    virtual void        PanGestureEvent(NSPanGestureRecognizer *panGestureRecognizer);
+    virtual void        ZoomGestureEvent(NSMagnificationGestureRecognizer *magnificationGestureRecognizer);
+    virtual void        RotateGestureEvent(NSRotationGestureRecognizer *rotationGestureRecognizer);
+    virtual void        LongPressEvent(NSPressGestureRecognizer *pressGestureRecognizer);
+    virtual void        TouchesBegan(NSEvent *event);
+    virtual void        TouchesMoved(NSEvent *event);
+    virtual void        TouchesEnded(NSEvent *event);
 
 #if !wxOSX_USE_NATIVE_FLIPPED
     void                SetFlipped(bool flipped);
@@ -238,6 +232,10 @@ protected:
     void SetKeyDownSent();
     // was the wx event for the current native key down event sent
     bool WasKeyDownSent() const;
+
+
+    // Return the view to apply the font/colour to.
+    NSView* GetViewWithText() const;
 
     NSEvent* m_lastKeyDownEvent;
     bool m_lastKeyDownWXSent;
@@ -327,10 +325,14 @@ public :
 
     virtual void SetRepresentedFilename(const wxString& filename) wxOVERRIDE;
 
+    virtual void SetBottomBorderThickness(int thickness) wxOVERRIDE;
+
     wxNonOwnedWindow*   GetWXPeer() { return m_wxPeer; }
 
     CGWindowLevel   GetWindowLevel() const wxOVERRIDE { return m_macWindowLevel; }
     void            RestoreWindowLevel() wxOVERRIDE;
+
+    bool m_macIgnoreNextFullscreenChange = false;
 
     static WX_NSResponder GetNextFirstResponder() ;
     static WX_NSResponder GetFormerFirstResponder() ;

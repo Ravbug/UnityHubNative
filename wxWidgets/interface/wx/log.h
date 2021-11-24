@@ -54,7 +54,18 @@ public:
      */
     const char *func;
 
-    /// Time when the log message was generated.
+    /**
+        Time in milliseconds since Epoch when the log message was generated.
+
+        @since 3.1.5
+     */
+    wxLongLong_t timestampMS;
+
+    /**
+        Time when the log message was generated.
+
+        @deprecated Please use timestampMS instead.
+     */
     time_t timestamp;
 
     /**
@@ -149,7 +160,28 @@ public:
 
 protected:
     /**
+        This function formats the time stamp part of the log message including
+        milliseconds.
+
+        Override this function if you need to customize just the time stamp
+        formatting in the log messages.
+
+        @param msec
+            Time to format as the number of milliseconds since
+            1970-01-01T00:00:00.
+
+        @return
+            The formatted time string, may be empty.
+
+        @since 3.1.5
+    */
+    virtual wxString FormatTimeMS(wxLongLong_t msec) const;
+
+    /**
         This function formats the time stamp part of the log message.
+
+        @deprecated This function only exists for compatibility, please
+        override FormatTimeMS() in the new code.
 
         Override this function if you need to customize just the time stamp.
 
@@ -1236,12 +1268,17 @@ public:
         message string.
     @param text
         The text to show to the user.
+    @return
+        @true If a message box was actually shown or @false if the message was
+        logged to the console because there is no safe to show it currently
+        (the return value is only available since wxWidgets 3.1.5, the function
+        doesn't return anything in the previous versions).
 
     @see wxLogFatalError()
 
     @header{wx/log.h}
 */
-void wxSafeShowMessage(const wxString& title, const wxString& text);
+bool wxSafeShowMessage(const wxString& title, const wxString& text);
 
 /**
     Returns the error code from the last system call. This function uses

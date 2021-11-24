@@ -1243,7 +1243,7 @@ public:
     bool IsEditorsValueModified() const;
 
     /**
-        Shows an brief error message that is related to a property.
+        Shows a brief error message that is related to a property.
     */
     void ShowPropertyError( wxPGPropArg id, const wxString& msg );
 
@@ -1403,7 +1403,7 @@ public:
                  accessible even after the associated property or
                  the property grid has been deleted.
     */
-    wxVariant GetPropertyValue() const
+    wxVariant GetPropertyValue() const;
 
     /**
         Returns value of the associated property.

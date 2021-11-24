@@ -19,6 +19,7 @@
 
 #include "wx/gtk/private.h"
 #include "wx/gtk/private/list.h"
+#include "wx/gtk/private/image.h"
 
 // ----------------------------------------------------------------------------
 // GTK callbacks
@@ -69,6 +70,10 @@ wxgtk_button_style_set_callback(GtkWidget* widget, GtkStyle*, wxButton* win)
 // wxButton
 //-----------------------------------------------------------------------------
 
+#ifndef __WXGTK3__
+bool wxButton::m_exactFitStyleDefined = false;
+#endif // !__WXGTK3__
+
 bool wxButton::Create(wxWindow *parent,
                       wxWindowID id,
                       const wxString &label,
@@ -98,24 +103,24 @@ bool wxButton::Create(wxWindow *parent,
     {
         m_widget = gtk_button_new();
 
-        GtkWidget *image = gtk_image_new();
+        GtkWidget* image = wxGtkImage::New(this);
         gtk_widget_show(image);
         gtk_container_add(GTK_CONTAINER(m_widget), image);
     }
 
     g_object_ref(m_widget);
 
-    float x_alignment = 0.5;
+    float x_alignment = 0.5f;
     if (HasFlag(wxBU_LEFT))
-        x_alignment = 0.0;
+        x_alignment = 0;
     else if (HasFlag(wxBU_RIGHT))
-        x_alignment = 1.0;
+        x_alignment = 1;
 
-    float y_alignment = 0.5;
+    float y_alignment = 0.5f;
     if (HasFlag(wxBU_TOP))
-        y_alignment = 0.0;
+        y_alignment = 0;
     else if (HasFlag(wxBU_BOTTOM))
-        y_alignment = 1.0;
+        y_alignment = 1;
 
 #ifdef __WXGTK4__
     if (useLabel)
@@ -140,7 +145,20 @@ bool wxButton::Create(wxWindow *parent,
 #ifdef __WXGTK3__
         GTKApplyCssStyle("* { padding:0 }");
 #else
-        GTKApplyWidgetStyle(true); // To enforce call to DoApplyWidgetStyle()
+        // Define a special button style without inner border
+        // if it's not yet done.
+        if ( !m_exactFitStyleDefined )
+        {
+            gtk_rc_parse_string(
+              "style \"wxButton_wxBU_EXACTFIT_style\"\n"
+              "{ GtkButton::inner-border = { 0, 0, 0, 0 } }\n"
+              "widget \"*wxButton_wxBU_EXACTFIT*\" style \"wxButton_wxBU_EXACTFIT_style\"\n"
+            );
+            m_exactFitStyleDefined = true;
+        }
+
+        // Assign the button to the GTK style without inner border.
+        gtk_widget_set_name(m_widget, "wxButton_wxBU_EXACTFIT");
 #endif // __WXGTK3__ / !__WXGTK3__
     }
 
@@ -311,11 +329,6 @@ GtkLabel *wxButton::GTKGetLabel() const
 
 void wxButton::DoApplyWidgetStyle(GtkRcStyle *style)
 {
-    if ( style && HasFlag(wxBU_EXACTFIT) )
-    {
-        style->xthickness = 0;
-        style->ythickness = 0;
-    }
     GTKApplyStyle(m_widget, style);
     GtkWidget* child = gtk_bin_get_child(GTK_BIN(m_widget));
     GTKApplyStyle(child, style);

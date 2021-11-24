@@ -104,11 +104,24 @@
 /* Set the native cpu bit order */
 #define HOST_FILLORDER FILLORDER_LSB2MSB
 
+/*
+  Please see associated settings in "nmake.opt" which configure porting
+  settings. It should not be necessary to edit the following pre-processor
+  logic.
+*/
+#if defined(_MSC_VER)
 /* Visual Studio 2015 / VC 14 / MSVC 19.00 finally has snprintf() */
-#if defined(_MSC_VER) && _MSC_VER < 1900
-#define snprintf _snprintf
-#else
-#define HAVE_SNPRINTF 1
+#  if _MSC_VER < 1900 /* Visual C++ 2015 */
+#    define snprintf _snprintf
+#  else
+#    define HAVE_SNPRINTF 1
+#  endif
+#  define HAVE_STRTOL 1
+#  define HAVE_STRTOUL 1
+#  if _MSC_VER >= 1900 /* Visual Studio 2015 added strtoll/strtoull */
+#    define HAVE_STRTOLL 1
+#    define HAVE_STRTOULL 1
+#  endif
 #endif
 
 /* Define to 1 if your processor stores words with the most significant byte

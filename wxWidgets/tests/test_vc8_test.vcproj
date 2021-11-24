@@ -855,6 +855,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\config\config.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\mbconv\convautotest.cpp"
 				>
 			</File>
@@ -1216,6 +1220,10 @@
 			</File>
 			<File
 				RelativePath=".\weakref\weakref.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\net\webrequest.cpp"
 				>
 			</File>
 			<File

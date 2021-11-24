@@ -57,6 +57,7 @@ static wxTopLevelWindowGTK *g_activeFrame = NULL;
 
 extern wxCursor g_globalCursor;
 extern wxCursor g_busyCursor;
+extern bool g_inSizeAllocate;
 
 #ifdef GDK_WINDOWING_X11
 // Whether _NET_REQUEST_FRAME_EXTENTS support is working
@@ -240,6 +241,9 @@ size_allocate(GtkWidget*, GtkAllocation* alloc, wxTopLevelWindowGTK* win)
     if (win->m_clientWidth  != alloc->width ||
         win->m_clientHeight != alloc->height)
     {
+        const bool save_inSizeAllocate = g_inSizeAllocate;
+        g_inSizeAllocate = true;
+
         win->m_clientWidth  = alloc->width;
         win->m_clientHeight = alloc->height;
 
@@ -272,6 +276,8 @@ size_allocate(GtkWidget*, GtkAllocation* alloc, wxTopLevelWindowGTK* win)
             win->HandleWindowEvent(event);
         }
         // else the window is currently unmapped, don't generate size events
+
+        g_inSizeAllocate = save_inSizeAllocate;
     }
 }
 }
@@ -439,9 +445,7 @@ gtk_frame_map_callback( GtkWidget*,
     // it is possible for m_isShown to be false here, see bug #9909
     if (win->wxWindowBase::Show(true))
     {
-        wxShowEvent eventShow(win->GetId(), true);
-        eventShow.SetEventObject(win);
-        win->GetEventHandler()->ProcessEvent(eventShow);
+        win->GTKDoAfterShow();
     }
 
     // restore focus-on-map setting in case ShowWithoutActivating() was called
@@ -499,8 +503,10 @@ bool wxGetFrameExtents(GdkWindow* window, int* left, int* right, int* top, int* 
 #ifdef GDK_WINDOWING_X11
     GdkDisplay* display = gdk_window_get_display(window);
 
-    if (!GDK_IS_X11_DISPLAY(display))
+#ifdef __WXGTK3__
+    if (strcmp("GdkX11Display", g_type_name(G_TYPE_FROM_INSTANCE(display))) != 0)
         return false;
+#endif
 
     static GdkAtom property = gdk_atom_intern("_NET_FRAME_EXTENTS", false);
     Atom xproperty = gdk_x11_atom_to_xatom_for_display(display, property);
@@ -606,6 +612,10 @@ void wxTopLevelWindowGTK::Init()
     m_incWidth = m_incHeight = 0;
 
     m_urgency_hint = -2;
+
+#ifdef __WXGTK3__
+    m_pendingFittingClientSizeFlags = 0;
+#endif // __WXGTK3__
 }
 
 bool wxTopLevelWindowGTK::Create( wxWindow *parent,
@@ -760,9 +770,13 @@ bool wxTopLevelWindowGTK::Create( wxWindow *parent,
     g_signal_connect (m_widget, "key_press_event",
                       G_CALLBACK (wxgtk_tlw_key_press_event), NULL);
 
+#ifdef __WXGTK3__
+    const char* displayTypeName =
+        g_type_name(G_TYPE_FROM_INSTANCE(gtk_widget_get_display(m_widget)));
+#endif
 #ifdef GDK_WINDOWING_X11
 #ifdef __WXGTK3__
-    if (GDK_IS_X11_SCREEN(gtk_window_get_screen(GTK_WINDOW(m_widget))))
+    if (strcmp("GdkX11Display", displayTypeName) == 0)
 #endif
     {
         gtk_widget_add_events(m_widget, GDK_PROPERTY_CHANGE_MASK);
@@ -800,7 +814,7 @@ bool wxTopLevelWindowGTK::Create( wxWindow *parent,
             m_gdkDecor |= GDK_DECOR_TITLE;
 #if GTK_CHECK_VERSION(3,10,0)
         else if (
-            strcmp("GdkWaylandDisplay", g_type_name(G_TYPE_FROM_INSTANCE(gtk_widget_get_display(m_widget)))) == 0 &&
+            strcmp("GdkWaylandDisplay", displayTypeName) == 0 &&
             gtk_check_version(3,10,0) == NULL)
         {
             gtk_window_set_titlebar(GTK_WINDOW(m_widget), gtk_header_bar_new());
@@ -904,6 +918,11 @@ bool wxTopLevelWindowGTK::ShowFullScreen(bool show, long)
     if (show == m_fsIsShowing)
         return false; // return what?
 
+    // documented behaviour is to show the window if it's still hidden when
+    // showing it full screen
+    if (show)
+        Show();
+
     m_fsIsShowing = show;
 
 #if defined(GDK_WINDOWING_X11) && !defined(__WXGTK4__)
@@ -913,7 +932,9 @@ bool wxTopLevelWindowGTK::ShowFullScreen(bool show, long)
     Window xroot = None;
     wxX11FullScreenMethod method = wxX11_FS_WMSPEC;
 
-    if (GDK_IS_X11_DISPLAY(display))
+#ifdef __WXGTK3__
+    if (strcmp("GdkX11Display", g_type_name(G_TYPE_FROM_INSTANCE(display))) == 0)
+#endif
     {
         xdpy = GDK_DISPLAY_XDISPLAY(display);
         xroot = GDK_WINDOW_XID(gdk_screen_get_root_window(screen));
@@ -986,11 +1007,6 @@ bool wxTopLevelWindowGTK::ShowFullScreen(bool show, long)
     }
 #endif // GDK_WINDOWING_X11
 
-    // documented behaviour is to show the window if it's still hidden when
-    // showing it full screen
-    if (show)
-        Show();
-
     return true;
 }
 
@@ -1042,6 +1058,7 @@ bool wxTopLevelWindowGTK::Show( bool show )
     bool deferShow = show && !m_isShown && !m_isIconized && m_deferShow;
     if (deferShow)
     {
+        GdkScreen* screen = gtk_widget_get_screen(m_widget);
         deferShow = m_deferShowAllowed &&
             // Assume size (from cache or wxPersistentTLW) is correct.
             // Avoids problems when WM initially provides an incorrect value
@@ -1050,7 +1067,9 @@ bool wxTopLevelWindowGTK::Show( bool show )
 
             gs_requestFrameExtentsStatus != RFE_STATUS_BROKEN &&
             !gtk_widget_get_realized(m_widget) &&
-            GDK_IS_X11_DISPLAY(gtk_widget_get_display(m_widget)) &&
+#ifdef __WXGTK3__
+            strcmp("GdkX11Screen", g_type_name(G_TYPE_FROM_INSTANCE(screen))) == 0 &&
+#endif
             g_signal_handler_find(m_widget,
                 GSignalMatchType(G_SIGNAL_MATCH_ID | G_SIGNAL_MATCH_DATA),
                 g_signal_lookup("property_notify_event", GTK_TYPE_WIDGET),
@@ -1062,7 +1081,6 @@ bool wxTopLevelWindowGTK::Show( bool show )
 #endif
         if (deferShow)
         {
-            GdkScreen* screen = gtk_widget_get_screen(m_widget);
             GdkAtom atom = gdk_atom_intern("_NET_REQUEST_FRAME_EXTENTS", false);
             deferShow = gdk_x11_screen_supports_net_wm_hint(screen, atom) != 0;
 
@@ -1147,6 +1165,12 @@ bool wxTopLevelWindowGTK::Show( bool show )
     bool change = base_type::Show(show);
 
 #ifdef __WXGTK3__
+    if (change && show)
+    {
+        // We may need to redo it after showing the window.
+        GTKUpdateClientSizeIfNecessary();
+    }
+
     if (m_needSizeEvent)
     {
         m_needSizeEvent = false;
@@ -1255,6 +1279,19 @@ void wxTopLevelWindowGTK::DoSetSize( int x, int y, int width, int height, int si
     {
         m_deferShowAllowed = true;
         m_useCachedClientSize = false;
+
+#ifdef __WXGTK3__
+        // Reset pending client size, it is not relevant any more and shouldn't
+        // be set when the window is shown, as we don't want it to replace the
+        // size explicitly specified here. Note that we do still want to set
+        // the minimum client size, as increasing the total size shouldn't
+        // allow shrinking the frame beyond its minimum fitting size.
+        //
+        // Also note that if we're called from WXSetInitialFittingClientSize()
+        // itself, this will be overwritten again with the pending flags when
+        // we return.
+        m_pendingFittingClientSizeFlags &= ~wxSIZE_SET_CURRENT;
+#endif // __WXGTK3__
 
         int w, h;
         GTKDoGetSize(&w, &h);
@@ -1483,9 +1520,8 @@ void wxTopLevelWindowGTK::GTKUpdateDecorSize(const DecorSize& decorSize)
             SendSizeEvent();
         }
 #endif
-        wxShowEvent showEvent(GetId(), true);
-        showEvent.SetEventObject(this);
-        HandleWindowEvent(showEvent);
+
+        GTKDoAfterShow();
     }
 #endif // GDK_WINDOWING_X11
 }
@@ -1506,6 +1542,54 @@ wxTopLevelWindowGTK::DecorSize& wxTopLevelWindowGTK::GetCachedDecorSize()
         index |= 4;
     return size[index];
 }
+
+void wxTopLevelWindowGTK::GTKDoAfterShow()
+{
+#ifdef __WXGTK3__
+    // Set the client size again if necessary, we should be able to do it
+    // correctly by now as the style cache should be up to date.
+    GTKUpdateClientSizeIfNecessary();
+#endif // __WXGTK3__
+
+    wxShowEvent showEvent(GetId(), true);
+    showEvent.SetEventObject(this);
+    HandleWindowEvent(showEvent);
+}
+
+#ifdef __WXGTK3__
+
+void wxTopLevelWindowGTK::GTKUpdateClientSizeIfNecessary()
+{
+    if ( m_pendingFittingClientSizeFlags )
+    {
+        WXSetInitialFittingClientSize(m_pendingFittingClientSizeFlags);
+
+        m_pendingFittingClientSizeFlags = 0;
+    }
+}
+
+void wxTopLevelWindowGTK::SetMinSize(const wxSize& minSize)
+{
+    wxTopLevelWindowBase::SetMinSize(minSize);
+
+    // Explicitly set minimum size should override the pending size, if any.
+    m_pendingFittingClientSizeFlags &= ~wxSIZE_SET_MIN;
+}
+
+void wxTopLevelWindowGTK::WXSetInitialFittingClientSize(int flags)
+{
+    // In any case, update the size immediately.
+    wxTopLevelWindowBase::WXSetInitialFittingClientSize(flags);
+
+    // But if we're not shown yet, the fitting size may be wrong because GTK
+    // style cache hasn't been updated yet and we need to do it again when the
+    // window becomes visible as we can be sure that by then we'll be able to
+    // compute the best size correctly.
+    if ( !IsShown() )
+        m_pendingFittingClientSizeFlags = flags;
+}
+
+#endif // __WXGTK3__
 
 // ----------------------------------------------------------------------------
 // frame title/icon

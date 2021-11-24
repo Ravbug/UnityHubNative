@@ -1,4 +1,4 @@
-/* f519f27c7c3b79fee55aeb8b1e53b7384b079d9118bf3a62eb3a60986a6742f2 (2.2.9+)
+/* 5cd169f2942b85c05e0b1b96f9990f91ac3d07e470ad7ce906ac8590c8ed4f35 (2.2.10+)
                             __  __            _
                          ___\ \/ /_ __   __ _| |_
                         / _ \\  /| '_ \ / _` | __|
@@ -48,6 +48,17 @@
 #include <stdio.h>  /* fprintf */
 #include <stdlib.h> /* getenv, rand_s */
 
+#if defined(_WIN32) && defined(_MSC_VER) && (_MSC_VER < 1600)
+/* vs2008/9.0 and earlier lack stdint.h; _MSC_VER 1600 is vs2010/10.0 */
+#  if defined(_WIN64)
+typedef unsigned __int64 uintptr_t;
+#  else
+typedef unsigned __int32 uintptr_t;
+#  endif
+#else
+#  include <stdint.h> /* uintptr_t */
+#endif
+
 #ifdef _WIN32
 #  define getpid GetCurrentProcessId
 #else
@@ -62,10 +73,10 @@
 
 #ifdef _WIN32
 #  include "winconfig.h"
-#elif defined( __APPLE__ ) && !defined(HAVE_EXPAT_CONFIG_H)
-#  include "macconfig.h"
 #elif defined(HAVE_EXPAT_CONFIG_H)
 #  include <expat_config.h>
+#else
+#  include "macconfig.h"
 #endif /* ndef _WIN32 */
 
 #include "ascii.h"
@@ -123,9 +134,7 @@
 #  define XmlGetInternalEncoding XmlGetUtf16InternalEncoding
 #  define XmlGetInternalEncodingNS XmlGetUtf16InternalEncodingNS
 #  define XmlEncode XmlUtf16Encode
-/* Using pointer subtraction to convert to integer type. */
-#  define MUST_CONVERT(enc, s)                                                 \
-    (! (enc)->isUtf16 || (((char *)(s) - (char *)NULL) & 1))
+#  define MUST_CONVERT(enc, s) (! (enc)->isUtf16 || (((uintptr_t)(s)) & 1))
 typedef unsigned short ICHAR;
 #else
 #  define XML_ENCODE_MAX XML_UTF8_ENCODE_MAX
@@ -2191,7 +2200,7 @@ XML_GetInputContext(XML_Parser parser, int *offset, int *size) {
   (void)offset;
   (void)size;
 #endif /* defined XML_CONTEXT_BYTES */
-  return (char *)0;
+  return (const char *)0;
 }
 
 XML_Size XMLCALL
@@ -3607,7 +3616,7 @@ doCdataSection(XML_Parser parser, const ENCODING *enc, const char **startPtr,
   *startPtr = NULL;
 
   for (;;) {
-    const char *next;
+    const char *next = s; /* in case of XML_TOK_NONE or XML_TOK_PARTIAL */
     int tok = XmlCdataSectionTok(enc, s, end, &next);
     *eventEndPP = next;
     switch (tok) {
@@ -3725,7 +3734,7 @@ ignoreSectionProcessor(XML_Parser parser, const char *start, const char *end,
 static enum XML_Error
 doIgnoreSection(XML_Parser parser, const ENCODING *enc, const char **startPtr,
                 const char *end, const char **nextPtr, XML_Bool haveMore) {
-  const char *next;
+  const char *next = *startPtr; /* in case of XML_TOK_NONE or XML_TOK_PARTIAL */
   int tok;
   const char *s = *startPtr;
   const char **eventPP;
@@ -5206,8 +5215,8 @@ processInternalEntity(XML_Parser parser, ENTITY *entity, XML_Bool betweenDecl) {
   openEntity->betweenDecl = betweenDecl;
   openEntity->internalEventPtr = NULL;
   openEntity->internalEventEndPtr = NULL;
-  textStart = (char *)entity->textPtr;
-  textEnd = (char *)(entity->textPtr + entity->textLen);
+  textStart = (const char *)entity->textPtr;
+  textEnd = (const char *)(entity->textPtr + entity->textLen);
   /* Set a safe default value in case 'next' does not get set */
   next = textStart;
 
@@ -5249,8 +5258,8 @@ internalEntityProcessor(XML_Parser parser, const char *s, const char *end,
     return XML_ERROR_UNEXPECTED_STATE;
 
   entity = openEntity->entity;
-  textStart = ((char *)entity->textPtr) + entity->processed;
-  textEnd = (char *)(entity->textPtr + entity->textLen);
+  textStart = ((const char *)entity->textPtr) + entity->processed;
+  textEnd = (const char *)(entity->textPtr + entity->textLen);
   /* Set a safe default value in case 'next' does not get set */
   next = textStart;
 
@@ -5270,7 +5279,7 @@ internalEntityProcessor(XML_Parser parser, const char *s, const char *end,
     return result;
   else if (textEnd != next
            && parser->m_parsingStatus.parsing == XML_SUSPENDED) {
-    entity->processed = (int)(next - (char *)entity->textPtr);
+    entity->processed = (int)(next - (const char *)entity->textPtr);
     return result;
   } else {
     entity->open = XML_FALSE;
@@ -5465,8 +5474,8 @@ appendAttributeValue(XML_Parser parser, const ENCODING *enc, XML_Bool isCdata,
         const XML_Char *textEnd = entity->textPtr + entity->textLen;
         entity->open = XML_TRUE;
         result = appendAttributeValue(parser, parser->m_internalEncoding,
-                                      isCdata, (char *)entity->textPtr,
-                                      (char *)textEnd, pool);
+                                      isCdata, (const char *)entity->textPtr,
+                                      (const char *)textEnd, pool);
         entity->open = XML_FALSE;
         if (result)
           return result;
@@ -5565,8 +5574,8 @@ storeEntityValue(XML_Parser parser, const ENCODING *enc,
         } else {
           entity->open = XML_TRUE;
           result = storeEntityValue(
-              parser, parser->m_internalEncoding, (char *)entity->textPtr,
-              (char *)(entity->textPtr + entity->textLen));
+              parser, parser->m_internalEncoding, (const char *)entity->textPtr,
+              (const char *)(entity->textPtr + entity->textLen));
           entity->open = XML_FALSE;
           if (result)
             goto endEntityValue;
@@ -6521,7 +6530,7 @@ hashTableInit(HASH_TABLE *p, const XML_Memory_Handling_Suite *ms) {
 static void FASTCALL
 hashTableIterInit(HASH_TABLE_ITER *iter, const HASH_TABLE *table) {
   iter->p = table->v;
-  iter->end = iter->p + table->size;
+  iter->end = iter->p ? iter->p + table->size : NULL;
 }
 
 static NAMED *FASTCALL

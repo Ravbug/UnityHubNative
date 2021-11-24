@@ -753,7 +753,7 @@ TIFFReadRawStrip(TIFF* tif, uint32 strip, void* buf, tmsize_t size)
 }
 
 TIFF_NOSANITIZE_UNSIGNED_INT_OVERFLOW
-static uint64 NoSantizeSubUInt64(uint64 a, uint64 b)
+static uint64 NoSanitizeSubUInt64(uint64 a, uint64 b)
 {
     return a - b;
 }
@@ -841,7 +841,7 @@ TIFFFillStrip(TIFF* tif, uint32 strip)
 					"Read error on strip %lu; "
 					"got %I64u bytes, expected %I64u",
 					(unsigned long) strip,
-					(unsigned __int64) NoSantizeSubUInt64(tif->tif_size, TIFFGetStrileOffset(tif, strip)),
+					(unsigned __int64) NoSanitizeSubUInt64(tif->tif_size, TIFFGetStrileOffset(tif, strip)),
 					(unsigned __int64) bytecount);
 #else
 				TIFFErrorExt(tif->tif_clientdata, module,
@@ -849,7 +849,7 @@ TIFFFillStrip(TIFF* tif, uint32 strip)
 					"Read error on strip %lu; "
 					"got %llu bytes, expected %llu",
 					(unsigned long) strip,
-					(unsigned long long) NoSantizeSubUInt64(tif->tif_size, TIFFGetStrileOffset(tif, strip)),
+					(unsigned long long) NoSanitizeSubUInt64(tif->tif_size, TIFFGetStrileOffset(tif, strip)),
 					(unsigned long long) bytecount);
 #endif
 				tif->tif_curstrip = NOSTRIP;
@@ -1445,8 +1445,16 @@ TIFFStartStrip(TIFF* tif, uint32 strip)
 		else
 			tif->tif_rawcc = (tmsize_t)TIFFGetStrileByteCount(tif, strip);
 	}
-	return ((*tif->tif_predecode)(tif,
-			(uint16)(strip / td->td_stripsperimage)));
+	if ((*tif->tif_predecode)(tif,
+			(uint16)(strip / td->td_stripsperimage)) == 0 ) {
+            /* Needed for example for scanline access, if tif_predecode */
+            /* fails, and we try to read the same strip again. Without invalidating */
+            /* tif_curstrip, we'd call tif_decoderow() on a possibly invalid */
+            /* codec state. */
+            tif->tif_curstrip = NOSTRIP;
+            return 0;
+        }
+        return 1;
 }
 
 /*

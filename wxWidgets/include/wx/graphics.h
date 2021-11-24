@@ -274,6 +274,12 @@ extern WXDLLIMPEXP_DATA_CORE(wxGraphicsMatrix) wxNullGraphicsMatrix;
 // and how they are spread out in a gradient
 // ----------------------------------------------------------------------------
 
+// gcc 9 gives a nonsensical warning about implicitly generated move ctor not
+// throwing but not being noexcept, suppress it.
+#if wxCHECK_GCC_VERSION(9, 1) && !wxCHECK_GCC_VERSION(10, 0)
+wxGCC_WARNING_SUPPRESS(noexcept)
+#endif
+
 // Describes a single gradient stop.
 class wxGraphicsGradientStop
 {
@@ -305,6 +311,10 @@ private:
     // Its starting position: 0 is the beginning and 1 is the end.
     float m_pos;
 };
+
+#if wxCHECK_GCC_VERSION(9, 1) && !wxCHECK_GCC_VERSION(10, 0)
+wxGCC_WARNING_RESTORE(noexcept)
+#endif
 
 // A collection of gradient stops ordered by their positions (from lowest to
 // highest). The first stop (index 0, position 0.0) is always the starting
@@ -866,7 +876,10 @@ public:
     virtual void EnableOffset(bool enable = true);
 
     void DisableOffset() { EnableOffset(false); }
-    bool OffsetEnabled() { return m_enableOffset; }
+    bool OffsetEnabled() const { return m_enableOffset; }
+
+    void SetContentScaleFactor(double contentScaleFactor);
+    double GetContentScaleFactor() const { return m_contentScaleFactor; }
 
 protected:
     // These fields must be initialized in the derived class ctors.
@@ -902,6 +915,7 @@ private:
     // Create() or the associated window of the wxDC this context was created
     // from.
     wxWindow* const m_window;
+    double m_contentScaleFactor;
 
     wxDECLARE_NO_COPY_CLASS(wxGraphicsContext);
     wxDECLARE_ABSTRACT_CLASS(wxGraphicsContext);

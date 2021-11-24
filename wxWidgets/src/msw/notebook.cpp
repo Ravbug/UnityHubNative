@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_NOTEBOOK
 
@@ -790,11 +787,13 @@ void wxNotebook::OnEraseBackground(wxEraseEvent& WXUNUSED(event))
 void wxNotebook::OnPaint(wxPaintEvent& WXUNUSED(event))
 {
     wxPaintDC dc(this);
-    wxMemoryDC memdc;
     RECT rc;
     ::GetClientRect(GetHwnd(), &rc);
+    if ( !rc.right || !rc.bottom )
+        return;
+
     wxBitmap bmp(rc.right, rc.bottom);
-    memdc.SelectObject(bmp);
+    wxMemoryDC memdc(bmp);
 
     const wxLayoutDirection dir = dc.GetLayoutDirection();
     memdc.SetLayoutDirection(dir);

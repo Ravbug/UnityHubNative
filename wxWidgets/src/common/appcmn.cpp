@@ -19,15 +19,13 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#if defined(__BORLANDC__)
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/app.h"
     #include "wx/window.h"
     #include "wx/bitmap.h"
     #include "wx/log.h"
+    #include "wx/module.h"
     #include "wx/msgdlg.h"
     #include "wx/confbase.h"
     #include "wx/utils.h"
@@ -190,6 +188,14 @@ wxWindow* wxAppBase::GetTopWindow() const
     }
 
     return window;
+}
+
+/* static */
+wxWindow* wxAppBase::GetMainTopWindow()
+{
+    const wxAppBase* const app = static_cast<wxAppBase*>(GetInstance());
+
+    return app ? app->GetTopWindow() : NULL;
 }
 
 wxVideoMode wxAppBase::GetDisplayMode() const
@@ -579,3 +585,21 @@ bool wxGUIAppTraitsBase::HasStderr()
 #endif
 }
 
+#ifndef __WIN32__
+
+bool wxGUIAppTraitsBase::SafeMessageBox(const wxString& text,
+                                        const wxString& title)
+{
+    // The modules are initialized only after a successful call to
+    // wxApp::Initialize() in wxEntryStart, so it can be used as a proxy for
+    // GUI availability (note that the mere existence of wxTheApp is not enough
+    // for this).
+    if ( !wxModule::AreInitialized() )
+        return false;
+
+    wxMessageBox(text, title, wxOK | wxICON_ERROR);
+
+    return true;
+}
+
+#endif // !__WIN32__

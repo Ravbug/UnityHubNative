@@ -56,6 +56,13 @@ extern int getopt(int argc, char * const argv[], const char *optstring);
 
 #include "tiffio.h"
 
+#ifndef EXIT_SUCCESS
+#define EXIT_SUCCESS 0
+#endif
+#ifndef EXIT_FAILURE
+#define EXIT_FAILURE 1
+#endif
+
 #ifndef O_BINARY
 # define O_BINARY	0
 #endif
@@ -105,7 +112,7 @@ void
 usage()
 {
 	fprintf(stderr, "usage: %s [-h] [-o offset] [-m maxitems] file.tif ...\n", appname);
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 int
@@ -142,7 +149,7 @@ main(int argc, char* argv[])
 		fd = open(argv[optind], O_RDONLY|O_BINARY, 0);
 		if (fd < 0) {
 			perror(argv[0]);
-			return (-1);
+			return (EXIT_FAILURE);
 		}
 		if (multiplefiles)
 			printf("%s:\n", argv[optind]);
@@ -152,7 +159,7 @@ main(int argc, char* argv[])
 		dump(fd, diroff);
 		close(fd);
 	}
-	return (0);
+	return (EXIT_SUCCESS);
 }
 
 #define ord(e) ((int)e)
@@ -451,7 +458,7 @@ ReadDirectory(int fd, unsigned int ix, uint64 off)
 			{
 				datafits = 0;
 				datamem = NULL;
-				dataoffset = *(uint64*)dp;
+				memcpy(&dataoffset, dp, sizeof(uint64));
 				if (swabflag)
 					TIFFSwabLong8(&dataoffset);
 			}
@@ -874,7 +881,7 @@ Fatal(const char* fmt, ...)
 	va_start(ap, fmt);
 	vError(stderr, fmt, ap);
 	va_end(ap);
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 /* vim: set ts=8 sts=8 sw=8 noet: */

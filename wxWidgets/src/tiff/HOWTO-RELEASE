@@ -140,7 +140,7 @@ Notes on releasing.
 17. Copy release packages from the build tree to the
     ftp.remotesensing.org ftp site.
 
-      scp tiff-*.tar.gz tiff-*.zip \
+      scp tiff-*.tar.gz tiff-*.tar.gz.sig tiff-*.zip tiff-*.zip.sig \
          bfriesen@upload.osgeo.org:/osgeo/download/libtiff
 
 18. Announce to list, tiff@lists.maptools.org

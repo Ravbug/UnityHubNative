@@ -1,3 +1,1445 @@
+2020-12-19  Bob Friesenhahn  <bfriesen@simple.dallas.tx.us>
+
+	* libtiff 4.2.0 released.
+
+	* configure.ac: Pass tar-ustar option to AM_INIT_AUTOMAKE rather
+	than tar-pax since ustar POSIX 1003.1-1988 format is more portable
+	than PAX POSIX 1003.1-2001 format.
+
+2020-12-12  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'w_adjust-deflate_names' into 'master'
+	Set 'deflate' to DEFLATE_NAMES, instead of 'libdeflate'
+
+	See merge request libtiff/libtiff!174
+
+2020-12-12  Lemures Lemniscati  <lemures.lemniscati@gmail.com>
+
+	Set 'deflate' to DEFLATE_NAMES, instead of 'libdeflate'
+	'lib' will be automatically added as a prefix while doing find_library()
+
+2020-12-12  Even Rouault  <even.rouault@spatialys.com>
+
+	DoubleToRational(): avoid casting NaN to uint32 (fixes #227)
+
+2020-12-12  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'fix_221' into 'master'
+	tiffio.h: do not define __attribute__ but defines TIFF_ATTRIBUTE instead (fixes #221)
+
+	Closes #221
+
+	See merge request libtiff/libtiff!173
+
+2020-12-12  Even Rouault  <even.rouault@spatialys.com>
+
+	tiffio.h: do not define __attribute__ but defines TIFF_ATTRIBUTE instead (fixes #221)
+
+2020-12-08  Even Rouault  <even.rouault@spatialys.com>
+
+	TIFFReadDirEntryArrayWithLimit(): properly read from offline tag value when we clamp the number of strips to 1.
+	Fixes regression of commit 7057734d986001b7fd6d2afde9667da7754ff2cc on reading
+	a file with StripByteCounts with 1 element (broken) and StripOffsets with
+	896 elements, and where StripOffsets[0] is correct
+
+	$ tiffdump foo.tif
+	Magic: 0x4949 <little-endian> Version: 0x2a <ClassicTIFF>
+	Directory 0: offset 25725448 (0x1888a08) next 0 (0)
+	SubFileType (254) LONG (4) 1<0>
+	ImageWidth (256) LONG (4) 1<640>
+	ImageLength (257) LONG (4) 1<20098>
+	BitsPerSample (258) SHORT (3) 1<16>
+	Photometric (262) SHORT (3) 1<1>
+	SamplesPerPixel (277) SHORT (3) 1<1>
+	ResolutionUnit (296) SHORT (3) 1<2>
+	StripByteCounts (279) LONG (4) 1<1806>
+	StripOffsets (273) LONG (4) 896<8 648 1288 1928 2568 3208 3848 4488 5128 5768 6408 7048 7688 8328 8968 9608 10248 10888 11528 12168 12808 13448 14088 14728 ...>
+
+2020-12-02  Even Rouault  <even.rouault@spatialys.com>
+
+	tif_jpeg.c: avoid potential harmless unsigned integer overflow on data->fileoffset in JPEGFixupTagsSubsamplingSkip() by validating earlier. Fixes https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=28200
+
+2020-11-27  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'Jamaika1-master-patch-47839' into 'master'
+	Change ULARGE_INTEGER to LARGE_INTEGER
+
+	See merge request libtiff/libtiff!170
+
+2020-11-27  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'Jamaika1-master-patch-46397' into 'master'
+	Added stdint.h
+
+	See merge request libtiff/libtiff!171
+
+2020-11-27  Jamaika  <lukaszcz18@wp.pl>
+
+	Added stdint.h.
+
+	``` tif_win32.c: In function '_tiffSizeProc': tif_win32.c:159:23: warning: passing argument 2 of 'GetFileSizeEx' from incompatible pointer type [-Wincompatible-pointer-types]   159 |  if (GetFileSizeEx(fd,&m))       |                       ^~       |                       |       |                       ULARGE_INTEGER * In file included from c:\msys1021\x86_64-w64-mingw32\include\winbase.h:18,                  from c:\msys1021\x86_64-w64-mingw32\include\windows.h:70,                  from tif_win32.c:32: c:\msys1021\x86_64-w64-mingw32\include\fileapi.h:78:73: note: expected 'PLARGE_INTEGER' {aka 'LARGE_INTEGER *'} but argument is of type 'ULARGE_INTEGER *'    78 |   WINBASEAPI WINBOOL WINAPI GetFileSizeEx (HANDLE hFile, PLARGE_INTEGER lpFileSize);       |                                                          ~~~~~~~~~~~~~~~^~~~~~~~~~ ```
+
+2020-11-21  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-113' into 'master'
+	tiffcrop: fix buffer overrun in extractContigSamples24bits()
+
+	Closes #113
+
+	See merge request libtiff/libtiff!169
+
+2020-11-21  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-156' into 'master'
+	tiff2pdf: Check output size before writing
+
+	Closes #156
+
+	See merge request libtiff/libtiff!168
+
+2020-11-21  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-201' into 'master'
+	tiff2pdf: enforce memory limit for tiled pictures too
+
+	Closes #201
+
+	See merge request libtiff/libtiff!167
+
+2020-11-20  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-207' into 'master'
+	enforce (configurable) memory limit in tiff2rgba
+
+	Closes #209 et #207
+
+	See merge request libtiff/libtiff!165
+
+2020-11-20  Even Rouault  <even.rouault@spatialys.com>
+
+	tif_lzw.c: avoid false positive -Wnull-dereference of mingw32 gcc 7.3.
+
+2020-11-17  Thomas Bernard  <miniupnp@free.fr>
+
+	tiffcrop: fix buffer overrun in extractContigSamples24bits()
+	fixes #113
+
+	tiff2pdf: Check output size before writing.
+	fixes #156
+
+	tiff2pdf: enforce memory limit for tiled pictures too.
+	fixes #201
+
+2020-11-15  Thomas Bernard  <miniupnp@free.fr>
+
+	tiff2rgba.1: -M option.
+
+	enforce (configurable) memory limit in tiff2rgba.
+	fixes #207
+	fixes #209
+
+2020-11-14  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-220' into 'master'
+	tiff2pdf.c: properly calculate datasize when saving to JPEG YCbCr
+
+	Closes #220
+
+	See merge request libtiff/libtiff!159
+
+2020-11-14  Thomas Bernard  <miniupnp@free.fr>
+
+	tiff2pdf.c: properly calculate datasize when saving to JPEG YCbCr.
+	fixes #220
+
+2020-11-14  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-204' into 'master'
+	avoid buffer overflow while writing jpeg end of file marker
+
+	Closes #204
+
+	See merge request libtiff/libtiff!161
+
+2020-11-14  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-193' into 'master'
+	fix buffer overflow in tiff2ps.c
+
+	Closes #193
+
+	See merge request libtiff/libtiff!162
+
+2020-11-14  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'skal65535-master-patch-91082' into 'master'
+	More overflow fixes for large widths
+
+	See merge request libtiff/libtiff!164
+
+2020-11-14  skal  <pascal.massimino@gmail.com>
+
+	More overflow fixes for large width.
+	Also: use INT_MAX instead of hard-coded constants.
+
+2020-11-12  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'skal65535-master-patch-56655' into 'master'
+	Fix potential overflow in gtStripContig()
+
+	See merge request libtiff/libtiff!163
+
+2020-11-12  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-211' into 'master'
+	check for tile width overflow
+
+	Closes #211
+
+	See merge request libtiff/libtiff!160
+
+2020-11-12  skal  <pascal.massimino@gmail.com>
+
+	Fix potential overflow in gtStripContig()
+	(w + w) might not fit in int32 if too large.
+
+2020-11-09  Thomas Bernard  <miniupnp@free.fr>
+
+	tiff2ps.c: fix buffer overread.
+	fixes #193
+
+	fix undefined behaviour (int shifted too much to the left)
+
+	avoid buffer overflow while writing jpeg end of file marker.
+	fixes #204
+
+	gtTileContig(): check Tile width for overflow.
+	fixes #211
+
+	fix warning messages (v32 is unsigned)
+
+2020-10-26  Even Rouault  <even.rouault@spatialys.com>
+
+	TIFFStartStrip(): avoid potential crash in WebP codec when using scanline access on corrupted files. Fixes https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=26650
+
+2020-10-20  Even Rouault  <even.rouault@spatialys.com>
+
+	tif_webp.c: validate tile/strip dimension to avoid unsigned integer overflow in RGBA.size computation
+
+2020-10-19  Even Rouault  <even.rouault@spatialys.com>
+
+	tif_zip.c: fix typo in comment.
+
+2020-10-16  Even Rouault  <even.rouault@spatialys.com>
+
+	tiff.h: remove irrelevant warning about webp related pseudo-tags not being registered: they are purely internal libtiff concepts
+
+2020-10-16  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'libdeflate' into 'master'
+	Add support for building against libdeflate for faster Zip/Deflate compression/decompression
+
+	See merge request libtiff/libtiff!158
+
+2020-10-16  Even Rouault  <even.rouault@spatialys.com>
+
+	test: add testdeflatelaststripextradata.sh.
+
+2020-10-16  Even Rouault  <even.rouault@spatialys.com>
+
+	Add support for optional building against libdeflate for faster Zip/Deflate compression/decompression.
+	So we can have 2 kind of builds with the Zip/Deflate codec:
+	- zlib only
+	- zlib + libdeflate
+
+	Speed improvements in the 35%-50% range can be expected when libdeflate is used.
+	Compression level up to 12 is now supported (capped to 9 when zlib is used).
+	Still requires zlib for situations where libdeflate cannot be used (that
+	is for scanline access, since libdeflate has no streaming mode)
+
+	Pseudo-tag TIFFTAG_DEFLATE_SUBCODEC=DEFLATE_SUBCODEC_ZLIB/DEFLATE_SUBCODEC_LIBDEFLATE
+	is added to control which subcodec (zlib or libdeflate) should be used (it defaults
+	of course to libdeflate, when it is available).
+	This is mostly aimed at being used on the writing side, to be able to reproduce
+	output of previous libtiff versions at a binary level, in situations where this would
+	be really needed. Or as a safety belt in case there would be unforeseen issues
+	with using libdeflate.
+	It can be used to know when libdeflate is available at runtime (DEFLATE_SUBCODEC_LIBDEFLATE
+	will be the default value in that situation).
+
+	Of course, deflate codestreams produced by libdeflate can be read by zlib, and vice-versa.
+
+2020-10-14  Even Rouault  <even.rouault@spatialys.com>
+
+	tif_webp.c: fix compiler warnings with MSVC.
+
+2020-10-12  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'various_fixes' into 'master'
+	Fix compiler warnings about unused variables when assert() expands to nothing
+
+	See merge request libtiff/libtiff!157
+
+2020-10-12  Even Rouault  <even.rouault@spatialys.com>
+
+	.gitignore: add entries for new files in test/
+
+	Fix compiler warnings about unused variables when assert() expands to nothing
+
+2020-10-09  Roger Leigh  <rleigh@codelibre.net>
+
+	Merge branch '215-cygwin-appveyor-fail' into 'master'
+	Update Appveyor CI build to build with VS2019 image
+
+	Closes #215
+
+	See merge request libtiff/libtiff!154
+
+2020-10-09  Roger Leigh  <rleigh@codelibre.net>
+
+	wip.
+
+	wip.
+
+	wip.
+
+	wip.
+
+	wip.
+
+	wip.
+
+2020-10-09  Roger Leigh  <rleigh@codelibre.net>
+
+	Merge branch 'TIFF-217_m_lib_path' into 'master'
+	cmake: Do not use absolute libm path
+
+	Closes #217
+
+	See merge request libtiff/libtiff!156
+
+2020-10-09  Roger Leigh  <rleigh@codelibre.net>
+
+	cmake: Do not use absolute libm path.
+
+2020-10-08  Even Rouault  <even.rouault@spatialys.com>
+
+	tif_fax3.h: restore systematic calls to CLEANUP_RUNS()
+	now that SETVALUE() no longer cause overflows.
+	Those were removed per b351db8be1b4d3f712bdb9424a79d3174cc03202 and
+	3440ac216463fcad170bbb391491e69730a59ffa.
+
+	As SETVALUE() now returns an error, this allow the decoder to exit.
+
+	Otherwise, the assert(x == lastx) in _TIFFFax3fillruns() can trigger.
+
+	Fixes https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=26201
+
+2020-10-06  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'check_TIFFFlushData1' into 'master'
+	FAX/JPEG/LZMA/PixarLog/ZIP/ZSTD codecs: make sure to check TIFFFlushData1() return value
+
+	See merge request libtiff/libtiff!155
+
+2020-10-04  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'shared-memory' into 'master'
+	Set the --shared-memory linker flag for Emscripten builds
+
+	See merge request libtiff/libtiff!153
+
+2020-10-03  Even Rouault  <even.rouault@spatialys.com>
+
+	tiff2rgba.c: fix -Wold-style-declaration warning.
+
+	FAX/JPEG/LZMA/PixarLog/ZIP/ZSTD codecs: make sure to check TIFFFlushData1() return value
+
+2020-09-26  Even Rouault  <even.rouault@spatialys.com>
+
+	tif_fax3.h: extra buffer overflow checks. Fixes https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=25934
+
+2020-09-25  Roger Leigh  <rleigh@codelibre.net>
+
+	wip.
+
+	wip.
+
+	wip.
+
+	wip.
+
+	wip.
+
+	wip.
+
+	Update AppVeyor image.
+
+	test-appveyor.
+
+2020-09-24  Attila Oláh  <atl@google.com>
+
+	Also pass --shared-memory to raw_decode.
+	This is needed when building for Emscripten with *both* WEBP and JPEG
+	support.
+
+	Set the --shared-memory linker flag for Emscripten builds.
+	This is only needed when building with WEBP support, which uses atomics,
+	therefore the linker needs the --shared-memory flag. The flag cannot be
+	added globally because not all executables link against libwebp.
+
+2020-09-22  Even Rouault  <even.rouault@spatialys.com>
+
+	tif_fax3.h: return error when a buffer overflow occurs. Fixes https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=25552 and https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=25849
+
+2020-09-11  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'fix-float-compare' into 'master'
+	Fix comparison for max negative float value.
+
+	See merge request libtiff/libtiff!152
+
+2020-09-11  Dirk Lemstra  <dirk@lemstra.org>
+
+	Fix comparison for max negative float value.
+
+2020-09-07  Even Rouault  <even.rouault@spatialys.com>
+
+	Fax3PreDecode(): reset curruns and refruns state variables.
+	to avoid out-of-bounds write triggered by GDAL when repeatedly
+	reading a corrupt strip.
+
+	Fixes https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=25493
+
+2020-06-06  Thomas Bernard  <miniupnp@free.fr>
+
+	Merge branch 'issue-17' into 'master'
+	normalize tools behaviour regarding -h
+
+	Closes #17
+
+	See merge request libtiff/libtiff!115
+
+2020-05-31  Even Rouault  <even.rouault@spatialys.com>
+
+	TWebPSetupEncode(): fix logic problem (and instead of or) in test that checks input is 8bit unsigned data
+
+2020-05-12  Even Rouault  <even.rouault@spatialys.com>
+
+	TIFFGetConfiguredCODECs(): fix to avoid wrong structure to be returned for registered (ie non built-in) codecs
+
+2020-05-09  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'zstd-webp-update' into 'master'
+	gitlab-ci: use latest zstd and webp versions
+
+	See merge request libtiff/libtiff!148
+
+2020-05-09  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'deprecated' into 'master'
+	ojpeg: s/Depreciated/Deprecated/
+
+	See merge request libtiff/libtiff!149
+
+2020-05-09  Aaron Boxer  <boxerab@gmail.com>
+
+	ojpeg: s/Depreciated/Deprecated/
+
+2020-04-27  Even Rouault  <even.rouault@spatialys.com>
+
+	Fix typos.
+
+	tif_jpeg.c: avoid potential division in previous fix (master only)
+
+2020-04-26  Thomas Bernard  <miniupnp@free.fr>
+
+	gitlab-ci: use latest zstd and webp versions.
+
+2020-04-26  Even Rouault  <even.rouault@spatialys.com>
+
+	tiff.h: fixes to use ASCII only characters (master only)
+
+2020-04-26  Thomas Bernard  <miniupnp@free.fr>
+
+	tiffsplit: use EXIT_SUCCESS / EXIT_FAILURE.
+
+	tiffset: print usage on stdout when -h is used.
+	also use EXIT_FAILURE / EXIT_SUCCESS
+	see #17
+
+	tiffmedian: shopw usage on stdout when -h is used.
+	aslo use EXIT_SUCCESS/EXIT_FAILURE
+	see #17
+
+	tiffinfo: print usage on stdout when -h is used.
+	also use EXIT_FAILURE / EXIT_SUCCESS
+	see #17
+
+	raw2tiff: print usage to stdout when -h is used.
+	see #17
+
+	tiff2pdf: print usage on stdout when -h is used.
+	see #17
+
+	tiffgt: output usage on stdout with -h.
+	also use EXIT_SUCCESS / EXIT_FAILURE
+
+	tiffdump: use EXIT_FAILURE / EXIT_SUCCESS.
+	see #17
+
+	tiffdither: print usage on stdout when -h is used.
+	see #17
+
+2020-04-26  Thomas Bernard  <miniupnp@free.fr>
+
+	tiffcrop: -h / -v prints usage/version to stdout.
+	also uses the standard C EXIT_SUCCESS / EXIT_FAILURE
+	macros
+
+	see #17
+
+2020-04-26  Thomas Bernard  <miniupnp@free.fr>
+
+	tiffcp: output usage to stdout when using -h.
+	also use EXIT_FAILURE / EXIT_SUCCESS
+	see #17
+
+	tiffcmp: match exit status for posix cmp and diff tools.
+
+	tiff2rgba: output usage to stdout when using -h.
+	also uses std C EXIT_FAILURE / EXIT_SUCCESS
+	see #17
+
+	tiff2ps: sue EXIT_FAILURE / EXIT_SUCCESS.
+	see #17
+
+	tiff2bw: output usage on stdout when using -h.
+	also uses EXIT_SUCCESS / EXIT_FAILURE
+	see #17
+
+	thumbnail: use EXIT_FAILURE / EXIT_SUCCESS.
+	the -h option was already used so it cannot be used for help/usage
+	see #17
+
+	rgb2ycbcr: use EXIT_FAILURE / EXIT_SUCCESS.
+	the -h option was already used so it cannot be used for help/usage
+	see #17
+
+	ppm2tiff: output usage to stdout when using -h option.
+	also uses std C EXIT_SUCCESS / EXIT_FAILURE
+	see #17
+
+	pal2rgb: output usage to stdout when -h is used.
+	see #17
+
+	fax2tiff.c: print usage on stdout when using -h option.
+	see #17
+
+	fax2ps: output usage to stdout when using -h option.
+	also use EXIT_SUCCESS, EXIT_FAILURE from C standard
+
+2020-04-25  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'jpeg_multiscan_dos_logic' into 'master'
+	tif_jpeg.c: revise logic to detect potential excessive memory usage when...
+
+	See merge request libtiff/libtiff!147
+
+2020-04-24  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-176' into 'master'
+	tiff2pdf: get rid of uninitialized memory content
+
+	Closes #176
+
+	See merge request libtiff/libtiff!143
+
+2020-04-24  Even Rouault  <even.rouault@spatialys.com>
+
+	tif_jpeg.c: revise logic to detect potential excessive memory usage when decoding multiscan JPEG compressed images
+
+2020-04-19  Thomas Bernard  <miniupnp@free.fr>
+
+	tiff2pdf: test the return code of TIFFReadRawStrip() and TIFFReadRawTile()
+
+	tiff2pdf.c: fix some whitespace problems in source.
+
+	tiff2pdf: get rid of uninitialized memory content.
+	fixes #176
+
+2020-04-19  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-18' into 'master'
+	tiffset: pass size for TIFFTAG_INKNAMES
+
+	Closes #18
+
+	See merge request libtiff/libtiff!146
+
+2020-04-18  Olivier Paquet  <olivier.paquet@gmail.com>
+
+	Merge branch 'issue-80' into 'master'
+	tiffinfo: fix dump of Tiled images
+
+	Closes #80
+
+	See merge request libtiff/libtiff!144
+
+2020-04-15  Even Rouault  <even.rouault@spatialys.com>
+
+	Fix wrong file size checks for memory-mapped BigTIFF files that could lead to image rejection
+
+2020-04-05  Thomas Bernard  <miniupnp@free.fr>
+
+	tiffset: pass size for TIFFTAG_INKNAMES.
+	Uses TIFFFieldPassCount() to know which arguments need to be
+	passed to TiffSetField()
+
+	fixes #18
+	see http://bugzilla.maptools.org/show_bug.cgi?id=2202
+
+2020-04-04  Thomas Bernard  <miniupnp@free.fr>
+
+	tiffinfo: showdata for tiled images.
+
+	tiffinfo: fix dump of Tiled images.
+	fixes #80
+
+2020-04-03  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-117' into 'master'
+	tiffcrop: enforce memory allocation limit
+
+	Closes #117
+
+	See merge request libtiff/libtiff!140
+
+2020-04-03  Thomas Bernard  <miniupnp@free.fr>
+
+	tiffcrop: enforce memory allocation limit.
+	uses -k option to change limit (default to 256MiB)
+	fixes #117 / http://bugzilla.maptools.org/show_bug.cgi?id=2757
+
+2020-04-02  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-45' into 'master'
+	tiffcp: disable strip chopping when trying to convert to JBIG compression
+
+	Closes #45
+
+	See merge request libtiff/libtiff!138
+
+2020-04-02  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-124' into 'master'
+	TIFFGetFields(3tiff): TIFFTAG_*BYTECOUNTS TIFFTAG_*OFFSETS are uint64
+
+	Closes #124
+
+	See merge request libtiff/libtiff!137
+
+2020-04-02  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'aix_itrunc' into 'master'
+	Rename itrunc to fix name clash with a different itrunc in math.h on AIX. Fixes issue #189
+
+	Closes #189
+
+	See merge request libtiff/libtiff!139
+
+2020-04-01  Rob Boehne  <robb@datalogics.com>
+
+	Rename itrunc to fix name clash with a different itrunc in math.h on AIX. Fixes issue #189
+
+2020-04-01  Thomas Bernard  <miniupnp@free.fr>
+
+	tiffcp: disable strip chopping when trying to convert to JBIG compression
+	fixes #45
+
+2020-03-29  Thomas Bernard  <miniupnp@free.fr>
+
+	TIFFGetFields(3tiff): TIFFTAG_*BYTECOUNTS TIFFTAG_*OFFSETS are uint64.
+	fixes #124 / http://bugzilla.maptools.org/show_bug.cgi?id=2774
+
+2020-03-29  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-48' into 'master'
+	tiff2pdf: fix "raw" copy of Deflate streams
+
+	Closes #48
+
+	See merge request libtiff/libtiff!136
+
+2020-03-27  Thomas Bernard  <miniupnp@free.fr>
+
+	tiff2pdf: fix "raw" copy of Deflate streams.
+	The Predictor parametter was not copied from the source tiff to the PDF.
+	fixes #48 / http://bugzilla.maptools.org/show_bug.cgi?id=2442
+
+2020-03-26  Thomas Bernard  <miniupnp@free.fr>
+
+	tif_fax3: quit Fax3Decode2D() when a buffer overflow occurs.
+	fixes #186
+
+2020-03-24  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-143-144' into 'master'
+	tiffdump: avoid unaligned memory access
+
+	Closes #144 et #143
+
+	See merge request libtiff/libtiff!133
+
+2020-03-24  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-133' into 'master'
+	tiff2pdf: avoid divide by 0
+
+	Closes #133
+
+	See merge request libtiff/libtiff!126
+
+2020-03-24  Thomas Bernard  <miniupnp@free.fr>
+
+	tiff2pdf: normalizePoint() macro to normalize the white point.
+
+2020-03-23  Thomas Bernard  <miniupnp@free.fr>
+
+	tiffdump: avoid unaligned memory access.
+	fixes #143
+	fixes #144
+
+2020-03-23  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'out-of-memory' into 'master'
+	tiffcp/tiff2pdf/tiff2ps: enforce maximum malloc size
+
+	Closes #153, #84, #116 et #115
+
+	See merge request libtiff/libtiff!130
+
+2020-03-23  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-157' into 'master'
+	tiffset: check memory allocation
+
+	Closes #157
+
+	See merge request libtiff/libtiff!132
+
+2020-03-23  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-185' into 'master'
+	tif_fax3: more buffer overflow checks in Fax3Decode2D()
+
+	Closes #185
+
+	See merge request libtiff/libtiff!131
+
+2020-03-23  Thomas Bernard  <miniupnp@free.fr>
+
+	tiffset: check memory allocation.
+	fixes #157 / http://bugzilla.maptools.org/show_bug.cgi?id=2850
+
+	tif_fax3: more buffer overflow checks in Fax3Decode2D()
+	fixes #185
+
+2020-03-21  Thomas Bernard  <miniupnp@free.fr>
+
+	tiff2ps: enforce memory allocation limit.
+	fixes #153 / http://bugzilla.maptools.org/show_bug.cgi?id=2845
+
+	tiff2pdf: enforce maximum data size.
+	fixes #116 / http://bugzilla.maptools.org/show_bug.cgi?id=2756
+	fixes #84 / http://bugzilla.maptools.org/show_bug.cgi?id=2683
+
+	update man page for tiffcp regarding the -m option.
+
+	tiffcp.c:  _TIFFmalloc() => limitMalloc()
+
+2020-03-21  Thomas Bernard  <miniupnp@free.fr>
+
+	tiffcp: enforce maximum malloc size.
+	default is 256MB. use -m option to change
+
+	fixes #115 / http://bugzilla.maptools.org/show_bug.cgi?id=2755
+
+2020-03-21  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-184' into 'master'
+	CmakeLists.txt: define WORDS_BIGENDIAN when the CPU is big endian
+
+	Closes #184
+
+	See merge request libtiff/libtiff!127
+
+2020-03-21  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-44' into 'master'
+	tiff2pdf: "" causes the relevant argument not to be written
+
+	Closes #44
+
+	See merge request libtiff/libtiff!128
+
+2020-03-21  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-56' into 'master'
+	fix man for TIFFReadEncodedStrip(), TIFFStripSize, TIFFVStripSize, TIFFRawStripSize
+
+	Closes #56
+
+	See merge request libtiff/libtiff!129
+
+2020-03-20  Thomas Bernard  <miniupnp@free.fr>
+
+	fix man for TIFFReadEncodedStrip(), TIFFStripSize, TIFFVStripSize, TIFFRawStripSize
+	fixes #56
+	http://bugzilla.maptools.org/show_bug.cgi?id=2507
+
+	tiff2pdf: "" causes the relevant argument not to be written.
+	fixes #44
+
+	CmakeLists.txt: define WORDS_BIGENDIAN when the CPU is big endian.
+	fixes #184
+
+2020-03-17  Thomas Bernard  <miniupnp@free.fr>
+
+	tiff2pdf: avoid divide by 0.
+	fixes #133 http://bugzilla.maptools.org/show_bug.cgi?id=2796
+
+2020-03-17  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-22' into 'master'
+	do not _tiffMapProc 0 size files
+
+	Closes #22
+
+	See merge request libtiff/libtiff!125
+
+2020-03-13  Thomas Bernard  <miniupnp@free.fr>
+
+	tif_win32.c: do not _tiffMapProc() 0 sized files.
+	see #22
+
+	tif_unix.c: do not _tiffMapProc 0 size files.
+	fixes #22
+	http://bugzilla.maptools.org/show_bug.cgi?id=2249
+
+2020-03-12  Even Rouault  <even.rouault@spatialys.com>
+
+	tif_fax3.c: fix warning C4018: '<': signed/unsigned mismatch introduced in past commits
+
+2020-03-11  Even Rouault  <even.rouault@spatialys.com>
+
+	tiff.h: mention TIFFTAG_RPCCOEFFICIENT, TIFFTAG_TIFF_RSID, TIFFTAG_GEO_METADATA
+
+2020-03-11  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-60' into 'master'
+	added support for more private tags
+
+	Closes #60
+
+	See merge request libtiff/libtiff!124
+
+2020-03-11  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-160' into 'master'
+	Fax3SetupState(): check consistency of rowbytes and rowpixels
+
+	Closes #160
+
+	See merge request libtiff/libtiff!123
+
+2020-03-11  Thomas Bernard  <miniupnp@free.fr>
+
+	added support for more private tags.
+	see https://gitlab.com/libtiff/libtiff/-/issues/60
+	bugzilla.maptools.org/show_bug.cgi?id=2525
+
+	closes #60
+
+	original author : art1@andreas-romeyke.de
+
+2020-03-11  Thomas Bernard  <miniupnp@free.fr>
+
+	Fax3SetupState(): check consistency of rowbytes and rowpixels.
+	also add some parameter documentation to Fax3Decode1D()
+
+	fixes #160
+	http://bugzilla.maptools.org/show_bug.cgi?id=2854
+
+2020-03-10  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-11-const-pointers' into 'master'
+	Make pointers returned via TIFFGetField const
+
+	Closes #11
+
+	See merge request libtiff/libtiff!118
+
+2020-03-10  Even Rouault  <even.rouault@spatialys.com>
+
+	tif_ojpeg.c: relax again too strict sanity checks to allow reading of valid images such as https://gitlab.com/libtiff/libtiff/-/issues/181#note_302535232. Fixes #181
+
+2020-03-09  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-52' into 'master'
+	contrib/win_dib/tiff2dib: fix Uninitialized variable: lpBits
+
+	Closes #52
+
+	See merge request libtiff/libtiff!121
+
+2020-03-09  Thomas Bernard  <miniupnp@free.fr>
+
+	contrib/win_dib/tiff2dib: fix Uninitialized variable: lpBits.
+	fixes #52
+	http://bugzilla.maptools.org/show_bug.cgi?id=2469
+
+2020-03-08  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-58' into 'master'
+	Make TIFFTAG_CFAPATTERN variable count
+
+	Closes #58
+
+	See merge request libtiff/libtiff!120
+
+2020-03-08  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-158-no-predictor-in-webp' into 'master'
+	TIFFTAG_PREDICTOR is not supported for WebP
+
+	Closes #158
+
+	See merge request libtiff/libtiff!119
+
+2020-03-08  Sam Hasinoff  <hasinoff@google.com>
+
+	Make TIFFTAG_CFAPATTERN variable count.
+	The TIFFTAG_CFAPATTERN tag (33422) from TIFF/EP, recently introduced in libtiff
+	3363eda09d082e3e1dfffa6281f53085cac51ad3 / http://bugzilla.maptools.org/show_bug.cgi?id=2457
+	is described as having a fixed count of 4.
+	But the TIFF/EP spec says this should support a variable count (= CFARepeatRows * CFARepeatCols):
+
+	TIFF/EP, ISO 12234-2:2001
+	http://www.barrypearson.co.uk/top2009/downloads/TAG2000-22_DIS12234-2.pdf
+	page 18 and 26
+
+2020-03-08  Thomas Bernard  <miniupnp@free.fr>
+
+	TIFFTAG_PREDICTOR is not supported for WebP.
+	fixes #158
+	https://gitlab.com/libtiff/libtiff/-/issues/158
+
+	this bug was introduced by 9eacd59fecc4ef593ac17689bc530ab451c8ec14
+	merge request !32
+
+2020-03-07  Adam Goode  <adam@spicenitz.org>
+
+	Make the default whitepoint and ycbcrcoeffs arrays const.
+	Now that we are returning const pointers in TIFFGetFieldDefaulted,
+	we can now make these static default arrays const.
+
+	see #11
+
+2020-03-07  Adam Goode  <adam@spicenitz.org>
+
+	Make pointers returned via TIFFGetField const.
+	According to http://bugzilla.maptools.org/show_bug.cgi?id=2125#c6
+	callers are not allowed to modify pointer or array values returned from
+	TIFFGetField or the like. So, make this explicit in the documentation
+	by specifying these things as const. Note that this is not an ABI
+	change, since C does not encode const in libraries. Also, this is
+	not really an API change, since the varargs call strips away all
+	the types anyway. So it really is more of a documentation change.
+
+	fixes #11
+
+2020-03-07  Even Rouault  <even.rouault@spatialys.com>
+
+	CMake: Skip custom_dir_EXIF_231 test on shared builds to avoid issues on Windows
+
+2020-03-07  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'EXIF231_GPS_upgrade' into 'master'
+	EXIF 2.32 and GPS TIFF-tags and functionality upgraded.
+
+	See merge request libtiff/libtiff!91
+
+2020-03-07  Su_Laus  <sulau@freenet.de>
+
+	EXIF 2.32 and GPS tags and functionality upgraded.
+	- Existing EXIF field definition of tags is upgraded to EXIF version 2.3.2
+	- EXIF-GPS structure, tags and access functions are added as special CustomDirectory (like it was done for EXIF).
+	- Test program custom_dir_EXIF_231.c added to test writing/reading of EXID IFD and GPS IFD tags
+	  and to highlight some quirks of IFD-handling and peculiarities of reading/writing the different data types.
+	- Reading error for FileSource and SceneType tags corrected.
+
+	- EXIF_GPS_upgrade rebased onto c8c5309b765ef4ff097d2aaffbdb8f403db8967d (Merge branch 'Rational2DoublePrecision_correction' into 'master')
+	and adapted:
+	- tif_dirinfo.c:         All rational tags set to TIFF_SETGET_FLOAT but only the GPSTAG_ tags set to TIFF_SETGET_DOUBLE.
+	- custom_dir_EXIF_231.c: Editorials amended and gcc warnigs fixed.
+	- CMakeLists.txt: add_test(NAME "custom_dir_EXIF_231"  COMMAND "custom_dir_EXIF_231")  added.
+
+2020-03-07  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-55' into 'master'
+	ppm2tiff: support any bps value from 1 to 16
+
+	Closes #55
+
+	See merge request libtiff/libtiff!106
+
+2020-03-07  Thomas Bernard  <miniupnp@free.fr>
+
+	ppm2tiff: Add test for 16bpc PPM.
+
+	ppm2tiff: remove unused argument warning.
+
+2020-03-07  Ludolf Holzheid  <ludolf.holzheid@gmx.de>
+
+	ppm2tiff: support any bps value from 1 to 16.
+	fix #55
+	http://bugzilla.maptools.org/show_bug.cgi?id=2505
+
+	Patch originally submited by Ludolf Holzheid <ludolf.holzheid@gmx.de>
+
+2020-03-06  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'fax-test' into 'master'
+	add test for fax4 decoding
+
+	See merge request libtiff/libtiff!114
+
+2020-03-05  Thomas Bernard  <miniupnp@free.fr>
+
+	add test for fax4 decoding.
+	This will check for regression on #46
+	https://gitlab.com/libtiff/libtiff/issues/46
+	http://bugzilla.maptools.org/show_bug.cgi?id=2434
+
+2020-03-05  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'freebsd-tests' into 'master'
+	make tests pass under FreeBSD.
+
+	See merge request libtiff/libtiff!113
+
+2020-03-05  Thomas Bernard  <miniupnp@free.fr>
+
+	make tests pass under FreeBSD.
+	the -I option for the GNU diff and the FreeBSD diff
+	behaves differently regarding escaping the ( ) and |
+
+	By using two -I option, we avoid using such charracters.
+
+2020-03-05  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-31' into 'master'
+	HTML
+
+	Closes #31
+
+	See merge request libtiff/libtiff!111
+
+2020-03-05  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-179' into 'master'
+	tif_fax3.h: check for buffer overflow in EXPAND2D before "calling" CLEANUP_RUNS()
+
+	Closes #179
+
+	See merge request libtiff/libtiff!112
+
+2020-03-05  Thomas Bernard  <miniupnp@free.fr>
+
+	v4.1.0.html: fix for validation.
+	long <!----------------> comments were replaced
+	because they confused some parsers
+
+	add DOCTYPE on v*.html.
+
+	fix HTML files so they are valid according to https://validator.w3.org.
+
+2020-03-05  Thomas Bernard  <miniupnp@free.fr>
+
+	tif_fax3.h: check for buffer overflow in EXPAND2D before "calling" CLEANUP_RUNS()
+	fixes #179
+
+	this fixes the regression introduced in 02bb0175 / 72c4acef
+	( merge request !110 )
+
+	It may be a better fix to do the overflow check in SETVALUE() but the
+	macro do { } while(0) construct makes it difficult to quit the loop
+	properly.
+
+2020-03-01  Thomas Bernard  <miniupnp@free.fr>
+
+	index.html: fix unclosed <tt> tag.
+
+2020-03-01  Thomas Bernard  <miniupnp@free.fr>
+
+	html: do not force colors (which are default anyway)
+	If needed, style should be set using CSS.
+
+	fixes #31
+	https://gitlab.com/libtiff/libtiff/issues/31
+	http://bugzilla.maptools.org/show_bug.cgi?id=2326
+
+2020-03-01  Even Rouault  <even.rouault@spatialys.com>
+
+	TIFFReadCustomDirectory(): fix potential heap buffer overflow when reading a custom directory, after a regular directory where a codec was active. Fixes https://gitlab.com/libtiff/libtiff/issues/178
+
+2020-03-01  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-46' into 'master'
+	fix decoding of fax4 images
+
+	Closes #46
+
+	See merge request libtiff/libtiff!110
+
+2020-02-29  Thomas Bernard  <miniupnp@free.fr>
+
+	tif_fax3: better fix for CVE-2011-0192.
+	There are some legitimate case which were forbidden by the previous fix
+
+	tif_fax3.h: allow 0 length run in DECODE2D.
+	fixes #46
+	https://gitlab.com/libtiff/libtiff/issues/46
+	http://bugzilla.maptools.org/show_bug.cgi?id=2434
+
+2020-02-29  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'mingwlibm' into 'master'
+	Don't use libm with libtiff due to conflict with libmsvcrt
+
+	See merge request libtiff/libtiff!73
+
+2020-02-29  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'Rational2DoublePrecision_correction' into 'master'
+	tif_dirwrite.c: bugfix DoubleToSrational() for plain signed integers
+
+	See merge request libtiff/libtiff!109
+
+2020-02-29  Su_Laus  <sulau@freenet.de>
+
+	tif_dirwrite.c: bugfix DoubleToSrational(), which returns plain signed interger values always as unsigned rationals. Add a test into rational_precision2double.c for "-1.0" and some editorials in tif_dirwrite.c. (code is related to 6df997c786928757caea0dd68d26ea5f098f49df changes).
+
+2020-02-29  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'issue-174' into 'master'
+	tif_fax3.c: check buffer overflow in Fax4Decode()
+
+	Closes #174
+
+	See merge request libtiff/libtiff!108
+
+2020-02-29  Thomas Bernard  <miniupnp@free.fr>
+
+	Fax4Decode(): log error message in case of buffer overrun.
+
+	tif_fax3.c: check buffer overflow in Fax4Decode()
+	fixes #174
+
+2020-02-28  Even Rouault  <even.rouault@spatialys.com>
+
+	typo fixes in code comments.
+
+	ToRationalEuclideanGCD: remove useless test that confuses Coverity Scan about a potential later modulo by zero
+
+2020-02-27  Even Rouault  <even.rouault@spatialys.com>
+
+	tif_dirwrite.c: fix other warnings related to 6df997c786928757caea0dd68d26ea5f098f49df changes
+
+	rational_precision2double.c: fix many warnings, and do not build it on CMake on shared lib builds
+
+	tif_dirwrite.c: fix various warnings found when building GDAL with internal libtiff after 6df997c786928757caea0dd68d26ea5f098f49df changes
+
+	tif_dirwrite.c: qualify ToRationalEuclideanGCD() with static.
+
+2020-02-27  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'Rational2DoublePrecision' into 'master'
+	Rational with Double Precision Upgrade
+
+	See merge request libtiff/libtiff!100
+
+2020-02-27  Su_Laus  <sulau@freenet.de>
+
+	Rational with Double Precision Upgrade.
+	Unfortunately, custom rational tags (TIFF_RATIONAL with field_bit=FIELD_CUSTOM) are defined as TIFF_SETGET_DOUBLE
+	but for the reading interface and LibTiff internally they are stored ALLWAYS as floating point SINGLE precision.
+	Double precision custom rational tags are not supported by LibTiff.
+
+	For the GPS tags in WGS84 a higher accuracy / precision is needed.
+	Therefore, this upgrade is made, keeping the old interface for the already defined tags and allowing a double precision definition,
+	as well as calculating rationals with higher accuracy / precision.
+	This higher accuracy can be used for newly defined tags like that in EXIF/GPS.
+
+	Refer also to the very old Bugzilla issue 2542 (#69)
+
+	A test file rational_precision2double.c is added, which shows prevention of the old interface to the already defined custom rational tags
+	with the standard library as well as with the upgraded library.
+
+	Also TIFFTAG_XRESOLUTION, TIFFTAG_YRESOLUTION, TIFFTAG_XPOSITION, TIFFTAG_YPOSITION amended from TIFF_SETGET_DOUBLE to TIFF_SETGET_FLOAT and testcase inserted in rational_precision2double.c
+
+2020-02-26  Chris Degawa  <ccom@randomderp.com>
+
+	mingw-w64 cmake: Don't find libm.
+	mingw-w64 will provide libm symbols by default without -lm and mingw-64's
+	libm is just a stub.
+
+	This is just to make sure that on systems with msys2 and also cygwin, cmake
+	doesn't find a libm that actually contains math functions.
+
+2020-02-26  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'division-by-zero' into 'master'
+	tools/tiffcp.c: fix potential division by zero
+
+	See merge request libtiff/libtiff!83
+
+2020-02-26  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'fix-unused-warning' into 'master'
+	warnings: mark conditionally used parameters
+
+	See merge request libtiff/libtiff!49
+
+2020-02-26  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'master' into 'master'
+	fix issue #78 warnings regarding RichTIFFIPTC data type
+
+	Closes #78
+
+	See merge request libtiff/libtiff!99
+
+2020-02-26  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'win64-handle-casts-warn-fix' into 'master'
+	Avoid warnings about casts between HANDLE and int in Win64 builds
+
+	Closes #2
+
+	See merge request libtiff/libtiff!93
+
+2020-02-26  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'bug2839' into 'master'
+	raw2tiff: avoid divide by 0
+
+	Closes #151
+
+	See merge request libtiff/libtiff!103
+
+2020-02-26  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'bug2669' into 'master'
+	tiff2pdf: palette bound check in t2p_sample_realize_palette()
+
+	Closes #82
+
+	See merge request libtiff/libtiff!104
+
+2020-02-26  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'int-shift' into 'master'
+	tiffcrop: fix asan runtime error caused by integer promotion
+
+	See merge request libtiff/libtiff!105
+
+2020-02-26  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'bug-2538' into 'master'
+	libtiff.html: fix function casing
+
+	Closes #68
+
+	See merge request libtiff/libtiff!107
+
+2020-02-16  Thomas Bernard  <miniupnp@free.fr>
+
+	raw2tiff: avoid divide by 0.
+	fixes #151 / http://bugzilla.maptools.org/show_bug.cgi?id=2839
+
+	first memcmp() lines before computing corellation
+	and always avoid divide by 0 anyway
+
+2020-02-09  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'bug2855' into 'master'
+	tiff2ps: fix heap buffer read overflow in PSDataColorContig()
+
+	Closes #161
+
+	See merge request libtiff/libtiff!102
+
+2020-02-08  Thomas Bernard  <miniupnp@free.fr>
+
+	libtiff.html: fix function casing.
+
+	libtiff.html: fix function casing.
+	fixes #68 / http://bugzilla.maptools.org/show_bug.cgi?id=2538
+
+2020-02-08  Thomas Bernard  <miniupnp@free.fr>
+
+	tiffcrop: fix asan runtime error caused by integer promotion.
+	tiffcrop.c:4027:20: runtime error: left shift of 190 by 24 places cannot be represented in type 'int'
+
+	C treats (byte << 24) as an int expression.
+	casting explicitely to unsigned type uint32 avoids the problem.
+
+	the same issue has been fixed elsewhere with a24213691616e7cd35aa3e2805493de80c7e4fcf
+
+	I detected the bug with the test file of #86
+
+2020-02-08  Thomas Bernard  <miniupnp@free.fr>
+
+	tiff2pdf: palette bound check in t2p_sample_realize_palette()
+	fixes #82
+
+2020-02-08  Thomas Bernard  <miniupnp@free.fr>
+
+	tiff2ps: fix heap buffer read overflow in PSDataColorContig()
+	fixes #161 / http://bugzilla.maptools.org/show_bug.cgi?id=2855
+
+	in 05029fb7f1ecf771abaf90b5705b6cab9eb522a7 I missed that 1 extra byte is read
+	in this loop.
+
+2020-02-05  Even Rouault  <even.rouault@spatialys.com>
+
+	tif_dirread.c: suppress CLang static Analyzer 9.0 false positive.
+
+2020-02-01  Even Rouault  <even.rouault@spatialys.com>
+
+	TIFFSetupStrips: enforce 2GB limitation of Strip/Tile Offsets/ByteCounts arrays
+	TIFFWriteDirectoryTagData() has an assertion that checks that the
+	arrays are not larger than 2GB. So error out earlier if in that situation.
+
+2020-01-29  Bob Friesenhahn  <bfriesen@simple.dallas.tx.us>
+
+	Simplify nmake configuration for building port directory.  Now there is only one boolean setting to enable building strtoll() and strtoull() port functions.  The boolean setting enables the necessary port files to be built, but the remainder of the logic is via pre-processor code in the common tif_config.h, which was prepared before entering the port directory to do a build.
+
+2020-01-28  Bob Friesenhahn  <bfriesen@simple.dallas.tx.us>
+
+	Make sure that tif_config.h is produced prior to entering the port directory and add an include path so that the port files can include tif_config.h.  Do not actually include tif_config.h at this time since CMake and Autotools builds are not prepared for that.  This issue could be handled by updating the CMake and Autotools builds or by adding a define which directs libport.h to include tif_config.h.
+
+2020-01-26  Bob Friesenhahn  <bfriesen@simple.dallas.tx.us>
+
+	Fix nmake build mistakes in my last commit:
+	tif_config.vc.h:
+
+	  Always define HAVE_STRTOL/HAVE_STRTOUL.
+	  Define HAVE_STRTOLL/HAVE_STRTOULL if _MSC_VER >= 1900.
+
+	nmake.opt:
+
+	  Provide defaults suitable for MSVC prior to 14.0.
+
+	libport.h:
+
+	  The sense of the pre-processor logic was inverted from what it
+	  should be.  The intention is to only provide the prototype if the
+	  function is missing.
+
+2020-01-25  Bob Friesenhahn  <bfriesen@simple.dallas.tx.us>
+
+	Add nmake build support for manually configuring the 'port' files to be built based on MSVC features. Include tif_config.h in tools/tiffset.c.
+
+2020-01-23  Even Rouault  <even.rouault@spatialys.com>
+
+	Adjust previous fix to avoid undue warning in some situations triggered by GDAL
+
+2020-01-12  Even Rouault  <even.rouault@spatialys.com>
+
+	_TIFFPartialReadStripArray: bring back support for non-conformant SLONG8 data type
+	Such as in https://github.com/OSGeo/gdal/issues/2165
+
+2020-01-07  Even Rouault  <even.rouault@spatialys.com>
+
+	test: add test for single-strip OJPEG file without RowsPerStrip tag (like in CR2 files)
+
+	OJPEGReadHeaderInfo: if rowsperstrip not defined, then assume one-single-strip. Complementary fix to 0356ea76bac908c61160d735f078437ace953bd3
+
+2019-12-16  Angel Sánchez  <angelsanchez@inedit.com>
+
+	fix issue #78 warnings regarding RichTIFFIPTC data type.
+
+2019-12-14  Even Rouault  <even.rouault@spatialys.com>
+
+	contrib/oss-fuzz/build.sh: fix broken if construct.
+
+2019-11-28  Even Rouault  <even.rouault@spatialys.com>
+
+	contrib/oss-fuzz/build.sh: other attempt at fixing build failure.
+
+2019-11-20  Even Rouault  <even.rouault@spatialys.com>
+
+	contrib/oss-fuzz/build.sh: install liblzma-dev for x86_64 builds.
+
+2019-11-17  Even Rouault  <even.rouault@spatialys.com>
+
+	contrib/oss-fuzz/build.sh: install liblzma-dev:i386 on i386 builds.
+
+2019-11-15  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'cmake-parse' into 'master'
+	CMake: simplify parsing variables from configure
+
+	See merge request libtiff/libtiff!98
+
+2019-11-15  Rolf Eike Beer  <eb@emlix.com>
+
+	CMake: simplify parsing variables from configure.
+
+2019-11-14  Even Rouault  <even.rouault@spatialys.com>
+
+	contrib/oss-fuzz/build.sh: fix ossfuzz build by statically linking to lzma
+
+2019-11-12  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'fix_ojpeg_172' into 'master'
+	OJPEG: fix broken sanity check added in 4.1.0 (#fixes 172)
+
+	See merge request libtiff/libtiff!97
+
+2019-11-11  Even Rouault  <even.rouault@spatialys.com>
+
+	OJPEG: fix broken sanity check added in 4.1.0, and add two OJPEG test files
+
+	test/: add missing generated .sh files.
+
+2019-11-04  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'fix-missing-checks-TIFFGetField-tiffcrop' into 'master'
+	adds missing checks on TIFFGetField in tiffcrop tool
+
+	Closes #170
+
+	See merge request libtiff/libtiff!96
+
+2019-11-04  Bug Checkers  <coolbugcheckers@gmail.com>
+
+	adds missing checks on TIFFGetField in tiffcrop tool (fixes #170)
+
+2019-11-04  Even Rouault  <even.rouault@spatialys.com>
+
+	Merge branch 'adds-missing-TIFFClose-rgb2ycbcr' into 'master'
+	adds a missing TIFFClose in rgb2ycbcr tool
+
+	See merge request libtiff/libtiff!95
+
+2019-11-04  Mansour Ahmadi  <mansourweb@gmail.com>
+
+	adds a missing TIFFClose in rgb2ycbcr tool.
+
 2019-11-03  Bob Friesenhahn  <bfriesen@simple.dallas.tx.us>
 
 	libtiff 4.1.0 released.

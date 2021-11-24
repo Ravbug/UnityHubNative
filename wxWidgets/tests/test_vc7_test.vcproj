@@ -314,6 +314,9 @@
 				RelativePath=".\cmdline\cmdlinetest.cpp">
 			</File>
 			<File
+				RelativePath=".\config\config.cpp">
+			</File>
+			<File
 				RelativePath=".\mbconv\convautotest.cpp">
 			</File>
 			<File
@@ -561,6 +564,9 @@
 			</File>
 			<File
 				RelativePath=".\weakref\weakref.cpp">
+			</File>
+			<File
+				RelativePath=".\net\webrequest.cpp">
 			</File>
 			<File
 				RelativePath=".\regex\wxregextest.cpp">

@@ -136,7 +136,7 @@ public:
     virtual ~wxXmlNode();
 
     /**
-        Appends a attribute with given @a name and @a value to the list of
+        Appends an attribute with given @a name and @a value to the list of
         attributes for this node.
     */
     virtual void AddAttribute(const wxString& name, const wxString& value);
@@ -494,16 +494,16 @@ public:
     /**
         Creates and possible initializes the DOCTYPE.
 
-        @param name
+        @param rootName
             The root name.
-        @param sysid
+        @param systemId
             The system identifier.
-        @param pubid
+        @param publicId
             The public identifier.
     */
-    wxXmlDoctype(const wxString& name = wxString(),
-                 const wxString& sysid = wxString(),
-                 const wxString& pubid = wxString());
+    wxXmlDoctype(const wxString& rootName = wxString(),
+                 const wxString& systemId = wxString(),
+                 const wxString& publicId = wxString());
 
     /**
         Removes all the DOCTYPE values.

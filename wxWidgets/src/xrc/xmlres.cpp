@@ -10,9 +10,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_XRC
 
@@ -45,6 +42,7 @@
 #include "wx/hashset.h"
 #include "wx/scopedptr.h"
 #include "wx/config.h"
+#include "wx/platinfo.h"
 
 #include <limits.h>
 #include <locale.h>
@@ -345,7 +343,8 @@ bool wxXmlResource::Load(const wxString& filemask_)
 {
     wxString filemask = ConvertFileNameToURL(filemask_);
 
-    bool allOK = true;
+    bool allOK = true,
+         anyOK = false;
 
 #if wxUSE_FILESYSTEM
     wxFileSystem fsys;
@@ -358,32 +357,46 @@ bool wxXmlResource::Load(const wxString& filemask_)
     wxString fnd = wxXmlFindFirst;
     if ( fnd.empty() )
     {
-        wxLogError(_("Cannot load resources from '%s'."), filemask);
-        return false;
+        // Some file system handlers (e.g. wxInternetFSHandler) just don't
+        // implement FindFirst() at all, try using the original path as is.
+        fnd = filemask;
     }
 
     while (!fnd.empty())
     {
+        bool thisOK = true;
+
 #if wxUSE_FILESYSTEM
         if ( IsArchive(fnd) )
         {
             if ( !Load(fnd + wxT("#zip:*.xrc")) )
-                allOK = false;
+                thisOK = false;
         }
         else // a single resource URL
 #endif // wxUSE_FILESYSTEM
         {
             wxXmlDocument * const doc = DoLoadFile(fnd);
             if ( !doc )
-                allOK = false;
+                thisOK = false;
             else
                 Data().push_back(new wxXmlResourceDataRecord(fnd, doc));
         }
+
+        if ( thisOK )
+            anyOK = true;
+        else
+            allOK = false;
 
         fnd = wxXmlFindNext;
     }
 #   undef wxXmlFindFirst
 #   undef wxXmlFindNext
+
+    if ( !anyOK )
+    {
+        wxLogError(_("Cannot load resources from '%s'."), filemask);
+        return false;
+    }
 
     return allOK;
 }
@@ -588,15 +601,7 @@ static void ProcessPlatformProperty(wxXmlNode *node)
 
             while (tkn.HasMoreTokens())
             {
-                s = tkn.GetNextToken();
-#ifdef __WINDOWS__
-                if (s == wxT("win")) isok = true;
-#endif
-#if defined(__MAC__) || defined(__APPLE__)
-                if (s == wxT("mac")) isok = true;
-#elif defined(__UNIX__)
-                if (s == wxT("unix")) isok = true;
-#endif
+                isok = wxPlatformId::MatchesCurrent(tkn.GetNextToken());
 
                 if (isok)
                     break;
@@ -1634,7 +1639,7 @@ float wxXmlResourceHandlerImpl::GetFloat(const wxString& param, float defaultv)
     // strings in XRC always use C locale so make sure to use the
     // locale-independent wxString::ToCDouble() and not ToDouble() which uses
     // the current locale with a potentially different decimal point character
-    double value = defaultv;
+    double value = double(defaultv);
     if (!str.empty())
     {
         if (!str.ToCDouble(&value))
@@ -2461,7 +2466,7 @@ wxFont wxXmlResourceHandlerImpl::GetFont(const wxString& param, wxWindow* parent
     {
         if (pointSize > 0)
         {
-            font.SetFractionalPointSize(pointSize);
+            font.SetFractionalPointSize(double(pointSize));
             if (HasParam(wxT("relativesize")))
             {
                 ReportParamError
@@ -2492,7 +2497,7 @@ wxFont wxXmlResourceHandlerImpl::GetFont(const wxString& param, wxWindow* parent
     }
     else // not based on system font
     {
-        font = wxFontInfo(pointSize)
+        font = wxFontInfo(double(pointSize))
                 .FaceName(facename)
                 .Family(ifamily)
                 .Style(istyle)

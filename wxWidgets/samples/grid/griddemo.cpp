@@ -18,9 +18,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/wx.h"
@@ -165,6 +162,8 @@ public:
     {
         wxGridCellRenderer::Draw(grid, attr, dc, rect, row, col, isSelected);
 
+        SetTextColoursAndFont(grid, attr, dc, isSelected);
+
         grid.DrawTextRectangle(dc, GetStarString(GetStarValue(grid, row, col)),
                                rect, attr);
     }
@@ -296,6 +295,8 @@ wxBEGIN_EVENT_TABLE( GridFrame, wxFrame )
     EVT_MENU( ID_AUTOSIZECOLS, GridFrame::AutoSizeCols )
     EVT_MENU( ID_CELLOVERFLOW, GridFrame::CellOverflow )
     EVT_MENU( ID_RESIZECELL, GridFrame::ResizeCell )
+    EVT_MENU( ID_TOGGLE_CHECKERED_CELLS, GridFrame::ToggleCheckeredCells )
+    EVT_MENU( ID_TOGGLE_COLOURED_CELLS, GridFrame::ToggleColouredCells )
     EVT_MENU( ID_SETLABELCOLOUR, GridFrame::SetLabelColour )
     EVT_MENU( ID_SETLABELTEXTCOLOUR, GridFrame::SetLabelTextColour )
     EVT_MENU( ID_SETLABEL_FONT, GridFrame::SetLabelFont )
@@ -319,13 +320,15 @@ wxBEGIN_EVENT_TABLE( GridFrame, wxFrame )
     EVT_MENU( ID_SELROWS,  GridFrame::SelectRows )
     EVT_MENU( ID_SELCOLS,  GridFrame::SelectCols )
     EVT_MENU( ID_SELROWSORCOLS,  GridFrame::SelectRowsOrCols )
+    EVT_MENU( ID_SELNONE,  GridFrame::SelectNone )
 
     EVT_MENU( ID_FREEZE_OR_THAW,  GridFrame::FreezeOrThaw )
 
     EVT_MENU( ID_SET_CELL_FG_COLOUR, GridFrame::SetCellFgColour )
     EVT_MENU( ID_SET_CELL_BG_COLOUR, GridFrame::SetCellBgColour )
 
-    EVT_MENU( wxID_ABOUT, GridFrame::About )
+    EVT_MENU( wxID_ABOUT, GridFrame::OnAbout )
+    EVT_MENU( wxID_CLEAR, GridFrame::OnClear )
     EVT_MENU( wxID_EXIT, GridFrame::OnQuit )
     EVT_MENU( ID_VTABLE, GridFrame::OnVTable)
     EVT_MENU( ID_BUGS_TABLE, GridFrame::OnBugsTable)
@@ -366,7 +369,8 @@ wxBEGIN_EVENT_TABLE( GridFrame, wxFrame )
     EVT_GRID_COL_SIZE( GridFrame::OnColSize )
     EVT_GRID_COL_AUTO_SIZE( GridFrame::OnColAutoSize )
     EVT_GRID_SELECT_CELL( GridFrame::OnSelectCell )
-    EVT_GRID_RANGE_SELECT( GridFrame::OnRangeSelected )
+    EVT_GRID_RANGE_SELECTING( GridFrame::OnRangeSelecting )
+    EVT_GRID_RANGE_SELECTED( GridFrame::OnRangeSelected )
     EVT_GRID_CELL_CHANGING( GridFrame::OnCellValueChanging )
     EVT_GRID_CELL_CHANGED( GridFrame::OnCellValueChanged )
     EVT_GRID_CELL_BEGIN_DRAG( GridFrame::OnCellBeginDrag )
@@ -419,6 +423,11 @@ GridFrame::GridFrame()
     fileMenu->Append( wxID_PRINT, "Render" );
     fileMenu->Append( ID_RENDER_COORDS, "Render G5:P30" );
 
+#if wxUSE_LOG
+    fileMenu->AppendSeparator();
+    fileMenu->Append( wxID_CLEAR, "Clear &log\tCtrl-L" );
+#endif // wxUSE_LOG
+
     fileMenu->AppendSeparator();
     fileMenu->Append( wxID_EXIT, "E&xit\tAlt-X" );
 
@@ -438,6 +447,10 @@ GridFrame::GridFrame()
     viewMenu->AppendCheckItem(ID_AUTOSIZECOLS, "&Auto-size cols");
     viewMenu->AppendCheckItem(ID_CELLOVERFLOW, "&Overflow cells");
     viewMenu->AppendCheckItem(ID_RESIZECELL, "&Resize cell (7,1)");
+    viewMenu->AppendCheckItem(ID_TOGGLE_CHECKERED_CELLS,
+                              "Toggle Chec&kered Cells\tCtrl+Shift+K");
+    viewMenu->AppendCheckItem(ID_TOGGLE_COLOURED_CELLS,
+                              "Toggle Co&loured Cells\tCtrl+Shift+L");
     viewMenu->Append(ID_HIDECOL, "&Hide column A");
     viewMenu->Append(ID_SHOWCOL, "&Show column A");
     viewMenu->Append(ID_HIDEROW, "&Hide row 2");
@@ -497,10 +510,10 @@ GridFrame::GridFrame()
     colMenu->Append( ID_SET_CELL_BG_COLOUR, "Set cell &background colour..." );
 
     wxMenu *editMenu = new wxMenu;
-    editMenu->Append( ID_INSERTROW, "Insert &row" );
-    editMenu->Append( ID_INSERTCOL, "Insert &column" );
-    editMenu->Append( ID_DELETEROW, "Delete selected ro&ws" );
-    editMenu->Append( ID_DELETECOL, "Delete selected co&ls" );
+    editMenu->Append( ID_INSERTROW, "Insert &rows\tCtrl+I" );
+    editMenu->Append( ID_INSERTCOL, "Insert &columns\tCtrl+Shift+I" );
+    editMenu->Append( ID_DELETEROW, "Delete selected ro&ws\tCtrl+D" );
+    editMenu->Append( ID_DELETECOL, "Delete selected co&ls\tCtrl+Shift+D" );
     editMenu->Append( ID_CLEARGRID, "Cl&ear grid cell contents" );
     editMenu->Append( ID_EDITCELL, "&Edit current cell" );
     editMenu->Append( ID_SETCORNERLABEL, "&Set corner label..." );
@@ -532,6 +545,7 @@ GridFrame::GridFrame()
     selectionMenu->Append( ID_SELROWS, "Select &rows" );
     selectionMenu->Append( ID_SELCOLS, "Select col&umns" );
     selectionMenu->Append( ID_SELROWSORCOLS, "Select rows &or columns" );
+    selectionMenu->Append( ID_SELNONE, "&Disallow selection" );
 
     wxMenu *autosizeMenu = new wxMenu;
     autosizeMenu->Append( ID_SIZE_ROW, "Selected &row data" );
@@ -583,7 +597,7 @@ GridFrame::GridFrame()
 
     grid->GetTable()->SetAttrProvider(new CustomColumnHeadersProvider());
 
-    grid->AppendRows(100);
+    grid->AppendRows(1000);
     grid->AppendCols(100);
 
     int ir = grid->GetNumberRows();
@@ -620,11 +634,14 @@ GridFrame::GridFrame()
 
     grid->SetCellValue( 0, 5, "Press\nCtrl+arrow\nto skip over\ncells" );
 
-    grid->SetRowSize( 99, 4*grid->GetDefaultRowSize() );
-    grid->SetCellValue(98, 98, "Test background colour setting");
-    grid->SetCellBackgroundColour(98, 99, wxColour(255, 127, 127));
-    grid->SetCellBackgroundColour(99, 98, wxColour(255, 127, 127));
-    grid->SetCellValue( 99, 99, "Ctrl+End\nwill go to\nthis cell" );
+    const int endRow = grid->GetNumberRows() - 1,
+              endCol = grid->GetNumberCols() - 1;
+
+    grid->SetRowSize(endRow, 4 * grid->GetDefaultRowSize());
+    grid->SetCellValue(endRow - 1, endCol - 1, "Test background colour setting");
+    grid->SetCellBackgroundColour(endRow - 1, endCol, wxColour(255, 127, 127));
+    grid->SetCellBackgroundColour(endRow, endCol - 1, wxColour(255, 127, 127));
+    grid->SetCellValue(endRow, endCol, "Ctrl+End\nwill go to\nthis cell");
     grid->SetCellValue( 1, 0, "This default cell will overflow into neighboring cells, but not if you turn overflow off.");
 
     grid->SetCellValue(2, 0, "This one always overflows");
@@ -765,14 +782,10 @@ GridFrame::GridFrame()
     grid->Bind(wxEVT_CONTEXT_MENU, &GridFrame::OnGridContextMenu, this, grid->GetId());
 
     wxBoxSizer *topSizer = new wxBoxSizer( wxVERTICAL );
-    topSizer->Add( grid,
-                   1,
-                   wxEXPAND );
+    topSizer->Add(grid, wxSizerFlags(2).Expand());
 
 #if wxUSE_LOG
-    topSizer->Add( logWin,
-                   0,
-                   wxEXPAND );
+    topSizer->Add(logWin, wxSizerFlags(1).Expand());
 #endif // wxUSE_LOG
 
     SetSizerAndFit( topSizer );
@@ -1233,32 +1246,115 @@ void GridFrame::SetGridLineColour( wxCommandEvent& WXUNUSED(ev) )
     }
 }
 
+namespace
+{
+
+// Helper used to insert/delete rows/columns. Allows changing by more than
+// one row/column at once.
+void HandleEdits(wxGrid* grid, wxGridDirection direction, bool isInsertion)
+{
+    const bool isRow = (direction == wxGRID_ROW);
+
+    const wxGridBlocks selected = grid->GetSelectedBlocks();
+    wxGridBlocks::iterator it = selected.begin();
+
+    if ( isInsertion )
+    {
+        int pos, count;
+        // Only do multiple insertions if we have a single consecutive
+        // selection (mimicking LibreOffice), otherwise do a single insertion
+        // at cursor.
+        if ( it != selected.end() && ++it == selected.end() )
+        {
+            const wxGridBlockCoords& b = *selected.begin();
+            pos = isRow ? b.GetTopRow() : b.GetLeftCol();
+            count = (isRow ? b.GetBottomRow() : b.GetRightCol()) - pos + 1;
+        }
+        else
+        {
+            pos = isRow ? grid->GetGridCursorRow() : grid->GetGridCursorCol();
+            count = 1;
+        }
+
+        if ( isRow )
+            grid->InsertRows(pos, count);
+        else
+            grid->InsertCols(pos, count);
+
+        return;
+    }
+
+    wxGridUpdateLocker locker(grid);
+
+    wxVector<int> deletions;
+
+    for (; it != selected.end(); ++it )
+    {
+        const wxGridBlockCoords& b = *it;
+        const int begin = isRow ? b.GetTopRow() : b.GetLeftCol();
+        const int end = isRow ? b.GetBottomRow() : b.GetRightCol();
+
+        for ( int n = begin; n <= end; ++n )
+        {
+            if ( !wxVectorContains(deletions, n) )
+                deletions.push_back(n);
+        }
+    }
+
+    wxVectorSort(deletions);
+
+    const size_t deletionCount = deletions.size();
+
+    if ( !deletionCount )
+        return;
+
+    int seqEnd = 0, seqCount = 0;
+    for ( size_t i = deletionCount; i > 0; --i )
+    {
+        const int n = deletions[i - 1];
+
+        if ( n != seqEnd - seqCount )
+        {
+            if (i != deletionCount)
+            {
+                const int seqStart = seqEnd - seqCount + 1;
+                if ( isRow )
+                    grid->DeleteRows(seqStart, seqCount);
+                else
+                    grid->DeleteCols(seqStart, seqCount);
+            }
+
+            seqEnd = n;
+            seqCount = 0;
+        }
+
+        seqCount++;
+    }
+
+    const int seqStart = seqEnd - seqCount + 1;
+    if ( isRow )
+        grid->DeleteRows(seqStart, seqCount);
+    else
+        grid->DeleteCols(seqStart, seqCount);
+}
+
+} // anoymous namespace
 
 void GridFrame::InsertRow( wxCommandEvent& WXUNUSED(ev) )
 {
-    grid->InsertRows( grid->GetGridCursorRow(), 1 );
+    HandleEdits(grid, wxGRID_ROW, /* isInsertion = */ true);
 }
 
 
 void GridFrame::InsertCol( wxCommandEvent& WXUNUSED(ev) )
 {
-    grid->InsertCols( grid->GetGridCursorCol(), 1 );
+    HandleEdits(grid, wxGRID_COLUMN, /* isInsertion = */ true);
 }
 
 
 void GridFrame::DeleteSelectedRows( wxCommandEvent& WXUNUSED(ev) )
 {
-    if ( grid->IsSelection() )
-    {
-        wxGridUpdateLocker locker(grid);
-        for ( int n = 0; n < grid->GetNumberRows(); )
-        {
-            if ( grid->IsInSelection( n , 0 ) )
-                grid->DeleteRows( n, 1 );
-            else
-                n++;
-        }
-    }
+    HandleEdits(grid, wxGRID_ROW, /* isInsertion = */ false);
 }
 
 
@@ -1321,17 +1417,7 @@ void GridFrame::AutoSizeTable(wxCommandEvent& WXUNUSED(event))
 
 void GridFrame::DeleteSelectedCols( wxCommandEvent& WXUNUSED(ev) )
 {
-    if ( grid->IsSelection() )
-    {
-        wxGridUpdateLocker locker(grid);
-        for ( int n = 0; n < grid->GetNumberCols(); )
-        {
-            if ( grid->IsInSelection( 0 , n ) )
-                grid->DeleteCols( n, 1 );
-            else
-                n++;
-        }
-    }
+    HandleEdits(grid, wxGRID_COLUMN, /* isInsertion = */ false);
 }
 
 
@@ -1441,6 +1527,11 @@ void GridFrame::SelectCols( wxCommandEvent& WXUNUSED(ev) )
 void GridFrame::SelectRowsOrCols( wxCommandEvent& WXUNUSED(ev) )
 {
     grid->SetSelectionMode( wxGrid::wxGridSelectRowsOrColumns );
+}
+
+void GridFrame::SelectNone( wxCommandEvent& WXUNUSED(ev) )
+{
+    grid->SetSelectionMode( wxGrid::wxGridSelectNone );
 }
 
 void GridFrame::FreezeOrThaw(wxCommandEvent& ev)
@@ -1637,14 +1728,19 @@ void GridFrame::OnSelectCell( wxGridEvent& ev )
     ev.Skip();
 }
 
-void GridFrame::OnRangeSelected( wxGridRangeSelectEvent& ev )
+namespace
+{
+
+void
+LogRangeSelectEvent(wxGridRangeSelectEvent& ev, const char* suffix)
 {
     wxString logBuf;
     if ( ev.Selecting() )
-        logBuf << "Selected ";
+        logBuf << "Select";
     else
-        logBuf << "Deselected ";
-    logBuf << "cells from row " << ev.GetTopRow()
+        logBuf << "Deselect";
+    logBuf << suffix
+           << " cells from row " << ev.GetTopRow()
            << " col " << ev.GetLeftCol()
            << " to row " << ev.GetBottomRow()
            << " col " << ev.GetRightCol()
@@ -1655,6 +1751,18 @@ void GridFrame::OnRangeSelected( wxGridRangeSelectEvent& ev )
     wxLogMessage( "%s", logBuf );
 
     ev.Skip();
+}
+
+} // anonymous namespace
+
+void GridFrame::OnRangeSelected( wxGridRangeSelectEvent& ev )
+{
+    LogRangeSelectEvent(ev, "ed");
+}
+
+void GridFrame::OnRangeSelecting( wxGridRangeSelectEvent& ev )
+{
+    LogRangeSelectEvent(ev, "ing");
 }
 
 void GridFrame::OnCellValueChanging( wxGridEvent& ev )
@@ -1733,7 +1841,7 @@ void GridFrame::OnEditorHidden( wxGridEvent& ev )
     ev.Skip();
 }
 
-void GridFrame::About(  wxCommandEvent& WXUNUSED(ev) )
+void GridFrame::OnAbout(  wxCommandEvent& WXUNUSED(ev) )
 {
     wxAboutDialogInfo aboutInfo;
     aboutInfo.SetName("wxGrid demo");
@@ -1752,6 +1860,13 @@ void GridFrame::About(  wxCommandEvent& WXUNUSED(ev) )
     wxAboutBox(aboutInfo, this);
 }
 
+
+void GridFrame::OnClear( wxCommandEvent& WXUNUSED(ev) )
+{
+#if wxUSE_LOG
+    logWin->Clear();
+#endif // wxUSE_LOG
+}
 
 void GridFrame::OnQuit( wxCommandEvent& WXUNUSED(ev) )
 {
@@ -2745,4 +2860,87 @@ void GridFrame::HideRow( wxCommandEvent& WXUNUSED(event) )
 void GridFrame::ShowRow( wxCommandEvent& WXUNUSED(event) )
 {
     grid->ShowRow(1);
+}
+
+namespace
+{
+
+// Toggle status of either checkered or coloured cells in the grid.
+// Note that, for shared attribute testing purposes, with checkered cells
+// a cell's complete attribute is destructively overwritten (except merged
+// cells which are skipped). While with coloured cells only the background
+// colour changes.
+void ToggleGridCells(wxGrid* grid, bool useCheckered)
+{
+    static bool s_checkeredOn, s_colouredOn;
+    if ( useCheckered )
+        s_checkeredOn = !s_checkeredOn;
+    else
+        s_colouredOn = !s_colouredOn;
+
+    wxGridCellAttrPtr attr;
+    if ( useCheckered && s_checkeredOn )
+    {
+        attr = wxGridCellAttrPtr(new wxGridCellAttr);
+        attr->SetBackgroundColour(*wxLIGHT_GREY);
+    }
+
+    wxColour bgCol = grid->GetDefaultCellBackgroundColour();
+
+    for ( int row = 0; row < grid->GetNumberRows(); ++row )
+    {
+        for ( int col = 0; col < grid->GetNumberCols(); ++col )
+        {
+            if ( useCheckered && (row ^ col) & 1 )
+                continue;
+
+            // Skip overwriting attributes of merged cells.
+            int rows, cols;
+            if ( useCheckered
+                 && grid->GetCellSize(row, col, &rows, &cols)
+                    != wxGrid::CellSpan_None )
+            {
+                continue;
+            }
+
+            if ( useCheckered )
+            {
+                grid->SetAttr(row, col, attr.get());
+
+                if ( s_checkeredOn )
+                    attr->IncRef();
+            }
+            else
+            {
+                if ( s_colouredOn )
+                {
+                    const int factor = 256 / 64;
+                    unsigned char r, g, b;
+                    r = (127 + row * factor + col / factor) & 0xff;
+                    g = (col * factor + row / (factor * 2)) & 0xff;
+                    b = ((row ^ col) * factor) & 0xff;
+
+                    bgCol.Set(r < 128 ? r * 2 : 255 - r * 2,
+                              g < 128 ? g * 2 : 255 - g * 2,
+                              b < 128 ? b * 2 : 255 - b * 2);
+                }
+
+                grid->SetCellBackgroundColour(row, col, bgCol);
+            }
+        }
+    }
+
+    grid->Refresh();
+}
+
+} // anoymous namespace
+
+void GridFrame::ToggleCheckeredCells( wxCommandEvent& WXUNUSED(event) )
+{
+    ToggleGridCells(grid, /* useCheckered = */ true);
+}
+
+void GridFrame::ToggleColouredCells( wxCommandEvent& WXUNUSED(event) )
+{
+    ToggleGridCells(grid, /* useCheckered = */ false);
 }

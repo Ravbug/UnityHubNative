@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#if defined(__BORLANDC__)
-    #pragma hdrstop
-#endif
 
 #if wxUSE_GRAPHICS_CONTEXT
 
@@ -544,7 +541,7 @@ void wxGraphicsGradientStops::Add(const wxGraphicsGradientStop& stop)
         }
     }
 
-    if ( stop.GetPosition() == 1. )
+    if ( stop.GetPosition() == 1 )
     {
         m_stops.insert(m_stops.end() - 1, stop);
     }
@@ -575,6 +572,7 @@ wxGraphicsContext::wxGraphicsContext(wxGraphicsRenderer* renderer,
       m_enableOffset(false),
       m_window(window)
 {
+    m_contentScaleFactor = window ? window->GetContentScaleFactor() : 1.0;
 }
 
 wxGraphicsContext::~wxGraphicsContext()
@@ -606,6 +604,12 @@ void wxGraphicsContext::Flush()
 void wxGraphicsContext::EnableOffset(bool enable)
 {
     m_enableOffset = enable;
+}
+
+void wxGraphicsContext::SetContentScaleFactor(double contentScaleFactor)
+{
+    m_enableOffset = true;
+    m_contentScaleFactor = contentScaleFactor;
 }
 
 #if 0

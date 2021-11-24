@@ -4,9 +4,15 @@
 
 set -e
 
+. ./build/tools/httpbin.sh
+
 wxPROC_COUNT=`getconf _NPROCESSORS_ONLN`
 ((wxPROC_COUNT++))
 wxBUILD_ARGS="-j$wxPROC_COUNT"
+
+# Setting this variable suppresses "Error retrieving accessibility bus address"
+# messages from WebKit tests that we're not interested in.
+export NO_AT_BRIDGE=1
 
 case $wxTOOLSET in
     cmake)
@@ -35,18 +41,26 @@ case $wxTOOLSET in
         if [ "$wxCMAKE_GENERATOR" == "Xcode" ]; then echo -n 'Building and '; fi
         echo 'Installing...'
         sudo env "PATH=$PATH" cmake --build . --target install -- $wxBUILD_ARGS
-        popd
         echo 'travis_fold:end:install'
 
         if [ "$wxCMAKE_TESTS" != "OFF" ]; then
+            echo 'travis_fold:start:httpbin'
+            httpbin_launch
+            echo 'travis_fold:end:httpbin'
+
             echo 'travis_fold:start:testing'
             echo 'Testing...'
-            ctest -V -C Debug -R "test_base" --output-on-failure --interactive-debug-mode 0 .
+            ctest -V -C Debug -E "test_drawing" --output-on-failure --interactive-debug-mode 0 . || rc=$?
             echo 'travis_fold:end:testing'
+            if [ -n "$rc" ]; then
+                httpbin_show_log
+                exit $rc
+            fi
         fi
 
         echo 'travis_fold:start:testinstall'
         echo 'Testing installation...'
+        popd
         mkdir build_cmake_install_test
         pushd build_cmake_install_test
         cmake -G "$wxCMAKE_GENERATOR" $wxCMAKE_DEFINES ../samples/minimal
@@ -57,7 +71,14 @@ case $wxTOOLSET in
     *)
         echo 'travis_fold:start:configure'
         echo 'Configuring...'
-        ./configure --disable-optimise --disable-debug_info $wxCONFIGURE_FLAGS || rc=$?
+
+        wxCONFIGURE_OPTIONS="--disable-optimise $wxCONFIGURE_FLAGS"
+        if [ -n "$wxGTK_VERSION" ]; then
+            wxCONFIGURE_OPTIONS="--with-gtk=$wxGTK_VERSION $wxCONFIGURE_OPTIONS"
+        fi
+
+        ./configure $wxCONFIGURE_OPTIONS --disable-debug_info || rc=$?
+
         if [ -n "$rc" ]; then
             echo '*** Configuring failed, contents of config.log follows: ***'
             echo '-----------------------------------------------------------'
@@ -68,17 +89,30 @@ case $wxTOOLSET in
         echo 'travis_fold:end:configure'
 
         if [ "$wxALLOW_WARNINGS" != 1 ]; then
-            case "$TRAVIS_COMPILER" in
+            # Under macOS TRAVIS_COMPILER is set to g++, but it's actually an
+            # alias for clang.
+            case "$(uname -s)" in
+                Darwin)
+                    real_compiler=clang
+                    ;;
+
+                *)
+                    # Elsewhere either gcc or clang can be used.
+                    real_compiler="$TRAVIS_COMPILER"
+                    ;;
+            esac
+
+            case "$real_compiler" in
                 clang)
                     allow_warn_opt="-Wno-error=#warnings"
                     ;;
 
-                gcc)
+                gcc | g++)
                     allow_warn_opt="-Wno-error=cpp"
                     ;;
 
                 *)
-                    echo "*** Unknown compiler: $TRAVIS_COMPILER ***"
+                    echo "*** Unknown compiler: $real_compiler ***"
                     ;;
             esac
 
@@ -113,12 +147,20 @@ case $wxTOOLSET in
             exit 0
         fi
 
+        echo 'travis_fold:start:httpbin'
+        httpbin_launch
+        echo 'travis_fold:end:httpbin'
+
         echo 'travis_fold:start:testing'
         echo 'Testing...'
         pushd tests
-        ./test
+        ./test || rc=$?
         popd
         echo 'travis_fold:end:testing'
+        if [ -n "$rc" ]; then
+            httpbin_show_log
+            exit $rc
+        fi
 
         if [ "$wxSKIP_GUI" = 1 ]; then
             echo 'Skipping the rest of tests for non-GUI build.'

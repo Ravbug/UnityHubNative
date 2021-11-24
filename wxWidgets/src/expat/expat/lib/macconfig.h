@@ -34,7 +34,11 @@
 #define STDC_HEADERS 1
 #define HAVE_MEMMOVE 1
 #define HAVE_BCOPY 1
+#if defined( __APPLE__ )
 #define HAVE_ARC4RANDOM_BUF 1
+#else
+#define HAVE_GETRANDOM 1
+#endif
 #define HAVE_FCNTL_H 1
 #define HAVE_UNISTD_H 1
 #define HAVE_STDLIB_H 1

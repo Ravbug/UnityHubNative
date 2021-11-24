@@ -1051,13 +1051,17 @@ tmain(int argc, XML_Char **argv) {
       }
       outName = (XML_Char *)malloc((tcslen(outputDir) + tcslen(file) + 2)
                                    * sizeof(XML_Char));
+      if (! outName) {
+        tperror(T("Could not allocate memory"));
+        exit(1);
+      }
       tcscpy(outName, outputDir);
       tcscat(outName, delim);
       tcscat(outName, file);
       userData.fp = tfopen(outName, T("wb"));
       if (! userData.fp) {
         tperror(outName);
-        exit(1);
+        exit(3);
       }
       setvbuf(userData.fp, NULL, _IOFBF, 16384);
 #ifdef XML_UNICODE

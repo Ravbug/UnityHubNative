@@ -167,7 +167,7 @@ private:
  Defines the functionality for the project creation dialog
  */
 typedef std::function<void(const std::string&,const project&)> DialogCallback;
-class CreateProjectDialogD : CreateProjectDialog{
+class CreateProjectDialogD : public CreateProjectDialog{
 public:
 	CreateProjectDialogD(wxWindow* parent, const std::vector<editor>& versions, const DialogCallback& callback);
 	void show(){
@@ -192,7 +192,7 @@ private:
 };
 
 typedef std::function<void(const project&, const editor&)> OpenWithCallback;
-class OpenWithDlg : OpenWithEditorDlgBase{
+class OpenWithDlg : public OpenWithEditorDlgBase{
 public:
 	OpenWithDlg(wxWindow* parent, const project& project, const std::vector<editor>& versions,  const OpenWithCallback& callback);
 	void show(){
@@ -219,7 +219,7 @@ private:
 	wxDECLARE_EVENT_TABLE();
 };
 
-class AddNewInstallDlg : AddNewInstallDlgBase{
+class AddNewInstallDlg : public AddNewInstallDlgBase{
 public:
     AddNewInstallDlg(wxWindow* parent);
     

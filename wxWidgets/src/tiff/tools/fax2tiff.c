@@ -68,7 +68,7 @@ uint16	badfaxrun;
 uint32	badfaxlines;
 
 int	copyFaxFile(TIFF* tifin, TIFF* tifout);
-static	void usage(void);
+static	void usage(int code);
 
 /*
   Struct to carry client data.  Note that it does not appear that the client
@@ -110,7 +110,7 @@ main(int argc, char* argv[])
 	extern char* optarg;
 #endif
 
-	while ((c = getopt(argc, argv, "R:X:o:r:1234ABLMPUW5678abcflmprsuvwz?")) != -1)
+	while ((c = getopt(argc, argv, "R:X:o:r:1234ABLMPUW5678abcflmprsuvwzh")) != -1)
 		switch (c) {
 			/* input-related options */
 		case '3':		/* input is g3-encoded */
@@ -216,13 +216,15 @@ main(int argc, char* argv[])
 		case 'v':		/* -v for info */
 			verbose++;
 			break;
+		case 'h':
+			usage(EXIT_SUCCESS);
 		case '?':
-			usage();
+			usage(EXIT_FAILURE);
 			/*NOTREACHED*/
 		}
 	npages = argc - optind;
 	if (npages < 1)
-		usage();
+		usage(EXIT_FAILURE);
 
 	rowbuf = _TIFFmalloc(TIFFhowmany8(xsize));
 	refbuf = _TIFFmalloc(TIFFhowmany8(xsize));
@@ -426,7 +428,7 @@ copyFaxFile(TIFF* tifin, TIFF* tifout)
 	return (row);
 }
 
-char* stuff[] = {
+const char* stuff[] = {
 "usage: fax2tiff [options] input.raw...",
 "where options are:",
 " -3		input data is G3-encoded		[default]",
@@ -463,16 +465,15 @@ NULL
 };
 
 static void
-usage(void)
+usage(int code)
 {
-	char buf[BUFSIZ];
 	int i;
+	FILE * out = (code == EXIT_SUCCESS) ? stdout : stderr;
 
-	setbuf(stderr, buf);
-        fprintf(stderr, "%s\n\n", TIFFGetVersion());
+	fprintf(out, "%s\n\n", TIFFGetVersion());
 	for (i = 0; stuff[i] != NULL; i++)
-		fprintf(stderr, "%s\n", stuff[i]);
-	exit(EXIT_FAILURE);
+		fprintf(out, "%s\n", stuff[i]);
+	exit(code);
 }
 
 /* vim: set ts=8 sts=8 sw=8 noet: */

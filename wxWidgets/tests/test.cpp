@@ -14,9 +14,6 @@
 // and "catch.hpp"
 #include "testprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 // Suppress some warnings in catch_impl.hpp.
 wxCLANG_WARNING_SUPPRESS(missing-braces)
@@ -134,7 +131,7 @@ static void TestAssertHandler(const wxString& file,
     {
         // Exceptions thrown from worker threads are not caught currently and
         // so we'd just die without any useful information -- abort instead.
-        abortReason << assertMessage << wxASCII_STR("in a worker thread.");
+        abortReason << assertMessage << wxASCII_STR(" in a worker thread.");
     }
 #if __cplusplus >= 201703L || wxCHECK_VISUALC_VERSION(14)
     else if ( uncaught_exceptions() )
@@ -167,6 +164,12 @@ static void TestAssertHandler(const wxString& file,
         throw TestAssertFailure(file, line, func, cond, msg);
     }
 
+#if wxUSE_STACKWALKER
+    const wxString& stackTrace = wxApp::GetValidTraits().GetAssertStackTrace();
+    if ( !stackTrace.empty() )
+        abortReason << wxASCII_STR("\n\nAssert call stack:\n") << stackTrace;
+#endif // wxUSE_STACKWALKER
+
     wxFputs(abortReason, stderr);
     fflush(stderr);
     _exit(-1);
@@ -174,7 +177,13 @@ static void TestAssertHandler(const wxString& file,
 
 CATCH_TRANSLATE_EXCEPTION(TestAssertFailure& e)
 {
-    return e.m_msg.ToStdString(wxConvUTF8);
+    wxString desc = e.m_msg;
+    if ( desc.empty() )
+        desc.Printf(wxASCII_STR("Condition \"%s\" failed"), e.m_cond);
+
+    desc += wxString::Format(wxASCII_STR(" in %s() at %s:%d"), e.m_func, e.m_file, e.m_line);
+
+    return desc.ToStdString(wxConvUTF8);
 }
 
 #endif // wxDEBUG_LEVEL
@@ -402,10 +411,11 @@ extern bool IsAutomaticTest()
         s_isAutomatic = username == wxASCII_STR("buildbot") ||
                             username.Matches(wxASCII_STR("sandbox*"));
 
-        // Also recognize Travis and AppVeyor CI environments.
+        // Also recognize various CI environments.
         if ( !s_isAutomatic )
         {
             s_isAutomatic = wxGetEnv(wxASCII_STR("TRAVIS"), NULL) ||
+                              wxGetEnv(wxASCII_STR("GITHUB_ACTIONS"), NULL) ||
                                 wxGetEnv(wxASCII_STR("APPVEYOR"), NULL);
         }
     }
@@ -621,6 +631,8 @@ int TestApp::RunTests()
     // running the tests.
     if ( !wxGetEnv(wxASCII_STR("WXTRACE"), NULL) )
         wxLog::EnableLogging(false);
+    else
+        wxLog::SetTimestamp("%Y-%m-%d %H:%M:%S.%l");
 #endif
 
     // Cast is needed under MSW where Catch also provides an overload taking

@@ -1,4 +1,5 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
 <title>BigTIFF Design</title>
 </head>
@@ -33,7 +34,7 @@ other parties.</p>
 <li>Header bytes 8-15 contain the 8-byte offset to the first IFD.</li>
 <li>Value/Offset fields are 8 bytes long, and take up bytes 8-15 in an IFD entry.<ul>
 
-  <li>If the value is <= 8 bytes, it must be stored in the field.</li>
+  <li>If the value is &lt;= 8 bytes, it must be stored in the field.</li>
   <li>All values must begin at an 8-byte-aligned address.</li></ul></li>
 <li>8-byte offset to the Next_IFD, at the end of an IFD.</li>
 <li>To keep IFD entries 8-byte-aligned, we begin with an 8-byte (instead of 2-byte) count of the number of directory entries.</li>

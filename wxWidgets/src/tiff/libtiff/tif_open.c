@@ -105,6 +105,7 @@ TIFFClientOpen(
 		} n;
 		n.a8[0]=1;
 		n.a8[1]=0;
+                (void)n;
 		#ifdef WORDS_BIGENDIAN
 		assert(n.a16==256);
 		#else
@@ -167,7 +168,7 @@ TIFFClientOpen(
 	/*
 	 * Process library-specific flags in the open mode string.
 	 * The following flags may be used to control intrinsic library
-	 * behaviour that may or may not be desirable (usually for
+	 * behavior that may or may not be desirable (usually for
 	 * compatibility with some application that claims to support
 	 * TIFF but only supports some brain dead idea of what the
 	 * vendor thinks TIFF is):
@@ -208,7 +209,7 @@ TIFFClientOpen(
 	 * not do right now.
 	 *
 	 * The 'M' and 'm' flags are provided because some virtual memory
-	 * systems exhibit poor behaviour when large images are mapped.
+	 * systems exhibit poor behavior when large images are mapped.
 	 * These options permit clients to control the use of memory-mapped
 	 * files on a per-file basis.
 	 *

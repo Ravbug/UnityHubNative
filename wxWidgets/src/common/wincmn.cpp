@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/string.h"
@@ -100,13 +97,6 @@ namespace wxMouseCapture
 bool IsInCaptureStack(wxWindowBase* win);
 
 } // wxMouseCapture
-
-// Most platforms use 96 DPI by default, but Mac traditionally uses 72.
-#ifdef __WXOSX__
-static const int BASELINE_DPI = 72;
-#else
-static const int BASELINE_DPI = 96;
-#endif
 
 // ----------------------------------------------------------------------------
 // static data
@@ -793,25 +783,6 @@ wxSize wxWindowBase::DoGetBestSize() const
     return best;
 }
 
-namespace
-{
-
-static wxSize GetDPIHelper(const wxWindowBase* w)
-{
-    wxSize dpi;
-
-    if ( w )
-        dpi = w->GetDPI();
-    if ( !dpi.x || !dpi.y )
-        dpi = wxScreenDC().GetPPI();
-    if ( !dpi.x || !dpi.y )
-        dpi = wxSize(BASELINE_DPI, BASELINE_DPI);
-
-    return dpi;
-}
-
-}
-
 double wxWindowBase::GetContentScaleFactor() const
 {
     // By default, we assume that there is no mapping between logical and
@@ -824,12 +795,7 @@ double wxWindowBase::GetContentScaleFactor() const
 
 double wxWindowBase::GetDPIScaleFactor() const
 {
-    const wxSize dpi = GetDPIHelper(this);
-
-    // We use just the vertical component of the DPI because it's the one
-    // that counts most and, in practice, it's equal to the horizontal one
-    // anyhow.
-    return dpi.y / (double)BASELINE_DPI;
+    return wxDisplay(static_cast<const wxWindow*>(this)).GetScaleFactor();
 }
 
 // helper of GetWindowBorderSize(): as many ports don't implement support for
@@ -1034,6 +1000,25 @@ wxSize wxWindowBase::WindowToClientSize(const wxSize& size) const
 
     return wxSize(size.x == -1 ? -1 : size.x - diff.x,
                   size.y == -1 ? -1 : size.y - diff.y);
+}
+
+void wxWindowBase::WXSetInitialFittingClientSize(int flags)
+{
+    wxSizer* const sizer = GetSizer();
+    if ( !sizer )
+        return;
+
+    const wxSize
+        size = sizer->ComputeFittingClientSize(static_cast<wxWindow *>(this));
+
+    // It is important to set the min client size before changing the size
+    // itself as the existing size hints could prevent SetClientSize() from
+    // working otherwise.
+    if ( flags & wxSIZE_SET_MIN )
+        SetMinClientSize(size);
+
+    if ( flags & wxSIZE_SET_CURRENT )
+        SetClientSize(size);
 }
 
 void wxWindowBase::SetWindowVariant( wxWindowVariant variant )
@@ -1741,7 +1726,7 @@ wxFont wxWindowBase::GetFont() const
         if ( !font.IsOk() )
             font = GetClassDefaultAttributes().font;
 
-        font.WXAdjustToPPI(GetDPI());
+        WXAdjustFontToOwnPPI(font);
 
         return font;
     }
@@ -1762,7 +1747,7 @@ bool wxWindowBase::SetFont(const wxFont& font)
     m_inheritFont = m_hasFont;
 
     if ( m_hasFont )
-        m_font.WXAdjustToPPI(GetDPI());
+        WXAdjustFontToOwnPPI(m_font);
 
     InvalidateBestSize();
 
@@ -2065,19 +2050,20 @@ public:
 
     // Traverse all the direct children calling OnDo() on them and also all
     // grandchildren, calling OnRecurse() for them.
-    bool DoForAllChildren()
+    bool DoForSelfAndChildren()
     {
+        wxValidator* const validator = m_win->GetValidator();
+        if ( validator && !OnDo(validator) )
+        {
+            return false;
+        }
+
         wxWindowList& children = m_win->GetChildren();
         for ( wxWindowList::iterator i = children.begin();
               i != children.end();
               ++i )
         {
             wxWindow* const child = static_cast<wxWindow*>(*i);
-            wxValidator* const validator = child->GetValidator();
-            if ( validator && !OnDo(validator) )
-            {
-                return false;
-            }
 
             // Notice that validation should never recurse into top level
             // children, e.g. some other dialog which might happen to be
@@ -2136,7 +2122,7 @@ bool wxWindowBase::Validate()
         }
     };
 
-    return ValidateTraverser(this).DoForAllChildren();
+    return ValidateTraverser(this).DoForSelfAndChildren();
 #else // !wxUSE_VALIDATORS
     return true;
 #endif // wxUSE_VALIDATORS/!wxUSE_VALIDATORS
@@ -2174,7 +2160,7 @@ bool wxWindowBase::TransferDataToWindow()
         }
     };
 
-    return DataToWindowTraverser(this).DoForAllChildren();
+    return DataToWindowTraverser(this).DoForSelfAndChildren();
 #else // !wxUSE_VALIDATORS
     return true;
 #endif // wxUSE_VALIDATORS/!wxUSE_VALIDATORS
@@ -2202,7 +2188,7 @@ bool wxWindowBase::TransferDataFromWindow()
         }
     };
 
-    return DataFromWindowTraverser(this).DoForAllChildren();
+    return DataFromWindowTraverser(this).DoForSelfAndChildren();
 #else // !wxUSE_VALIDATORS
     return true;
 #endif // wxUSE_VALIDATORS/!wxUSE_VALIDATORS
@@ -2894,16 +2880,37 @@ wxSize wxWindowBase::GetDPI() const
 
 #ifndef wxHAVE_DPI_INDEPENDENT_PIXELS
 
+namespace
+{
+
+static wxSize GetDPIHelper(const wxWindowBase* w)
+{
+    wxSize dpi;
+
+    if ( w )
+        dpi = w->GetDPI();
+    if ( !dpi.x || !dpi.y )
+        dpi = wxScreenDC().GetPPI();
+    if ( !dpi.x || !dpi.y )
+        dpi = wxDisplay::GetStdPPI();
+
+    return dpi;
+}
+
+}
+
 /* static */
 wxSize
 wxWindowBase::FromDIP(const wxSize& sz, const wxWindowBase* w)
 {
     const wxSize dpi = GetDPIHelper(w);
 
+    const int baseline = wxDisplay::GetStdPPIValue();
+
     // Take care to not scale -1 because it has a special meaning of
     // "unspecified" which should be preserved.
-    return wxSize(sz.x == -1 ? -1 : wxMulDivInt32(sz.x, dpi.x, BASELINE_DPI),
-                  sz.y == -1 ? -1 : wxMulDivInt32(sz.y, dpi.y, BASELINE_DPI));
+    return wxSize(sz.x == -1 ? -1 : wxMulDivInt32(sz.x, dpi.x, baseline),
+                  sz.y == -1 ? -1 : wxMulDivInt32(sz.y, dpi.y, baseline));
 }
 
 /* static */
@@ -2912,10 +2919,12 @@ wxWindowBase::ToDIP(const wxSize& sz, const wxWindowBase* w)
 {
     const wxSize dpi = GetDPIHelper(w);
 
+    const int baseline = wxDisplay::GetStdPPIValue();
+
     // Take care to not scale -1 because it has a special meaning of
     // "unspecified" which should be preserved.
-    return wxSize(sz.x == -1 ? -1 : wxMulDivInt32(sz.x, BASELINE_DPI, dpi.x),
-                  sz.y == -1 ? -1 : wxMulDivInt32(sz.y, BASELINE_DPI, dpi.y));
+    return wxSize(sz.x == -1 ? -1 : wxMulDivInt32(sz.x, baseline, dpi.x),
+                  sz.y == -1 ? -1 : wxMulDivInt32(sz.y, baseline, dpi.y));
 }
 
 #endif // !wxHAVE_DPI_INDEPENDENT_PIXELS

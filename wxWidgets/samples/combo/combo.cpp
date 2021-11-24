@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 // for all others, include the necessary headers (this file is usually all you
 // need because it includes almost all "standard" wxWidgets headers)
@@ -255,10 +252,7 @@ public:
     virtual wxCoord OnMeasureItem( size_t item ) const wxOVERRIDE
     {
         // Simply demonstrate the ability to have variable-height items
-        if ( item & 1 )
-            return 36;
-        else
-            return 24;
+        return FromDIP( item & 1 ? 36 : 24 );
     }
 
     virtual wxCoord OnMeasureItemWidth( size_t WXUNUSED(item) ) const wxOVERRIDE

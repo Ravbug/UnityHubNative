@@ -24,6 +24,7 @@
 #include "wx/gtk/private/gtk3-compat.h"
 #include "wx/gtk/private/win_gtk.h"
 #include "wx/gtk/private/stylecontext.h"
+#include "wx/gtk/private/value.h"
 
 bool wxGetFrameExtents(GdkWindow* window, int* left, int* right, int* top, int* bottom);
 
@@ -409,18 +410,13 @@ void wxGtkStyleContext::Bg(wxColour& color, int state) const
                 {
                 case CAIRO_FORMAT_ARGB32:
                     a = guchar(pixel >> 24);
+                    if (a == 0)
+                        break;
                     wxFALLTHROUGH;
                 case CAIRO_FORMAT_RGB24:
                     r = guchar(pixel >> 16);
                     g = guchar(pixel >> 8);
                     b = guchar(pixel);
-                    break;
-                default:
-                    a = 0;
-                    break;
-                }
-                if (a != 0)
-                {
                     if (a != 0xff)
                     {
                         // un-premultiply
@@ -429,6 +425,9 @@ void wxGtkStyleContext::Bg(wxColour& color, int state) const
                         b = guchar((b * 0xff) / a);
                     }
                     color.Set(r, g, b, a);
+                    break;
+                default:
+                    break;
                 }
             }
         }
@@ -562,15 +561,13 @@ wxColour wxSystemSettingsNative::GetColour(wxSystemColour index)
         else
         {
             wxGCC_WARNING_SUPPRESS(deprecated-declarations)
-            GValue value = G_VALUE_INIT;
-            g_value_init(&value, GDK_TYPE_COLOR);
-            gtk_style_context_get_style_property(sc, "link-color", &value);
-            GdkColor* link_color = static_cast<GdkColor*>(g_value_get_boxed(&value));
+            wxGtkValue value( GDK_TYPE_COLOR);
+            gtk_style_context_get_style_property(sc, "link-color", value);
+            GdkColor* link_color = static_cast<GdkColor*>(g_value_get_boxed(value));
             GdkColor gdkColor = { 0, 0, 0, 0xeeee };
             if (link_color)
                 gdkColor = *link_color;
             color = wxColour(gdkColor);
-            g_value_unset(&value);
             wxGCC_WARNING_RESTORE()
         }
 #endif

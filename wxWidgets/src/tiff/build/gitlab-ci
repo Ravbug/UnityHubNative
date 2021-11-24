@@ -2,6 +2,10 @@
 # This script is used for testing the build, primarily for use
 # with travis, but may be used by hand as well.
 
+# Library versions to use
+ZSTD_VER=1.4.4
+WEBP_VER=1.1.0
+
 set -e
 set -x
 
@@ -40,23 +44,23 @@ build=$1
 shift
 
 # Build zstd
-wget https://github.com/facebook/zstd/archive/v1.3.3.tar.gz
-tar xvzf v1.3.3.tar.gz
-cd zstd-1.3.3/lib
+wget https://github.com/facebook/zstd/archive/v${ZSTD_VER}.tar.gz
+tar xvzf v${ZSTD_VER}.tar.gz
+cd zstd-${ZSTD_VER}/lib
 # Faster build
 make -j3 PREFIX=/tmp ZSTD_LEGACY_SUPPORT=0 CFLAGS=-O1
 make install PREFIX=/tmp ZSTD_LEGACY_SUPPORT=0 CFLAGS=-O1
 cd ../..
-rm -rf zstd-1.3.3
+rm -rf zstd-${ZSTD_VER}
 
 # Build webp
-wget https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.0.0.tar.gz
-tar xvzf libwebp-1.0.0.tar.gz
-cd libwebp-1.0.0
+wget https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-${WEBP_VER}.tar.gz
+tar xvzf libwebp-${WEBP_VER}.tar.gz
+cd libwebp-${WEBP_VER}
 ./configure --prefix=/tmp
 make && make install
 cd ..
-rm -rf libwebp-1.0.0
+rm -rf libwebp-${WEBP_VER}
 
 export LD_LIBRARY_PATH=/tmp/lib
 

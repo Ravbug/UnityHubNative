@@ -18,6 +18,61 @@
 
 #ifdef PNG_READ_SUPPORTED
 
+#ifndef PNG_USE_ZLIB_INFLATE_VALIDATE
+   /* Check if zlib's inflateValidate can be used. */
+#  if ZLIB_VERNUM >= 0x1290 && \
+     defined(PNG_SET_OPTION_SUPPORTED) && defined(PNG_IGNORE_ADLER32)
+#     if defined(__APPLE__) && defined(__MACH__)
+         /* Determine whether inflateValidate is available by checking:
+          * - for static zlib linking (best, but flaky and unreliable detection)
+          * - at run-time by OS version (best with sys zlib usage)
+          * - at compile-time by minimal supported OS version
+          */
+
+         /* For TARGET_OS_IPHONE / TARGET_OS_MAC */
+#        include <TargetConditionals.h>
+
+         /* For IPHONE_OS_VERSION_MIN_REQUIRED / MAC_OS_X_VERSION_MIN_REQUIRED.
+          * Not using the preferred <Availability.h> because it was introduced
+          * during the 10.5 SDK while this header has been available with Xcode
+          * since 1.0 (10.3 SDK).
+          */
+#        include <AvailabilityMacros.h>
+#        ifdef inflateValidate
+            /* Without this (empty) check usage of inflateValidate is driven
+             * only by OS version while zlib with inflateValidate could be
+             * linked statically.
+             * If the system's zlib is being used inflateValidate is not a
+             * macro so by checking if inflateValidate is a macro the cases
+             * where zlib is compiled with a prefix are at least handled and
+             * inflateValidate can then be used regardless of OS version.
+             */
+#        elif defined(__clang__) && __has_builtin(__builtin_available)
+            /* Check at run-time for availability by OS version. */
+#           define PNG_USE_ZLIB_INFLATE_VALIDATE 2
+#        elif defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+#           if defined(IPHONE_OS_VERSION_MIN_REQUIRED) && \
+              IPHONE_OS_VERSION_MIN_REQUIRED < 110000
+               /* Don't use if targeting pre-iOS 11.0. */
+#              define PNG_USE_ZLIB_INFLATE_VALIDATE 0
+#           endif
+#        elif defined(TARGET_OS_MAC) && TARGET_OS_MAC
+#           if defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
+              MAC_OS_X_VERSION_MIN_REQUIRED < 101300
+               /* Don't use if targeting pre-macOS 10.13. */
+#              define PNG_USE_ZLIB_INFLATE_VALIDATE 0
+#           endif
+#        endif /* inflateValidate */
+#     endif /* __APPLE__ && __MACH__ */
+#  else
+#     define PNG_USE_ZLIB_INFLATE_VALIDATE 0
+#  endif /* ZLIB_VERNUM && PNG_SET_OPTION_SUPPORTED && PNG_IGNORE_ADLER32 */
+
+#  ifndef PNG_USE_ZLIB_INFLATE_VALIDATE
+#     define PNG_USE_ZLIB_INFLATE_VALIDATE 1
+#  endif
+#endif /* PNG_USE_ZLIB_INFLATE_VALIDATE */
+
 png_uint_32 PNGAPI
 png_get_uint_31(png_const_structrp png_ptr, png_const_bytep buf)
 {
@@ -422,12 +477,13 @@ png_inflate_claim(png_structrp png_ptr, png_uint_32 owner)
             png_ptr->flags |= PNG_FLAG_ZSTREAM_INITIALIZED;
       }
 
-#if ZLIB_VERNUM >= 0x1290 && \
-   defined(PNG_SET_OPTION_SUPPORTED) && defined(PNG_IGNORE_ADLER32) && \
-   !(defined(MAC_OS_X_VERSION_MIN_REQUIRED) && MAC_OS_X_VERSION_MIN_REQUIRED < 101300)
+#if PNG_USE_ZLIB_INFLATE_VALIDATE
       if (((png_ptr->options >> PNG_IGNORE_ADLER32) & 3) == PNG_OPTION_ON)
-         /* Turn off validation of the ADLER32 checksum in IDAT chunks */
-         ret = inflateValidate(&png_ptr->zstream, 0);
+#  if PNG_USE_ZLIB_INFLATE_VALIDATE == 2
+         if (__builtin_available(macOS 10.13, iOS 11.0, *))
+#  endif
+            /* Turn off validation of the ADLER32 checksum in IDAT chunks */
+            ret = inflateValidate(&png_ptr->zstream, 0);
 #endif
 
       if (ret == Z_OK)

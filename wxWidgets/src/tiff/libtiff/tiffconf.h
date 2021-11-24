@@ -15,7 +15,7 @@
 #ifndef _TIFFCONF_
 #define _TIFFCONF_
 
-#ifdef __APPLE__
+#ifndef _WIN32
 #include "tif_config.h"
 #else
 

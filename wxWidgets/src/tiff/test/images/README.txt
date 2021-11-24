@@ -30,3 +30,6 @@ PNM files:
 
 G3 Fax files :
   miniswhite-1c-1b.g3
+
+deflate-last-strip-extra-data.tiff is
+https://github.com/OSGeo/gdal/blob/master/autotest/alg/data/utmsmall_near.tiff

@@ -122,7 +122,7 @@ struct editor{
 	static const std::string null_device = ">/dev/null 2>&1";
 	static const char dirsep = '/';
 	
-	static const std::filesyste::path executable = "Editor/Unity";
+	static const std::filesystem::path executable = "Editor/Unity";
     static const std::vector<std::filesystem::path> defaultInstall = {std::filesystem::path(getpwuid(getuid())->pw_dir) / "Unity/Hub/Editor"};
 	//TODO: make this a preference?
 	static const std::filesystem::path hubDefault = "";

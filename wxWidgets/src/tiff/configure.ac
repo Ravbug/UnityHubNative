@@ -25,7 +25,7 @@ dnl OF THIS SOFTWARE.
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.64)
-AC_INIT([LibTIFF Software],[4.1.0],[tiff@lists.maptools.org],[tiff])
+AC_INIT([LibTIFF Software],[4.2.0],[tiff@lists.maptools.org],[tiff])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR(m4)
 AC_LANG(C)
@@ -33,14 +33,14 @@ AC_LANG(C)
 dnl Compute the canonical host (run-time) system type variable
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(tar-pax)
+AM_INIT_AUTOMAKE(tar-ustar)
 dnl Do not rebuild generated files every time
 AM_MAINTAINER_MODE
 
 dnl Versioning.
 dnl Don't fill the ALPHA_VERSION field, if not applicable.
 LIBTIFF_MAJOR_VERSION=4
-LIBTIFF_MINOR_VERSION=1
+LIBTIFF_MINOR_VERSION=2
 LIBTIFF_MICRO_VERSION=0
 LIBTIFF_ALPHA_VERSION=
 LIBTIFF_VERSION=$LIBTIFF_MAJOR_VERSION.$LIBTIFF_MINOR_VERSION.$LIBTIFF_MICRO_VERSION$LIBTIFF_ALPHA_VERSION
@@ -76,9 +76,9 @@ dnl  5. If any interfaces have been added since the last public release, then
 dnl     increment age.
 dnl  6. If any interfaces have been removed since the last public release,
 dnl     then set age to 0.                                
-LIBTIFF_CURRENT=10
+LIBTIFF_CURRENT=11
 LIBTIFF_REVISION=0
-LIBTIFF_AGE=5
+LIBTIFF_AGE=6
 LIBTIFF_VERSION_INFO=$LIBTIFF_CURRENT:$LIBTIFF_REVISION:$LIBTIFF_AGE
 
 # This is a special hack for OpenBSD and MirOS systems. The dynamic linker
@@ -610,6 +610,63 @@ if test "$HAVE_ZLIB" = "yes" ; then
 
   if test "$HAVE_RPATH" = "yes" -a "x$with_zlib_lib_dir" != "x" ; then
     LIBDIR="-R $with_zlib_lib_dir $LIBDIR"
+  fi
+
+fi
+
+dnl ---------------------------------------------------------------------------
+dnl Check for libdeflate.
+dnl ---------------------------------------------------------------------------
+
+HAVE_LIBDEFLATE=no
+
+AC_ARG_ENABLE(libdeflate,
+	      AS_HELP_STRING([--disable-libdeflate],
+			     [disable libdeflate usage (optional for faster Deflate support (still requires zlib), enabled by default)]),,)
+AC_ARG_WITH(libdeflate-include-dir,
+	    AS_HELP_STRING([--with-libdeflate-include-dir=DIR],
+			   [location of libdeflate headers]),,)
+AC_ARG_WITH(libdeflate-lib-dir,
+	    AS_HELP_STRING([--with-libdeflate-lib-dir=DIR],
+			   [location of libdeflate library binary]),,)
+
+if test "x$enable_libdeflate" != "xno" ; then
+
+  if test "x$with_libdeflate_lib_dir" != "x" ; then
+    LDFLAGS="-L$with_libdeflate_lib_dir $LDFLAGS"
+  fi
+
+  AC_CHECK_LIB(deflate, libdeflate_zlib_decompress, [libdeflate_lib=yes], [libdeflate_lib=no],)
+  if test "$libdeflate_lib" = "no" -a "x$with_libdeflate_lib_dir" != "x"; then
+    AC_MSG_ERROR([libdeflate library not found at $with_libdeflate_lib_dir])
+  fi
+
+  if test "x$with_libdeflate_include_dir" != "x" ; then
+    CPPFLAGS="-I$with_libdeflate_include_dir $CPPFLAGS"
+  fi
+  AC_CHECK_HEADER(libdeflate.h, [libdeflate_h=yes], [libdeflate_h=no])
+  if test "$libdeflate_h" = "no" -a "x$with_libdeflate_include_dir" != "x" ; then
+    AC_MSG_ERROR([libdeflate headers not found at $with_libdeflate_include_dir])
+  fi
+
+  if test "$libdeflate_lib" = "yes" -a "$libdeflate_h" = "yes" ; then
+    HAVE_LIBDEFLATE=yes
+  fi
+
+fi
+
+if test "$HAVE_LIBDEFLATE" = "yes" -a "$HAVE_ZLIB" = "no" ; then
+  AC_MSG_WARN([libdeflate available but zlib is not. libdeflate cannot be used])
+  HAVE_LIBDEFLATE=no
+fi  
+
+if test "$HAVE_LIBDEFLATE" = "yes" ; then
+  AC_DEFINE(LIBDEFLATE_SUPPORT,1,[Support libdeflate enhanced compression])
+  LIBS="-ldeflate $LIBS"
+  tiff_libs_private="-ldeflate ${tiff_libs_private}"
+
+  if test "$HAVE_RPATH" = "yes" -a "x$with_libdeflate_lib_dir" != "x" ; then
+    LIBDIR="-R $with_libdeflate_lib_dir $LIBDIR"
   fi
 
 fi
@@ -1191,6 +1248,7 @@ LOC_MSG([  LogLuv high dynamic range encoding: ${HAVE_LOGLUV}])
 LOC_MSG()
 LOC_MSG([ Support for external codecs:])
 LOC_MSG([  ZLIB support:                       ${HAVE_ZLIB}])
+LOC_MSG([  libdeflate support:                 ${HAVE_LIBDEFLATE}])
 LOC_MSG([  Pixar log-format algorithm:         ${HAVE_PIXARLOG}])
 LOC_MSG([  JPEG support:                       ${HAVE_JPEG}])
 LOC_MSG([  Old JPEG support:                   ${HAVE_OJPEG}])
