@@ -21,7 +21,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name:  UnityHubNative-Linux64
-          path:  build/Release/UnityHubNative-Linux.zip
+          path:  build/Release/UnityHubNative.AppImage
 
   build-mac:
     name: Build App for macOS
@@ -35,13 +35,11 @@ jobs:
         run: mkdir -p build; cd build; cmake -G "Xcode" -DCMAKE_BUILD_TYPE=Release ..
       - name: Builld 
         run: cd build; cmake --build . --config release --target install
-      - name: Compress App
-        run: cd build/release && zip -r -9 UnityHubNative-macOS.zip *.app
       - name: Archive and upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: UnityHubNative-macOS
-          path: build/release/UnityHubNative-macOS.zip
+          path: build/release/UnityHubNative.app
                 
   build-windows:
     name: Build App for Windows
@@ -54,11 +52,9 @@ jobs:
       - name: Configure
         run: mkdir build; cd build; cmake -DCMAKE_BUILD_TYPE=Release .. ;
       - name: Build
-        run: cd build; cmake --build . --config release --target install
-      - name: Compress App
-        run: cd build\Release ; Compress-Archive -Path .\*.exe -DestinationPath UnityHubNative-win64.zip
+        run: cd build; cmake --build . --config release --target installp
       - name: Archive and upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: UnityHubNative-win64
-          path: build\release\UnityHubNative-win64.zip
+          path: build\release\UnityHubNative.exe
