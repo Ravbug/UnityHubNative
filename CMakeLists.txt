@@ -63,12 +63,12 @@ if(APPLE)
 	)
 elseif(LINUX)
 INSTALL(CODE 
-	"include(../../appimage.cmake)
+	"include(${CMAKE_CURRENT_SOURCE_DIR}/appimage.cmake)
 	make_appimage(
 		EXE \"${CMAKE_INSTALL_PREFIX}/$<CONFIGURATION>/${PROJECT_NAME}\"
 		NAME \"${PROJECT_NAME}\"
-		ICON \"wxlin\"
-		DIR_ICON \"wxlin.xpm\"
+		ICON \"${CMAKE_CURRENT_SOURCE_DIR}/source/wxlin.xpm\"
+		DIR_ICON \"${CMAKE_CURRENT_SOURCE_DIR}/source/wxlin.xpm\"
 		OUTPUT_NAME \"${CMAKE_INSTALL_PREFIX}/$<CONFIGURATION>/${PROJECT_NAME}.AppImage\"
 		ASSETS \"\"
 	)
