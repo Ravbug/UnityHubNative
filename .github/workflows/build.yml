@@ -52,7 +52,7 @@ jobs:
       - name: Configure
         run: mkdir build; cd build; cmake -DCMAKE_BUILD_TYPE=Release .. ;
       - name: Build
-        run: cd build; cmake --build . --config release --target installp
+        run: cd build; cmake --build . --config release --target install
       - name: Archive and upload artifacts
         uses: actions/upload-artifact@v2
         with:
