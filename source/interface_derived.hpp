@@ -143,7 +143,7 @@ private:
 			editor& e = editors[id];
 			std::filesystem::path path = e.path / e.name;
             if (!std::filesystem::exists(path)){
-                reveal_in_explorer(e.path);
+                reveal_in_explorer(e.path.string());
             }
             else{
                 reveal_in_explorer(path.string());

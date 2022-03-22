@@ -327,33 +327,33 @@ void MainFrameDerived::OpenProject(const long& index){
 	//get the project
 	project p = projects[index];
 	
-	for(auto& path : installPaths){
+	for (auto& path : installPaths) {
 		auto editorPath = path / p.version / executable;
-		
+
 		//check that the unity editor exists at that location
-		if (filesystem::exists(editorPath)){
-					
+		if (filesystem::exists(editorPath)) {
+
 			string cmd = "\"" + editorPath.string() + "\" -projectpath \"" + p.path.string() + "\"";
-			
+
 			//start the process
 			launch_process(cmd);
-			
+
 			return;
 		}
 #if __APPLE__
-        else if (filesystem::exists(path / executable)){
-            // mac unlabeled version
-            auto unlabeledPath = path/executable;
-            char buffer[16];
-            auto unlabeledPathInfo = path / "Unity.app" / "Contents" / "Info.plist";
-            getCFBundleVersionFromPlist(unlabeledPathInfo.string().c_str(), buffer, sizeof(buffer));
-            if (p.version == buffer){
-                string cmd = "\"" + unlabeledPath.string() + "\" -projectpath \"" + p.path.string() + "\"";
-                launch_process(cmd);
-                return;
-            }
-#endif
-        }
+		else if (filesystem::exists(path / executable)) {
+			// mac unlabeled version
+			auto unlabeledPath = path / executable;
+			char buffer[16];
+			auto unlabeledPathInfo = path / "Unity.app" / "Contents" / "Info.plist";
+			getCFBundleVersionFromPlist(unlabeledPathInfo.string().c_str(), buffer, sizeof(buffer));
+			if (p.version == buffer) {
+				string cmd = "\"" + unlabeledPath.string() + "\" -projectpath \"" + p.path.string() + "\"";
+				launch_process(cmd);
+				return;
+			}
+		}
+#endif 
 	}
 	//alert user
 	wxMessageBox("The editor version " + p.version + " could not be found.\n\nCheck that it is installed, and that the folder where it has been installed is listed in the Editor Versions tab, under Install Search Paths.", "Unable to start Unity", wxOK | wxICON_ERROR);
