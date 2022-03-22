@@ -14,7 +14,7 @@
 static const std::string projectsFile = "projects.txt";
 static const std::string editorPathsFile = "editorPaths.txt";
 static const std::string templatePrefix = "com.unity.template";
-static const std::string AppVersion = "v1.41";
+static const std::string AppVersion = "v1.42";
 
 //structure for representing an editor and for locating it
 struct editor{

@@ -39,7 +39,6 @@ AddNewInstallDlg::AddNewInstallDlg(wxWindow* parent) : AddNewInstallDlgBase(pare
         this->GetAllVersions();
     });
     th.detach();
-    
 }
 
 void AddNewInstallDlg::PopulateTable(wxCommandEvent&){

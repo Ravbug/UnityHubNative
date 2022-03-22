@@ -24,7 +24,10 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/wxWidgets/build/cmake/modules" 
 message("module path = ${CMAKE_MODULE_PATH}")
 
 file(GLOB source "source/*.cpp" "source/*.hpp" "source/*.h")
-add_executable("${PROJECT_NAME}" WIN32 ${source} "source/wxmac.icns" "source/windows.rc")
+if (APPLE)
+	set(OBJCPP "source/AppleUtilities.h" "source/AppleUtilities.mm")
+endif()
+add_executable("${PROJECT_NAME}" WIN32 ${source} "source/wxmac.icns" "source/windows.rc" ${OBJCPP})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 
 #wxwidgets

@@ -18,6 +18,9 @@
 
 #include <fmt/format.h>
 #include <filesystem>
+#if __APPLE__
+#include "AppleUtilities.h"
+#endif
 using namespace std;
 using namespace std::filesystem;
 
@@ -495,11 +498,33 @@ void MainFrameDerived::LoadEditorVersions(){
 					auto p = path / entry->d_name / executable;
 					if (filesystem::exists(p)){
 						//add it to the list
-						a.Add(string(entry->d_name) + " - " + path.string());
-						
-						//add it to the backing datastructure
-						editor e = {entry->d_name, path};
-						editors.push_back(e);
+#if __APPLE__
+                        // the Unity Download Assistant on Mac does not allow multiple
+                        // unity versions at once, which sucks. To get the version,
+                        // we need to parse the info.plist inside of Unity.app
+                        if (strcmp(entry->d_name, ".") == 0){
+                            auto infopath = path / entry->d_name / "Unity.app" / "Contents" / "Info.plist";
+                            if (filesystem::exists(infopath)){
+                                // read the file and look for CFBundleVersion
+                                char buffer[16];
+                                getCFBundleVersionFromPlist(infopath.string().c_str(), buffer, sizeof(buffer));
+                                
+                                a.Add(string(buffer) + " - " + path.string());
+                                //add it to the backing datastructure
+                                editor e = {buffer, path};
+
+                                editors.push_back(e);
+                            }
+                        }
+                        else
+#endif
+                        {
+                            a.Add(string(entry->d_name) + " - " + path.string());
+                            //add it to the backing datastructure
+                            editor e = {entry->d_name, path};
+
+                            editors.push_back(e);
+                        }
 					}
 				}
 				entry = readdir(dir);

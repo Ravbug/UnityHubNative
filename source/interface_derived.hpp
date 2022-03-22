@@ -142,7 +142,12 @@ private:
 		if (id != wxNOT_FOUND){
 			editor& e = editors[id];
 			std::filesystem::path path = e.path / e.name;
-			reveal_in_explorer(path.string());
+            if (!std::filesystem::exists(path)){
+                reveal_in_explorer(e.path);
+            }
+            else{
+                reveal_in_explorer(path.string());
+            }
 		}
 	}
 	/**
