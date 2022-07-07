@@ -170,7 +170,7 @@ void MainFrameDerived::OnAbout(wxCommandEvent& event)
 {
 	wxAboutDialogInfo aboutInfo;
 	aboutInfo.SetName("Unity Hub Native");	
-	aboutInfo.SetCopyright("(C) Ravbug 2021");
+	aboutInfo.SetCopyright("(C) Ravbug 2022");
 	aboutInfo.SetDescription("Developed with wxWidgets in C++");
 #if defined __linux__
 	aboutInfo.SetWebSite("https://github.com/ravbug/UnityHubNative");
