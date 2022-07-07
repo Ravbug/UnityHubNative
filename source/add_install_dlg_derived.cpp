@@ -1,6 +1,6 @@
 #include "interface_derived.hpp"
 #include <thread>
-#include <cpr/cpr.h>
+#include "HTTP.hpp"
 #include <unordered_map>
 #include <sstream>
 #include <fstream>
@@ -55,72 +55,76 @@ void AddNewInstallDlg::PopulateTable(wxCommandEvent&){
 
 void AddNewInstallDlg::GetAllVersions(){
 #ifndef __linux__
+	
     // version date info
     unordered_map<string,string> versionDates;
     {
-        cpr::Response r = cpr::Get(cpr::Url{"https://symbolserver.unity3d.com/000Admin/history.txt"});
-        if (r.status_code != 200){
-            wxMessageBox("Unable to access Unity version metadata", "Download error", wxOK | wxICON_ERROR);
-        }
-        else{
-            // parse the CSV
-            stringstream stream(r.text);
-            string str;
-            string last_date;
-            while(getline(stream,str,'\n')){
-                int i = 0;
-                stringstream line(str);
-                while(getline(line,str,',')){
-                    i++;
-                    if (i % 4 == 0){
-                        last_date = str;
-                    }
-                    else if (i % 7 == 0){
-                        versionDates.insert(make_pair(remove_quotes(str), last_date));
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    // installation URLs
-    {
-        cpr::Response r = cpr::Get(cpr::Url{"https://unity3d.com/get-unity/download/archive"});
-        
-        // check if succeeded
-        if (r.status_code != 200){
-            wxMessageBox("Unable to access Unity versions", "Download error", wxOK | wxICON_ERROR);
-        }
-        else{
-            // get all the Unity versions
-            // they are prefixed with unityhub:// links
-            
-            std::string_view match("unityhub://");
-            
-            for(size_t i = 0; i < r.text.size(); i++){
-                std::string_view section(r.text.data() + i,match.size());
-                if (strncmp(r.text.data() + i, match.data(), match.size()) == 0){
-                    // we have found a version, extract its data
-                    auto begin = i + match.size();
-                    auto end = r.text.find_first_of("\"", i + match.size());
-                    std::string_view versiondata(r.text.data() + begin,end-begin);
-                    
-                    // get the version and hashcode
-                    auto slashpos = versiondata.find_first_of("/");
-                    
-                    auto version = string(string_view(versiondata.data(),slashpos));
-                    if (versionDates.find(version) != versionDates.end()){
-                        versions.emplace_back(version,string(string_view(versiondata.data() + slashpos + 1, versiondata.size() - slashpos - 1)), versionDates.at(version));
-                    }
-                    
-                    
-                }
-            }
-            // post to main thread to update table
-            wxCommandEvent evt(updateEvt);
-            evt.SetId(UPDATEEVT);
-            wxPostEvent(this, evt);
-        }
+		try{
+			auto r = fetch("https://symbolserver.unity3d.com/000Admin/history.txt");
+			if (r.code != 200){
+				wxMessageBox("Unable to access Unity version metadata", "Download error", wxOK | wxICON_ERROR);
+			}
+			else{
+				// parse the CSV
+				stringstream stream(r.text);
+				string str;
+				string last_date;
+				while(getline(stream,str,'\n')){
+					int i = 0;
+					stringstream line(str);
+					while(getline(line,str,',')){
+						i++;
+						if (i % 4 == 0){
+							last_date = str;
+						}
+						else if (i % 7 == 0){
+							versionDates.insert(make_pair(remove_quotes(str), last_date));
+							break;
+						}
+					}
+				}
+				// installation URLs
+				{
+					auto r = fetch("https://unity3d.com/get-unity/download/archive");
+					
+					// check if succeeded
+					if (r.code != 200){
+						wxMessageBox("Unable to access Unity versions", "Download error", wxOK | wxICON_ERROR);
+					}
+					else{
+						// get all the Unity versions
+						// they are prefixed with unityhub:// links
+						
+						std::string_view match("unityhub://");
+						
+						for(size_t i = 0; i < r.text.size(); i++){
+							std::string_view section(r.text.data() + i,match.size());
+							if (strncmp(r.text.data() + i, match.data(), match.size()) == 0){
+								// we have found a version, extract its data
+								auto begin = i + match.size();
+								auto end = r.text.find_first_of("\"", i + match.size());
+								std::string_view versiondata(r.text.data() + begin,end-begin);
+								
+								// get the version and hashcode
+								auto slashpos = versiondata.find_first_of("/");
+								
+								auto version = string(string_view(versiondata.data(),slashpos));
+								if (versionDates.find(version) != versionDates.end()){
+									versions.emplace_back(version,string(string_view(versiondata.data() + slashpos + 1, versiondata.size() - slashpos - 1)), versionDates.at(version));
+								}
+							}
+						}
+						// post to main thread to update table
+						wxCommandEvent evt(updateEvt);
+						evt.SetId(UPDATEEVT);
+						wxPostEvent(this, evt);
+					}
+				}
+			}
+		}
+		catch(std::exception& e){
+			wxMessageBox(fmt::format("Network error: {}", e.what()), "Error", wxOK | wxICON_ERROR);
+		}
     }
 #endif
 }
@@ -169,9 +173,9 @@ void AddNewInstallDlg::InstallSelected(wxCommandEvent&){
                     
             #endif
             
-            auto r = cpr::Get(cpr::Url{url});
+			auto r = fetch(url);
             
-            if (r.status_code != 200){
+            if (r.code != 200){
                 // TODO: post that download failed
                 throw runtime_error("Unable to download installer");
             }

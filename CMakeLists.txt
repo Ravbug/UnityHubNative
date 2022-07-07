@@ -11,7 +11,6 @@ option(BUILD_SHARED_LIBS OFF "Build static")
 
 if(MSVC)
   add_definitions(/MP)
-  add_definitions(/Qpar)
 endif()
 
 set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE INTERNAL "")
@@ -34,9 +33,35 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 set(wxBUILD_SHARED OFF CACHE INTERNAL "")
 add_subdirectory("wxWidgets" EXCLUDE_FROM_ALL)
 
-set(CPR_BUILD_TESTS OFF CACHE INTERNAL "")
-set(CPR_GENERATE_COVERAGE OFF CACHE INTERNAL "")
-add_subdirectory("cpr" EXCLUDE_FROM_ALL)
+# libcurl
+if (MSVC)
+    # use Windows native SSL instead of OpenSSL or MbedTLS
+    set(CURL_USE_SCHANNEL ON CACHE INTERNAL "")
+else()
+    # for curl SSL
+    set(ENABLE_TESTING OFF CACHE INTERNAL "")
+    set(ENABLE_PROGRAMS OFF CACHE INTERNAL "")
+    set(CURL_USE_MBEDTLS ON CACHE INTERNAL "")
+    add_subdirectory(mbedtls EXCLUDE_FROM_ALL)
+    set(MBEDTLS_LIBRARIES "mbedtls")   
+endif()
+set(BUILD_TESTING OFF)
+set(USE_OPENSSL OFF)
+set(CURL_USE_LIBSSH2 OFF)
+set(CURL_DISABLE_FTP ON)      # disable unused features & protocols
+set(CURL_DISABLE_FILE ON)
+set(CURL_DISABLE_TELNET ON)
+set(CURL_DISABLE_LDAP ON)
+set(CURL_DISABLE_DICT ON)
+set(CURL_DISABLE_TFTP ON)
+set(CURL_DISABLE_GOPHER ON)
+set(CURL_DISABLE_IMAP ON)
+set(CURL_DISABLE_SMB ON)
+set(CURL_DISABLE_SMTP ON)
+set(CURL_DISABLE_RTSP ON)
+set(CURL_DISABLE_MQTT ON)
+set(CURL_DISABLE_POP3 ON)
+add_subdirectory(curl EXCLUDE_FROM_ALL)
 
 add_subdirectory("fmt" EXCLUDE_FROM_ALL)
 
@@ -45,7 +70,7 @@ target_link_libraries("${PROJECT_NAME}"
     wx::base
 	wx::core
 	wx::webview
-	cpr
+	CURL::libcurl
 	fmt
 )
 target_include_directories(${PROJECT_NAME} PUBLIC "fmt/include")
