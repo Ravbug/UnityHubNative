@@ -24,13 +24,13 @@
 #include <wx/panel.h>
 #include <wx/stattext.h>
 #include <wx/listbox.h>
-#include <wx/hyperlink.h>
 #include <wx/notebook.h>
 #include <wx/menu.h>
 #include <wx/frame.h>
+#include <wx/hyperlink.h>
+#include <wx/dialog.h>
 #include <wx/textctrl.h>
 #include <wx/choice.h>
-#include <wx/dialog.h>
 #include <wx/srchctrl.h>
 #include <wx/dataview.h>
 
@@ -42,12 +42,11 @@
 #define OPEN_WITH 1003
 #define wxID_FLOPPY 1004
 #define wxID_RELOAD 1005
-#define Nav_Back 1006
-#define Nav_Forward 1007
-#define Nav_Home 1008
-#define wxID_TOP 1009
-#define VERSIONS_LIST 1010
-#define INSTALLVIAHUB 1011
+#define ACTIV_PROPLUS 1006
+#define ACTIV_PERSONAL 1007
+#define wxID_TOP 1008
+#define VERSIONS_LIST 1009
+#define INSTALLVIAHUB 1010
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class MainFrame
@@ -63,22 +62,41 @@ class MainFrame : public wxFrame
 		wxListBox* installsPathsList;
 		wxButton* launchHubBtn;
 		wxButton* removeInstallBtn;
-		wxPanel* learn_pane;
-		wxGridBagSizer* learnSizer;
-		wxButton* backBtn;
-		wxStaticText* titleLabel;
-		wxButton* forwardBtn;
-		wxButton* homeBtn;
-		wxBoxSizer* webSizer;
-		wxHyperlinkCtrl* openInBrowserCtrl;
+		wxButton* activateProPlusBtn;
+		wxButton* activatePersonalBtn;
 		wxMenuBar* menubar;
 		wxMenuItem* menuReveal;
 
 	public:
 
-		MainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Unity Hub Native"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 560,320 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+		MainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Unity Hub Native"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 921,492 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 
 		~MainFrame();
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Class PersonalActivationDlgBase
+///////////////////////////////////////////////////////////////////////////////
+class PersonalActivationDlgBase : public wxDialog
+{
+	private:
+
+	protected:
+		wxStaticText* m_staticText14;
+		wxStaticText* m_staticText15;
+		wxButton* m_button24;
+		wxStaticText* m_staticText16;
+		wxStaticText* m_staticText17;
+		wxHyperlinkCtrl* m_hyperlink2;
+		wxStaticText* m_staticText19;
+		wxStaticText* m_staticText20;
+		wxButton* m_button25;
+
+	public:
+
+		PersonalActivationDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Personal License Manual Activation"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE );
+		~PersonalActivationDlgBase();
 
 };
 
@@ -141,6 +159,30 @@ class AddNewInstallDlgBase : public wxDialog
 
 		AddNewInstallDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Install New Editor Version"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 300,300 ), long style = wxCAPTION|wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER|wxSTAY_ON_TOP );
 		~AddNewInstallDlgBase();
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Class PlusProActivationDlgBase
+///////////////////////////////////////////////////////////////////////////////
+class PlusProActivationDlgBase : public wxDialog
+{
+	private:
+
+	protected:
+		wxStaticText* m_staticText9;
+		wxTextCtrl* plusProActivUsernameCtrl;
+		wxStaticText* m_staticText10;
+		wxTextCtrl* plusProActivPasswordCtrl;
+		wxStaticText* m_staticText11;
+		wxTextCtrl* plusProActivationSerialCtrl;
+		wxStaticText* m_staticText13;
+		wxButton* m_button23;
+
+	public:
+
+		PlusProActivationDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Activate Plus/Pro License"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
+		~PlusProActivationDlgBase();
 
 };
 

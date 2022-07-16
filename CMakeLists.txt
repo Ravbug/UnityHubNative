@@ -31,6 +31,8 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 
 #wxwidgets
 set(wxBUILD_SHARED OFF CACHE INTERNAL "")
+set(wxUSE_STL ON CACHE INTERNAL "")
+set(wxUSE_REGEX OFF CACHE INTERNAL "")
 add_subdirectory("wxWidgets" EXCLUDE_FROM_ALL)
 
 # libcurl
@@ -69,7 +71,6 @@ target_link_libraries("${PROJECT_NAME}"
     PUBLIC 
     wx::base
 	wx::core
-	wx::webview
 	CURL::libcurl
 	fmt
 )
@@ -116,3 +117,12 @@ set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT "
 	 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_STRIP} ${CMAKE_BUILD_TYPE}/${PROJECT_NAME}.app/Contents/MacOS/${PROJECT_NAME})
  endif()
 endif ()
+
+macro(enable_unity targets)
+	foreach(target ${targets})
+		set_target_properties("${target}" PROPERTIES UNITY_BUILD ON)
+	endforeach()
+endmacro()
+
+set(all_unity "wxcore;wxbase;fmt")
+enable_unity("${all_unity}")

@@ -7,6 +7,7 @@
 //
 
 #include "interface_derived.hpp"
+#include "activation.hpp"
 #include <fstream>
 #include <wx/dirdlg.h>
 #include <wx/aboutdlg.h>
@@ -50,17 +51,11 @@ EVT_BUTTON(wxID_JUMP_TO,MainFrameDerived::OnRevealProject)
 EVT_BUTTON(wxID_BACKWARD,MainFrameDerived::OnOpenHub)
 EVT_BUTTON(wxID_RELOAD,MainFrameDerived::OnReloadEditors)
 EVT_BUTTON(OPEN_WITH, MainFrameDerived::OnOpenWith)
+EVT_BUTTON(ACTIV_PROPLUS, MainFrameDerived::OnActivateProPlus)
+EVT_BUTTON(ACTIV_PERSONAL, MainFrameDerived::OnActivatePersonal)
 EVT_LIST_ITEM_ACTIVATED(wxID_HARDDISK, MainFrameDerived::OnOpenProject)
 EVT_LISTBOX_DCLICK(wxID_FLOPPY,MainFrameDerived::OnRevealEditor)
 EVT_LISTBOX_DCLICK(wxID_HOME,MainFrameDerived::OnRevealInstallLocation)
-
-EVT_NOTEBOOK_PAGE_CHANGED(NOTEBOOK, MainFrameDerived::OnPageChanging)
-EVT_BUTTON(Nav_Back, MainFrameDerived::OnNavigateBack)
-EVT_BUTTON(Nav_Forward, MainFrameDerived::OnNavigateForwards)
-EVT_BUTTON(Nav_Home, MainFrameDerived::OnNavigateHome)
-EVT_WEBVIEW_NAVIGATED(WEBVIEW,MainFrameDerived::OnNavigationComplete)
-EVT_WEBVIEW_NEWWINDOW(WEBVIEW, MainFrameDerived::OnNavigationNewWindow)
-EVT_TIMER(TIMER, MainFrameDerived::OnTimerExpire)
 
 wxEND_EVENT_TABLE()
 
@@ -93,9 +88,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	launchHubBtn->Hide();
 	#endif
 	
-	//if no projects to load, the interface will be blank	
-
-	timeout = new wxTimer(this, TIMER);
+	//if no projects to load, the interface will be blank
 
 	//show current version in titlebar
 	this->SetLabel("Unity Hub Native " + AppVersion);
@@ -213,29 +206,7 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
  @discussion If the Learn tab is switched to, the app will load the web view if it is not loaded, or reset the unload timer. If the learn tab is switched away from, then the app will set a timer to unload the web view and save resources. The app saves in memory the currenlty loaded page so that it can be re-loaded when the view gets re-initialized
  */
 void MainFrameDerived::OnPageChanging(wxBookCtrlEvent& event){
-	int selection = event.GetSelection();
-	if (selection == LEARN_TAB){
-		if (!learnView){
-			//show the web view if its not currently allocated
-			learnView = wxWebView::New(learn_pane,WEBVIEW,lastURL);
-
-			webSizer->Add(learnView,1,wxEXPAND,wxALL);
-			//force layout so that the view appears
-			learnSizer->Layout();
-		}
-		else{
-			//reset timeout
-			if (learnView){
-				timeout->StartOnce(TIMER_LENGTH);
-			}
-		}
-	}
-	else{
-		//set a timer to deallocate the view
-		if (learnView){
-			timeout->StartOnce(TIMER_LENGTH);
-		}
-	}
+	// currently unused ...
 }
 /**
  Loads an editor search path into the app, updating the UI and the vector

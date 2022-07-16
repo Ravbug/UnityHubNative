@@ -115,6 +115,12 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	reloadInstalls = new wxButton( installs_pane, wxID_RELOAD, wxT("Reload"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer5->Add( reloadInstalls, 0, wxALL|wxEXPAND, 5 );
 
+	activateProPlusBtn = new wxButton( installs_pane, ACTIV_PROPLUS, wxT("Activate (Plus/Pro)"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer5->Add( activateProPlusBtn, 0, wxALL|wxEXPAND, 5 );
+
+	activatePersonalBtn = new wxButton( installs_pane, ACTIV_PERSONAL, wxT("Activate (Personal)"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer5->Add( activatePersonalBtn, 0, wxALL|wxEXPAND, 5 );
+
 
 	MainSizer->Add( bSizer5, wxGBPosition( 1, 1 ), wxGBSpan( 1, 1 ), wxEXPAND, 5 );
 
@@ -127,55 +133,6 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	installs_pane->Layout();
 	MainSizer->Fit( installs_pane );
 	notebook->AddPage( installs_pane, wxT("Editor Versions"), false );
-	learn_pane = new wxPanel( notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	learnSizer = new wxGridBagSizer( 0, 0 );
-	learnSizer->SetFlexibleDirection( wxBOTH );
-	learnSizer->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
-
-	backBtn = new wxButton( learn_pane, Nav_Back, wxT("<"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
-	learnSizer->Add( backBtn, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALL, 5 );
-
-	titleLabel = new wxStaticText( learn_pane, wxID_ANY, wxT("Loading Page"), wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT|wxST_ELLIPSIZE_END|wxST_NO_AUTORESIZE );
-	titleLabel->Wrap( -1 );
-	learnSizer->Add( titleLabel, wxGBPosition( 0, 3 ), wxGBSpan( 1, 2 ), wxALL|wxEXPAND, 5 );
-
-	forwardBtn = new wxButton( learn_pane, Nav_Forward, wxT(">"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
-	learnSizer->Add( forwardBtn, wxGBPosition( 0, 1 ), wxGBSpan( 1, 1 ), wxALL, 5 );
-
-	homeBtn = new wxButton( learn_pane, Nav_Home, wxT("Home"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
-	learnSizer->Add( homeBtn, wxGBPosition( 0, 2 ), wxGBSpan( 1, 1 ), wxALL, 5 );
-
-	webSizer = new wxBoxSizer( wxVERTICAL );
-
-
-	learnSizer->Add( webSizer, wxGBPosition( 1, 0 ), wxGBSpan( 1, 4 ), wxEXPAND, 5 );
-
-	wxBoxSizer* warningSizer;
-	warningSizer = new wxBoxSizer( wxHORIZONTAL );
-
-	wxStaticText* m_staticText9;
-	m_staticText9 = new wxStaticText( learn_pane, wxID_ANY, wxT("Do not use to fill forms or sign into accounts"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText9->Wrap( -1 );
-	m_staticText9->SetFont( wxFont( 10, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
-
-	warningSizer->Add( m_staticText9, 0, wxALL, 5 );
-
-	openInBrowserCtrl = new wxHyperlinkCtrl( learn_pane, wxID_ANY, wxT("Open current page in default browser"), wxEmptyString, wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE );
-	openInBrowserCtrl->SetFont( wxFont( 10, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
-
-	warningSizer->Add( openInBrowserCtrl, 0, wxALL, 5 );
-
-
-	learnSizer->Add( warningSizer, wxGBPosition( 2, 0 ), wxGBSpan( 1, 4 ), wxEXPAND, 5 );
-
-
-	learnSizer->AddGrowableCol( 2 );
-	learnSizer->AddGrowableRow( 1 );
-
-	learn_pane->SetSizer( learnSizer );
-	learn_pane->Layout();
-	learnSizer->Fit( learn_pane );
-	notebook->AddPage( learn_pane, wxT("Learn"), false );
 
 	main_sizer->Add( notebook, 1, wxEXPAND | wxALL, 5 );
 
@@ -243,6 +200,60 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 }
 
 MainFrame::~MainFrame()
+{
+}
+
+PersonalActivationDlgBase::PersonalActivationDlgBase( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
+{
+	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+
+	wxFlexGridSizer* fgSizer2;
+	fgSizer2 = new wxFlexGridSizer( 0, 3, 0, 0 );
+	fgSizer2->SetFlexibleDirection( wxBOTH );
+	fgSizer2->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+
+	m_staticText14 = new wxStaticText( this, wxID_ANY, wxT("1."), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
+	m_staticText14->Wrap( -1 );
+	fgSizer2->Add( m_staticText14, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_staticText15 = new wxStaticText( this, wxID_ANY, wxT("Create and save license request"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText15->Wrap( -1 );
+	fgSizer2->Add( m_staticText15, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_button24 = new wxButton( this, wxID_ANY, wxT("Create"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer2->Add( m_button24, 0, wxALL|wxEXPAND|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_staticText16 = new wxStaticText( this, wxID_ANY, wxT("2."), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
+	m_staticText16->Wrap( -1 );
+	fgSizer2->Add( m_staticText16, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_staticText17 = new wxStaticText( this, wxID_ANY, wxT("Upload License File"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText17->Wrap( -1 );
+	fgSizer2->Add( m_staticText17, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_hyperlink2 = new wxHyperlinkCtrl( this, wxID_ANY, wxT("license.unity3d.com"), wxT("https://license.unity3d.com/manual "), wxDefaultPosition, wxDefaultSize, wxHL_ALIGN_CENTRE|wxHL_DEFAULT_STYLE );
+	fgSizer2->Add( m_hyperlink2, 0, wxALL|wxALIGN_RIGHT|wxEXPAND, 5 );
+
+	m_staticText19 = new wxStaticText( this, wxID_ANY, wxT("3."), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText19->Wrap( -1 );
+	fgSizer2->Add( m_staticText19, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_staticText20 = new wxStaticText( this, wxID_ANY, wxT("Activate Downloaded License File"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText20->Wrap( -1 );
+	fgSizer2->Add( m_staticText20, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_button25 = new wxButton( this, wxID_ANY, wxT("Choose and Activate"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer2->Add( m_button25, 0, wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
+
+
+	this->SetSizer( fgSizer2 );
+	this->Layout();
+	fgSizer2->Fit( this );
+
+	this->Centre( wxBOTH );
+}
+
+PersonalActivationDlgBase::~PersonalActivationDlgBase()
 {
 }
 
@@ -414,5 +425,55 @@ AddNewInstallDlgBase::AddNewInstallDlgBase( wxWindow* parent, wxWindowID id, con
 }
 
 AddNewInstallDlgBase::~AddNewInstallDlgBase()
+{
+}
+
+PlusProActivationDlgBase::PlusProActivationDlgBase( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
+{
+	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+
+	wxFlexGridSizer* fgSizer1;
+	fgSizer1 = new wxFlexGridSizer( 0, 2, 0, 0 );
+	fgSizer1->AddGrowableCol( 1 );
+	fgSizer1->SetFlexibleDirection( wxBOTH );
+	fgSizer1->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+
+	m_staticText9 = new wxStaticText( this, wxID_ANY, wxT("Username"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText9->Wrap( -1 );
+	fgSizer1->Add( m_staticText9, 0, wxALL, 5 );
+
+	plusProActivUsernameCtrl = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer1->Add( plusProActivUsernameCtrl, 0, wxALL|wxEXPAND, 5 );
+
+	m_staticText10 = new wxStaticText( this, wxID_ANY, wxT("Password"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText10->Wrap( -1 );
+	fgSizer1->Add( m_staticText10, 0, wxALL, 5 );
+
+	plusProActivPasswordCtrl = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD );
+	fgSizer1->Add( plusProActivPasswordCtrl, 0, wxALL|wxEXPAND, 5 );
+
+	m_staticText11 = new wxStaticText( this, wxID_ANY, wxT("Serial Number"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText11->Wrap( -1 );
+	fgSizer1->Add( m_staticText11, 0, wxALL, 5 );
+
+	plusProActivationSerialCtrl = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer1->Add( plusProActivationSerialCtrl, 0, wxALL|wxEXPAND, 5 );
+
+	m_staticText13 = new wxStaticText( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText13->Wrap( -1 );
+	fgSizer1->Add( m_staticText13, 0, wxALL, 5 );
+
+	m_button23 = new wxButton( this, wxID_ANY, wxT("Activate"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer1->Add( m_button23, 0, wxALL|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	this->SetSizer( fgSizer1 );
+	this->Layout();
+	fgSizer1->Fit( this );
+
+	this->Centre( wxBOTH );
+}
+
+PlusProActivationDlgBase::~PlusProActivationDlgBase()
 {
 }

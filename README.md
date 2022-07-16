@@ -38,7 +38,6 @@ mkdir build && cd build
 cmake ..
 cmake --build . --config Release --target install
 ```
-Note for linux users: you will need to have the `webkit2gtk3` development package installed for your system. For Fedora, this can be installed with `sudo dnf install webkit2gtk3-devel.x86_64` and for Debian/Ubuntu it can be installed with `sudo apt install webkit2gtk-driver`
 
 ## Issues
 Please report all problems in the [Issues](https://github.com/Ravbug/wxWidgetsTemplate/issues) section of this repository. 

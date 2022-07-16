@@ -20,9 +20,6 @@
 #include "wxlin.xpm"
 #endif
 
-#define TIMER 2001
-
-
 class MainFrameDerived : public MainFrame{
 public:
 	//constructor (takes no args)
@@ -40,50 +37,14 @@ private:
 	void LoadEditorPath(const std::filesystem::path& path);
 	void LoadEditorVersions();
 	void ReloadData();
+	void OnActivateProPlus(wxCommandEvent&);
+	void OnActivatePersonal(wxCommandEvent&);
 	
 	//will store the list of projects
 	std::vector<project> projects;
 	std::vector<std::filesystem::path> installPaths;
 	std::vector<editor> editors;
-	wxWebView* learnView = NULL;
-	const std::string homeurl = "https://learn.unity.com";
-	wxString lastURL = wxString(homeurl);
-	wxTimer* timeout;
 	
-	//webview events
-	/** Backwards button hit */
-	void OnNavigateBack(wxCommandEvent& event){
-		if (learnView && learnView->CanGoBack()){
-			learnView->GoBack();
-		}
-	}
-	/** Forwards button hit */
-	void OnNavigateForwards(wxCommandEvent& event){
-		if (learnView && learnView->CanGoForward()){
-			learnView->GoForward();
-		}
-	}
-	/** Home button hit */
-	void OnNavigateHome(wxCommandEvent& event){
-		if (learnView){learnView->LoadURL(homeurl);}
-	}
-	/** When the web view has finished loading the requested page */
-	void OnNavigationComplete(wxWebViewEvent& event){
-		lastURL = learnView->GetCurrentURL();
-		titleLabel->SetLabel(lastURL);
-		openInBrowserCtrl->SetURL(lastURL);
-		backBtn->Enable(learnView->CanGoBack());
-		forwardBtn->Enable(learnView->CanGoForward());
-	}
-	/** On new window requests, open them in the default browser*/
-	void OnNavigationNewWindow(wxWebViewEvent& event){
-		wxLaunchDefaultBrowser(event.GetURL());
-	}
-	/** When the timer expires, deallocate the web view*/
-	void OnTimerExpire(wxTimerEvent& event){
-		delete learnView;
-		learnView = NULL;
-	}
 	//window events
 	void OnAbout(wxCommandEvent& event);
 	void OnAddProject(wxCommandEvent& event);
