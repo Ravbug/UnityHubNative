@@ -1,7 +1,6 @@
 # Unity Hub Native
 
-UnityHubNative is a lightweight C++ / wxWidgets alternative to the unnecessarily heavy official Unity Hub, built using my [wxWidgets Template](https://github.com/ravbug/wxwidgetstemplate) repository. This means that, instead of using heavy web components like the official Electron hub, it uses native GUI components on all platforms.
-
+UnityHubNative is a lightweight C++ / wxWidgets alternative to the unnecessarily heavy official Unity Hub, built using [wxWidgets](https://wxwidgets.org/). This means that, instead of using heavy web components like the official Electron hub, it uses native GUI components on all platforms.
 
 It launches many times faster, uses far less memory and CPU, and is a fraction of the total size of the offical Unity Hub.
 
@@ -19,7 +18,7 @@ It launches many times faster, uses far less memory and CPU, and is a fraction o
 UnityHubNative does not have every feature that the official hub has, namely managing licenses. In addition, depending on your license, you may not be able to uninstall the official Unity Hub. UnityHubNative serves as a shortcut to get into your projects faster. 
 
 ## Installation
-This application is self-contained on Windows and macOS.
+This application is self-contained.
 1. Open the [Releases](https://github.com/Ravbug/UnityHubNative/releases) section, and download the version for your platform.
 2. Place the executable anywhere. (Recommended `/Applications` on Mac, `C:\Program Files` on Windows, and `/usr/bin` on Linux)
 3. Double click to run
@@ -35,7 +34,7 @@ This application stores its own files in an application data directory. If the a
 Use CMake:
 ```
 mkdir build && cd build
-cmake ..
+cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build . --config Release --target install
 ```
 

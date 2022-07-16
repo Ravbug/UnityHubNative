@@ -60,7 +60,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	projects_pane->SetSizer( projectManSizer );
 	projects_pane->Layout();
 	projectManSizer->Fit( projects_pane );
-	notebook->AddPage( projects_pane, wxT("Projects"), true );
+	notebook->AddPage( projects_pane, wxT("Projects"), false );
 	wxPanel* installs_pane;
 	installs_pane = new wxPanel( notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxGridBagSizer* MainSizer;
@@ -132,7 +132,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	installs_pane->SetSizer( MainSizer );
 	installs_pane->Layout();
 	MainSizer->Fit( installs_pane );
-	notebook->AddPage( installs_pane, wxT("Editor Versions"), false );
+	notebook->AddPage( installs_pane, wxT("Editor Versions"), true );
 
 	main_sizer->Add( notebook, 1, wxEXPAND | wxALL, 5 );
 
@@ -220,7 +220,7 @@ PersonalActivationDlgBase::PersonalActivationDlgBase( wxWindow* parent, wxWindow
 	m_staticText15->Wrap( -1 );
 	fgSizer2->Add( m_staticText15, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_button24 = new wxButton( this, wxID_ANY, wxT("Create"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_button24 = new wxButton( this, PAD_CREATE, wxT("Create"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer2->Add( m_button24, 0, wxALL|wxEXPAND|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_staticText16 = new wxStaticText( this, wxID_ANY, wxT("2."), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
@@ -242,7 +242,7 @@ PersonalActivationDlgBase::PersonalActivationDlgBase( wxWindow* parent, wxWindow
 	m_staticText20->Wrap( -1 );
 	fgSizer2->Add( m_staticText20, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_button25 = new wxButton( this, wxID_ANY, wxT("Choose and Activate"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_button25 = new wxButton( this, PAD_ACTIVATE, wxT("Choose and Activate"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer2->Add( m_button25, 0, wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
 
 
@@ -463,7 +463,7 @@ PlusProActivationDlgBase::PlusProActivationDlgBase( wxWindow* parent, wxWindowID
 	m_staticText13->Wrap( -1 );
 	fgSizer1->Add( m_staticText13, 0, wxALL, 5 );
 
-	m_button23 = new wxButton( this, wxID_ANY, wxT("Activate"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_button23 = new wxButton( this, PPA_ACTIVATE, wxT("Activate"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer1->Add( m_button23, 0, wxALL|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL, 5 );
 
 

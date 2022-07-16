@@ -531,7 +531,7 @@ void MainFrameDerived::OnOpenHub(wxCommandEvent &event){
 void MainFrameDerived::OnUninstall(wxCommandEvent &){
     auto selected = installsList->GetSelection();
 	if (selected != -1) {
-		auto editor = editors[selected];
+		const auto& editor = editors[selected];
 
 #ifdef __APPLE__
 		// delete the folder

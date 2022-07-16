@@ -33,6 +33,9 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 set(wxBUILD_SHARED OFF CACHE INTERNAL "")
 set(wxUSE_STL ON CACHE INTERNAL "")
 set(wxUSE_REGEX OFF CACHE INTERNAL "")
+set(wxUSE_LIBJPEG OFF CACHE INTERNAL "")
+set(wxUSE_LIBTIFF OFF CACHE INTERNAL "")
+set(wxUSE_ZLIB builtin CACHE INTERNAL "")
 add_subdirectory("wxWidgets" EXCLUDE_FROM_ALL)
 
 # libcurl
@@ -69,7 +72,6 @@ add_subdirectory("fmt" EXCLUDE_FROM_ALL)
 
 target_link_libraries("${PROJECT_NAME}"
     PUBLIC 
-    wx::base
 	wx::core
 	CURL::libcurl
 	fmt
@@ -124,5 +126,5 @@ macro(enable_unity targets)
 	endforeach()
 endmacro()
 
-set(all_unity "wxcore;wxbase;fmt")
+set(all_unity "wxcore;wxbase;fmt;wxpng;")
 enable_unity("${all_unity}")

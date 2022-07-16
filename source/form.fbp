@@ -45,7 +45,7 @@
             <property name="minimum_size">560,320</property>
             <property name="name">MainFrame</property>
             <property name="pos"></property>
-            <property name="size">921,492</property>
+            <property name="size">921,553</property>
             <property name="style">wxDEFAULT_FRAME_STYLE</property>
             <property name="subclass">; ; forward_declare</property>
             <property name="title">Unity Hub Native</property>
@@ -119,7 +119,7 @@
                         <object class="notebookpage" expanded="0">
                             <property name="bitmap"></property>
                             <property name="label">Projects</property>
-                            <property name="select">1</property>
+                            <property name="select">0</property>
                             <object class="wxPanel" expanded="0">
                                 <property name="BottomDockable">1</property>
                                 <property name="LeftDockable">1</property>
@@ -627,7 +627,7 @@
                         <object class="notebookpage" expanded="1">
                             <property name="bitmap"></property>
                             <property name="label">Editor Versions</property>
-                            <property name="select">0</property>
+                            <property name="select">1</property>
                             <object class="wxPanel" expanded="1">
                                 <property name="BottomDockable">1</property>
                                 <property name="LeftDockable">1</property>
@@ -1857,7 +1857,7 @@
                         <property name="font"></property>
                         <property name="gripper">0</property>
                         <property name="hidden">0</property>
-                        <property name="id">wxID_ANY</property>
+                        <property name="id">PAD_CREATE</property>
                         <property name="label">Create</property>
                         <property name="margins"></property>
                         <property name="markup">0</property>
@@ -2236,7 +2236,7 @@
                         <property name="font"></property>
                         <property name="gripper">0</property>
                         <property name="hidden">0</property>
-                        <property name="id">wxID_ANY</property>
+                        <property name="id">PAD_ACTIVATE</property>
                         <property name="label">Choose and Activate</property>
                         <property name="margins"></property>
                         <property name="markup">0</property>
@@ -4143,7 +4143,7 @@
                         <property name="font"></property>
                         <property name="gripper">0</property>
                         <property name="hidden">0</property>
-                        <property name="id">wxID_ANY</property>
+                        <property name="id">PPA_ACTIVATE</property>
                         <property name="label">Activate</property>
                         <property name="margins"></property>
                         <property name="markup">0</property>

@@ -16,12 +16,6 @@ static const std::string editorPathsFile = "editorPaths.txt";
 static const std::string templatePrefix = "com.unity.template";
 static const std::string AppVersion = "v1.5";
 
-//structure for representing an editor and for locating it
-struct editor{
-	std::string name;
-	std::filesystem::path path;
-};
-
 #if defined __APPLE__
 	#include <pwd.h>
 	//the location to store application data
@@ -200,3 +194,12 @@ inline void fitWindowMinSize(wxWindow* window) {
 	wxSize size = window->GetSize();
 	window->SetSizeHints(size);
 }
+
+//structure for representing an editor and for locating it
+struct editor {
+	std::string name;
+	std::filesystem::path path;
+	decltype(path) executablePath() const{
+		return path / name / executable;
+	}
+};

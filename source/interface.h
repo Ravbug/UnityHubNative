@@ -45,8 +45,11 @@
 #define ACTIV_PROPLUS 1006
 #define ACTIV_PERSONAL 1007
 #define wxID_TOP 1008
-#define VERSIONS_LIST 1009
-#define INSTALLVIAHUB 1010
+#define PAD_CREATE 1009
+#define PAD_ACTIVATE 1010
+#define VERSIONS_LIST 1011
+#define INSTALLVIAHUB 1012
+#define PPA_ACTIVATE 1013
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class MainFrame
@@ -69,7 +72,7 @@ class MainFrame : public wxFrame
 
 	public:
 
-		MainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Unity Hub Native"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 921,492 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+		MainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Unity Hub Native"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 921,553 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 
 		~MainFrame();
 
