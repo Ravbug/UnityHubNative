@@ -2,6 +2,7 @@
 #include "activation.hpp"
 #include "fmt/format.h"
 #include <wx/process.h>
+#include <wx/filedlg.h>
 
 wxBEGIN_EVENT_TABLE(PersonalActivationDlg, wxDialog)
 EVT_BUTTON(PAD_CREATE, PersonalActivationDlg::OnCreateHit)
@@ -46,11 +47,6 @@ void PersonalActivationDlg::OnCreateHit(wxCommandEvent& evt)
 
 void PersonalActivationDlg::OnActivateHit(wxCommandEvent&)
 {
-
-}
-
-void PlusProActivationDlg::OnActivateHit(wxCommandEvent&)
-{
 	wxFileDialog openFileDialog(this, _("Open License file"), "", "", "ULF files (*.ulf)|*.ulf", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 	if (openFileDialog.ShowModal() == wxID_CANCEL) {}
 	else {
@@ -58,4 +54,9 @@ void PlusProActivationDlg::OnActivateHit(wxCommandEvent&)
 		auto cmd = fmt::format("{} -batchmode -manualLicenseFile \"{}\" -logfile",exe,openFileDialog.GetPath().ToStdString());
 		wxExecute(cmd, wxEXEC_SYNC);
 	}
+}
+
+void PlusProActivationDlg::OnActivateHit(wxCommandEvent&)
+{
+	
 }
