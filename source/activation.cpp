@@ -18,13 +18,18 @@ void MainFrameDerived::OnActivatePersonal(wxCommandEvent& event) {
 	if (selected != -1) {
 		const auto& editor = editors[selected];
 		auto dlg = new PersonalActivationDlg(this, editor);
-		dlg->Show();
+		dlg->ShowModal();
 	}
 }
 
 void MainFrameDerived::OnActivateProPlus(wxCommandEvent& event) {
-	auto dlg = new PlusProActivationDlg(this, editor{});
-	dlg->Show();
+	auto selected = installsList->GetSelection();
+	if (selected != -1) {
+		const auto& editor = editors[selected];
+		auto dlg = new PlusProActivationDlg(this, editor);
+		dlg->ShowModal();
+	}
+	
 }
 
 void PersonalActivationDlg::OnCreateHit(wxCommandEvent& evt) 
@@ -58,5 +63,11 @@ void PersonalActivationDlg::OnActivateHit(wxCommandEvent&)
 
 void PlusProActivationDlg::OnActivateHit(wxCommandEvent&)
 {
-	
+	std::string username = plusProActivUsernameCtrl->GetValue();
+	std::string password = plusProActivPasswordCtrl->GetValue();
+	std::string serial = plusProActivationSerialCtrl->GetValue();
+
+	auto cmd = fmt::format("{} -batchmode -username {} -password {} -serial {} –quit",the_editor.executablePath().string(),username,password,serial);
+
+	wxExecute(cmd, wxEXEC_SYNC);
 }
