@@ -28,8 +28,8 @@ public:
 	static std::string GetPathFromDialog(const std::string& message);
 	
 private:
-	void AddProject(const project& p);
-	project LoadProject(const std::string& path);
+	void AddProject(const project& p, const std::string& filter);
+	project LoadProject(const std::filesystem::path& path);
 	void SaveProjects();
 	void OpenProject(const long& index);
 	void OpenProject(const project& p, const editor& e);
@@ -39,6 +39,8 @@ private:
 	void ReloadData();
 	void OnActivateProPlus(wxCommandEvent&);
 	void OnActivatePersonal(wxCommandEvent&);
+    void Filter(wxCommandEvent&);
+    void LoadProjects(const std::string& filter);
 	
 	//will store the list of projects
 	std::vector<project> projects;

@@ -67,7 +67,7 @@ void PlusProActivationDlg::OnActivateHit(wxCommandEvent&)
 	std::string password = plusProActivPasswordCtrl->GetValue();
 	std::string serial = plusProActivationSerialCtrl->GetValue();
 
-	auto cmd = fmt::format("{} -batchmode -username {} -password {} -serial {} –quit",the_editor.executablePath().string(),username,password,serial);
+	auto cmd = fmt::format("{} -batchmode -username {} -password {} -serial {} -quit",the_editor.executablePath().string(),username,password,serial);
 
 	wxExecute(cmd, wxEXEC_SYNC);
 }

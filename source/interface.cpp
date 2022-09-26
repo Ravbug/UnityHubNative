@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version 3.10.1-0-g8feb16b3)
+// C++ code generated with wxFormBuilder (version 3.10.1-0-g8feb16b)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO *NOT* EDIT THIS FILE!
@@ -25,7 +25,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	projectManSizer->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
 	projectsList = new wxListCtrl( projects_pane, wxID_HARDDISK, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_SINGLE_SEL );
-	projectManSizer->Add( projectsList, wxGBPosition( 1, 0 ), wxGBSpan( 1, 3 ), wxALL|wxEXPAND|wxFIXED_MINSIZE, 5 );
+	projectManSizer->Add( projectsList, wxGBPosition( 2, 0 ), wxGBSpan( 1, 3 ), wxALL|wxEXPAND|wxFIXED_MINSIZE, 5 );
 
 	wxBoxSizer* pManSizer;
 	pManSizer = new wxBoxSizer( wxHORIZONTAL );
@@ -51,11 +51,18 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	pManSizer->Add( openWithBtn, 0, wxALL, 5 );
 
 
-	projectManSizer->Add( pManSizer, wxGBPosition( 0, 0 ), wxGBSpan( 1, 2 ), wxEXPAND, 5 );
+	projectManSizer->Add( pManSizer, wxGBPosition( 1, 0 ), wxGBSpan( 1, 2 ), wxEXPAND, 5 );
+
+	projSearchCtrl = new wxSearchCtrl( projects_pane, FILTER_PROJ_ID, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
+	#ifndef __WXMAC__
+	projSearchCtrl->ShowSearchButton( true );
+	#endif
+	projSearchCtrl->ShowCancelButton( true );
+	projectManSizer->Add( projSearchCtrl, wxGBPosition( 0, 0 ), wxGBSpan( 1, 2 ), wxALL|wxEXPAND|wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	projectManSizer->AddGrowableCol( 1 );
-	projectManSizer->AddGrowableRow( 1 );
+	projectManSizer->AddGrowableRow( 2 );
 
 	projects_pane->SetSizer( projectManSizer );
 	projects_pane->Layout();

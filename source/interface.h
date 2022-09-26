@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version 3.10.1-0-g8feb16b3)
+// C++ code generated with wxFormBuilder (version 3.10.1-0-g8feb16b)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO *NOT* EDIT THIS FILE!
@@ -20,6 +20,7 @@
 #include <wx/image.h>
 #include <wx/icon.h>
 #include <wx/sizer.h>
+#include <wx/srchctrl.h>
 #include <wx/gbsizer.h>
 #include <wx/panel.h>
 #include <wx/stattext.h>
@@ -31,7 +32,6 @@
 #include <wx/dialog.h>
 #include <wx/textctrl.h>
 #include <wx/choice.h>
-#include <wx/srchctrl.h>
 #include <wx/dataview.h>
 
 ///////////////////////////////////////////////////////////////////////////
@@ -40,16 +40,17 @@
 #define wxID_HARDDISK 1001
 #define wxID_JUMP_TO 1002
 #define OPEN_WITH 1003
-#define wxID_FLOPPY 1004
-#define wxID_RELOAD 1005
-#define ACTIV_PROPLUS 1006
-#define ACTIV_PERSONAL 1007
-#define wxID_TOP 1008
-#define PAD_CREATE 1009
-#define PAD_ACTIVATE 1010
-#define VERSIONS_LIST 1011
-#define INSTALLVIAHUB 1012
-#define PPA_ACTIVATE 1013
+#define FILTER_PROJ_ID 1004
+#define wxID_FLOPPY 1005
+#define wxID_RELOAD 1006
+#define ACTIV_PROPLUS 1007
+#define ACTIV_PERSONAL 1008
+#define wxID_TOP 1009
+#define PAD_CREATE 1010
+#define PAD_ACTIVATE 1011
+#define VERSIONS_LIST 1012
+#define INSTALLVIAHUB 1013
+#define PPA_ACTIVATE 1014
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class MainFrame
@@ -61,6 +62,7 @@ class MainFrame : public wxFrame
 	protected:
 		wxNotebook* notebook;
 		wxListCtrl* projectsList;
+		wxSearchCtrl* projSearchCtrl;
 		wxListBox* installsList;
 		wxListBox* installsPathsList;
 		wxButton* launchHubBtn;

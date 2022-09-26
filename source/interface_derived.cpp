@@ -56,6 +56,8 @@ EVT_BUTTON(ACTIV_PERSONAL, MainFrameDerived::OnActivatePersonal)
 EVT_LIST_ITEM_ACTIVATED(wxID_HARDDISK, MainFrameDerived::OnOpenProject)
 EVT_LISTBOX_DCLICK(wxID_FLOPPY,MainFrameDerived::OnRevealEditor)
 EVT_LISTBOX_DCLICK(wxID_HOME,MainFrameDerived::OnRevealInstallLocation)
+EVT_SEARCHCTRL_SEARCH_BTN(FILTER_PROJ_ID,MainFrameDerived::Filter)
+EVT_SEARCHCTRL_CANCEL_BTN(FILTER_PROJ_ID, MainFrameDerived::Filter)
 
 wxEND_EVENT_TABLE()
 
@@ -107,42 +109,10 @@ void MainFrameDerived::ReloadData(){
 	installPaths.clear();
 	editors.clear();
 	
-	//check that projects file exists in folder
-	path p = datapath / projectsFile;
-	if (filesystem::exists(p)){
-		ifstream in;
-		in.open(p);
-		string line;
-		//if one cannot be loaded
-		vector<string> erroredProjects;
-		//load each project (each path is on its own line)
-		while (getline(in, line)){
-			try{
-				project pr = LoadProject(line);
-				AddProject(pr);
-			}
-			catch(runtime_error& e){
-				//remove project
-				erroredProjects.push_back(line);
-			}
-		}
-		//alert user if projects could not be loaded
-		if (erroredProjects.size() > 0){
-			//build string
-			string str;
-			for (string s : erroredProjects){
-				str += s + "\n";
-			}
-			//message box
-			wxMessageBox("The following projects could not be loaded. They have been removed from the list.\n\n"+str, "Loading error", wxOK | wxICON_WARNING );
-			
-			//save to remove the broken projects
-			SaveProjects();
-		}
-	}
+    LoadProjects("");
 	
 	//check that the installs path file exists in the folder
-	p = datapath / editorPathsFile;
+	auto p = datapath / editorPathsFile;
 	if (filesystem::exists(p)){
 		//load the editors
 		ifstream in; in.open(p); string line;
@@ -156,6 +126,51 @@ void MainFrameDerived::ReloadData(){
             LoadEditorPath(path);
         }
 	}
+}
+
+// empty string for filter means no filter
+void MainFrameDerived::LoadProjects(const std::string &filter){
+    //check that projects file exists in folder
+    path p = datapath / projectsFile;
+    if (filesystem::exists(p)){
+        ifstream in;
+        in.open(p);
+        string line;
+        //if one cannot be loaded
+        vector<string> erroredProjects;
+        //load each project (each path is on its own line)
+        while (getline(in, line)){
+            try{
+                project pr = LoadProject(line);
+                AddProject(pr,filter);
+            }
+            catch(runtime_error& e){
+                //remove project
+                erroredProjects.push_back(line);
+            }
+        }
+        //alert user if projects could not be loaded
+        if (erroredProjects.size() > 0){
+            //build string
+            string str;
+            for (string s : erroredProjects){
+                str += s + "\n";
+            }
+            //message box
+            wxMessageBox("The following projects could not be loaded. They have been removed from the list.\n\n"+str, "Loading error", wxOK | wxICON_WARNING );
+            
+            //save to remove the broken projects
+            SaveProjects();
+        }
+    }
+}
+
+void MainFrameDerived::Filter(wxCommandEvent &){
+    projectsList->DeleteAllItems();
+    projects.clear();
+    auto filter = projSearchCtrl->GetValue();
+    transform(filter.begin(), filter.end(), filter.begin(), ::tolower);
+    LoadProjects(filter);
 }
 
 //definitions for the events
@@ -192,7 +207,7 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
 		//add it to the projects list
 		try{
 			project p = LoadProject(path);
-			AddProject(p);
+			AddProject(p,"");
 		}
 		catch(runtime_error& e){
 			wxMessageBox(e.what(),"Unable to add project",wxOK | wxICON_ERROR);
@@ -249,7 +264,7 @@ void MainFrameDerived::OnCreateProject(wxCommandEvent& event){
 	if (editors.size() > 0){
 		DialogCallback d = [&](string str, project p){
 			//add the project
-			this->AddProject(p);
+			this->AddProject(p,"");
 			
 			//launch the process
 			launch_process(str);
@@ -364,20 +379,19 @@ string MainFrameDerived::GetPathFromDialog(const string& message)
  @throws Exception if a file cannot be located in the Unity project, or if the file contains unexpected data.
  @note Surround this function in a try/catch, because it throws if it cannot succeed.
  */
-project MainFrameDerived::LoadProject(const string &path){
-	std::filesystem::path p_as_fs(path);
+project MainFrameDerived::LoadProject(const std::filesystem::path &p_as_fs){
 	//error if the file does not exist
 	if (!filesystem::exists(p_as_fs)){
-		throw runtime_error(path + " does not exist.");
+		throw runtime_error(p_as_fs.string() + " does not exist.");
 	}
 	
 	//the name is the final part of the path
-	string name = path.substr(path.find_last_of(dirsep)+1);
+	string name = p_as_fs.filename();
 	
 	//Load ProjectSettings/ProjectVersion.txt to get the editor version, if it exists
-	std::filesystem::path projSettings = std::filesystem::path(path) / "ProjectSettings" / "ProjectVersion.txt";
+	std::filesystem::path projSettings = p_as_fs / "ProjectSettings" / "ProjectVersion.txt";
 	if (!filesystem::exists(projSettings)){
-		throw runtime_error("No ProjectVersion.txt found at " + path + "\n\nEnsure the folder you selected is the root folder of a complete Unity project.");
+		throw runtime_error("No ProjectVersion.txt found at " + p_as_fs.string() + "\n\nEnsure the folder you selected is the root folder of a complete Unity project.");
 	}
 	
 	//the first line of ProjectVersion.txt contains the editor verison as plain text
@@ -389,11 +403,11 @@ project MainFrameDerived::LoadProject(const string &path){
 	
 	//get the modification date
 	struct stat fileInfo;
-	if (stat(path.c_str(), &fileInfo) != 0) {
-		throw runtime_error("Cannot get modification date. Ensure this program has access to "+path);
+	if (stat(p_as_fs.string().c_str(), &fileInfo) != 0) {
+		throw runtime_error("Cannot get modification date. Ensure this program has access to "+p_as_fs.string());
 	}
 	
-	project p = {name,version,ctime(&fileInfo.st_mtime),path,};
+	project p = {name,version,ctime(&fileInfo.st_mtime),p_as_fs,};
 	return p;
 }
 
@@ -425,7 +439,7 @@ void MainFrameDerived::SaveEditorVersions(){
  @param p the project struct to add
  @note Ensure all the fields on the struct are initialized
  */
-void MainFrameDerived::AddProject(const project& p){
+void MainFrameDerived::AddProject(const project& p, const std::string& filter){
 	//add to the vector backing the UI
 	projects.insert(projects.begin(),p);
 	
@@ -433,30 +447,35 @@ void MainFrameDerived::AddProject(const project& p){
 	SaveProjects();
 	
 	//add (painfully) to the UI
-	wxListItem i;
-	i.SetId(0);
-	i.SetText(p.name);
+    auto name = p.name;
+    transform(name.begin(), name.end(), name.begin(), ::tolower);
+    if (name.find(filter) != std::string::npos){
+        wxListItem i;
+        i.SetId(0);
+        i.SetText(p.name);
+        
+        projectsList->InsertItem(i);
+        
+        i.SetText(p.version);
+        i.SetColumn(1);
+        projectsList->SetItem(i);
+        
+        i.SetText(p.modifiedDate);
+        
+        i.SetColumn(2);
+        projectsList->SetItem(i);
+        
+        i.SetColumn(3);
+        i.SetText(p.path.string());
+        projectsList->SetItem(i);
+        
+        //resize columns
+        int cols = projectsList->GetColumnCount();
+        for (int i = 0; i < cols; i++){
+            projectsList->SetColumnWidth(i, wxLIST_AUTOSIZE);
+        }
+    }
 	
-	projectsList->InsertItem(i);
-	
-	i.SetText(p.version);
-	i.SetColumn(1);
-	projectsList->SetItem(i);
-	
-	i.SetText(p.modifiedDate);
-	
-	i.SetColumn(2);
-	projectsList->SetItem(i);
-	
-	i.SetColumn(3);
-	i.SetText(p.path.string());
-	projectsList->SetItem(i);
-	
-	//resize columns
-	int cols = projectsList->GetColumnCount();
-	for (int i = 0; i < cols; i++){
-		projectsList->SetColumnWidth(i, wxLIST_AUTOSIZE);
-	}
 }
 
 /**
