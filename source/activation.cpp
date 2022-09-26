@@ -57,7 +57,10 @@ void PersonalActivationDlg::OnActivateHit(wxCommandEvent&)
 	else {
 		auto exe = the_editor.executablePath().string();
 		auto cmd = fmt::format("{} -batchmode -manualLicenseFile \"{}\" -logfile",exe,openFileDialog.GetPath().ToStdString());
+		//TODO: error check this?
 		wxExecute(cmd, wxEXEC_SYNC);
+		wxMessageBox("Activation complete", "Activation", wxOK | wxICON_INFORMATION);
+		this->Close();
 	}
 }
 
@@ -70,4 +73,8 @@ void PlusProActivationDlg::OnActivateHit(wxCommandEvent&)
 	auto cmd = fmt::format("{} -batchmode -username {} -password {} -serial {} -quit",the_editor.executablePath().string(),username,password,serial);
 
 	wxExecute(cmd, wxEXEC_SYNC);
+
+	//TODO: error check this?
+	wxMessageBox("Activation complete", "Activation", wxOK | wxICON_INFORMATION);
+	this->Close();
 }

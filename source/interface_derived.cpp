@@ -96,6 +96,8 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	this->SetLabel("Unity Hub Native " + AppVersion);
 	
 	this->Fit();
+
+	projSearchCtrl->SetFocus();
 }
 
 /**
@@ -386,7 +388,7 @@ project MainFrameDerived::LoadProject(const std::filesystem::path &p_as_fs){
 	}
 	
 	//the name is the final part of the path
-	string name = p_as_fs.filename();
+	string name = p_as_fs.filename().string();
 	
 	//Load ProjectSettings/ProjectVersion.txt to get the editor version, if it exists
 	std::filesystem::path projSettings = p_as_fs / "ProjectSettings" / "ProjectVersion.txt";
