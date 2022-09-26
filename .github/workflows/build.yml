@@ -10,11 +10,18 @@ jobs:
         with:
           submodules: true
       - name: Install Dependencies
-        run: sudo apt-get update && sudo apt-get install cmake clang ninja-build libx11-dev libgtk-3-dev libssl-dev webkit2gtk-driver libsecret-1-dev libc6-dev libsoup2.4-dev libxtst-dev libwebkit2gtk-4.0-dev -y --no-install-recommends
+        run: |
+            sudo apt-get update
+            sudo apt-get install cmake clang ninja-build libx11-dev libgtk-3-dev libssl-dev webkit2gtk-driver libsecret-1-dev libc6-dev libsoup2.4-dev libxtst-dev libwebkit2gtk-4.0-dev -y --no-install-recommends
       - name: Configure
-        run: mkdir -p build; cd build; cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
+        run: |
+            mkdir -p build
+            cd build
+            cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
       - name: Build
-        run: cd build; cmake --build . --config release --target install
+        run: |
+            cd build
+            cmake --build . --config release --target install
       - name: Compress App
         run: cd build/Release && zip -r -9 UnityHubNative-Linux.zip *.AppImage
       - name: Archive and upload artifacts
@@ -32,14 +39,23 @@ jobs:
         with:
           submodules: true
       - name: Configure
-        run: mkdir -p build; cd build; cmake -G "Xcode" -DCMAKE_BUILD_TYPE=Release ..
+        run: |
+            mkdir -p build
+            cd build
+            cmake -G "Xcode" -DCMAKE_BUILD_TYPE=Release ..
       - name: Build 
-        run: cd build; cmake --build . --config Release --target install
-      - name: Archive and upload artifacts
+        run: |
+            cd build
+            cmake --build . --config Release --target install
+      - name: Archive
+        run: |
+            cd build/release
+            zip -r -9 UnityHubNative.zip UnityHubNative.app/
+      - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: UnityHubNative-macOS
-          path: build/release/UnityHubNative.app
+          path: build/release/UnityHubNative.zip
                 
   build-windows:
     name: Build App for Windows
@@ -50,9 +66,14 @@ jobs:
         with:
           submodules: true
       - name: Configure
-        run: mkdir build; cd build; cmake -DCMAKE_BUILD_TYPE=Release .. ;
+        run: |
+            mkdir build
+            cd build
+            cmake -DCMAKE_BUILD_TYPE=Release .. ;
       - name: Build
-        run: cd build; cmake --build . --config release --target install
+        run: |
+            cd build
+            cmake --build . --config release --target install
       - name: Archive and upload artifacts
         uses: actions/upload-artifact@v2
         with:
