@@ -3,6 +3,10 @@
 #include "fmt/format.h"
 #include <wx/process.h>
 #include <wx/filedlg.h>
+#include <fstream>
+#include "output_dialog.hpp"
+
+using namespace std;
 
 wxBEGIN_EVENT_TABLE(PersonalActivationDlg, wxDialog)
 EVT_BUTTON(PAD_CREATE, PersonalActivationDlg::OnCreateHit)
@@ -50,6 +54,30 @@ void PersonalActivationDlg::OnCreateHit(wxCommandEvent& evt)
 	}
 }
 
+void DisplayLicenseOutput(){
+    std::filesystem::path logfile
+#ifdef __APPLE__
+    = std::filesystem::path(wxGetHomeDir()) / "Library/Logs/Unity/Editor.log";
+#elif defined _WIN32
+    = std::filesystem::path(wxGetHomeDir()) / "AppData"/"Local"/"Unity"/"Editor"/"Editor.log";
+#else
+    = std::filesystem::path(wxGetHomeDir()) / ".config/unity3d/Editor.log";
+#endif
+    ifstream in(logfile);
+    std::string output;
+    std::string line;
+    while (getline(in, line)){
+        auto cpy = line;
+        transform(cpy.begin(), cpy.end(), cpy.begin(), ::tolower);
+        // filter for license-related lines
+        if (cpy.find("license") != decltype(line)::npos){
+            output += line;
+        }
+    }
+    auto dialog = new OutputDialog(nullptr, output, "Activation status");
+    dialog->ShowModal();
+}
+
 void PersonalActivationDlg::OnActivateHit(wxCommandEvent&)
 {
 	wxFileDialog openFileDialog(this, _("Open License file"), "", "", "ULF files (*.ulf)|*.ulf", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
@@ -57,24 +85,23 @@ void PersonalActivationDlg::OnActivateHit(wxCommandEvent&)
 	else {
 		auto exe = the_editor.executablePath().string();
 		auto cmd = fmt::format("{} -batchmode -manualLicenseFile \"{}\" -logfile",exe,openFileDialog.GetPath().ToStdString());
-		//TODO: error check this?
+        activateBtn->SetLabelText("Activating...");
 		wxExecute(cmd, wxEXEC_SYNC);
-		wxMessageBox("Activation complete", "Activation", wxOK | wxICON_INFORMATION);
+        DisplayLicenseOutput();
 		this->Close();
 	}
 }
 
 void PlusProActivationDlg::OnActivateHit(wxCommandEvent&)
 {
-	std::string username = plusProActivUsernameCtrl->GetValue();
-	std::string password = plusProActivPasswordCtrl->GetValue();
-	std::string serial = plusProActivationSerialCtrl->GetValue();
+	const std::string& username = plusProActivUsernameCtrl->GetValue();
+    const std::string& password = plusProActivPasswordCtrl->GetValue();
+    const std::string& serial = plusProActivationSerialCtrl->GetValue();
 
 	auto cmd = fmt::format("{} -batchmode -username {} -password {} -serial {} -quit",the_editor.executablePath().string(),username,password,serial);
 
+    activateBtn->SetLabelText("Activating...");
 	wxExecute(cmd, wxEXEC_SYNC);
-
-	//TODO: error check this?
-	wxMessageBox("Activation complete", "Activation", wxOK | wxICON_INFORMATION);
+    DisplayLicenseOutput();
 	this->Close();
 }

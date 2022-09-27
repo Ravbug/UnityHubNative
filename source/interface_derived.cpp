@@ -155,7 +155,7 @@ void MainFrameDerived::LoadProjects(const std::string &filter){
         if (erroredProjects.size() > 0){
             //build string
             string str;
-            for (string s : erroredProjects){
+            for (const auto& s : erroredProjects){
                 str += s + "\n";
             }
             //message box

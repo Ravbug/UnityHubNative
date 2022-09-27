@@ -249,8 +249,8 @@ PersonalActivationDlgBase::PersonalActivationDlgBase( wxWindow* parent, wxWindow
 	m_staticText20->Wrap( -1 );
 	fgSizer2->Add( m_staticText20, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_button25 = new wxButton( this, PAD_ACTIVATE, wxT("Choose and Activate"), wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizer2->Add( m_button25, 0, wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
+	activateBtn = new wxButton( this, PAD_ACTIVATE, wxT("Choose and Activate"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer2->Add( activateBtn, 0, wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
 
 
 	this->SetSizer( fgSizer2 );
@@ -463,15 +463,15 @@ PlusProActivationDlgBase::PlusProActivationDlgBase( wxWindow* parent, wxWindowID
 	m_staticText11->Wrap( -1 );
 	fgSizer1->Add( m_staticText11, 0, wxALL, 5 );
 
-	plusProActivationSerialCtrl = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	plusProActivationSerialCtrl = new wxTextCtrl( this, wxID_ANY, wxT("SB-"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer1->Add( plusProActivationSerialCtrl, 0, wxALL|wxEXPAND, 5 );
 
 	m_staticText13 = new wxStaticText( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText13->Wrap( -1 );
 	fgSizer1->Add( m_staticText13, 0, wxALL, 5 );
 
-	m_button23 = new wxButton( this, PPA_ACTIVATE, wxT("Activate"), wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizer1->Add( m_button23, 0, wxALL|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL, 5 );
+	activateBtn = new wxButton( this, PPA_ACTIVATE, wxT("Activate"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer1->Add( activateBtn, 0, wxALL|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	this->SetSizer( fgSizer1 );
@@ -482,5 +482,26 @@ PlusProActivationDlgBase::PlusProActivationDlgBase( wxWindow* parent, wxWindowID
 }
 
 PlusProActivationDlgBase::~PlusProActivationDlgBase()
+{
+}
+
+OutputDialogBase::OutputDialogBase( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
+{
+	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer( wxVERTICAL );
+
+	contentText = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE|wxTE_READONLY|wxTE_WORDWRAP );
+	bSizer9->Add( contentText, 1, wxALL|wxEXPAND, 5 );
+
+
+	this->SetSizer( bSizer9 );
+	this->Layout();
+
+	this->Centre( wxBOTH );
+}
+
+OutputDialogBase::~OutputDialogBase()
 {
 }

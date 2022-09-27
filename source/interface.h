@@ -96,7 +96,7 @@ class PersonalActivationDlgBase : public wxDialog
 		wxHyperlinkCtrl* m_hyperlink2;
 		wxStaticText* m_staticText19;
 		wxStaticText* m_staticText20;
-		wxButton* m_button25;
+		wxButton* activateBtn;
 
 	public:
 
@@ -186,13 +186,31 @@ class PlusProActivationDlgBase : public wxDialog
 		wxStaticText* m_staticText11;
 		wxTextCtrl* plusProActivationSerialCtrl;
 		wxStaticText* m_staticText13;
-		wxButton* m_button23;
+		wxButton* activateBtn;
 
 	public:
 
 		PlusProActivationDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Activate Plus/Pro License"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 
 		~PlusProActivationDlgBase();
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Class OutputDialogBase
+///////////////////////////////////////////////////////////////////////////////
+class OutputDialogBase : public wxDialog
+{
+	private:
+
+	protected:
+		wxTextCtrl* contentText;
+
+	public:
+
+		OutputDialogBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Output"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 388,256 ), long style = wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX|wxRESIZE_BORDER|wxSTAY_ON_TOP );
+
+		~OutputDialogBase();
 
 };
 
