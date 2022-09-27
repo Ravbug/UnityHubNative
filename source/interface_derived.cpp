@@ -195,26 +195,37 @@ void MainFrameDerived::OnAbout(wxCommandEvent& event)
 }
 
 void MainFrameDerived::OnAddProject(wxCommandEvent& event){
-	string msg ="Select the folder containing the Unity Project";
-	string path = GetPathFromDialog(msg);
-	if (path != ""){
-		//check that the project does not already exist
-		for(project& p : projects){
-			if (p.path == path){
-				wxMessageBox( "This project has already been added.", "Cannot add project", wxOK | wxICON_WARNING );
-				return;
-			}
-		}
-		
-		//add it to the projects list
-		try{
-			project p = LoadProject(path);
-			AddProject(p,"");
-		}
-		catch(runtime_error& e){
-			wxMessageBox(e.what(),"Unable to add project",wxOK | wxICON_ERROR);
-		}
-	}
+	auto msg ="Select the folder(s) containing the Unity Project";
+    
+    wxDirDialog dlg(NULL, msg, "", wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST | wxDD_MULTIPLE);
+    if (dlg.ShowModal() == wxID_CANCEL) {
+        return string("");
+    }
+    //get the path and return the standard string version
+    wxArrayString paths;
+    dlg.GetPaths(paths);
+    
+    for (const auto& p : paths){
+        auto path = p.ToStdString();
+        if (path != ""){
+            //check that the project does not already exist
+            for(project& p : projects){
+                if (p.path == path){
+                    wxMessageBox( "This project has already been added.", "Cannot add project", wxOK | wxICON_WARNING );
+                    return;
+                }
+            }
+            
+            //add it to the projects list
+            try{
+                project p = LoadProject(path);
+                AddProject(p,"");
+            }
+            catch(runtime_error& e){
+                wxMessageBox(e.what(),"Unable to add project",wxOK | wxICON_ERROR);
+            }
+        }
+    }
 }
 
 /**

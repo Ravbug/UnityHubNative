@@ -12,7 +12,7 @@ jobs:
       - name: Install Dependencies
         run: |
             sudo apt-get update
-            sudo apt-get install cmake clang ninja-build libx11-dev libgtk-3-dev libssl-dev webkit2gtk-driver libsecret-1-dev libc6-dev libsoup2.4-dev libxtst-dev libwebkit2gtk-4.0-dev -y --no-install-recommends
+            sudo apt-get install cmake ninja-build libx11-dev libgtk-3-dev -y --no-install-recommends
       - name: Configure
         run: |
             mkdir -p build
@@ -22,8 +22,6 @@ jobs:
         run: |
             cd build
             cmake --build . --config release --target install
-      - name: Compress App
-        run: cd build/Release && zip -r -9 UnityHubNative-Linux.zip *.AppImage
       - name: Archive and upload artifacts
         uses: actions/upload-artifact@v2
         with:

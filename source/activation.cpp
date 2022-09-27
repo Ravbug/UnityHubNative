@@ -70,7 +70,7 @@ void DisplayLicenseOutput(){
         auto cpy = line;
         transform(cpy.begin(), cpy.end(), cpy.begin(), ::tolower);
         // filter for license-related lines
-        if (cpy.find("license") != decltype(line)::npos){
+        if (cpy.find("licens") != decltype(line)::npos){
             output += line;
         }
     }
