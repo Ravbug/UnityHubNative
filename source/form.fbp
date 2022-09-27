@@ -47,7 +47,7 @@
             <property name="minimum_size">560,320</property>
             <property name="name">MainFrame</property>
             <property name="pos"></property>
-            <property name="size">921,553</property>
+            <property name="size">800,400</property>
             <property name="style">wxDEFAULT_FRAME_STYLE</property>
             <property name="subclass">; ; forward_declare</property>
             <property name="title">Unity Hub Native</property>
@@ -237,7 +237,7 @@
                                             <property name="resize">Resizable</property>
                                             <property name="show">1</property>
                                             <property name="size"></property>
-                                            <property name="style">wxLC_REPORT|wxLC_SINGLE_SEL</property>
+                                            <property name="style">wxLC_ALIGN_LEFT|wxLC_REPORT|wxLC_SINGLE_SEL</property>
                                             <property name="subclass">; ; forward_declare</property>
                                             <property name="toolbar_pane">0</property>
                                             <property name="tooltip"></property>

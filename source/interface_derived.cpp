@@ -66,8 +66,8 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	//set up project list columns
 	{
 		string cols[] = {"Project Name","Unity Version","Last Modified","Path"};
-		for (string& str : cols){
-			projectsList->AppendColumn(str,wxLIST_FORMAT_CENTER);
+		for (const auto& str : cols){
+			projectsList->AppendColumn(str,wxLIST_FORMAT_LEFT);
 		}
 	}
 	//make the data folder if it does not already exist (with readwrite for all groups)
@@ -95,8 +95,6 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	//show current version in titlebar
 	this->SetLabel("Unity Hub Native " + AppVersion);
 	
-	this->Fit();
-
 	projSearchCtrl->SetFocus();
 }
 
@@ -326,7 +324,7 @@ void MainFrameDerived::OpenProject(const long& index){
 	//get the project
 	project p = projects[index];
 	
-	for (auto& path : installPaths) {
+	for (const auto& path : installPaths) {
 		auto editorPath = path / p.version / executable;
 
 		//check that the unity editor exists at that location
