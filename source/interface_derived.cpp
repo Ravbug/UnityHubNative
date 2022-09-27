@@ -199,7 +199,7 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
     
     wxDirDialog dlg(NULL, msg, "", wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST | wxDD_MULTIPLE);
     if (dlg.ShowModal() == wxID_CANCEL) {
-        return string("");
+        return;
     }
     //get the path and return the standard string version
     wxArrayString paths;

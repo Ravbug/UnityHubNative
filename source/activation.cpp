@@ -59,7 +59,7 @@ void DisplayLicenseOutput(){
 #ifdef __APPLE__
     = std::filesystem::path(wxGetHomeDir()) / "Library/Logs/Unity/Editor.log";
 #elif defined _WIN32
-    = std::filesystem::path(wxGetHomeDir()) / "AppData"/"Local"/"Unity"/"Editor"/"Editor.log";
+    = std::filesystem::path(wxGetHomeDir().ToStdString()) / "AppData"/"Local"/"Unity"/"Editor"/"Editor.log";
 #else
     = std::filesystem::path(wxGetHomeDir()) / ".config/unity3d/Editor.log";
 #endif
