@@ -128,5 +128,5 @@ endmacro()
 
 set(all_unity "wxcore;wxbase;fmt;wxpng;")
 if(MSVC)
-enable_unity("${all_unity}")
+#enable_unity("${all_unity}")
 endif()
