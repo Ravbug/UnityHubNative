@@ -31,7 +31,7 @@
 // bother to inline them unless we crank the optimization levels way up.
 // Therefore, we also provide macros to wring maximum speed out of compiler
 // unconditionally (e.g. even in debug builds). Of course, if the performance
-// isn't absolutely crucial for you you shouldn't be using them but the inline
+// isn't absolutely crucial for you shouldn't be using them but the inline
 // functions instead.
 // ----------------------------------------------------------------------------
 
@@ -717,7 +717,11 @@ struct wxPixelDataOut<wxBitmap>
                 {
                     wxByte mask = static_cast<wxByte>(1 << m_bit);
                     wxByte value = static_cast<wxByte>(b << m_bit);
-                    (*m_ptr &= ~mask) |= value;
+                    wxByte& val_m_ptr = *m_ptr;
+
+                    val_m_ptr = static_cast<wxByte>(val_m_ptr & ~mask);
+                    val_m_ptr |= value;
+
                     return *this;
                 }
                 operator bool() const

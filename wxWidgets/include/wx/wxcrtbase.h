@@ -180,7 +180,7 @@ extern unsigned long android_wcstoul(const wchar_t *nptr, wchar_t **endptr, int 
     #define wxCRT_StrtoullW  _wcstoui64
 #else
     /* Both of these functions are implemented in C++11 compilers */
-    #if defined(__cplusplus) && __cplusplus >= 201103L
+    #if wxCHECK_CXX_STD(201103L)
         #ifndef HAVE_STRTOULL
             #define HAVE_STRTOULL
         #endif
@@ -594,7 +594,7 @@ WXDLLIMPEXP_BASE size_t wxCRT_StrftimeW(wchar_t *s, size_t max,
 #define wxCRT_IsxdigitW(c)  iswxdigit(c)
 
 #ifdef __GLIBC__
-    #if defined(__GLIBC__) && (__GLIBC__ == 2) && (__GLIBC_MINOR__ == 0)
+    #if (__GLIBC__ == 2) && (__GLIBC_MINOR__ == 0)
         /* /usr/include/wctype.h incorrectly declares translations */
         /* tables which provokes tons of compile-time warnings -- try */
         /* to correct this */

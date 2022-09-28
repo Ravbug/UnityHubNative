@@ -448,6 +448,14 @@
 // Recommended setting: 1 (but may be safely disabled if you don't use it)
 #define wxUSE_SECRETSTORE   1
 
+// Allow the use of the OS built-in spell checker in wxTextCtrl.
+//
+// Default is 1, the corresponding wxTextCtrl functions simply won't do
+// anything if the functionality is not supported by the current platform.
+//
+// Recommended setting: 1 unless you want to save a tiny bit of code.
+#define wxUSE_SPELLCHECK 1
+
 // Use wxStandardPaths class which allows to retrieve some standard locations
 // in the file system
 //
@@ -498,7 +506,7 @@
 // Recommended setting: 1
 #define wxUSE_TIMER         1
 
-// Use wxStopWatch clas.
+// Use wxStopWatch class.
 //
 // Default is 1
 //
@@ -562,14 +570,10 @@
 
 // Set to 1 to use ipv6 socket classes (requires wxUSE_SOCKETS)
 //
-// Notice that currently setting this option under Windows will result in
-// programs which can only run on recent OS versions (with ws2_32.dll
-// installed) which is why it is disabled by default.
-//
 // Default is 1.
 //
-// Recommended setting: 1 if you need IPv6 support
-#define wxUSE_IPV6          0
+// Recommended setting: 1.
+#define wxUSE_IPV6          1
 
 // Set to 1 to enable virtual file systems (required by wxHTML)
 #define wxUSE_FILESYSTEM    1
@@ -741,10 +745,10 @@
 // XML parsing classes. Note that their API will change in the future, so
 // using wxXmlDocument and wxXmlNode in your app is not recommended.
 //
-// Default is the same as wxUSE_XRC, i.e. 1 by default.
+// Default is 1
 //
 // Recommended setting: 1 (required by XRC)
-#define wxUSE_XML       wxUSE_XRC
+#define wxUSE_XML       1
 
 // Use wxWidget's AUI docking system
 //
@@ -798,6 +802,13 @@
 //
 // Recommended setting: 1 when building for Windows with WebView2 SDK
 #define wxUSE_WEBVIEW_EDGE 0
+
+// Use the Edge (Chromium) wxWebView backend without loader DLL
+//
+// Default is 0, set it to 1 if you don't want to depend on WebView2Loader.dll.
+//
+// Recommended setting: 0
+#define wxUSE_WEBVIEW_EDGE_STATIC 0
 
 // Use the WebKit wxWebView backend
 //
@@ -1054,7 +1065,7 @@
 // Default is 1.
 //
 // Recommended setting: 1 but can be safely set to 0 except for wxUniv where it
-//                      it used by wxComboBox
+//                      is used by wxComboBox
 #define wxUSE_COMBOCTRL 1
 
 // wxOwnerDrawnComboBox is a custom combobox allowing to paint the combobox
@@ -1571,6 +1582,12 @@
 // Set to 1 for TIFF format support (requires libtiff)
 #define wxUSE_LIBTIFF       1
 
+// Set to 1 for SVG rasterizing support using nanosvg
+#define wxUSE_NANOSVG       1
+
+// Set to 1 to use external nanosvg library when wxUSE_NANOSVG is enabled
+#define wxUSE_NANOSVG_EXTERNAL 0
+
 // Set to 1 for TGA format support (loading only)
 #define wxUSE_TGA           1
 
@@ -1700,7 +1717,7 @@
 // Set this to 1 to enable wxDIB class used internally for manipulating
 // wxBitmap data.
 //
-// Default is 1, set it to 0 only if you don't use wxImage neither
+// Default is 1, set it to 0 only if you don't use wxImage either
 //
 // Recommended setting: 1 (without it conversion to/from wxImage won't work)
 #define wxUSE_WXDIB 1
@@ -1772,12 +1789,12 @@
 // Recommended setting: 0, nobody uses .INI files any more
 #define wxUSE_INICONF 0
 
-// Set to 1 if you need to include <winsock2.h> over <winsock.h>
+// Set to 0 if you need to include <winsock.h> rather than <winsock2.h>
 //
-// Default is 0.
+// Default is 1.
 //
-// Recommended setting: 0, set to 1 automatically if wxUSE_IPV6 is 1.
-#define wxUSE_WINSOCK2 0
+// Recommended setting: 1, required to be 1 if wxUSE_IPV6 is 1.
+#define wxUSE_WINSOCK2 1
 
 // ----------------------------------------------------------------------------
 // Generic versions of native controls

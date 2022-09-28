@@ -1107,6 +1107,7 @@ LZWPostEncode(TIFF* tif)
 	if (nextbits > 0) 
 		*op++ = (unsigned char)((nextdata << (8-nextbits))&0xff);
 	tif->tif_rawcc = (tmsize_t)(op - tif->tif_rawdata);
+	(void)outcount;
 	return (1);
 }
 

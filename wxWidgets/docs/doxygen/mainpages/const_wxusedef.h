@@ -158,7 +158,7 @@ library:
 @itemdef{wxUSE_LISTBOX, Use wxListBox class.}
 @itemdef{wxUSE_LISTCTRL, Use wxListCtrl class.}
 @itemdef{wxUSE_LOG, Use wxLog and related classes.}
-@itemdef{wxUSE_LOG_DEBUG, Enabled when wxLog used with __WXDEBUG__ defined.}
+@itemdef{wxUSE_LOG_DEBUG, Enabled when wxLog used with \__WXDEBUG__ defined.}
 @itemdef{wxUSE_LOG_DIALOG, Use wxLogDialog class.}
 @itemdef{wxUSE_LOGGUI, Use wxLogGui class.}
 @itemdef{wxUSE_LOGWINDOW, Use wxLogFrame class.}
@@ -177,6 +177,9 @@ library:
 @itemdef{wxUSE_MINIFRAME, Use wxMiniFrame class.}
 @itemdef{wxUSE_MOUSEWHEEL, Support mouse wheel events.}
 @itemdef{wxUSE_MSGDLG, Use wxMessageDialog class and wxMessageBox function.}
+@itemdef{wxUSE_NANOSVG, Use NanoSVG for rasterizing SVG (this option is new since wxWidgets 3.1.7).}
+@itemdef{wxUSE_NANOSVG_EXTERNAL, Use an external NanoSVG library when wxUSE_NANOSVG is enabled.}
+@itemdef{wxUSE_NANOSVG_EXTERNAL_ENABLE_IMPL, When the external NanoSVG library is header only, define this to enable its implementation.}
 @itemdef{wxUSE_NATIVE_DATAVIEWCTRL, Use native wxDataViewCtrl class (this option is new since wxWidgets 3.1.4).}
 @itemdef{wxUSE_NATIVE_STATUSBAR, Use native wxStatusBar class.}
 @itemdef{wxUSE_NOTEBOOK, Use wxNotebook and related classes.}
@@ -276,7 +279,7 @@ library:
 @itemdef{wxUSE_LIBSDL, Use SDL for wxSound implementation.}
 @itemdef{wxUSE_PLUGINS, See also wxUSE_LIBSDL.}
 @itemdef{wxUSE_UNIX, Enabled on Unix Platform.}
-@itemdef(wxUSE_XTEST, Use XTest extension.}
+@itemdef{wxUSE_XTEST, Use XTest extension.}
 @endDefList
 
 
@@ -327,7 +330,7 @@ library:
 @itemdef{wxUSE_DC_CACHEING, cache temporary wxDC objects.}
 @itemdef{wxUSE_DDE_FOR_IPC, See wx/ipc.h file.}
 @itemdef{wxUSE_DPI_AWARE_MANIFEST, Set the DPI awareness of the application
-(0=none, 1=system, 2=per-monitor. Used by CMake and when wxUSE_RC_MANIFEST is enabled.}
+(0=none, 1=system, 2=per-monitor). Used by CMake and when wxUSE_RC_MANIFEST is enabled.}
 @itemdef{wxUSE_ENH_METAFILE, Use wxEnhMetaFile.}
 @itemdef{wxUSE_HOTKEY, Use wxWindow::RegisterHotKey() and wxWindow::UnregisterHotKey}
 @itemdef{wxUSE_INKEDIT, Use InkEdit library. Related to Tablet PCs.}

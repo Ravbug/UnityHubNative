@@ -56,8 +56,8 @@ EVT_BUTTON(ACTIV_PERSONAL, MainFrameDerived::OnActivatePersonal)
 EVT_LIST_ITEM_ACTIVATED(wxID_HARDDISK, MainFrameDerived::OnOpenProject)
 EVT_LISTBOX_DCLICK(wxID_FLOPPY,MainFrameDerived::OnRevealEditor)
 EVT_LISTBOX_DCLICK(wxID_HOME,MainFrameDerived::OnRevealInstallLocation)
-EVT_SEARCHCTRL_SEARCH_BTN(FILTER_PROJ_ID,MainFrameDerived::Filter)
-EVT_SEARCHCTRL_CANCEL_BTN(FILTER_PROJ_ID, MainFrameDerived::Filter)
+//EVT_SEARCHCTRL_SEARCH_BTN(FILTER_PROJ_ID,MainFrameDerived::Filter)
+//EVT_SEARCHCTRL_CANCEL_BTN(FILTER_PROJ_ID, MainFrameDerived::Filter)
 
 wxEND_EVENT_TABLE()
 
@@ -94,7 +94,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 
 	//show current version in titlebar
 	this->SetLabel("Unity Hub Native " + AppVersion);
-	
+    projSearchCtrl->Bind(wxEVT_KEY_UP, &MainFrameDerived::Filter, this);
 	projSearchCtrl->SetFocus();
 }
 
@@ -165,7 +165,7 @@ void MainFrameDerived::LoadProjects(const std::string &filter){
     }
 }
 
-void MainFrameDerived::Filter(wxCommandEvent &){
+void MainFrameDerived::Filter(wxKeyEvent &){
     projectsList->DeleteAllItems();
     projects.clear();
     auto filter = projSearchCtrl->GetValue();
@@ -455,7 +455,9 @@ void MainFrameDerived::AddProject(const project& p, const std::string& filter){
 	projects.insert(projects.begin(),p);
 	
 	//save to file
-	SaveProjects();
+    if (filter == ""){
+        SaveProjects();
+    }
 	
 	//add (painfully) to the UI
     auto name = p.name;

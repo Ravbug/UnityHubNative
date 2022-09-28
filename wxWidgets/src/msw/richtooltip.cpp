@@ -75,13 +75,13 @@ public:
     virtual void SetBackgroundColour(const wxColour& col,
                                      const wxColour& colEnd) wxOVERRIDE
     {
-        // Setting background colour is not supported neither.
+        // Setting background colour is not supported either.
         m_canUseNative = false;
 
         wxRichToolTipGenericImpl::SetBackgroundColour(col, colEnd);
     }
 
-    virtual void SetCustomIcon(const wxIcon& icon) wxOVERRIDE
+    virtual void SetCustomIcon(const wxBitmapBundle& icon) wxOVERRIDE
     {
         // Custom icons are not supported by EM_SHOWBALLOONTIP.
         m_canUseNative = false;

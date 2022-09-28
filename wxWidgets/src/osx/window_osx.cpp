@@ -182,28 +182,6 @@ wxBEGIN_EVENT_TABLE(wxBlindPlateWindow, wxWindow)
 wxEND_EVENT_TABLE()
 
 // ----------------------------------------------------------------------------
-// debug helpers
-// ----------------------------------------------------------------------------
-
-// Function used to dump a brief description of a window.
-extern
-wxString wxDumpWindow(wxWindowMac* win)
-{
-    if ( !win )
-        return "(no window)";
-
-    wxString s = wxString::Format("%s(%p",
-                                  win->GetClassInfo()->GetClassName(), win);
-
-    wxString label = win->GetLabel();
-    if ( !label.empty() )
-        s += wxString::Format(", \"%s\"", label);
-    s += ")";
-
-    return s;
-}
-
-// ----------------------------------------------------------------------------
  // constructors and such
 // ----------------------------------------------------------------------------
 
@@ -527,7 +505,12 @@ bool wxWindowMac::SetForegroundColour(const wxColour& col )
         return false;
 
     if ( GetPeer() )
-        GetPeer()->SetForegroundColour(col);
+    {
+        // Note that we use GetForegroundColour() and not "col" itself here in
+        // case we're now inheriting our parent foreground rather than passing
+        // the (null) colour argument.
+        GetPeer()->SetForegroundColour(GetForegroundColour());
+    }
 
     return true;
 }
@@ -1264,6 +1247,11 @@ bool wxWindowMac::OSXShowWithEffect(bool show,
 
 void wxWindowMac::DoEnable(bool enable)
 {
+    // We can be called before the window is created in order to create it in
+    // the initially disabled state.
+    if ( !GetPeer() )
+        return;
+
     GetPeer()->Enable( enable ) ;
     MacInvalidateBorders();
 }
@@ -1337,13 +1325,13 @@ void wxWindowMac::DoGetTextExtent(const wxString& str,
     delete ctx;
 
     if ( externalLeading )
-        *externalLeading = (wxCoord)wxRound(e);
+        *externalLeading = (wxCoord)ceil(e);
     if ( descent )
-        *descent = (wxCoord)wxRound(d);
+        *descent = (wxCoord)ceil(d);
     if ( x )
-        *x = (wxCoord)wxRound(w);
+        *x = (wxCoord)ceil(w);
     if ( y )
-        *y = (wxCoord)wxRound(h);
+        *y = (wxCoord)ceil(h);
 }
 
 /*
@@ -1405,6 +1393,8 @@ void wxWindowMac::WarpPointer(int x_pos, int y_pos)
     event.m_leftDown = mState.LeftIsDown();
     event.m_middleDown = mState.MiddleIsDown();
     event.m_rightDown = mState.RightIsDown();
+    event.m_aux1Down = mState.Aux1IsDown();
+    event.m_aux2Down = mState.Aux2IsDown();
     event.m_metaDown = mState.MetaDown();
     event.m_shiftDown = mState.ShiftDown();
     event.SetId(GetId());

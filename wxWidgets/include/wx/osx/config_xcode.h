@@ -52,7 +52,6 @@
 #define HAVE_PTHREAD_CANCEL 1
 #define HAVE_PTHREAD_ATTR_SETSTACKSIZE 1
 #define HAVE_SNPRINTF 1
-#define HAVE_SNPRINTF_DECL 1
 #define HAVE_UNIX98_PRINTF 1
 #define HAVE_STATFS 1
 #define HAVE_STATFS_DECL 1
@@ -62,9 +61,7 @@
 #define HAVE_STRTOULL 1
 #define HAVE_THREAD_PRIORITY_FUNCTIONS 1
 #define HAVE_VSNPRINTF 1
-#define HAVE_VSNPRINTF_DECL 1
 #define HAVE_VSSCANF 1
-#define HAVE_VSSCANF_DECL 1
 #define HAVE_USLEEP 1
 #define HAVE_WCSCASECMP 1
 #define HAVE_WCSDUP 1
@@ -124,12 +121,9 @@
 
 #define PACKAGE_BUGREPORT "wx-dev@googlegroups.com"
 #define PACKAGE_NAME "wxWidgets"
-#define PACKAGE_STRING "wxWidgets 3.1.5"
+#define PACKAGE_STRING "wxWidgets 3.2.1"
 #define PACKAGE_TARNAME "wxwidgets"
-#define PACKAGE_VERSION "3.1.5"
-
-// for regex
-#define WX_NO_REGEX_ADVANCED 1
+#define PACKAGE_VERSION "3.2.1"
 
 // for jpeg
 

@@ -18,6 +18,7 @@
     #include "wx/icon.h"
     #include "wx/math.h"
     #include "wx/image.h"
+    #include "wx/cursor.h"
 #endif // WX_PRECOMP
 
 #include "wx/filefn.h"
@@ -1144,6 +1145,11 @@ wxBitmap::wxBitmap( const char bits[], int width, int height, int WXUNUSED(depth
     }
 }
 
+wxBitmap::wxBitmap(const wxCursor& cursor)
+{
+    wxUnusedVar(cursor);
+}
+
 wxBitmap::~wxBitmap()
 {
 }
@@ -1184,12 +1190,6 @@ void wxBitmap::SetMask( wxMask *mask )
     if (M_BMPDATA->m_mask) delete M_BMPDATA->m_mask;
 
     M_BMPDATA->m_mask = mask;
-}
-
-bool wxBitmap::CopyFromIcon(const wxIcon& icon)
-{
-    *this = icon;
-    return true;
 }
 
 wxBitmap wxBitmap::GetSubBitmap( const wxRect& rect) const

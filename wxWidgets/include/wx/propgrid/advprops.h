@@ -71,8 +71,8 @@ public:
 
     wxColourPropertyValue()
         : wxObject()
+        , m_type(0)
     {
-        m_type = 0;
     }
 
     virtual ~wxColourPropertyValue()
@@ -81,9 +81,9 @@ public:
 
     wxColourPropertyValue( const wxColourPropertyValue& v )
         : wxObject()
+        , m_type(v.m_type)
         , m_colour(v.m_colour)
     {
-        m_type = v.m_type;
     }
 
     void Init( wxUint32 type, const wxColour& colour )
@@ -94,15 +94,15 @@ public:
 
     wxColourPropertyValue( const wxColour& colour )
         : wxObject()
+        , m_type(wxPG_COLOUR_CUSTOM)
         , m_colour(colour)
     {
-        m_type = wxPG_COLOUR_CUSTOM;
     }
 
     wxColourPropertyValue( wxUint32 type )
         : wxObject()
+        , m_type(type)
     {
-        m_type = type;
     }
 
     wxColourPropertyValue( wxUint32 type, const wxColour& colour )
@@ -265,6 +265,7 @@ class WXDLLIMPEXP_PROPGRID wxCursorProperty : public wxEnumProperty
                       int value = 0 );
     virtual ~wxCursorProperty();
 
+    virtual wxString ValueToString(wxVariant& value, int argFlags = 0) const wxOVERRIDE;
     virtual wxSize OnMeasureImage( int item ) const wxOVERRIDE;
     virtual void OnCustomPaint( wxDC& dc,
                                 const wxRect& rect, wxPGPaintData& paintdata ) wxOVERRIDE;
@@ -296,12 +297,14 @@ public:
                                 const wxRect& rect, wxPGPaintData& paintdata ) wxOVERRIDE;
 
 protected:
-    wxBitmap*   m_pBitmap; // final thumbnail area
-    wxImage*    m_pImage; // intermediate thumbnail area
+    void SetImage(const wxImage& img);
+    wxImage    m_image; // original thumbnail area
 
 private:
-    // Initialize m_pImage using the current file name.
+    // Initialize m_image using the current file name.
     void LoadImageFromFile();
+
+    wxBitmap   m_bitmap; // final thumbnail area
 };
 
 #endif
@@ -346,12 +349,17 @@ public:
 protected:
     virtual bool DisplayEditorDialog(wxPropertyGrid* pg, wxVariant& value) wxOVERRIDE;
 
-    void GenerateValueAsString( wxVariant& value, wxString* target ) const;
+#if WXWIN_COMPATIBILITY_3_0
+    wxDEPRECATED_MSG("use function GenerateValueAsString(val) returning wxString")
+    void GenerateValueAsString( wxVariant& value, wxString* target ) const
+    {
+        *target = GenerateValueAsString(value);
+    }
+#endif // WXWIN_COMPATIBILITY_3_0
+    wxString GenerateValueAsString(const wxVariant& value) const;
 
     // Returns translation of values into string indices.
     wxArrayInt GetValueAsIndices() const;
-
-    wxArrayString       m_valueAsStrings;  // Value as array of strings
 
     // Cache displayed text since generating it is relatively complicated.
     wxString            m_display;

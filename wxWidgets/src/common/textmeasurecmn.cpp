@@ -159,7 +159,7 @@ void wxTextMeasureBase::GetMultiLineTextExtent(const wxString& text,
                 if ( !heightLineDefault )
                     heightLineDefault = heightLine;
 
-                // and if we hadn't had any previous one neither, compute it now
+                // and if we hadn't had any previous one either, compute it now
                 if ( !heightLineDefault )
                     heightLineDefault = GetEmptyLineHeight();
 
@@ -263,12 +263,13 @@ bool wxTextMeasureBase::DoGetPartialTextExtents(const wxString& text,
     int totalWidth = 0;
 
     // reset the cache if font or horizontal scale have changed
+    const wxFont& font = GetFont();
     if ( !s_fontWidthCache.m_widths ||
          !wxIsSameDouble(s_fontWidthCache.m_scaleX, scaleX) ||
-         (s_fontWidthCache.m_font != *m_font) )
+         (s_fontWidthCache.m_font != font) )
     {
         s_fontWidthCache.Reset();
-        s_fontWidthCache.m_font = *m_font;
+        s_fontWidthCache.m_font = font;
         s_fontWidthCache.m_scaleX = scaleX;
     }
 
@@ -289,7 +290,8 @@ bool wxTextMeasureBase::DoGetPartialTextExtents(const wxString& text,
         }
         else
         {
-            DoGetTextExtent(c, &w, NULL);
+            int dummyHeight;
+            DoGetTextExtent(c, &w, &dummyHeight);
             if (c_int < FWC_SIZE)
                 s_fontWidthCache.m_widths[c_int] = w;
         }

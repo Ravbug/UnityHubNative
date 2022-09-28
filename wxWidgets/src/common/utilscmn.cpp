@@ -1202,7 +1202,7 @@ wxString wxStripMenuCodes(const wxString& in, int flags)
             // can't be the last character of the string
             if ( ++it == in.end() )
             {
-                wxLogDebug(wxT("Invalid menu string '%s'"), in.c_str());
+                wxLogDebug(wxT("Invalid menu string '%s'"), in);
                 break;
             }
             else
@@ -1405,6 +1405,12 @@ wxVersionInfo wxGetLibraryVersionInfo()
 #endif
                wxDEBUG_LEVEL,
 #if !wxUSE_REPRODUCIBLE_BUILD
+               // As explained in the comment near these macros definitions,
+               // ccache has special logic for detecting the use of __DATE__
+               // and __TIME__ macros, which doesn't apply to our own versions
+               // of them, hence this comment is needed just to mention the
+               // standard macro names and to ensure that ccache does _not_
+               // cache the results of compiling this file.
                __TDATE__,
                __TTIME__,
 #endif
@@ -1429,7 +1435,7 @@ wxVersionInfo wxGetLibraryVersionInfo()
                          wxMINOR_VERSION,
                          wxRELEASE_NUMBER,
                          msg,
-                         wxS("Copyright (c) 1995-2021 wxWidgets team"));
+                         wxS("Copyright (c) 1992-2022 wxWidgets team"));
 }
 
 void wxInfoMessageBox(wxWindow* parent)
@@ -1511,16 +1517,32 @@ wxWindowDisabler::wxWindowDisabler(bool disable)
 {
     m_disabled = disable;
     if ( disable )
+    {
         DoDisable();
+
+#if defined(__WXOSX__) && wxOSX_USE_COCOA
+        AfterDisable(NULL);
+#endif
+    }
 }
 
-wxWindowDisabler::wxWindowDisabler(wxWindow *winToSkip)
+wxWindowDisabler::wxWindowDisabler(wxWindow *winToSkip, wxWindow *winToSkip2)
 {
     m_disabled = true;
-    DoDisable(winToSkip);
+
+    if ( winToSkip )
+        m_windowsToSkip.push_back(winToSkip);
+    if ( winToSkip2 )
+        m_windowsToSkip.push_back(winToSkip2);
+
+    DoDisable();
+
+#if defined(__WXOSX__) && wxOSX_USE_COCOA
+    AfterDisable(winToSkip);
+#endif
 }
 
-void wxWindowDisabler::DoDisable(wxWindow *winToSkip)
+void wxWindowDisabler::DoDisable()
 {
     // remember the top level windows which were already disabled, so that we
     // don't reenable them later
@@ -1528,7 +1550,7 @@ void wxWindowDisabler::DoDisable(wxWindow *winToSkip)
     for ( node = wxTopLevelWindows.GetFirst(); node; node = node->GetNext() )
     {
         wxWindow *winTop = node->GetData();
-        if ( winTop == winToSkip )
+        if ( wxVectorContains(m_windowsToSkip, winTop) )
             continue;
 
         // we don't need to disable the hidden or already disabled windows
@@ -1538,13 +1560,9 @@ void wxWindowDisabler::DoDisable(wxWindow *winToSkip)
         }
         else
         {
-            m_winDisabled.push_back(winTop);
+            m_windowsToSkip.push_back(winTop);
         }
     }
-
-#if defined(__WXOSX__) && wxOSX_USE_COCOA
-    AfterDisable(winToSkip);
-#endif
 }
 
 wxWindowDisabler::~wxWindowDisabler()
@@ -1560,11 +1578,11 @@ wxWindowDisabler::~wxWindowDisabler()
     for ( node = wxTopLevelWindows.GetFirst(); node; node = node->GetNext() )
     {
         wxWindow *winTop = node->GetData();
-        if ( !wxVectorContains(m_winDisabled, winTop) )
+        if ( !wxVectorContains(m_windowsToSkip, winTop) )
         {
             winTop->Enable();
         }
-        //else: had been already disabled, don't reenable
+        //else: we didn't disable this window, so don't reenable it either
     }
 }
 

@@ -203,33 +203,16 @@ protected:
                                   const wxSize& size) wxOVERRIDE;
 };
 
-static wxBitmap CreateFromStdIcon(const char *iconName,
-                                  const wxArtClient& client)
-{
-    wxIcon icon(iconName);
-    wxBitmap bmp;
-    bmp.CopyFromIcon(icon);
-
-    // The standard native message box icons are in message box size (32x32).
-    // If they are requested in any size other than the default or message
-    // box size, they must be rescaled first.
-    if ( client != wxART_MESSAGE_BOX && client != wxART_OTHER )
-    {
-        const wxSize size = wxArtProvider::GetNativeSizeHint(client);
-        if ( size != wxDefaultSize )
-        {
-            wxArtProvider::RescaleBitmap(bmp, size);
-        }
-    }
-
-    return bmp;
-}
-
 wxBitmap wxWindowsArtProvider::CreateBitmap(const wxArtID& id,
                                             const wxArtClient& client,
                                             const wxSize& size)
 {
     wxBitmap bitmap;
+
+    const wxSize
+        sizeNeeded = size.IsFullySpecified()
+                        ? size
+                        : wxArtProvider::GetNativeSizeHint(client);
 
 #ifdef wxHAS_SHGetStockIconInfo
     // first try to use SHGetStockIconInfo, available only on Vista and higher
@@ -243,22 +226,10 @@ wxBitmap wxWindowsArtProvider::CreateBitmap(const wxArtID& id,
         HRESULT res = MSW_SHGetStockIconInfo(stockIconId, uFlags, &sii);
         if ( res == S_OK )
         {
-            const wxSize
-                sizeNeeded = size.IsFullySpecified()
-                                ? size
-                                : wxArtProvider::GetNativeSizeHint(client);
-
             bitmap = MSWGetBitmapFromIconLocation(sii.szPath, sii.iIcon,
                                                   sizeNeeded);
             if ( bitmap.IsOk() )
-            {
-                if ( bitmap.GetSize() != sizeNeeded )
-                {
-                    wxArtProvider::RescaleBitmap(bitmap, sizeNeeded);
-                }
-
                 return bitmap;
-            }
         }
     }
 #endif // wxHAS_SHGetStockIconInfo
@@ -276,7 +247,7 @@ wxBitmap wxWindowsArtProvider::CreateBitmap(const wxArtID& id,
 
     if ( volKind != wxFS_VOL_OTHER )
     {
-        bitmap = GetDriveBitmapForVolumeType(volKind, size);
+        bitmap = GetDriveBitmapForVolumeType(volKind, sizeNeeded);
         if ( bitmap.IsOk() )
             return bitmap;
     }
@@ -284,9 +255,9 @@ wxBitmap wxWindowsArtProvider::CreateBitmap(const wxArtID& id,
 
     // notice that the directory used here doesn't need to exist
     if ( id == wxART_FOLDER )
-        bitmap = MSWGetBitmapForPath("C:\\wxdummydir\\", size );
+        bitmap = MSWGetBitmapForPath("C:\\wxdummydir\\", sizeNeeded);
     else if ( id == wxART_FOLDER_OPEN )
-        bitmap = MSWGetBitmapForPath("C:\\wxdummydir\\", size, SHGFI_OPENICON );
+        bitmap = MSWGetBitmapForPath("C:\\wxdummydir\\", sizeNeeded, SHGFI_OPENICON );
 
     if ( !bitmap.IsOk() )
     {
@@ -303,7 +274,7 @@ wxBitmap wxWindowsArtProvider::CreateBitmap(const wxArtID& id,
             name = "wxICON_QUESTION";
 
         if ( name )
-            return CreateFromStdIcon(name, client);
+            return wxIcon(name);
     }
 
     // for anything else, fall back to generic provider:
@@ -324,35 +295,34 @@ wxBitmap wxWindowsArtProvider::CreateBitmap(const wxArtID& id,
 // ----------------------------------------------------------------------------
 
 /*static*/
-wxSize wxArtProvider::GetNativeSizeHint(const wxArtClient& client)
+wxSize wxArtProvider::GetNativeDIPSizeHint(const wxArtClient& client)
 {
-    const wxWindow* win = wxApp::GetMainTopWindow();
     if ( client == wxART_TOOLBAR )
     {
-        return wxWindow::FromDIP(wxSize(24, 24), win);
+        return wxSize(24, 24);
     }
     else if ( client == wxART_MENU )
     {
-        return wxWindow::FromDIP(wxSize(16, 16), win);
+        return wxSize(16, 16);
     }
     else if ( client == wxART_FRAME_ICON )
     {
-        return wxSize(wxGetSystemMetrics(SM_CXSMICON, win),
-                      wxGetSystemMetrics(SM_CYSMICON, win));
+        return wxSize(::GetSystemMetrics(SM_CXSMICON),
+                      ::GetSystemMetrics(SM_CYSMICON));
     }
     else if ( client == wxART_CMN_DIALOG ||
               client == wxART_MESSAGE_BOX )
     {
-        return wxSize(wxGetSystemMetrics(SM_CXICON, win),
-                      wxGetSystemMetrics(SM_CYICON, win));
+        return wxSize(::GetSystemMetrics(SM_CXICON),
+                      ::GetSystemMetrics(SM_CYICON));
     }
     else if (client == wxART_BUTTON)
     {
-        return wxWindow::FromDIP(wxSize(16, 16), win);
+        return wxSize(16, 16);
     }
     else if (client == wxART_LIST)
     {
-        return wxWindow::FromDIP(wxSize(16, 16), win);
+        return wxSize(16, 16);
     }
 
     return wxDefaultSize;

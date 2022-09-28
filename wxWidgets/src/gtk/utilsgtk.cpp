@@ -26,6 +26,7 @@
 #include "wx/evtloop.h"
 
 #include "wx/gtk/private/wrapgtk.h"
+#include "wx/gtk/private/backend.h"
 #ifdef GDK_WINDOWING_WAYLAND
 #include <gdk/gdkwayland.h>
 #endif
@@ -82,14 +83,13 @@ void *wxGetDisplay()
 wxDisplayInfo wxGetDisplayInfo()
 {
     wxDisplayInfo info = { NULL, wxDisplayNone };
+#if defined(GDK_WINDOWING_WAYLAND) || defined(GDK_WINDOWING_X11)
     GdkDisplay *display = gdk_window_get_display(wxGetTopLevelGDK());
-#if defined(__WXGTK3__) && (defined(GDK_WINDOWING_WAYLAND) || defined(GDK_WINDOWING_X11))
-    const char* displayTypeName = g_type_name(G_TYPE_FROM_INSTANCE(display));
 #endif
 
 #ifdef GDK_WINDOWING_X11
 #ifdef __WXGTK3__
-    if (strcmp("GdkX11Display", displayTypeName) == 0)
+    if (wxGTKImpl::IsX11(display))
 #endif
     {
         info.dpy = GDK_DISPLAY_XDISPLAY(display);
@@ -98,7 +98,7 @@ wxDisplayInfo wxGetDisplayInfo()
     }
 #endif
 #ifdef GDK_WINDOWING_WAYLAND
-    if (strcmp("GdkWaylandDisplay", displayTypeName) == 0)
+    if (wxGTKImpl::IsWayland(display))
     {
         info.dpy = gdk_wayland_display_get_wl_display(display);
         info.type = wxDisplayWayland;
@@ -314,7 +314,7 @@ protected:
             return;
         }
 
-        // Also ignore frames which don't have neither the function name nor
+        // Also ignore frames which have neither the function name nor
         // the file name, showing them in the dialog wouldn't provide any
         // useful information.
         if ( name.empty() && frame.GetFileName().empty() )
@@ -434,11 +434,11 @@ wxString wxGUIAppTraits::GetDesktopEnvironment() const
 #if wxUSE_DETECT_SM
     if ( de.empty() )
     {
-        static const wxString s_SM = GetSM();
+        static const wxString s_SM = GetSM().Upper();
 
-        if (s_SM == wxT("GnomeSM"))
+        if (s_SM.Contains(wxT("GNOME")))
             de = wxT("GNOME");
-        else if (s_SM == wxT("KDE"))
+        else if (s_SM.Contains(wxT("KDE")))
             de = wxT("KDE");
     }
 #endif // wxUSE_DETECT_SM

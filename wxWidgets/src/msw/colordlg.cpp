@@ -180,6 +180,8 @@ int wxColourDialog::ShowModal()
     wxWindow* const parent = GetParentForModalDialog(m_parent, GetWindowStyle());
     WXHWND hWndParent = parent ? GetHwndOf(parent) : NULL;
 
+    wxWindowDisabler disableOthers(this, parent);
+
     // initialize the struct used by Windows
     CHOOSECOLOR chooseColorStruct;
     memset(&chooseColorStruct, 0, sizeof(CHOOSECOLOR));

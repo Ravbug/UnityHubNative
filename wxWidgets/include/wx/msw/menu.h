@@ -69,6 +69,8 @@ public:
     // containing this position.
     bool MSWGetRadioGroupRange(int pos, int *start, int *end) const;
 
+    void SetupBitmaps();
+
 #if wxUSE_ACCEL
     // called by wxMenuBar to build its accel table from the accels of all menus
     bool HasAccels() const { return !m_accels.empty(); }

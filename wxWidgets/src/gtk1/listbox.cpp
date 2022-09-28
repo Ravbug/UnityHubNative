@@ -771,7 +771,7 @@ wxString wxListBox::GetRealLabel(GList *item) const
     str = wxString( label->label );
 
 #if wxUSE_CHECKLISTBOX
-    // checklistboxes have "[±] " prepended to their lables, remove it
+    // checklistboxes have "[±] " prepended to their labels, remove it
     //
     // NB: 4 below is the length of wxCHECKLBOX_STRING from wx/gtk1/checklst.h
     if ( m_hasCheckBoxes )
@@ -1099,7 +1099,7 @@ wxSize wxListBox::DoGetBestSize() const
     lbWidth += 3 * cx;
 
     // don't make the listbox too tall (limit height to around 10 items) but don't
-    // make it too small neither
+    // make it too small either
     lbHeight = (cy+4) * wxMin(wxMax(GetCount(), 3), 10);
 
     return wxSize(lbWidth, lbHeight);

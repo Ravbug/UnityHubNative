@@ -28,9 +28,15 @@
 #include "wx/choice.h"
 #include "wx/imaglist.h"
 #include "wx/renderer.h"
+#include "wx/uilocale.h"
+
 #if wxUSE_ACCESSIBILITY
     #include "wx/access.h"
 #endif // wxUSE_ACCESSIBILITY
+
+// Uncomment this line to, for custom renderers, visually show the extent
+// of both a cell and its item.
+//#define DEBUG_RENDER_EXTENTS
 
 const char wxDataViewCtrlNameStr[] = "dataviewCtrl";
 
@@ -543,7 +549,7 @@ unsigned int wxDataViewIndexListModel::GetRow( const wxDataViewItem &item ) cons
 
 wxDataViewItem wxDataViewIndexListModel::GetItem( unsigned int row ) const
 {
-    wxASSERT( row < m_hash.GetCount() );
+    wxCHECK_MSG( row < m_hash.GetCount(), wxDataViewItem(), wxS("invalid index") );
     return wxDataViewItem( m_hash[row] );
 }
 
@@ -855,7 +861,7 @@ wxDataViewRendererBase::CheckedGetValue(const wxDataViewModel* model,
     // We always allow the cell to be null, regardless of the renderer type.
     if ( !value.IsNull() )
     {
-        if ( value.GetType() != GetVariantType() )
+        if ( !IsCompatibleVariantType(value.GetType()) )
         {
             // If you're seeing this message, this indicates that either your
             // renderer is using the wrong type, or your model returns values
@@ -884,21 +890,19 @@ wxDataViewRendererBase::PrepareForItem(const wxDataViewModel *model,
     wxTRY
     {
 
-    // Now check if we have a value and remember it for rendering it later.
-    // Notice that we do it even if it's null, as the cell should be empty then
-    // and not show the last used value.
+    // Now check if we have a value and remember it if we do.
     wxVariant value = CheckedGetValue(model, item, column);
-
-    if ( m_valueAdjuster )
-    {
-        if ( IsHighlighted() )
-            value = m_valueAdjuster->MakeHighlighted(value);
-    }
-
-    SetValue(value);
 
     if ( !value.IsNull() )
     {
+        if ( m_valueAdjuster )
+        {
+            if ( IsHighlighted() )
+                value = m_valueAdjuster->MakeHighlighted(value);
+        }
+
+        SetValue(value);
+
         // Also set up the attributes for this item if it's not empty.
         wxDataViewItemAttr attr;
         model->GetAttr(item, column, attr);
@@ -909,16 +913,15 @@ wxDataViewRendererBase::PrepareForItem(const wxDataViewModel *model,
     // empty cells.
     SetEnabled(model->IsEnabled(item, column));
 
+    return !value.IsNull();
     }
     wxCATCH_ALL
     (
         // There is not much we can do about it here, just log it and don't
         // show anything in this cell.
         wxLogDebug("Retrieving the value from the model threw an exception");
-        SetValue(wxVariant());
+        return false;
     )
-
-    return true;
 }
 
 
@@ -1037,6 +1040,20 @@ wxDataViewCustomRendererBase::WXCallRender(wxRect rectCell, wxDC *dc, int state)
     if ( m_attr.HasFont() )
         changeFont.Set(m_attr.GetEffectiveFont(dc->GetFont()));
 
+#ifdef DEBUG_RENDER_EXTENTS
+    {
+
+    wxDCBrushChanger changeBrush(*dc, *wxTRANSPARENT_BRUSH);
+    wxDCPenChanger changePen(*dc, *wxRED);
+
+    dc->DrawRectangle(rectCell);
+
+    dc->SetPen(*wxGREEN);
+    dc->DrawRectangle(rectItem);
+
+    }
+#endif
+
     Render(rectItem, dc, state);
 }
 
@@ -1074,17 +1091,12 @@ wxDataViewCustomRendererBase::RenderText(const wxString& text,
     if ( !(GetOwner()->GetOwner()->IsEnabled() && GetEnabled()) )
         flags |= wxCONTROL_DISABLED;
 
-    // Notice that we intentionally don't use any alignment here: it is not
-    // necessary because the cell rectangle had been already adjusted to
-    // account for the alignment in WXCallRender() and using the alignment here
-    // results in problems with ellipsization when using native MSW renderer,
-    // see https://trac.wxwidgets.org/ticket/17363, so just don't do it.
     wxRendererNative::Get().DrawItemText(
         GetOwner()->GetOwner(),
         *dc,
         text,
         rectText,
-        wxALIGN_NOT,
+        GetEffectiveAlignment(),
         flags,
         GetEllipsizeMode());
 }
@@ -1676,6 +1688,68 @@ void wxDataViewCtrlBase::StartEditor(const wxDataViewItem& item, unsigned int co
     EditItem(item, GetColumn(column));
 }
 
+#if wxUSE_DRAG_AND_DROP
+
+/* static */
+wxDataObjectComposite*
+wxDataViewCtrlBase::CreateDataObject(const wxVector<wxDataFormat>& formats)
+{
+    if (formats.empty())
+    {
+         return NULL;
+    }
+
+    wxDataObjectComposite *dataObject(new wxDataObjectComposite);
+    for (size_t i = 0; i < formats.size(); ++i)
+    {
+        switch (formats[i].GetType())
+        {
+            case wxDF_TEXT:
+            case wxDF_OEMTEXT:
+            case wxDF_UNICODETEXT:
+                dataObject->Add(new wxTextDataObject);
+                break;
+
+            case wxDF_BITMAP:
+            case wxDF_PNG:
+                dataObject->Add(new wxBitmapDataObject);
+                break;
+
+            case wxDF_FILENAME:
+                dataObject->Add(new wxFileDataObject);
+                break;
+
+            case wxDF_HTML:
+                dataObject->Add(new wxHTMLDataObject);
+                break;
+
+            case wxDF_METAFILE:
+            case wxDF_SYLK:
+            case wxDF_DIF:
+            case wxDF_TIFF:
+            case wxDF_DIB:
+            case wxDF_PALETTE:
+            case wxDF_PENDATA:
+            case wxDF_RIFF:
+            case wxDF_WAVE:
+            case wxDF_ENHMETAFILE:
+            case wxDF_LOCALE:
+            case wxDF_PRIVATE:
+            default: // any other custom format
+                dataObject->Add(new wxCustomDataObject(formats[i]));
+                break;
+
+            case wxDF_INVALID:
+            case wxDF_MAX:
+                break;
+        }
+    }
+
+    return dataObject;
+}
+
+#endif // wxUSE_DRAG_AND_DROP
+
 // ---------------------------------------------------------
 // wxDataViewEvent
 // ---------------------------------------------------------
@@ -1731,6 +1805,28 @@ void wxDataViewEvent::Init(wxDataViewCtrlBase* dvc,
 
     SetEventObject(dvc);
 }
+
+#if wxUSE_DRAG_AND_DROP
+
+void wxDataViewEvent::InitData(wxDataObjectComposite* obj, wxDataFormat format)
+{
+    SetDataFormat(format);
+
+    SetDataObject(obj->GetObject(format));
+
+    const size_t size = obj->GetDataSize(format);
+    SetDataSize(size);
+
+    if ( size )
+    {
+        obj->GetDataHere(format, m_dataBuf.GetWriteBuf(size));
+        m_dataBuf.UngetWriteBuf(size);
+
+        SetDataBuffer(m_dataBuf.GetData());
+    }
+}
+
+#endif // wxUSE_DRAG_AND_DROP
 
 #if wxUSE_SPINCTRL
 
@@ -1988,23 +2084,28 @@ bool wxDataViewDateRenderer::GetValue(wxVariant& value) const
     return true;
 }
 
+wxString wxDataViewDateRenderer::FormatDate() const
+{
+    return m_date.Format(wxGetUIDateFormat());
+}
+
 #if wxUSE_ACCESSIBILITY
 wxString wxDataViewDateRenderer::GetAccessibleDescription() const
 {
-    return m_date.FormatDate();
+    return FormatDate();
 }
 #endif // wxUSE_ACCESSIBILITY
 
 bool wxDataViewDateRenderer::Render(wxRect cell, wxDC* dc, int state)
 {
-    wxString tmp = m_date.FormatDate();
+    wxString tmp = FormatDate();
     RenderText( tmp, 0, cell, dc, state );
     return true;
 }
 
 wxSize wxDataViewDateRenderer::GetSize() const
 {
-    return GetTextExtent(m_date.FormatDate());
+    return GetTextExtent(FormatDate());
 }
 
 #endif // (defined(wxHAS_GENERIC_DATAVIEWCTRL) || defined(__WXGTK__)) && wxUSE_DATEPICKCTRL
@@ -2082,13 +2183,10 @@ wxSize wxDataViewCheckIconTextRenderer::GetSize() const
     wxSize size = GetCheckSize();
     size.x += MARGIN_CHECK_ICON;
 
-    if ( m_value.GetIcon().IsOk() )
+    const wxBitmapBundle& bb = m_value.GetBitmapBundle();
+    if ( bb.IsOk() )
     {
-#ifdef __WXGTK3__
-        const wxSize sizeIcon = m_value.GetIcon().GetScaledSize();
-#else
-        const wxSize sizeIcon = m_value.GetIcon().GetSize();
-#endif
+        const wxSize sizeIcon = bb.GetPreferredLogicalSizeFor(GetView());
         if ( sizeIcon.y > size.y )
             size.y = sizeIcon.y;
 
@@ -2110,7 +2208,32 @@ wxSize wxDataViewCheckIconTextRenderer::GetSize() const
 
 bool wxDataViewCheckIconTextRenderer::Render(wxRect cell, wxDC* dc, int state)
 {
-    // Draw the checkbox first.
+    /*
+    Draw the text first because if the item has a background colour set
+    then with wxGTK the entire cell is painted over during RenderText()
+    when attributes are applied.
+    */
+
+    const wxSize sizeCheck = GetCheckSize();
+
+    int xoffset = sizeCheck.x + MARGIN_CHECK_ICON;
+
+    wxRect rectIcon;
+    const wxBitmapBundle& bb = m_value.GetBitmapBundle();
+    const bool drawIcon = bb.IsOk();
+    if ( drawIcon )
+    {
+        const wxSize sizeIcon = bb.GetPreferredLogicalSizeFor(GetView());
+        rectIcon = wxRect(cell.GetPosition(), sizeIcon);
+        rectIcon.x += xoffset;
+        rectIcon = rectIcon.CentreIn(cell, wxVERTICAL);
+
+        xoffset += sizeIcon.x + MARGIN_ICON_TEXT;
+    }
+
+    RenderText(m_value.GetText(), xoffset, cell, dc, state);
+
+    // Then draw the checkbox.
     int renderFlags = 0;
     switch ( m_value.GetCheckedState() )
     {
@@ -2129,8 +2252,6 @@ bool wxDataViewCheckIconTextRenderer::Render(wxRect cell, wxDC* dc, int state)
     if ( state & wxDATAVIEW_CELL_PRELIT )
         renderFlags |= wxCONTROL_CURRENT;
 
-    const wxSize sizeCheck = GetCheckSize();
-
     wxRect rectCheck(cell.GetPosition(), sizeCheck);
     rectCheck = rectCheck.CentreIn(cell, wxVERTICAL);
 
@@ -2139,28 +2260,9 @@ bool wxDataViewCheckIconTextRenderer::Render(wxRect cell, wxDC* dc, int state)
                                 GetView(), *dc, rectCheck, renderFlags
                             );
 
-    // Then the icon, if any.
-    int xoffset = sizeCheck.x + MARGIN_CHECK_ICON;
-
-    const wxIcon& icon = m_value.GetIcon();
-    if ( icon.IsOk() )
-    {
-#ifdef __WXGTK3__
-        const wxSize sizeIcon = icon.GetScaledSize();
-#else
-        const wxSize sizeIcon = icon.GetSize();
-#endif
-        wxRect rectIcon(cell.GetPosition(), sizeIcon);
-        rectIcon.x += xoffset;
-        rectIcon = rectIcon.CentreIn(cell, wxVERTICAL);
-
-        dc->DrawIcon(icon, rectIcon.GetPosition());
-
-        xoffset += sizeIcon.x + MARGIN_ICON_TEXT;
-    }
-
-    // Finally the text.
-    RenderText(m_value.GetText(), xoffset, cell, dc, state);
+    // Finally draw the icon, if any.
+    if ( drawIcon )
+        dc->DrawIcon(bb.GetIconFor(GetView()), rectIcon.GetPosition());
 
     return true;
 }
@@ -2248,24 +2350,16 @@ void wxDataViewListStore::AppendColumn( const wxString &varianttype )
     m_cols.Add( varianttype );
 }
 
-unsigned int wxDataViewListStore::GetColumnCount() const
-{
-    return m_cols.GetCount();
-}
-
 unsigned int wxDataViewListStore::GetItemCount() const
 {
     return m_data.size();
 }
 
-wxString wxDataViewListStore::GetColumnType( unsigned int pos ) const
-{
-    return m_cols[pos];
-}
-
 void wxDataViewListStore::AppendItem( const wxVector<wxVariant> &values, wxUIntPtr data )
 {
-    wxCHECK_RET( values.size() == GetColumnCount(), "wrong number of values" );
+    wxCHECK_RET( m_data.empty() || values.size() == m_data[0]->m_values.size(),
+                 "wrong number of values" );
+
     wxDataViewListStoreLine *line = new wxDataViewListStoreLine( data );
     line->m_values = values;
     m_data.push_back( line );
@@ -2275,7 +2369,9 @@ void wxDataViewListStore::AppendItem( const wxVector<wxVariant> &values, wxUIntP
 
 void wxDataViewListStore::PrependItem( const wxVector<wxVariant> &values, wxUIntPtr data )
 {
-    wxCHECK_RET( values.size() == GetColumnCount(), "wrong number of values" );
+    wxCHECK_RET( m_data.empty() || values.size() == m_data[0]->m_values.size(),
+                 "wrong number of values" );
+
     wxDataViewListStoreLine *line = new wxDataViewListStoreLine( data );
     line->m_values = values;
     m_data.insert( m_data.begin(), line );
@@ -2286,7 +2382,9 @@ void wxDataViewListStore::PrependItem( const wxVector<wxVariant> &values, wxUInt
 void wxDataViewListStore::InsertItem(  unsigned int row, const wxVector<wxVariant> &values,
                                        wxUIntPtr data )
 {
-    wxCHECK_RET( values.size() == GetColumnCount(), "wrong number of values" );
+    wxCHECK_RET( m_data.empty() || values.size() == m_data[0]->m_values.size(),
+                 "wrong number of values" );
+
     wxDataViewListStoreLine *line = new wxDataViewListStoreLine( data );
     line->m_values = values;
     m_data.insert( m_data.begin()+row, line );
@@ -2357,10 +2455,6 @@ bool wxDataViewListStore::SetValueByRow( const wxVariant &value, unsigned int ro
 //-----------------------------------------------------------------------------
 
 wxIMPLEMENT_DYNAMIC_CLASS(wxDataViewListCtrl,wxDataViewCtrl);
-
-wxBEGIN_EVENT_TABLE(wxDataViewListCtrl,wxDataViewCtrl)
-   EVT_SIZE( wxDataViewListCtrl::OnSize )
-wxEND_EVENT_TABLE()
 
 wxDataViewListCtrl::wxDataViewListCtrl()
 {
@@ -2438,7 +2532,7 @@ wxDataViewColumn *wxDataViewListCtrl::AppendTextColumn( const wxString &label,
 
     wxDataViewColumn *ret = new wxDataViewColumn( label,
         new wxDataViewTextRenderer( wxT("string"), mode ),
-        GetStore()->GetColumnCount()-1, width, align, flags );
+        GetColumnCount(), width, align, flags );
 
     wxDataViewCtrl::AppendColumn( ret );
 
@@ -2452,7 +2546,7 @@ wxDataViewColumn *wxDataViewListCtrl::AppendToggleColumn( const wxString &label,
 
     wxDataViewColumn *ret = new wxDataViewColumn( label,
         new wxDataViewToggleRenderer( wxT("bool"), mode ),
-        GetStore()->GetColumnCount()-1, width, align, flags );
+        GetColumnCount(), width, align, flags );
 
     return wxDataViewCtrl::AppendColumn( ret ) ? ret : NULL;
 }
@@ -2464,7 +2558,7 @@ wxDataViewColumn *wxDataViewListCtrl::AppendProgressColumn( const wxString &labe
 
     wxDataViewColumn *ret = new wxDataViewColumn( label,
         new wxDataViewProgressRenderer( wxEmptyString, wxT("long"), mode ),
-        GetStore()->GetColumnCount()-1, width, align, flags );
+        GetColumnCount(), width, align, flags );
 
     return wxDataViewCtrl::AppendColumn( ret ) ? ret : NULL;
 }
@@ -2476,14 +2570,9 @@ wxDataViewColumn *wxDataViewListCtrl::AppendIconTextColumn( const wxString &labe
 
     wxDataViewColumn *ret = new wxDataViewColumn( label,
         new wxDataViewIconTextRenderer( wxT("wxDataViewIconText"), mode ),
-        GetStore()->GetColumnCount()-1, width, align, flags );
+        GetColumnCount(), width, align, flags );
 
     return wxDataViewCtrl::AppendColumn( ret ) ? ret : NULL;
-}
-
-void wxDataViewListCtrl::OnSize( wxSizeEvent &event )
-{
-    event.Skip( true );
 }
 
 //-----------------------------------------------------------------------------
@@ -2492,7 +2581,7 @@ void wxDataViewListCtrl::OnSize( wxSizeEvent &event )
 
 wxDataViewTreeStoreNode::wxDataViewTreeStoreNode(
         wxDataViewTreeStoreNode *parent,
-        const wxString &text, const wxIcon &icon, wxClientData *data )
+        const wxString &text, const wxBitmapBundle &icon, wxClientData *data )
     : m_text(text)
     , m_icon(icon)
 {
@@ -2507,7 +2596,7 @@ wxDataViewTreeStoreNode::~wxDataViewTreeStoreNode()
 
 wxDataViewTreeStoreContainerNode::wxDataViewTreeStoreContainerNode(
         wxDataViewTreeStoreNode *parent, const wxString &text,
-        const wxIcon &icon, const wxIcon &expanded, wxClientData *data )
+        const wxBitmapBundle &icon, const wxBitmapBundle &expanded, wxClientData *data )
     : wxDataViewTreeStoreNode( parent, text, icon, data )
     , m_iconExpanded(expanded)
 {
@@ -2556,7 +2645,7 @@ wxDataViewTreeStore::~wxDataViewTreeStore()
 }
 
 wxDataViewItem wxDataViewTreeStore::AppendItem( const wxDataViewItem& parent,
-        const wxString &text, const wxIcon &icon, wxClientData *data )
+        const wxString &text, const wxBitmapBundle &icon, wxClientData *data )
 {
     wxDataViewTreeStoreContainerNode *parent_node = FindContainerNode( parent );
     if (!parent_node) return wxDataViewItem(0);
@@ -2569,7 +2658,7 @@ wxDataViewItem wxDataViewTreeStore::AppendItem( const wxDataViewItem& parent,
 }
 
 wxDataViewItem wxDataViewTreeStore::PrependItem( const wxDataViewItem& parent,
-        const wxString &text, const wxIcon &icon, wxClientData *data )
+        const wxString &text, const wxBitmapBundle &icon, wxClientData *data )
 {
     wxDataViewTreeStoreContainerNode *parent_node = FindContainerNode( parent );
     if (!parent_node) return wxDataViewItem(0);
@@ -2586,7 +2675,7 @@ wxDataViewItem
 wxDataViewTreeStore::InsertItem(const wxDataViewItem& parent,
                                 const wxDataViewItem& previous,
                                 const wxString& text,
-                                const wxIcon& icon,
+                                const wxBitmapBundle& icon,
                                 wxClientData *data)
 {
     wxDataViewTreeStoreContainerNode *parent_node = FindContainerNode( parent );
@@ -2605,7 +2694,7 @@ wxDataViewTreeStore::InsertItem(const wxDataViewItem& parent,
 }
 
 wxDataViewItem wxDataViewTreeStore::PrependContainer( const wxDataViewItem& parent,
-        const wxString &text, const wxIcon &icon, const wxIcon &expanded,
+        const wxString &text, const wxBitmapBundle &icon, const wxBitmapBundle &expanded,
         wxClientData *data )
 {
     wxDataViewTreeStoreContainerNode *parent_node = FindContainerNode( parent );
@@ -2622,8 +2711,8 @@ wxDataViewItem wxDataViewTreeStore::PrependContainer( const wxDataViewItem& pare
 wxDataViewItem
 wxDataViewTreeStore::AppendContainer(const wxDataViewItem& parent,
                                      const wxString &text,
-                                     const wxIcon& icon,
-                                     const wxIcon& expanded,
+                                     const wxBitmapBundle& icon,
+                                     const wxBitmapBundle& expanded,
                                      wxClientData * data)
 {
     wxDataViewTreeStoreContainerNode *parent_node = FindContainerNode( parent );
@@ -2640,8 +2729,8 @@ wxDataViewItem
 wxDataViewTreeStore::InsertContainer(const wxDataViewItem& parent,
                                      const wxDataViewItem& previous,
                                      const wxString& text,
-                                     const wxIcon& icon,
-                                     const wxIcon& expanded,
+                                     const wxBitmapBundle& icon,
+                                     const wxBitmapBundle& expanded,
                                      wxClientData * data)
 {
     wxDataViewTreeStoreContainerNode *parent_node = FindContainerNode( parent );
@@ -2707,7 +2796,7 @@ wxString wxDataViewTreeStore::GetItemText( const wxDataViewItem& item ) const
     return node->GetText();
 }
 
-void wxDataViewTreeStore::SetItemIcon( const wxDataViewItem& item, const wxIcon &icon )
+void wxDataViewTreeStore::SetItemIcon( const wxDataViewItem& item, const wxBitmapBundle &icon )
 {
     wxDataViewTreeStoreNode *node = FindNode( item );
     if (!node) return;
@@ -2715,7 +2804,7 @@ void wxDataViewTreeStore::SetItemIcon( const wxDataViewItem& item, const wxIcon 
     node->SetIcon( icon );
 }
 
-const wxIcon &wxDataViewTreeStore::GetItemIcon( const wxDataViewItem& item ) const
+wxIcon wxDataViewTreeStore::GetItemIcon( const wxDataViewItem& item ) const
 {
     wxDataViewTreeStoreNode *node = FindNode( item );
     if (!node) return wxNullIcon;
@@ -2723,7 +2812,7 @@ const wxIcon &wxDataViewTreeStore::GetItemIcon( const wxDataViewItem& item ) con
     return node->GetIcon();
 }
 
-void wxDataViewTreeStore::SetItemExpandedIcon( const wxDataViewItem& item, const wxIcon &icon )
+void wxDataViewTreeStore::SetItemExpandedIcon( const wxDataViewItem& item, const wxBitmapBundle &icon )
 {
     wxDataViewTreeStoreContainerNode *node = FindContainerNode( item );
     if (!node) return;
@@ -2731,7 +2820,7 @@ void wxDataViewTreeStore::SetItemExpandedIcon( const wxDataViewItem& item, const
     node->SetExpandedIcon( icon );
 }
 
-const wxIcon &wxDataViewTreeStore::GetItemExpandedIcon( const wxDataViewItem& item ) const
+wxIcon wxDataViewTreeStore::GetItemExpandedIcon( const wxDataViewItem& item ) const
 {
     wxDataViewTreeStoreContainerNode *node = FindContainerNode( item );
     if (!node) return wxNullIcon;
@@ -2796,15 +2885,18 @@ wxDataViewTreeStore::GetValue(wxVariant &variant,
     wxDataViewTreeStoreNode *node = FindNode( item );
     if (!node) return;
 
-    wxIcon icon( node->GetIcon());
+    wxBitmapBundle bb;
     if (node->IsContainer())
     {
         wxDataViewTreeStoreContainerNode *container = (wxDataViewTreeStoreContainerNode*) node;
-        if (container->IsExpanded() && container->GetExpandedIcon().IsOk())
-           icon = container->GetExpandedIcon();
+        if (container->IsExpanded())
+           bb = container->GetExpandedBitmapBundle();
     }
 
-    wxDataViewIconText data( node->GetText(), icon );
+    if (!bb.IsOk())
+        bb = node->GetBitmapBundle();
+
+    wxDataViewIconText data( node->GetText(), bb );
 
     variant << data;
 }
@@ -2954,7 +3046,7 @@ wxDataViewItem wxDataViewTreeCtrl::AppendItem( const wxDataViewItem& parent,
         const wxString &text, int iconIndex, wxClientData *data )
 {
     wxDataViewItem res = GetStore()->
-        AppendItem( parent, text, GetImage(iconIndex), data );
+        AppendItem( parent, text, GetBitmapBundle(iconIndex), data );
 
     GetStore()->ItemAdded( parent, res );
 
@@ -2965,7 +3057,7 @@ wxDataViewItem wxDataViewTreeCtrl::PrependItem( const wxDataViewItem& parent,
         const wxString &text, int iconIndex, wxClientData *data )
 {
     wxDataViewItem res = GetStore()->
-        PrependItem( parent, text, GetImage(iconIndex), data );
+        PrependItem( parent, text, GetBitmapBundle(iconIndex), data );
 
     GetStore()->ItemAdded( parent, res );
 
@@ -2976,7 +3068,7 @@ wxDataViewItem wxDataViewTreeCtrl::InsertItem( const wxDataViewItem& parent, con
         const wxString &text, int iconIndex, wxClientData *data )
 {
     wxDataViewItem res = GetStore()->
-        InsertItem( parent, previous, text, GetImage(iconIndex), data );
+        InsertItem( parent, previous, text, GetBitmapBundle(iconIndex), data );
 
     GetStore()->ItemAdded( parent, res );
 
@@ -2988,7 +3080,7 @@ wxDataViewItem wxDataViewTreeCtrl::PrependContainer( const wxDataViewItem& paren
 {
     wxDataViewItem res = GetStore()->
         PrependContainer( parent, text,
-                          GetImage(iconIndex), GetImage(expandedIndex), data );
+                          GetBitmapBundle(iconIndex), GetBitmapBundle(expandedIndex), data );
 
     GetStore()->ItemAdded( parent, res );
 
@@ -3000,7 +3092,7 @@ wxDataViewItem wxDataViewTreeCtrl::AppendContainer( const wxDataViewItem& parent
 {
     wxDataViewItem res = GetStore()->
         AppendContainer( parent, text,
-                         GetImage(iconIndex), GetImage(expandedIndex), data );
+                         GetBitmapBundle(iconIndex), GetBitmapBundle(expandedIndex), data );
 
     GetStore()->ItemAdded( parent, res );
 
@@ -3012,7 +3104,7 @@ wxDataViewItem wxDataViewTreeCtrl::InsertContainer( const wxDataViewItem& parent
 {
     wxDataViewItem res = GetStore()->
         InsertContainer( parent, previous, text,
-                         GetImage(iconIndex), GetImage(expandedIndex), data );
+                         GetBitmapBundle(iconIndex), GetBitmapBundle(expandedIndex), data );
 
     GetStore()->ItemAdded( parent, res );
 
@@ -3027,7 +3119,7 @@ void wxDataViewTreeCtrl::SetItemText( const wxDataViewItem& item, const wxString
     GetStore()->ValueChanged( item, 0 );
 }
 
-void wxDataViewTreeCtrl::SetItemIcon( const wxDataViewItem& item, const wxIcon &icon )
+void wxDataViewTreeCtrl::SetItemIcon( const wxDataViewItem& item, const wxBitmapBundle &icon )
 {
     GetStore()->SetItemIcon(item,icon);
 
@@ -3035,7 +3127,7 @@ void wxDataViewTreeCtrl::SetItemIcon( const wxDataViewItem& item, const wxIcon &
     GetStore()->ValueChanged( item, 0 );
 }
 
-void wxDataViewTreeCtrl::SetItemExpandedIcon( const wxDataViewItem& item, const wxIcon &icon )
+void wxDataViewTreeCtrl::SetItemExpandedIcon( const wxDataViewItem& item, const wxBitmapBundle &icon )
 {
     GetStore()->SetItemExpandedIcon(item,icon);
 
@@ -3081,8 +3173,6 @@ void  wxDataViewTreeCtrl::DeleteAllItems()
 
 void wxDataViewTreeCtrl::OnExpanded( wxDataViewEvent &event )
 {
-    if (!HasImageList()) return;
-
     wxDataViewTreeStoreContainerNode* container = GetStore()->FindContainerNode( event.GetItem() );
     if (!container) return;
 
@@ -3093,8 +3183,6 @@ void wxDataViewTreeCtrl::OnExpanded( wxDataViewEvent &event )
 
 void wxDataViewTreeCtrl::OnCollapsed( wxDataViewEvent &event )
 {
-    if (!HasImageList()) return;
-
     wxDataViewTreeStoreContainerNode* container = GetStore()->FindContainerNode( event.GetItem() );
     if (!container) return;
 
@@ -3114,6 +3202,11 @@ void wxDataViewTreeCtrl::OnSize( wxSizeEvent &event )
     }
 #endif
     event.Skip( true );
+}
+
+void wxDataViewTreeCtrl::OnImagesChanged()
+{
+    Refresh();
 }
 
 #endif // wxUSE_DATAVIEWCTRL

@@ -100,6 +100,7 @@ class WXDLLIMPEXP_FWD_CORE wxGridCornerLabelWindow;
 class WXDLLIMPEXP_FWD_CORE wxGridEvent;
 class WXDLLIMPEXP_FWD_CORE wxGridRowLabelWindow;
 class WXDLLIMPEXP_FWD_CORE wxGridWindow;
+class WXDLLIMPEXP_FWD_CORE wxGridSubwindow;
 class WXDLLIMPEXP_FWD_CORE wxGridTypeRegistry;
 class WXDLLIMPEXP_FWD_CORE wxGridSelection;
 
@@ -137,10 +138,13 @@ class wxGridDirectionOperations;
 //     class is not documented and is not public at all
 // ----------------------------------------------------------------------------
 
-class WXDLLIMPEXP_CORE wxGridCellWorker : public wxClientDataContainer, public wxRefCounter
+class WXDLLIMPEXP_CORE wxGridCellWorker : public wxSharedClientDataContainer,
+                                          public wxRefCounter
 {
 public:
     wxGridCellWorker() { }
+
+    wxGridCellWorker(const wxGridCellWorker& other);
 
     // interpret renderer parameters: arbitrary string whose interpretation is
     // left to the derived classes
@@ -168,6 +172,16 @@ private:
 class WXDLLIMPEXP_CORE wxGridCellRenderer : public wxGridCellWorker
 {
 public:
+    wxGridCellRenderer()
+        : wxGridCellWorker()
+    {
+    }
+
+    wxGridCellRenderer(const wxGridCellRenderer& other)
+        : wxGridCellWorker(other)
+    {
+    }
+
     // draw the given cell on the provided DC inside the given rectangle
     // using the style specified by the attribute and the default or selected
     // state corresponding to the isSelected value.
@@ -375,7 +389,14 @@ private:
 class WXDLLIMPEXP_CORE wxGridCellEditor : public wxGridCellWorker
 {
 public:
-    wxGridCellEditor();
+    wxGridCellEditor()
+        : wxGridCellWorker(),
+          m_control(NULL),
+          m_attr(NULL)
+    {
+    }
+
+    wxGridCellEditor(const wxGridCellEditor& other);
 
     bool IsCreated() const { return m_control != NULL; }
 
@@ -523,8 +544,6 @@ protected:
     // suppress the stupid gcc warning about the class having private dtor and
     // no friends
     friend class wxGridCellEditorDummyFriend;
-
-    wxDECLARE_NO_COPY_CLASS(wxGridCellEditor);
 };
 
 // Smart pointer to wxGridCellEditor, calling DecRef() on it automatically.
@@ -534,6 +553,16 @@ typedef wxObjectDataPtr<wxGridCellEditor> wxGridCellEditorPtr;
 class wxGridCellActivatableEditor : public wxGridCellEditor
 {
 public:
+    wxGridCellActivatableEditor()
+        : wxGridCellEditor()
+    {
+    }
+
+    wxGridCellActivatableEditor(const wxGridCellActivatableEditor& other)
+        : wxGridCellEditor(other)
+    {
+    }
+
     // In this class these methods must be overridden.
     virtual wxGridActivationResult
     TryActivate(int row, int col, wxGrid* grid,
@@ -704,7 +733,8 @@ private:
 // class may be returned by wxGridTable::GetAttr().
 // ----------------------------------------------------------------------------
 
-class WXDLLIMPEXP_CORE wxGridCellAttr : public wxClientDataContainer, public wxRefCounter
+class WXDLLIMPEXP_CORE wxGridCellAttr : public wxSharedClientDataContainer,
+                                        public wxRefCounter
 {
 public:
     enum wxAttrKind
@@ -1899,6 +1929,11 @@ public:
     bool CanDragColSize(int col) const
         { return m_canDragColSize && DoCanResizeLine(col, m_setFixedCols); }
 
+    // interactive row reordering (disabled by default)
+    bool     EnableDragRowMove( bool enable = true );
+    void     DisableDragRowMove() { EnableDragRowMove( false ); }
+    bool     CanDragRowMove() const { return m_canDragRowMove; }
+
     // interactive column reordering (disabled by default)
     bool     EnableDragColMove( bool enable = true );
     void     DisableDragColMove() { EnableDragColMove( false ); }
@@ -2053,22 +2088,29 @@ public:
     void SetRowSizes(const wxGridSizesInfo& sizeInfo);
 
 
-    // ------- columns (only, for now) reordering
+    // ------- rows and columns reordering
 
-    // columns index <-> positions mapping: by default, the position of the
-    // column is the same as its index, but the columns can also be reordered
-    // (either by calling SetColPos() explicitly or by the user dragging the
-    // columns around) in which case their indices don't correspond to their
+    // rows and columns index <-> positions mapping: by default, the position
+    // is the same as its index, but they can also be reordered
+    // (either by calling SetRowPos()/SetColPos() explicitly or by the user
+    // dragging around) in which case their indices don't correspond to their
     // positions on display any longer
     //
     // internally we always work with indices except for the functions which
-    // have "Pos" in their names (and which work with columns, not pixels) and
-    // only the display and hit testing code really cares about display
-    // positions at all
+    // have "Pos" in their names (and which work with rows and columns, not
+    // pixels) and only the display and hit testing code really cares about
+    // display positions at all
 
-    // set the positions of all columns at once (this method uses the same
-    // conventions as wxHeaderCtrl::SetColumnsOrder() for the order array)
+    // set the positions of all rows or columns at once (this method uses the
+    // same conventions as wxHeaderCtrl::SetColumnsOrder() for the order array)
+    void SetRowsOrder(const wxArrayInt& order);
     void SetColumnsOrder(const wxArrayInt& order);
+
+    // return the row index corresponding to the given (valid) position
+    int GetRowAt(int pos) const
+    {
+        return m_rowAt.empty() ? pos : m_rowAt[pos];
+    }
 
     // return the column index corresponding to the given (valid) position
     int GetColAt(int pos) const
@@ -2076,27 +2118,26 @@ public:
         return m_colAt.empty() ? pos : m_colAt[pos];
     }
 
+    // reorder the rows so that the row with the given index is now shown
+    // as the position pos
+    void SetRowPos(int idx, int pos);
+
     // reorder the columns so that the column with the given index is now shown
     // as the position pos
     void SetColPos(int idx, int pos);
 
+    // return the position at which the row with the given index is
+    // displayed: notice that this is a slow operation as we don't maintain the
+    // reverse mapping currently
+    int GetRowPos(int idx) const;
+
     // return the position at which the column with the given index is
     // displayed: notice that this is a slow operation as we don't maintain the
     // reverse mapping currently
-    int GetColPos(int idx) const
-    {
-        wxASSERT_MSG( idx >= 0 && idx < m_numCols, "invalid column index" );
+    int GetColPos(int idx) const;
 
-        if ( m_colAt.IsEmpty() )
-            return idx;
-
-        int pos = m_colAt.Index(idx);
-        wxASSERT_MSG( pos != wxNOT_FOUND, "invalid column index" );
-
-        return pos;
-    }
-
-    // reset the columns positions to the default order
+    // reset the rows or columns positions to the default order
+    void ResetRowPos();
     void ResetColPos();
 
 
@@ -2718,6 +2759,7 @@ protected:
         WXGRID_CURSOR_RESIZE_COL,
         WXGRID_CURSOR_SELECT_ROW,
         WXGRID_CURSOR_SELECT_COL,
+        WXGRID_CURSOR_MOVE_ROW,
         WXGRID_CURSOR_MOVE_COL
     };
 
@@ -2744,30 +2786,46 @@ protected:
     CursorMode m_cursorMode;
 
 
+    //Row positions
+    wxArrayInt m_rowAt;
+
     //Column positions
     wxArrayInt m_colAt;
 
     bool    m_canDragRowSize;
     bool    m_canDragColSize;
+    bool    m_canDragRowMove;
     bool    m_canDragColMove;
     bool    m_canHideColumns;
     bool    m_canDragGridSize;
     bool    m_canDragCell;
 
-    // Index of the column being drag-moved or -1 if there is no move operation
-    // in progress.
-    int     m_dragMoveCol;
+    // Index of the row or column being drag-moved or -1 if there is no move
+    // operation in progress.
+    int     m_dragMoveRowOrCol;
 
-    // Last horizontal mouse position while drag-moving a column.
+    // Last drag marker position while drag-moving a row or column.
     int     m_dragLastPos;
+
+    // Last drag marker colour while drag-moving a row or column.
+    const wxColour *m_dragLastColour;
 
     // Row or column (depending on m_cursorMode value) currently being resized
     // or -1 if there is no resize operation in progress.
     int     m_dragRowOrCol;
 
+    // Original row or column size when resizing; used when the user cancels
+    int     m_dragRowOrColOldSize;
+
     // true if a drag operation is in progress; when this is true,
     // m_startDragPos is valid, i.e. not wxDefaultPosition
     bool    m_isDragging;
+
+    // true if a drag operation was canceled
+    // (mouse event Dragging() might still be active until LeftUp)
+    // m_isDragging can only be set after m_cancelledDragging is cleared.
+    // This is done when a mouse event happens with left button up.
+    bool    m_cancelledDragging;
 
     // the position (in physical coordinates) where the user started dragging
     // the mouse or wxDefaultPosition if mouse isn't being dragged
@@ -2776,6 +2834,10 @@ protected:
     // false because we wait until the mouse is moved some distance away before
     // setting m_isDragging to true
     wxPoint m_startDragPos;
+
+    // the position of the last mouse event
+    // used for detection of the movement direction
+    wxPoint m_lastMousePos;
 
     bool    m_waitForSlowClick;
 
@@ -2825,10 +2887,10 @@ protected:
     EventResult SendEvent(wxEventType evtType, const wxString& s = wxString())
         { return SendEvent(evtType, m_currentCellCoords, s); }
 
-    // send wxEVT_GRID_{ROW,COL}_SIZE or wxEVT_GRID_COL_AUTO_SIZE, return true
+    // send wxEVT_GRID_{ROW,COL}_SIZE or wxEVT_GRID_{ROW,COL}_AUTO_SIZE, return true
     // if the event was processed, false otherwise
     bool SendGridSizeEvent(wxEventType type,
-                           int row, int col,
+                           int rowOrCol,
                            const wxMouseEvent& mouseEv);
 
     void OnSize( wxSizeEvent& );
@@ -2846,6 +2908,7 @@ protected:
         { return false; }
 
     friend class WXDLLIMPEXP_FWD_CORE wxGridSelection;
+    friend class wxGridOperations;
     friend class wxGridRowOperations;
     friend class wxGridColumnOperations;
 
@@ -2908,8 +2971,9 @@ private:
     // the sorting indicator to effectively show
     void UpdateColumnSortingIndicator(int col);
 
-    // update the grid after changing the columns order (common part of
-    // SetColPos() and ResetColPos())
+    // update the grid after changing the rows or columns order (common part
+    // of Set{Row,Col}Pos() and Reset{Row,Col}Pos())
+    void RefreshAfterRowPosChange();
     void RefreshAfterColPosChange();
 
     // reset the variables used during dragging operations after it ended,
@@ -2920,6 +2984,17 @@ private:
     // release the mouse capture if it's currently captured
     void EndDraggingIfNecessary();
 
+    // helper for Process...MouseEvent to block re-triggering m_isDragging
+    bool CheckIfDragCancelled(wxMouseEvent *event);
+
+    // helper for Process...MouseEvent to scroll
+    void CheckDoDragScroll(wxGridSubwindow *eventGridWindow, wxGridSubwindow *gridWindow,
+                           wxPoint posEvent, int direction);
+
+    // helper for Process...LabelMouseEvent to check whether a drag operation
+    // would end at the source line, i.e. have no effect
+    bool CheckIfAtDragSourceLine(const wxGridOperations &oper, int coord);
+
     // return true if the grid should be refreshed right now
     bool ShouldRefresh() const
     {
@@ -2927,11 +3002,12 @@ private:
     }
 
 
-    // return the position (not index) of the column at the given logical pixel
-    // position
+    // return the position (not index) of the row or column at the given logical
+    // pixel position
     //
     // this always returns a valid position, even if the coordinate is out of
-    // bounds (in which case first/last column is returned)
+    // bounds (in which case first/last row/column is returned)
+    int YToPos(int y, wxGridWindow *gridWindow) const;
     int XToPos(int x, wxGridWindow *gridWindow) const;
 
     // event handlers and their helpers
@@ -2951,6 +3027,8 @@ private:
                          wxGridWindow* gridWindow);
 
     // Update the width/height of the column/row being drag-resized.
+    // Should be only called when m_dragRowOrCol != -1, i.e. dragging is
+    // actually in progress.
     void DoGridDragResize(const wxPoint& position,
                           const wxGridOperations& oper,
                           wxGridWindow* gridWindow);
@@ -2976,21 +3054,24 @@ private:
     void ProcessGridCellMouseEvent(wxMouseEvent& event, wxGridWindow* gridWindow);
 
     // process mouse events in the row/column labels/corner windows
-    void ProcessRowLabelMouseEvent(wxMouseEvent& event,
-                                   wxGridRowLabelWindow* rowLabelWin);
-    void ProcessColLabelMouseEvent(wxMouseEvent& event,
-                                   wxGridColLabelWindow* colLabelWin);
+    void ProcessRowColLabelMouseEvent(const wxGridOperations &oper,
+                                   wxMouseEvent& event,
+                                   wxGridSubwindow* rowLabelWin);
     void ProcessCornerLabelMouseEvent(wxMouseEvent& event);
 
+    void HandleRowAutosize(int col, const wxMouseEvent& event);
     void HandleColumnAutosize(int col, const wxMouseEvent& event);
 
     void DoColHeaderClick(int col);
 
-    void DoStartResizeRowOrCol(int col);
-    void DoStartMoveCol(int col);
+    void DoStartResizeRowOrCol(int col, int size);
+    void DoStartMoveRowOrCol(int col);
 
+    // These functions should only be called when actually resizing/moving,
+    // i.e. m_dragRowOrCol and m_dragMoveCol, respectively, are valid.
     void DoEndDragResizeRow(const wxMouseEvent& event, wxGridWindow *gridWindow);
     void DoEndDragResizeCol(const wxMouseEvent& event, wxGridWindow *gridWindow);
+    void DoEndMoveRow(int pos);
     void DoEndMoveCol(int pos);
 
     // Helper function returning the position (only the horizontal component
@@ -3240,7 +3321,7 @@ private:
         m_selecting = sel;
     }
 
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxGridEvent);
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxGridEvent);
 };
 
 class WXDLLIMPEXP_CORE wxGridSizeEvent : public wxNotifyEvent,
@@ -3296,7 +3377,7 @@ private:
         m_y = y;
     }
 
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxGridSizeEvent);
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxGridSizeEvent);
 };
 
 
@@ -3361,7 +3442,7 @@ protected:
     wxGridCellCoords  m_bottomRight;
     bool              m_selecting;
 
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxGridRangeSelectEvent);
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxGridRangeSelectEvent);
 };
 
 
@@ -3398,7 +3479,7 @@ private:
     int m_col;
     wxWindow* m_window;
 
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxGridEditorCreatedEvent);
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxGridEditorCreatedEvent);
 };
 
 
@@ -3411,6 +3492,7 @@ wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_GRID_LABEL_RIGHT_CLICK, wxGrid
 wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_GRID_LABEL_LEFT_DCLICK, wxGridEvent );
 wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_GRID_LABEL_RIGHT_DCLICK, wxGridEvent );
 wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_GRID_ROW_SIZE, wxGridSizeEvent );
+wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_GRID_ROW_AUTO_SIZE, wxGridSizeEvent );
 wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_GRID_COL_SIZE, wxGridSizeEvent );
 wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_GRID_COL_AUTO_SIZE, wxGridSizeEvent );
 wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_GRID_RANGE_SELECTING, wxGridRangeSelectEvent );
@@ -3422,6 +3504,7 @@ wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_GRID_EDITOR_SHOWN, wxGridEvent
 wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_GRID_EDITOR_HIDDEN, wxGridEvent );
 wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_GRID_EDITOR_CREATED, wxGridEditorCreatedEvent );
 wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_GRID_CELL_BEGIN_DRAG, wxGridEvent );
+wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_GRID_ROW_MOVE, wxGridEvent );
 wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_GRID_COL_MOVE, wxGridEvent );
 wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_GRID_COL_SORT, wxGridEvent );
 wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_GRID_TABBING, wxGridEvent );
@@ -3466,6 +3549,7 @@ typedef void (wxEvtHandler::*wxGridEditorCreatedEventFunction)(wxGridEditorCreat
 #define EVT_GRID_CMD_ROW_SIZE(id, fn)            wx__DECLARE_GRIDSIZEEVT(ROW_SIZE, id, fn)
 #define EVT_GRID_CMD_COL_SIZE(id, fn)            wx__DECLARE_GRIDSIZEEVT(COL_SIZE, id, fn)
 #define EVT_GRID_CMD_COL_AUTO_SIZE(id, fn)       wx__DECLARE_GRIDSIZEEVT(COL_AUTO_SIZE, id, fn)
+#define EVT_GRID_CMD_ROW_MOVE(id, fn)            wx__DECLARE_GRIDEVT(ROW_MOVE, id, fn)
 #define EVT_GRID_CMD_COL_MOVE(id, fn)            wx__DECLARE_GRIDEVT(COL_MOVE, id, fn)
 #define EVT_GRID_CMD_COL_SORT(id, fn)            wx__DECLARE_GRIDEVT(COL_SORT, id, fn)
 #define EVT_GRID_CMD_RANGE_SELECTING(id, fn)     wx__DECLARE_GRIDRANGESELEVT(RANGE_SELECTING, id, fn)
@@ -3492,6 +3576,7 @@ typedef void (wxEvtHandler::*wxGridEditorCreatedEventFunction)(wxGridEditorCreat
 #define EVT_GRID_ROW_SIZE(fn)            EVT_GRID_CMD_ROW_SIZE(wxID_ANY, fn)
 #define EVT_GRID_COL_SIZE(fn)            EVT_GRID_CMD_COL_SIZE(wxID_ANY, fn)
 #define EVT_GRID_COL_AUTO_SIZE(fn)       EVT_GRID_CMD_COL_AUTO_SIZE(wxID_ANY, fn)
+#define EVT_GRID_ROW_MOVE(fn)            EVT_GRID_CMD_ROW_MOVE(wxID_ANY, fn)
 #define EVT_GRID_COL_MOVE(fn)            EVT_GRID_CMD_COL_MOVE(wxID_ANY, fn)
 #define EVT_GRID_COL_SORT(fn)            EVT_GRID_CMD_COL_SORT(wxID_ANY, fn)
 #define EVT_GRID_RANGE_SELECTING(fn)     EVT_GRID_CMD_RANGE_SELECTING(wxID_ANY, fn)
@@ -3509,20 +3594,17 @@ typedef void (wxEvtHandler::*wxGridEditorCreatedEventFunction)(wxGridEditorCreat
 // wxEVT_GRID_CELL_CHANGING and CHANGED ones in wx 2.9.0, however the CHANGED
 // is basically the same as the old CHANGE event so we keep the name for
 // compatibility
-#if WXWIN_COMPATIBILITY_2_8
-    #define wxEVT_GRID_CELL_CHANGE wxEVT_GRID_CELL_CHANGED
+#define wxEVT_GRID_CELL_CHANGE wxEVT_GRID_CELL_CHANGED
 
-    #define EVT_GRID_CMD_CELL_CHANGE EVT_GRID_CMD_CELL_CHANGED
-    #define EVT_GRID_CELL_CHANGE EVT_GRID_CELL_CHANGED
-#endif // WXWIN_COMPATIBILITY_2_8
+#define EVT_GRID_CMD_CELL_CHANGE EVT_GRID_CMD_CELL_CHANGED
+#define EVT_GRID_CELL_CHANGE EVT_GRID_CELL_CHANGED
 
 // same as above: RANGE_SELECT was split in RANGE_SELECTING and SELECTED in 3.2,
 // but we keep the old name for compatibility
-#if WXWIN_COMPATIBILITY_3_0
-    #define wxEVT_GRID_RANGE_SELECT wxEVT_GRID_RANGE_SELECTED
+#define wxEVT_GRID_RANGE_SELECT wxEVT_GRID_RANGE_SELECTED
 
-    #define EVT_GRID_RANGE_SELECT EVT_GRID_RANGE_SELECTED
-#endif // WXWIN_COMPATIBILITY_3_0
+#define EVT_GRID_CMD_RANGE_SELECT EVT_GRID_CMD_RANGE_SELECTED
+#define EVT_GRID_RANGE_SELECT EVT_GRID_RANGE_SELECTED
 
 
 #if 0  // TODO: implement these ?  others ?

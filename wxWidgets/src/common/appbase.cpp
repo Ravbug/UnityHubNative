@@ -256,6 +256,11 @@ wxEventLoopBase *wxAppConsoleBase::CreateMainLoop()
 
 void wxAppConsoleBase::CleanUp()
 {
+#if wxUSE_CONFIG
+    // Delete the global wxConfig object, if any, and reset it.
+    delete wxConfigBase::Set(NULL);
+#endif // wxUSE_CONFIG
+
     wxDELETE(m_mainLoop);
 }
 
@@ -309,9 +314,8 @@ int wxAppConsoleBase::OnExit()
     DeletePendingObjects();
 
 #if wxUSE_CONFIG
-    // delete the config object if any (don't use Get() here, but Set()
-    // because Get() could create a new config object)
-    delete wxConfigBase::Set(NULL);
+    // Ensure we won't create it on demand any more if we hadn't done it yet.
+    wxConfigBase::DontCreateOnDemand();
 #endif // wxUSE_CONFIG
 
     return 0;
@@ -842,12 +846,9 @@ bool wxAppConsoleBase::CheckBuildOptions(const char *optionsSignature,
         wxString lib = wxString::FromAscii(WX_BUILD_OPTIONS_SIGNATURE);
         wxString prog = wxString::FromAscii(optionsSignature);
         wxString progName = wxString::FromAscii(componentName);
-        wxString msg;
 
-        msg.Printf(wxT("Mismatch between the program and library build versions detected.\nThe library used %s,\nand %s used %s."),
-                   lib.c_str(), progName.c_str(), prog.c_str());
-
-        wxLogFatalError(msg.c_str());
+        wxLogFatalError(wxT("Mismatch between the program and library build versions detected.\nThe library used %s,\nand %s used %s."),
+                        lib, progName, prog);
 
         // normally wxLogFatalError doesn't return
         return false;
@@ -895,6 +896,9 @@ void wxAppConsoleBase::SetCLocale()
     // this format on input (especially important for decimal comma/dot).
     wxSetlocale(LC_ALL, "");
 }
+
+void* wxAppConsoleBase::WXReservedApp1(void*) { return NULL; }
+void* wxAppConsoleBase::WXReservedApp2(void*) { return NULL; }
 
 // ============================================================================
 // other classes implementations
@@ -1088,6 +1092,8 @@ wxString wxAppTraitsBase::GetAssertStackTrace()
 }
 #endif // wxUSE_STACKWALKER
 
+void* wxAppTraitsBase::WXReservedAppTraits1(void*) { return NULL; }
+void* wxAppTraitsBase::WXReservedAppTraits2(void*) { return NULL; }
 
 // ============================================================================
 // global functions implementation

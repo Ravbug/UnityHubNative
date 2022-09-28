@@ -1,6 +1,6 @@
 /*
  *  Catch v1.12.2
- *  Generated: 2018-05-14 15:10:01.112442
+ *  Generated: 2022-01-04 23:10:27.918195
  *  ----------------------------------------------------------
  *  This file has been merged from multiple headers. Please don't edit it directly
  *  Copyright (c) 2012 Two Blue Cubes Ltd. All rights reserved.
@@ -214,7 +214,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Use variadic macros if the compiler supports them
-#if ( defined _MSC_VER && _MSC_VER > 1400 && !defined __EDGE__) || \
+#if ( defined _MSC_VER && _MSC_VER >= 1400 && !defined __EDGE__) || \
     ( defined __WAVE__ && __WAVE_HAS_VARIADICS ) || \
     ( defined __GNUC__ && __GNUC__ >= 3 ) || \
     ( !defined __cplusplus && __STDC_VERSION__ >= 199901L || __cplusplus >= 201103L )
@@ -2129,10 +2129,11 @@ namespace Catch{
         #define CATCH_TRAP() \
                 __asm__("li r0, 20\nsc\nnop\nli r0, 37\nli r4, 2\nsc\nnop\n" \
                 : : : "memory","r0","r3","r4" ) /* NOLINT */
-    #elif defined(__i386__) || defined(__x86_64__)
-        #define CATCH_TRAP() __asm__("int $3\n" : : ) /* NOLINT */
     #elif defined(__aarch64__)
-        #define CATCH_TRAP()  __asm__(".inst 0xd4200000")
+        // Backport of https://github.com/catchorg/Catch2/commit/a25c1a24af8bffd35727a888a307ff0280cf9387
+        #define CATCH_TRAP() __asm__(".inst 0xd4200000")
+    #else
+        #define CATCH_TRAP() __asm__("int $3\n" : : /* NOLINT */ )
     #endif
 
 #elif defined(CATCH_PLATFORM_LINUX)
@@ -6521,6 +6522,12 @@ namespace Catch {
 
 #include <signal.h>
 
+// Work around SIGSTKSZ not being a constant any more in glibc >= 2.34.
+#ifdef __USE_DYNAMIC_STACK_SIZE
+#   undef SIGSTKSZ
+#   define SIGSTKSZ 32768
+#endif // __USE_DYNAMIC_STACK_SIZE
+
 namespace Catch {
 
     struct SignalDefs {
@@ -8509,7 +8516,11 @@ namespace Catch {
 #pragma warning(disable:4996) // std::uncaught_exception is deprecated in C++17
 #endif
     ScopedMessage::~ScopedMessage() {
+#ifdef __cpp_lib_uncaught_exceptions
+        if ( std::uncaught_exceptions() == 0 ){
+#else
         if ( !std::uncaught_exception() ){
+#endif
             getResultCapture().popScopedMessage(m_info);
         }
     }
@@ -8835,7 +8846,11 @@ namespace Catch {
     Section::~Section() {
         if( m_sectionIncluded ) {
             SectionEndInfo endInfo( m_info, m_assertions, m_timer.getElapsedSeconds() );
+#ifdef __cpp_lib_uncaught_exceptions
+            if( std::uncaught_exceptions() > 0 )
+#else
             if( std::uncaught_exception() )
+#endif
                 getResultCapture().sectionEndedEarly( endInfo );
             else
                 getResultCapture().sectionEnded( endInfo );

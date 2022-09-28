@@ -30,6 +30,7 @@
 #include "wx/msgout.h"
 
 #include "wx/gtk/private.h"
+#include "wx/gtk/private/log.h"
 
 #include "wx/gtk/mimetype.h"
 //-----------------------------------------------------------------------------
@@ -177,6 +178,129 @@ bool wxApp::DoIdle()
 
     return keepSource;
 }
+
+#ifdef wxHAS_GLIB_LOG_WRITER
+
+namespace wxGTKImpl
+{
+
+bool LogFilter::ms_allowed = false;
+bool LogFilter::ms_installed = false;
+LogFilter* LogFilter::ms_first = NULL;
+
+/* static */
+GLogWriterOutput
+LogFilter::wx_log_writer(GLogLevelFlags   log_level,
+                         const GLogField *fields,
+                         gsize            n_fields,
+                         gpointer         WXUNUSED(user_data))
+{
+    for ( const LogFilter* lf = LogFilter::ms_first; lf; lf = lf->m_next )
+    {
+        if ( lf->Filter(log_level, fields, n_fields) )
+            return G_LOG_WRITER_HANDLED;
+    }
+
+    return g_log_writer_default(log_level, fields, n_fields, NULL);
+}
+
+bool LogFilter::Install()
+{
+    if ( !ms_allowed )
+        return false;
+
+    if ( !ms_installed )
+    {
+        if ( glib_check_version(2, 50, 0) != 0 )
+        {
+            // No runtime support for log callback, we can't do anything.
+            return false;
+        }
+
+        g_log_set_writer_func(LogFilter::wx_log_writer, NULL, NULL);
+        ms_installed = true;
+    }
+
+    // Put this object in front of the linked list.
+    m_next = ms_first;
+    ms_first = this;
+
+    return true;
+}
+
+void LogFilter::Uninstall()
+{
+    if ( !ms_installed )
+    {
+        // We don't do anything at all in this case.
+        return;
+    }
+
+    // We should be uninstalling only the currently installed filter.
+    wxASSERT( ms_first == this );
+
+    ms_first = m_next;
+}
+
+bool LogFilterByMessage::Filter(GLogLevelFlags WXUNUSED(log_level),
+                                const GLogField* fields,
+                                gsize n_fields) const
+{
+    for ( gsize n = 0; n < n_fields; ++n )
+    {
+        const GLogField& f = fields[n];
+        if ( strcmp(f.key, "MESSAGE") == 0 )
+        {
+            if ( strcmp(static_cast<const char*>(f.value), m_message) == 0 )
+            {
+                // This is the message we want to filter.
+                m_warnNotFiltered = false;
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+LogFilterByMessage::~LogFilterByMessage()
+{
+    Uninstall();
+
+    if ( m_warnNotFiltered )
+    {
+        wxLogTrace("gtklog", "Message \"%s\" wasn't logged.", m_message);
+    }
+}
+
+} // namespace wxGTKImpl
+
+/* static */
+void wxApp::GTKSuppressDiagnostics(int flags)
+{
+    static wxGTKImpl::LogFilterByLevel s_logFilter;
+    s_logFilter.SetLevelToIgnore(flags);
+    s_logFilter.Install();
+}
+
+/* static */
+void wxApp::GTKAllowDiagnosticsControl()
+{
+    wxGTKImpl::LogFilter::Allow();
+}
+#else // !wxHAS_GLIB_LOG_WRITER
+/* static */
+void wxApp::GTKSuppressDiagnostics(int WXUNUSED(flags))
+{
+    // We can't do anything here.
+}
+
+/* static */
+void wxApp::GTKAllowDiagnosticsControl()
+{
+    // And don't need to do anything here.
+}
+#endif // wxHAS_GLIB_LOG_WRITER/!wxHAS_GLIB_LOG_WRITER
 
 //-----------------------------------------------------------------------------
 // wxApp

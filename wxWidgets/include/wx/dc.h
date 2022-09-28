@@ -353,6 +353,23 @@ public:
          m_maxY = y;
       }
     }
+
+    void CalcBoundingBox(wxCoord x1, wxCoord y1, wxCoord x2, wxCoord y2)
+    {
+        CalcBoundingBox(x1, y1);
+        CalcBoundingBox(x2, y2);
+    }
+
+    void CalcBoundingBox(const wxPoint& pt, const wxSize& sz)
+    {
+        CalcBoundingBox(pt.x, pt.y, pt.x + sz.x, pt.y + sz.y);
+    }
+
+    void CalcBoundingBox(const wxRect& rect)
+    {
+        CalcBoundingBox(rect.GetPosition(), rect.GetSize());
+    }
+
     void ResetBoundingBox()
     {
         m_isBBoxValid = false;
@@ -538,6 +555,10 @@ public:
     virtual void SetAxisOrientation(bool xLeftRight, bool yBottomUp);
 
     virtual double GetContentScaleFactor() const { return m_contentScaleFactor; }
+
+    virtual wxSize FromDIP(const wxSize& sz) const;
+
+    virtual wxSize ToDIP(const wxSize& sz) const;
 
 #ifdef __WXMSW__
     // Native Windows functions using the underlying HDC don't honour GDI+
@@ -742,7 +763,7 @@ protected:
 
     // bounding and clipping boxes
     wxCoord m_minX, m_minY, m_maxX, m_maxY; // Bounding box is stored in device units.
-    wxCoord m_clipX1, m_clipY1, m_clipX2, m_clipY2;  // Clipping box is stored in logical units.
+    wxCoord m_clipX1, m_clipY1, m_clipX2, m_clipY2;  // Some derived classes operate directly on clipping box given in logical units.
 
     wxRasterOperationMode m_logicalFunction;
     int m_backgroundMode;
@@ -763,6 +784,9 @@ protected:
 private:
     // Return the full DC area in logical coordinates.
     wxRect GetLogicalArea() const;
+
+    wxCoord m_devClipX1, m_devClipY1, m_devClipX2, m_devClipY2;  // For proper calculations of clipping box we need to store it in device units.
+    bool m_useDevClipCoords;
 
     wxDECLARE_ABSTRACT_CLASS(wxDCImpl);
 };
@@ -823,6 +847,30 @@ public:
 
     double GetContentScaleFactor() const
         { return m_pimpl->GetContentScaleFactor(); }
+
+    wxSize FromDIP(const wxSize& sz) const
+        { return m_pimpl->FromDIP(sz); }
+    wxPoint FromDIP(const wxPoint& pt) const
+    {
+        const wxSize sz = FromDIP(wxSize(pt.x, pt.y));
+        return wxPoint(sz.x, sz.y);
+    }
+    int FromDIP(int d) const
+        { return FromDIP(wxSize(d, 0)).x; }
+
+    wxSize ToDIP(const wxSize & sz) const
+    {
+        return m_pimpl->ToDIP(sz);
+    }
+    wxPoint ToDIP(const wxPoint & pt) const
+    {
+        const wxSize sz = ToDIP(wxSize(pt.x, pt.y));
+        return wxPoint(sz.x, sz.y);
+    }
+    int ToDIP(int d) const
+    {
+        return ToDIP(wxSize(d, 0)).x;
+    }
 
     // Right-To-Left (RTL) modes
 
@@ -1478,7 +1526,7 @@ class WXDLLIMPEXP_CORE wxDCTextBgModeChanger
 public:
     wxDCTextBgModeChanger(wxDC& dc) : m_dc(dc), m_modeOld(wxBRUSHSTYLE_INVALID) { }
 
-    wxDCTextBgModeChanger(wxDC& dc, int mode) : m_dc(dc)
+    wxDCTextBgModeChanger(wxDC& dc, int mode) : m_dc(dc), m_modeOld(wxBRUSHSTYLE_INVALID)
     {
         Set(mode);
     }

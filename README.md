@@ -39,5 +39,5 @@ cmake --build . --config Release --target install
 ```
 
 ## Issues
-Please report all problems in the [Issues](https://github.com/Ravbug/wxWidgetsTemplate/issues) section of this repository. 
+Please report all problems in the [Issues](https://github.com/Ravbug/UnityHubNative/issues) section of this repository. 
 Make sure to include as many details as possible, or I won't be able to fix it.

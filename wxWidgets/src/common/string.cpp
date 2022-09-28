@@ -32,6 +32,7 @@
 #include <stdlib.h>
 
 #include "wx/hashmap.h"
+#include "wx/uilocale.h"
 #include "wx/vector.h"
 #include "wx/xlocale.h"
 
@@ -1677,6 +1678,32 @@ int wxString::Find(wxUniChar ch, bool bFromEnd) const
     *pVal = val;                                                            \
     return !*end;
 
+bool wxString::ToInt(int *pVal, int base) const
+{
+    wxASSERT_MSG(!base || (base > 1 && base <= 36), wxT("invalid base"));
+
+    WX_STRING_TO_X_TYPE_START
+    wxLongLong_t lval = wxStrtoll(start, &end, base);
+
+    if (lval < INT_MIN || lval > INT_MAX)
+        return false;
+    int val = (int)lval;
+
+    WX_STRING_TO_X_TYPE_END
+}
+
+bool wxString::ToUInt(unsigned int *pVal, int base) const
+{
+    wxASSERT_MSG(!base || (base > 1 && base <= 36), wxT("invalid base"));
+
+    WX_STRING_TO_X_TYPE_START
+    wxULongLong_t lval = wxStrtoull(start, &end, base);
+    if (lval > UINT_MAX)
+        return false;
+    unsigned int val = (unsigned int)lval;
+    WX_STRING_TO_X_TYPE_END
+}
+
 bool wxString::ToLong(long *pVal, int base) const
 {
     wxASSERT_MSG( !base || (base > 1 && base <= 36), wxT("invalid base") );
@@ -1785,8 +1812,8 @@ bool wxString::ToCDouble(double *pVal) const
     // Create a copy of this string using the decimal point instead of whatever
     // separator the current locale uses.
 #if wxUSE_INTL
-    wxString sep = wxLocale::GetInfo(wxLOCALE_DECIMAL_POINT,
-                                     wxLOCALE_CAT_NUMBER);
+    wxString sep = wxUILocale::GetCurrent().GetInfo(wxLOCALE_DECIMAL_POINT,
+                                                    wxLOCALE_CAT_NUMBER);
     if ( sep == "." )
     {
         // We can avoid an unnecessary string copy in this case.
@@ -1850,12 +1877,12 @@ wxString wxString::FromCDouble(double val, int precision)
     // imbue() stream method is called (for the record, the latest libstdc++
     // version included in OS X does it and so seem to do the versions
     // currently included in Android NDK and both FreeBSD and OpenBSD), so we
-    // can't do this neither and are reduced to this hack.
+    // can't do this either and are reduced to this hack.
 
     wxString s = FromDouble(val, precision);
 #if wxUSE_INTL
-    wxString sep = wxLocale::GetInfo(wxLOCALE_DECIMAL_POINT,
-                                     wxLOCALE_CAT_NUMBER);
+    wxString sep = wxUILocale::GetCurrent().GetInfo(wxLOCALE_DECIMAL_POINT,
+                                                    wxLOCALE_CAT_NUMBER);
 #else // !wxUSE_INTL
     // As above, this is the most common alternative value. Notice that here it
     // doesn't matter if we guess wrongly and the current separator is already

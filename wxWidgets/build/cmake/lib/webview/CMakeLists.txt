@@ -7,8 +7,6 @@
 # Licence:     wxWindows licence
 #############################################################################
 
-include(../../source_groups.cmake)
-
 function(wx_webview_copy_webview2_loader target)
     if(NOT WXMSW OR NOT wxUSE_WEBVIEW_EDGE OR NOT TARGET ${target})
         return()
@@ -43,14 +41,6 @@ endif()
 
 wx_add_library(wxwebview ${WEBVIEW_FILES})
 
-if(WXGTK AND wxUSE_WEBVIEW_WEBKIT2)
-    if(wxVERSION_IS_DEV)
-        set(WX_WEB_EXTENSIONS_DIRECTORY "lib/wx/${wxMAJOR_VERSION}.${wxMINOR_VERSION}.${wxRELEASE_NUMBER}/web-extensions")
-    else()
-        set(WX_WEB_EXTENSIONS_DIRECTORY "lib/wx/${wxMAJOR_VERSION}.${wxMINOR_VERSION}/web-extensions")
-    endif()
-endif()
-
 if(APPLE)
     wx_lib_link_libraries(wxwebview PUBLIC "-framework WebKit")
 elseif(WXMSW)
@@ -81,37 +71,42 @@ elseif(WXMSW)
                 EXPECTED_HASH SHA256=${WEBVIEW2_SHA256})
             file(MAKE_DIRECTORY ${WEBVIEW2_PACKAGE_DIR})
             execute_process(COMMAND
-                ${CMAKE_COMMAND} -E tar x ${CMAKE_BINARY_DIR}/webview2.nuget
-                WORKING_DIRECTORY ${WEBVIEW2_PACKAGE_DIR}
+                "${CMAKE_COMMAND}" -E tar x "${CMAKE_BINARY_DIR}/webview2.nuget"
+                WORKING_DIRECTORY "${WEBVIEW2_PACKAGE_DIR}"
             )
         endif()
         set(WEBVIEW2_PACKAGE_DIR ${WEBVIEW2_PACKAGE_DIR} CACHE INTERNAL "" FORCE)
 
-        wx_lib_include_directories(wxwebview PRIVATE "${WEBVIEW2_PACKAGE_DIR}/build/native/include")
+        wx_lib_include_directories(wxwebview "${WEBVIEW2_PACKAGE_DIR}/build/native/include")
         if(NOT MSVC)
-            wx_lib_include_directories(wxwebview PRIVATE "${wxSOURCE_DIR}/include/wx/msw/wrl")
+            wx_lib_include_directories(wxwebview "${wxSOURCE_DIR}/include/wx/msw/wrl")
             if (NOT wxBUILD_MONOLITHIC)
                 target_compile_options(wxwebview PRIVATE -Wno-unknown-pragmas)
             endif()
         endif()
 
-        wx_webview_copy_webview2_loader(wxwebview)
+        if (wxUSE_WEBVIEW_EDGE_STATIC)
+            target_link_directories(wxwebview PUBLIC
+                $<BUILD_INTERFACE:${WEBVIEW2_PACKAGE_DIR}/build/native/$(LibrariesArchitecture)/>
+            )
+        else()
+            wx_webview_copy_webview2_loader(wxwebview)
+        endif()
+
     endif()
 elseif(WXGTK)
     if(LIBSOUP_FOUND)
-        wx_lib_include_directories(wxwebview PUBLIC ${LIBSOUP_INCLUDE_DIRS})
+        wx_lib_include_directories(wxwebview ${LIBSOUP_INCLUDE_DIRS})
         wx_lib_link_libraries(wxwebview PUBLIC ${LIBSOUP_LIBRARIES})
     endif()
     if(wxUSE_WEBVIEW_WEBKIT2)
-        wx_lib_include_directories(wxwebview PUBLIC ${WEBKIT2_INCLUDE_DIR})
+        wx_lib_include_directories(wxwebview ${WEBKIT2_INCLUDE_DIR})
         wx_lib_link_libraries(wxwebview PUBLIC ${WEBKIT2_LIBRARIES})
     elseif(wxUSE_WEBVIEW_WEBKIT)
-        wx_lib_include_directories(wxwebview PUBLIC ${WEBKIT_INCLUDE_DIR})
+        wx_lib_include_directories(wxwebview ${WEBKIT_INCLUDE_DIR})
         wx_lib_link_libraries(wxwebview PUBLIC ${WEBKIT_LIBRARIES})
     endif()
 endif()
-
-wx_finalize_lib(wxwebview)
 
 # webkit extension plugin
 # we can't use (all of the) macros and functions because this library should
@@ -119,19 +114,34 @@ wx_finalize_lib(wxwebview)
 if(WXGTK AND wxUSE_WEBVIEW_WEBKIT2)
     wx_append_sources(WEBKIT2_EXT_FILES WEBVIEW_WEBKIT2_EXTENSION)
     add_library(wxwebkit2_ext SHARED ${WEBKIT2_EXT_FILES})
-    wx_set_target_properties(wxwebkit2_ext false)
+    wx_set_target_properties(wxwebkit2_ext IS_PLUGIN)
+    set_target_properties(wxwebkit2_ext PROPERTIES NO_SONAME 1)
 
     # Change output name to match expected name in webview_webkit2.cpp: webkit2_ext*
+    set(lib_unicode)
     if(wxUSE_UNICODE)
-        set(lib_unicode u)
+        set(lib_unicode "u")
     endif()
-    set_target_properties(wxwebkit2_ext PROPERTIES PREFIX "")
-    set_target_properties(wxwebkit2_ext PROPERTIES
-        OUTPUT_NAME "webkit2_ext${lib_unicode}-${wxMAJOR_VERSION}.${wxMINOR_VERSION}"
-        OUTPUT_NAME_DEBUG "webkit2_ext${lib_unicode}d-${wxMAJOR_VERSION}.${wxMINOR_VERSION}"
-        )
 
-    target_include_directories(wxwebkit2_ext PUBLIC
+    set(lib_rls)
+    set(lib_dbg)
+    if(WIN32_MSVC_NAMING)
+        set(lib_dbg "d")
+    endif()
+
+    if(wxVERSION_IS_DEV)
+        set(WX_WEB_EXT_VERSION "${wxMAJOR_VERSION}.${wxMINOR_VERSION}.${wxRELEASE_NUMBER}")
+    else()
+        set(WX_WEB_EXT_VERSION "${wxMAJOR_VERSION}.${wxMINOR_VERSION}")
+    endif()
+
+    set_target_properties(wxwebkit2_ext PROPERTIES
+        OUTPUT_NAME       "webkit2_ext${lib_unicode}${lib_rls}-${WX_WEB_EXT_VERSION}"
+        OUTPUT_NAME_DEBUG "webkit2_ext${lib_unicode}${lib_dbg}-${WX_WEB_EXT_VERSION}"
+        PREFIX ""
+    )
+
+    target_include_directories(wxwebkit2_ext PRIVATE
         ${LIBSOUP_INCLUDE_DIRS}
         ${WEBKIT2_INCLUDE_DIR}
         )
@@ -140,7 +150,7 @@ if(WXGTK AND wxUSE_WEBVIEW_WEBKIT2)
         ${WEBKIT2_LIBRARIES}
         )
 
-    wx_install(TARGETS wxwebkit2_ext LIBRARY DESTINATION ${WX_WEB_EXTENSIONS_DIRECTORY})
+    wx_install(TARGETS wxwebkit2_ext LIBRARY DESTINATION "lib/wx/${WX_WEB_EXT_VERSION}/web-extensions")
 
-    add_dependencies(wxwebview wxwebkit2_ext)
+    wx_add_dependencies(wxwebview wxwebkit2_ext)
 endif()

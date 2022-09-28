@@ -20,6 +20,7 @@
 
 
 #include "wx/datetimectrl.h"
+#include "wx/uilocale.h"
 
 #ifdef wxNEEDS_DATETIMEPICKCTRL
 
@@ -121,10 +122,14 @@ void wxDateTimePickerCtrl::MSWUpdateFormat(bool valid)
     // as the control seems to remember whichever format was used when it was
     // created, i.e. this works both with and without wxDP_SHOWCENTURY.
 
-    // Note: due to a bug in MinGW headers, with missing parentheses around the
-    // macro argument (corrected in or before 8.2, but still existing in 5.3),
-    // we have to use a temporary variable here.
-    const TCHAR* const format = valid ? NULL : m_nullText.t_str();
+    // Use a temporary variable to ensure that the code compiles in
+    // wxUSE_UNICODE_UTF8 case, where t_str() doesn't return a pointer.
+    const TCHAR* format;
+    if ( valid )
+        format = NULL;
+    else
+        format = m_nullText.t_str();
+
     DateTime_SetFormat(GetHwnd(), format);
 }
 
@@ -180,7 +185,7 @@ wxSize wxDateTimePickerCtrl::DoGetBestSize() const
         // DPI change, so we never use the vertical component of the value
         // returned by it.
         //
-        // Unfortunately, resetting this style doesn't work neither, so we have
+        // Unfortunately, resetting this style doesn't work either, so we have
         // to create a whole new window just for this, which is pretty wasteful
         // but seems unavoidable.
         HWND hwnd;
@@ -227,7 +232,7 @@ wxSize wxDateTimePickerCtrl::DoGetBestSize() const
     {
         // Use the same native format as the underlying native control.
 #if wxUSE_INTL
-        wxString s = wxDateTime::Now().Format(wxLocale::GetOSInfo(MSWGetFormat()));
+        wxString s = wxDateTime::Now().Format(wxUILocale::GetCurrent().GetInfo(MSWGetFormat()));
 #else // !wxUSE_INTL
         wxString s("XXX-YYY-ZZZZ");
 #endif // wxUSE_INTL/!wxUSE_INTL

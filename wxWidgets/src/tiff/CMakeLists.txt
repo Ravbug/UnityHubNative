@@ -376,7 +376,6 @@ endif()
 
 check_symbol_exists(mmap "sys/mman.h" HAVE_MMAP)
 check_symbol_exists(setmode "unistd.h" HAVE_SETMODE)
-check_symbol_exists(snprintf "stdio.h" HAVE_SNPRINTF)
 check_symbol_exists(strcasecmp "strings.h" HAVE_STRCASECMP)
 check_symbol_exists(strtol "stdlib.h" HAVE_STRTOL)
 check_symbol_exists(strtoll "stdlib.h" HAVE_STRTOLL)
@@ -384,10 +383,6 @@ check_symbol_exists(strtoul "stdlib.h" HAVE_STRTOUL)
 check_symbol_exists(strtoull "stdlib.h" HAVE_STRTOULL)
 check_symbol_exists(getopt "unistd.h;stdio.h" HAVE_GETOPT)
 check_symbol_exists(lfind "search.h" HAVE_LFIND)
-
-if(NOT HAVE_SNPRINTF)
-  add_definitions(-DNEED_LIBPORT)
-endif()
 
 # CPU bit order
 set(HOST_FILLORDER FILLORDER_MSB2LSB)

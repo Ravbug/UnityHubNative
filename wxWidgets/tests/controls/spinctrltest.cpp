@@ -124,6 +124,17 @@ TEST_CASE_METHOD(SpinCtrlTestCase1, "SpinCtrl::Init4", "[spinctrl]")
     CHECK(m_spin->GetValue() == 99);
 }
 
+TEST_CASE_METHOD(SpinCtrlTestCase1, "SpinCtrl::InitOutOfRange", "[spinctrl]")
+{
+    m_spin->Create(wxTheApp->GetTopWindow(), wxID_ANY, "",
+                   wxDefaultPosition, wxDefaultSize, 0,
+                   10, 20, 0);
+
+    // Recreate the control with another "initial" outside of the valid range:
+    // it shouldn't be taken into account.
+    CHECK(m_spin->GetValue() == 10);
+}
+
 TEST_CASE_METHOD(SpinCtrlTestCase1, "SpinCtrl::NoEventsInCtor", "[spinctrl]")
 {
     // Verify that creating the control does not generate any events. This is
@@ -268,6 +279,23 @@ TEST_CASE_METHOD(SpinCtrlTestCase2, "SpinCtrl::Value", "[spinctrl]")
     // Calling SetValue() shouldn't have generated any events.
     CHECK(updatedSpin.GetCount() == 0);
     CHECK(updatedText.GetCount() == 0);
+
+    // Also test that setting the text value works.
+    CHECK( m_spin->GetTextValue() == "100" );
+
+    m_spin->SetValue("57");
+    CHECK( m_spin->GetTextValue() == "57" );
+    CHECK( m_spin->GetValue() == 57 );
+
+    CHECK(updatedSpin.GetCount() == 0);
+    CHECK(updatedText.GetCount() == 0);
+
+    m_spin->SetValue("");
+    CHECK( m_spin->GetTextValue() == "" );
+    CHECK( m_spin->GetValue() == 0 );
+
+    CHECK(updatedSpin.GetCount() == 0);
+    CHECK(updatedText.GetCount() == 0);
 }
 
 TEST_CASE_METHOD(SpinCtrlTestCase2, "SpinCtrl::Base", "[spinctrl]")
@@ -338,6 +366,32 @@ TEST_CASE_METHOD(SpinCtrlTestCase3, "SpinCtrl::SetValueInsideEventHandler", "[sp
 
     delete text;
 #endif // wxUSE_UIACTIONSIMULATOR
+}
+
+TEST_CASE_METHOD(SpinCtrlTestCase1, "SpinCtrl::Increment", "[spinctrl]")
+{
+#if wxUSE_UIACTIONSIMULATOR
+    m_spin->Create(wxTheApp->GetTopWindow(), wxID_ANY, "",
+        wxDefaultPosition, wxDefaultSize,
+        wxSP_ARROW_KEYS | wxSP_WRAP);
+
+    wxUIActionSimulator sim;
+
+    CHECK( m_spin->GetIncrement() == 1 );
+
+    m_spin->SetFocus();
+    wxYield();
+    m_spin->SetIncrement( 5 );
+    sim.Char(WXK_UP);
+
+    wxYield();
+
+    CHECK(m_spin->GetValue() == 5);
+
+    int increment = m_spin->GetIncrement();
+
+    CHECK( increment == 5 );
+#endif
 }
 
 #endif

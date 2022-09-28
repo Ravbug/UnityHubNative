@@ -166,7 +166,9 @@ wxPGGlobalVarsClass* wxPGGlobalVars = NULL;
 
 wxPGGlobalVarsClass::wxPGGlobalVarsClass()
     // Prepare some shared variants
-    : m_vEmptyString(wxString())
+    : m_fontFamilyChoices(NULL)
+    , m_defaultRenderer(new wxPGDefaultRenderer())
+    , m_vEmptyString(wxString())
     , m_vZero(0L)
     , m_vMinusOne(-1L)
     , m_vTrue(true)
@@ -184,6 +186,10 @@ wxPGGlobalVarsClass::wxPGGlobalVarsClass()
 #if wxPG_COMPATIBILITY_1_4
     , m_strInlineHelp(wxS("InlineHelp"))
 #endif
+    , m_autoGetTranslation(false)
+    , m_offline(0)
+    , m_extraStyle(0)
+    , m_warnings(0)
 {
     wxPGProperty::sm_wxPG_LABEL = new wxString(wxPG_LABEL_STRING);
 
@@ -191,18 +197,6 @@ wxPGGlobalVarsClass::wxPGGlobalVarsClass()
     m_boolChoices.Add(_("False"));
     /* TRANSLATORS: Name of Boolean true value */
     m_boolChoices.Add(_("True"));
-
-    m_fontFamilyChoices = NULL;
-
-    m_defaultRenderer = new wxPGDefaultRenderer();
-
-    m_autoGetTranslation = false;
-
-    m_offline = 0;
-
-    m_extraStyle = 0;
-
-    m_warnings = 0;
 }
 
 
@@ -215,16 +209,12 @@ wxPGGlobalVarsClass::~wxPGGlobalVarsClass()
 
 #if wxUSE_VALIDATORS
     for ( size_t i = 0; i < m_arrValidators.size(); i++ )
-        delete ((wxValidator*)m_arrValidators[i]);
+        delete (m_arrValidators[i]);
 #endif
-
-    //
-    // Destroy value type class instances.
-    wxPGHashMapS2P::iterator vt_it;
 
     // Destroy editor class instances.
     // iterate over all the elements in the class
-    for( vt_it = m_mapEditorClasses.begin(); vt_it != m_mapEditorClasses.end(); ++vt_it )
+    for( wxPGHashMapS2P::iterator vt_it = m_mapEditorClasses.begin(); vt_it != m_mapEditorClasses.end(); ++vt_it )
     {
         delete ((wxPGEditor*)vt_it->second);
     }
@@ -374,8 +364,6 @@ void wxPropertyGrid::Init1()
     m_doubleBuffer = NULL;
 
 #ifndef wxPG_ICON_WIDTH
-    m_expandbmp = NULL;
-    m_collbmp = NULL;
     m_iconWidth = 11;
     m_iconHeight = 11;
 #else
@@ -438,17 +426,17 @@ void wxPropertyGrid::Init2()
 
 #ifndef wxPG_ICON_WIDTH
     // create two bitmap nodes for drawing
-    m_expandbmp = new wxBitmap(expand_xpm);
-    m_collbmp = new wxBitmap(collapse_xpm);
+    m_expandbmp = wxBitmap(expand_xpm);
+    m_collbmp = wxBitmap(collapse_xpm);
 
     // calculate average font height for bitmap centering
 
-    m_iconWidth = m_expandbmp->GetWidth();
-    m_iconHeight = m_expandbmp->GetHeight();
+    m_iconWidth = m_expandbmp.GetWidth();
+    m_iconHeight = m_expandbmp.GetHeight();
 #endif
 
     m_curcursor = wxCURSOR_ARROW;
-    m_cursorSizeWE = new wxCursor( wxCURSOR_SIZEWE );
+    m_cursorSizeWE = wxCursor(wxCURSOR_SIZEWE);
 
     // adjust bitmap icon y position so they are centered
     m_vspacing = FromDIP(wxPG_DEFAULT_VSPACING);
@@ -575,13 +563,6 @@ wxPropertyGrid::~wxPropertyGrid()
 
     if ( m_iFlags & wxPG_FL_CREATEDSTATE )
         delete m_pState;
-
-    delete m_cursorSizeWE;
-
-#ifndef wxPG_ICON_WIDTH
-    delete m_expandbmp;
-    delete m_collbmp;
-#endif
 
     // Delete common value records
     for ( i=0; i<m_commonValues.size(); i++ )
@@ -887,9 +868,7 @@ bool wxPropertyGrid::AddToSelectionFromInputEvent( wxPGProperty* prop,
         }
 
         // Iterate through properties in-between, and select them
-        wxPropertyGridIterator it;
-
-        for ( it = GetIterator(wxPG_ITERATE_VISIBLE, startFrom);
+        for ( wxPropertyGridIterator it = GetIterator(wxPG_ITERATE_VISIBLE, startFrom);
               !it.AtEnd();
               ++it )
         {
@@ -1168,18 +1147,17 @@ wxSize wxPropertyGrid::DoGetBestSize() const
     int lineHeight = wxMax(FromDIP(15), m_lineHeight);
 
     // don't make the grid too tall (limit height to 10 items) but don't
-    // make it too small neither
+    // make it too small either
     int numLines = wxMin
                    (
                     wxMax(m_pState->DoGetRoot()->GetChildCount(), 3),
                     10
                    );
 
-    wxClientDC dc(const_cast<wxPropertyGrid *>(this));
     int width = m_marginWidth;
     for ( unsigned int i = 0; i < m_pState->GetColumnCount(); i++ )
     {
-        width += m_pState->GetColumnFitWidth(dc, m_pState->DoGetRoot(), i, true);
+        width += m_pState->GetColumnFitWidth(m_pState->DoGetRoot(), i, true);
     }
 
     return wxSize(width, lineHeight*numLines + 40);
@@ -1300,7 +1278,7 @@ void wxPropertyGrid::CalculateFontAndBitmapStuff( int vspacing )
 
     m_captionFont = wxControl::GetFont();
 
-    GetTextExtent(wxS("jG"), &x, &y, 0, 0, &m_captionFont);
+    GetTextExtent(wxS("jG"), &x, &y, NULL, NULL, &m_captionFont);
     m_subgroup_extramargin = x + (x/2);
     m_fontHeight = y;
 
@@ -1331,7 +1309,7 @@ void wxPropertyGrid::CalculateFontAndBitmapStuff( int vspacing )
         m_marginWidth = m_gutterWidth*2 + m_iconWidth;
 
     m_captionFont.SetWeight(wxFONTWEIGHT_BOLD);
-    GetTextExtent(wxS("jG"), &x, &y, 0, 0, &m_captionFont);
+    GetTextExtent(wxS("jG"), &x, &y, NULL, NULL, &m_captionFont);
 
     m_lineHeight = m_fontHeight+(2*m_spacingy)+1;
 
@@ -1360,11 +1338,13 @@ void wxPropertyGrid::OnSysColourChanged( wxSysColourChangedEvent &WXUNUSED(event
     }
 }
 
-void wxPropertyGrid::OnDPIChanged(wxDPIChangedEvent &WXUNUSED(event))
+void wxPropertyGrid::OnDPIChanged(wxDPIChangedEvent &event)
 {
     m_vspacing = FromDIP(wxPG_DEFAULT_VSPACING);
     CalculateFontAndBitmapStuff(m_vspacing);
     Refresh();
+
+    event.Skip();
 }
 
 // -----------------------------------------------------------------------
@@ -1760,8 +1740,7 @@ wxString& wxPropertyGrid::ExpandEscapeSequences( wxString& dst_str, const wxStri
 
     bool prev_is_slash = false;
 
-    wxString::const_iterator i;
-    for ( i = src_str.begin(); i != src_str.end(); ++i )
+    for ( wxString::const_iterator i = src_str.begin(); i != src_str.end(); ++i )
     {
         wxUniChar a = *i;
 
@@ -1811,8 +1790,7 @@ wxString& wxPropertyGrid::CreateEscapeSequences( wxString& dst_str, const wxStri
         return dst_str;
     }
 
-    wxString::const_iterator i;
-    for ( i = src_str.begin(); i != src_str.end(); ++i )
+    for ( wxString::const_iterator i = src_str.begin(); i != src_str.end(); ++i )
     {
         wxUniChar a = *i;
 
@@ -1961,7 +1939,7 @@ void wxPropertyGrid::DrawExpanderButton( wxDC& dc, const wxRect& rect,
     int _y = r.y+(m_iconWidth/2);
     dc.DrawLine(r.x+2,_y,r.x+m_iconWidth-2,_y);
 #else
-    wxBitmap* bmp;
+    wxBitmap bmp;
 #endif
 
     if ( property->IsExpanded() )
@@ -2005,7 +1983,7 @@ void wxPropertyGrid::DrawExpanderButton( wxDC& dc, const wxRect& rect,
 #elif wxPG_ICON_WIDTH
     //
 #else
-    dc.DrawBitmap( *bmp, r.x, r.y, true );
+    dc.DrawBitmap( bmp, r.x, r.y, true );
 #endif
 }
 
@@ -2805,7 +2783,7 @@ void wxPropertyGrid::DoSetSplitterPosition( int newxpos,
                                             int splitterIndex,
                                             int flags )
 {
-    if ( ( newxpos < wxPG_DRAG_MARGIN ) )
+    if ( newxpos < wxPG_DRAG_MARGIN )
         return;
 
     if ( flags & wxPG_SPLITTER_FROM_EVENT )
@@ -3843,7 +3821,7 @@ wxSize wxPropertyGrid::GetImageSize( wxPGProperty* p, int item ) const
 // -----------------------------------------------------------------------
 
 // takes scrolling into account
-void wxPropertyGrid::ImprovedClientToScreen( int* px, int* py )
+void wxPropertyGrid::ImprovedClientToScreen( int* px, int* py ) const
 {
     wxASSERT(px && py);
     CalcScrolledPosition(*px, *py, px, py);
@@ -3864,12 +3842,8 @@ void wxPropertyGrid::CustomSetCursor( int type, bool override )
 {
     if ( type == m_curcursor && !override ) return;
 
-    wxCursor* cursor = &wxPG_DEFAULT_CURSOR;
-
-    if ( type == wxCURSOR_SIZEWE )
-        cursor = m_cursorSizeWE;
-
-    SetCursor( *cursor );
+    wxCursor cursor = (type == wxCURSOR_SIZEWE) ? m_cursorSizeWE : wxPG_DEFAULT_CURSOR;
+    SetCursor(cursor);
 
     m_curcursor = type;
 }
@@ -4556,11 +4530,7 @@ void wxPropertyGrid::RecalculateVirtualSize( int forceXPos )
          !m_pState )
         return;
 
-    //
-    // If virtual height was changed, then recalculate editor control position(s)
-    if ( m_pState->m_vhCalcPending )
-        CorrectEditorWidgetPosY();
-
+    int h0 = m_pState->m_virtualHeight;
     m_pState->EnsureVirtualHeight();
 
     wxASSERT_LEVEL_2_MSG(
@@ -4574,6 +4544,11 @@ void wxPropertyGrid::RecalculateVirtualSize( int forceXPos )
     int h = m_pState->m_virtualHeight;
     // Now adjust virtual size.
     SetVirtualSize(w, h);
+    // If virtual height was changed, then recalculate editor control position(s)
+    if ( h != h0 )
+    {
+        CorrectEditorWidgetPosY();
+    }
     if ( forceXPos != -1 )
     {
         Scroll(forceXPos, wxDefaultCoord);
@@ -4619,12 +4594,12 @@ void wxPropertyGrid::OnResize( wxSizeEvent& event )
             int w = wxMax(width, 250);
             int h = wxMax(height + dblh, 400);
             m_doubleBuffer = new wxBitmap;
-            m_doubleBuffer->CreateScaled( w, h, wxBITMAP_SCREEN_DEPTH, scaleFactor );
+            m_doubleBuffer->CreateWithDIPSize( w, h, scaleFactor );
         }
         else
         {
-            int w = m_doubleBuffer->GetScaledWidth();
-            int h = m_doubleBuffer->GetScaledHeight();
+            int w = m_doubleBuffer->GetLogicalWidth();
+            int h = m_doubleBuffer->GetLogicalHeight();
 
             // Double buffer must be large enough
             if ( w < width || h < (height+dblh) )
@@ -4633,7 +4608,7 @@ void wxPropertyGrid::OnResize( wxSizeEvent& event )
                 if ( h < (height+dblh) ) h = height + dblh;
                 delete m_doubleBuffer;
                 m_doubleBuffer = new wxBitmap;
-                m_doubleBuffer->CreateScaled( w, h, wxBITMAP_SCREEN_DEPTH, scaleFactor );
+                m_doubleBuffer->CreateWithDIPSize( w, h, scaleFactor );
             }
         }
     }
@@ -4929,10 +4904,10 @@ bool wxPropertyGrid::HandleMouseClick( int x, unsigned int y, wxMouseEvent &even
                 if ( !p->IsCategory() )
                     nx -= IN_CELL_EXPANDER_BUTTON_X_ADJUST;
 
-                if ( (nx >= m_gutterWidth && nx < (m_gutterWidth+m_iconWidth)) )
+                if ( nx >= m_gutterWidth && nx < (m_gutterWidth+m_iconWidth) )
                 {
                     int y2 = y % m_lineHeight;
-                    if ( (y2 >= m_buttonSpacingY && y2 < (m_buttonSpacingY+m_iconHeight)) )
+                    if ( y2 >= m_buttonSpacingY && y2 < (m_buttonSpacingY+m_iconHeight) )
                     {
                         // On click on expander button, expand/collapse
                         if ( p->IsExpanded() )
@@ -5093,13 +5068,13 @@ bool wxPropertyGrid::HandleMouseMove( int x, unsigned int y,
                         int space = m_pState->GetColumnWidth(m_colHover);
 
                         int imageWidth = 0;
-                        const wxBitmap& bmp = cell.GetBitmap();
+                        const wxBitmap& bmp = cell.GetBitmap().GetBitmapFor(this);
                         if ( bmp.IsOk() )
                         {
                             imageWidth = bmp.GetWidth();
                             int hMax = m_lineHeight - wxPG_CUSTOM_IMAGE_SPACINGY - 1;
                             if ( bmp.GetHeight() > hMax )
-                                imageWidth *= (double)hMax / bmp.GetHeight();
+                                imageWidth = int(double(imageWidth) * hMax / bmp.GetHeight());
                         }
 
                         if ( m_colHover == 0 )
@@ -5129,7 +5104,7 @@ bool wxPropertyGrid::HandleMouseMove( int x, unsigned int y,
                             font = &m_captionFont;
                         if ( cell.GetFont().IsOk() )
                             font = &cell.GetFont();
-                        GetTextExtent( tipString, &tw, &th, 0, 0, font );
+                        GetTextExtent( tipString, &tw, &th, NULL, NULL, font );
                         if ( tw > space )
                             SetToolTip( tipString );
                     }
@@ -5433,10 +5408,10 @@ void wxPropertyGrid::OnMouseEntry( wxMouseEvent &event )
         // Get real cursor position
         wxPoint pt = ScreenToClient(::wxGetMousePosition());
 
-        if ( ( pt.x <= 0 || pt.y <= 0 || pt.x >= m_width || pt.y >= m_height ) )
+        if ( pt.x <= 0 || pt.y <= 0 || pt.x >= m_width || pt.y >= m_height )
         {
             {
-                if ( (m_iFlags & wxPG_FL_MOUSE_INSIDE) )
+                if ( m_iFlags & wxPG_FL_MOUSE_INSIDE )
                 {
                     m_iFlags &= ~(wxPG_FL_MOUSE_INSIDE);
                 }
@@ -5588,14 +5563,13 @@ void wxPropertyGrid::AddActionTrigger( int action, int keycode, int modifiers )
 
 void wxPropertyGrid::ClearActionTriggers( int action )
 {
-    wxPGHashMapI2I::iterator it;
     bool didSomething;
 
     do
     {
         didSomething = false;
 
-        for ( it = m_actionTriggers.begin();
+        for (wxPGHashMapI2I::iterator it = m_actionTriggers.begin();
               it != m_actionTriggers.end();
               ++it )
         {
@@ -5616,7 +5590,7 @@ void wxPropertyGrid::HandleKeyEvent( wxKeyEvent &event, bool fromChild )
     // Handles key event when editor control is not focused.
     //
 
-    wxCHECK2(!IsFrozen(), return);
+    wxCHECK_RET(!IsFrozen(), "wxPropertyGrid shouldn't be frozen");
 
     // Traversal between items, collapsing/expanding, etc.
     wxPGProperty* selected = GetSelection();
@@ -5802,6 +5776,11 @@ void wxPropertyGrid::HandleKeyEvent( wxKeyEvent &event, bool fromChild )
 
                 if ( reopenLabelEditorCol >= 0 )
                     DoBeginLabelEdit(reopenLabelEditorCol);
+            }
+            else if ( action == wxPG_ACTION_EDIT )
+            {
+                // For first and last item just validate the value
+                CommitChangesFromEditor();
             }
             wasHandled = true;
         }
@@ -6161,7 +6140,7 @@ void wxPropertyGrid::RegisterDefaultEditors()
 // -----------------------------------------------------------------------
 
 wxPGStringTokenizer::wxPGStringTokenizer( const wxString& str, wxChar delimiter )
-    : m_str(&str), m_curPos(str.begin()), m_delimiter(delimiter)
+    : m_str(str), m_curPos(str.begin()), m_delimiter(delimiter)
 {
 }
 
@@ -6171,7 +6150,7 @@ wxPGStringTokenizer::~wxPGStringTokenizer()
 
 bool wxPGStringTokenizer::HasMoreTokens()
 {
-    const wxString& str = *m_str;
+    const wxString& str = m_str;
 
     wxString::const_iterator i = m_curPos;
 
@@ -6317,37 +6296,29 @@ wxDEFINE_EVENT( wxEVT_PG_COLS_RESIZED, wxPropertyGridEvent);
 
 // -----------------------------------------------------------------------
 
-void wxPropertyGridEvent::Init()
-{
-    m_validationInfo = NULL;
-    m_column = 1;
-    m_canVeto = false;
-    m_wasVetoed = false;
-    m_pg = NULL;
-}
-
-// -----------------------------------------------------------------------
-
 wxPropertyGridEvent::wxPropertyGridEvent(wxEventType commandType, int id)
     : wxCommandEvent(commandType,id)
+    , m_property(NULL)
+    , m_pg(NULL)
+    , m_validationInfo(NULL)
+    , m_column(1)
+    , m_canVeto(false)
+    , m_wasVetoed(false)
 {
-    m_property = NULL;
-    Init();
 }
 
 // -----------------------------------------------------------------------
 
 wxPropertyGridEvent::wxPropertyGridEvent(const wxPropertyGridEvent& event)
     : wxCommandEvent(event)
+    , m_property(event.m_property)
+    , m_pg(event.m_pg)
+    , m_validationInfo(event.m_validationInfo)
+    , m_column(event.m_column)
+    , m_canVeto(event.m_canVeto)
+    , m_wasVetoed(event.m_wasVetoed)
 {
-    m_eventType = event.GetEventType();
-    m_eventObject = event.m_eventObject;
-    m_pg = event.m_pg;
     OnPropertyGridSet();
-    m_property = event.m_property;
-    m_validationInfo = event.m_validationInfo;
-    m_canVeto = event.m_canVeto;
-    m_wasVetoed = event.m_wasVetoed;
 }
 
 // -----------------------------------------------------------------------
@@ -6377,11 +6348,13 @@ wxPropertyGridEvent::~wxPropertyGridEvent()
         // being destroyed is at the end of the array.
         wxVector<wxPropertyGridEvent*>& liveEvents = m_pg->m_liveEvents;
 
-        for ( int i = liveEvents.size()-1; i >= 0; i-- )
+        for ( wxVector<wxPropertyGridEvent*>::reverse_iterator rit = liveEvents.rbegin(); rit != liveEvents.rend(); ++rit )
         {
-            if ( liveEvents[i] == this )
+            if ( *rit == this )
             {
-                liveEvents.erase(liveEvents.begin() + i);
+                // The base iterator refers to the element that is next
+                // to the element the reverse_iterator is currently pointing to.
+                liveEvents.erase(rit.base() - 1);
                 break;
             }
         }
@@ -6400,9 +6373,9 @@ wxEvent* wxPropertyGridEvent::Clone() const
 // -----------------------------------------------------------------------
 
 wxPropertyGridPopulator::wxPropertyGridPopulator()
+    : m_pg(NULL)
+    , m_state(NULL)
 {
-    m_state = NULL;
-    m_pg = NULL;
     wxPGGlobalVars->m_offline++;
 }
 
@@ -6426,11 +6399,8 @@ void wxPropertyGridPopulator::SetGrid( wxPropertyGrid* pg )
 
 wxPropertyGridPopulator::~wxPropertyGridPopulator()
 {
-    //
     // Free unused sets of choices
-    wxPGHashMapS2P::iterator it;
-
-    for( it = m_dictIdChoices.begin(); it != m_dictIdChoices.end(); ++it )
+    for( wxPGHashMapS2P::iterator it = m_dictIdChoices.begin(); it != m_dictIdChoices.end(); ++it )
     {
         wxPGChoicesData* data = (wxPGChoicesData*) it->second;
         data->DecRef();
@@ -6526,13 +6496,12 @@ wxPGChoices wxPropertyGridPopulator::ParseChoices( const wxString& choicesString
         if ( !found )
         {
             // Parse choices string
-            wxString::const_iterator it;
             wxString label;
             wxString value;
             int state = 0;
             bool labelValid = false;
 
-            for ( it = choicesString.begin(); it != choicesString.end(); ++it )
+            for (wxString::const_iterator it = choicesString.begin(); it != choicesString.end(); ++it )
             {
                 wxUniChar c = *it;
 

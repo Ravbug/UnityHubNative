@@ -213,7 +213,7 @@ public:
     }
 
     // return the index of the given page or wxNOT_FOUND
-    int FindPage(const wxWindow* page) const;
+    virtual int FindPage(const wxWindow* page) const;
 
     // hit test: returns which page is hit and, optionally, where (icon, label)
     virtual int HitTest(const wxPoint& WXUNUSED(pt),
@@ -228,6 +228,15 @@ public:
 
     // returns true if the platform should explicitly apply a theme border
     virtual bool CanApplyThemeBorder() const wxOVERRIDE { return false; }
+
+
+    // Implementation only from now on.
+
+    // Returns an empty bundle if no image is specified for this page.
+    wxBitmapBundle GetPageBitmapBundle(size_t n) const
+    {
+        return GetBitmapBundle(GetPageImage(n));
+    }
 
 protected:
     // flags for DoSetSelection()
@@ -295,7 +304,7 @@ protected:
     // leaf item in wxTreebook tree and this method must be overridden to
     // return it if AllowNullPage() is overridden. Note that it can still
     // return null if there are no valid pages after this one.
-    virtual wxWindow *TryGetNonNullPage(size_t page) { return m_pages[page]; }
+    virtual wxWindow *TryGetNonNullPage(size_t page) { return GetPage(page); }
 
     // Remove the page and return a pointer to it.
     //
@@ -329,7 +338,9 @@ protected:
 #endif // wxUSE_HELP
 
 
-    // the array of all pages of this control
+    // the array of all pages of this control: this is used in most, but not
+    // all derived classes, notable wxAuiNotebook doesn't store its page here
+    // and so must override all virtual methods of this class using m_pages
     wxVector<wxWindow*> m_pages;
 
     // get the page area
@@ -339,7 +350,7 @@ protected:
     void OnSize(wxSizeEvent& event);
 
     // controller buddy if available, NULL otherwise (usually for native book controls like wxNotebook)
-    wxControl *m_bookctrl;
+    wxWindow *m_bookctrl;
 
     // Whether to shrink to fit current page
     bool m_fitToCurrentPage;

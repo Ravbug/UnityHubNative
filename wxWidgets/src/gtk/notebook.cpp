@@ -26,6 +26,7 @@
 
 #include "wx/gtk/private.h"
 #include "wx/gtk/private/image.h"
+#include "wx/gtk/private/log.h"
 #include "wx/gtk/private/stylecontext.h"
 
 //-----------------------------------------------------------------------------
@@ -114,8 +115,7 @@ void wxNotebook::AddChildGTK(wxWindowGTK* child)
     // because without it GetBestSize (which is used to set the initial size
     // of controls if an explicit size is not given) will often report
     // incorrect sizes since the widget's style context is not fully known.
-    // See bug #901694 for details
-    // (http://sourceforge.net/tracker/?func=detail&aid=901694&group_id=9863&atid=109863)
+    // See https://github.com/wxWidgets/wxWidgets/issues/20825
     gtk_widget_set_parent(child->m_widget, m_widget);
 
     // NOTE: This should be considered a temporary workaround until we can
@@ -283,9 +283,10 @@ bool wxNotebook::SetPageImage( size_t page, int image )
     wxCHECK_MSG(page < GetPageCount(), false, "invalid notebook index");
 
     wxGtkNotebookPage* pageData = GetNotebookPage(page);
-    if (image >= 0)
+
+    const wxBitmapBundle bundle = GetBitmapBundle(image);
+    if ( bundle.IsOk() )
     {
-        wxCHECK_MSG(HasImageList(), false, "invalid notebook imagelist");
         if (pageData->m_image == NULL)
         {
             pageData->m_image = wxGtkImage::New();
@@ -293,7 +294,7 @@ bool wxNotebook::SetPageImage( size_t page, int image )
             gtk_box_pack_start(GTK_BOX(pageData->m_box),
                 pageData->m_image, false, false, m_padding);
         }
-        WX_GTK_IMAGE(pageData->m_image)->Set(GetImageList()->GetBitmap(image));
+        WX_GTK_IMAGE(pageData->m_image)->Set(bundle);
     }
     else if (pageData->m_image)
     {
@@ -426,6 +427,12 @@ wxNotebookPage *wxNotebook::DoRemovePage( size_t page )
     if ( !client )
         return NULL;
 
+    // Suppress bogus assertion failures happening deep inside ATK (used by
+    // GTK) that can't be avoided in any other way, see #22176.
+    wxGTKImpl::LogFilterByMessage filterLog(
+        "gtk_notebook_get_tab_label: assertion 'list != NULL' failed"
+    );
+
     // we don't need to unparent the client->m_widget; GTK+ will do
     // that for us (and will throw a warning if we do it!)
     gtk_notebook_remove_page( GTK_NOTEBOOK(m_widget), page );
@@ -481,21 +488,17 @@ bool wxNotebook::InsertPage( size_t position,
     gtk_container_set_border_width(GTK_CONTAINER(pageData->m_box), 2);
 #endif
 
-    pageData->m_image = NULL;
-    if (imageId != -1)
+    const wxBitmapBundle bundle = GetBitmapBundle(imageId);
+    if ( bundle.IsOk() )
     {
-        if (HasImageList())
-        {
-            const wxBitmap bitmap = GetImageList()->GetBitmap(imageId);
-            pageData->m_image = wxGtkImage::New();
-            WX_GTK_IMAGE(pageData->m_image)->Set(bitmap);
-            gtk_box_pack_start(GTK_BOX(pageData->m_box),
-                pageData->m_image, false, false, m_padding);
-        }
-        else
-        {
-            wxFAIL_MSG("invalid notebook imagelist");
-        }
+        pageData->m_image = wxGtkImage::New();
+        WX_GTK_IMAGE(pageData->m_image)->Set(bundle);
+        gtk_box_pack_start(GTK_BOX(pageData->m_box),
+            pageData->m_image, false, false, m_padding);
+    }
+    else
+    {
+        pageData->m_image = NULL;
     }
 
     /* set the label text */

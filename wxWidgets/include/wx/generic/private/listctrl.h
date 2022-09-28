@@ -190,9 +190,9 @@ public:
                             wxT("width can only be increased") );
 
             m_rectAll.width = w;
-            m_rectLabel.x = m_rectAll.x + (w - m_rectLabel.width) / 2;
-            m_rectIcon.x = m_rectAll.x + (w - m_rectIcon.width) / 2;
-            m_rectHighlight.x = m_rectAll.x + (w - m_rectHighlight.width) / 2;
+            m_rectLabel.x += (w - m_rectLabel.width) / 2;
+            m_rectIcon.x += (w - m_rectIcon.width) / 2;
+            m_rectHighlight.x += (w - m_rectHighlight.width) / 2;
         }
     }
     *m_gi;
@@ -380,6 +380,9 @@ public:
     bool m_sendSetColumnWidth;
     int m_colToSend;
     int m_widthToSend;
+
+    bool m_sortAsc;
+    int m_sortCol;
 
     virtual wxWindow *GetMainWindowOfCompositeControl() wxOVERRIDE { return GetParent(); }
 
@@ -695,10 +698,10 @@ public:
         { return m_small_image_list; }
 
     // set the scrollbars and update the positions of the items
-    void RecalculatePositions(bool noRefresh = false);
+    void RecalculatePositions();
 
-    // refresh the window and the header
-    void RefreshAll();
+    // do the same thing and also call Refresh()
+    void RecalculatePositionsAndRefresh();
 
     long GetNextItem( long item, int geometry, int state ) const;
     void DeleteItem( long index );
@@ -890,7 +893,7 @@ protected:
     // get the colour to be used for drawing the rules
     wxColour GetRuleColour() const
     {
-        return wxSystemSettings::GetColour(wxSYS_COLOUR_3DLIGHT);
+        return wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT);
     }
 
 private:

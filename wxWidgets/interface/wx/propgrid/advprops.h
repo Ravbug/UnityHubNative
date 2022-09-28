@@ -248,10 +248,6 @@ public:
     virtual wxSize OnMeasureImage( int item ) const;
     virtual void OnCustomPaint( wxDC& dc,
                                 const wxRect& rect, wxPGPaintData& paintdata );
-
-protected:
-    wxBitmap*   m_pBitmap; // final thumbnail area
-    wxImage*    m_pImage; // intermediate thumbnail area
 };
 
 
@@ -299,12 +295,10 @@ public:
 protected:
     virtual bool DisplayEditorDialog(wxPropertyGrid* pg, wxVariant& value);
 
-    void GenerateValueAsString( wxVariant& value, wxString* target ) const;
+    wxString GenerateValueAsString(const wxVariant& value) const;
 
     // Returns translation of values into string indices.
     wxArrayInt GetValueAsIndices() const;
-
-    wxArrayString       m_valueAsStrings;  // Value as array of strings
 
     // Cache displayed text since generating it is relatively complicated.
     wxString            m_display;

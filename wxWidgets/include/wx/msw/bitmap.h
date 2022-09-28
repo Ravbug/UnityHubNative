@@ -15,19 +15,10 @@
 #include "wx/math.h"
 #include "wx/palette.h"
 
-class WXDLLIMPEXP_FWD_CORE wxBitmap;
-class WXDLLIMPEXP_FWD_CORE wxBitmapHandler;
 class WXDLLIMPEXP_FWD_CORE wxBitmapRefData;
-class WXDLLIMPEXP_FWD_CORE wxControl;
-class WXDLLIMPEXP_FWD_CORE wxCursor;
-class WXDLLIMPEXP_FWD_CORE wxDC;
 #if wxUSE_WXDIB
 class WXDLLIMPEXP_FWD_CORE wxDIB;
 #endif
-class WXDLLIMPEXP_FWD_CORE wxIcon;
-class WXDLLIMPEXP_FWD_CORE wxMask;
-class WXDLLIMPEXP_FWD_CORE wxPalette;
-class WXDLLIMPEXP_FWD_CORE wxPixelDataBase;
 
 // What kind of transparency should a bitmap copied from an icon or cursor
 // have?
@@ -158,8 +149,14 @@ public:
 
     virtual bool Create(int width, int height, const wxDC& dc);
     virtual bool Create(const void* data, wxBitmapType type, int width, int height, int depth = 1);
-    virtual bool CreateScaled(int w, int h, int d, double logicalScale)
-        { return Create(wxRound(w*logicalScale), wxRound(h*logicalScale), d); }
+
+    bool CreateWithDIPSize(const wxSize& sz,
+                           double scale,
+                           int depth = wxBITMAP_SCREEN_DEPTH);
+    bool CreateWithDIPSize(int width, int height,
+                           double scale,
+                           int depth = wxBITMAP_SCREEN_DEPTH)
+        { return CreateWithDIPSize(wxSize(width, height), scale, depth); }
 
     virtual bool LoadFile(const wxString& name, wxBitmapType type = wxBITMAP_DEFAULT_TYPE);
     virtual bool SaveFile(const wxString& name, wxBitmapType type, const wxPalette *cmap = NULL) const;
@@ -179,18 +176,16 @@ public:
     wxMask *GetMask() const;
     void SetMask(wxMask *mask);
 
-    // these functions are internal and shouldn't be used, they risk to
-    // disappear in the future
     bool HasAlpha() const;
     void UseAlpha(bool use = true);
     void ResetAlpha() { UseAlpha(false); }
 
-    // support for scaled bitmaps
-    virtual double GetScaleFactor() const { return 1.0; }
-    virtual double GetScaledWidth() const { return GetWidth() / GetScaleFactor(); }
-    virtual double GetScaledHeight() const { return GetHeight() / GetScaleFactor(); }
-    virtual wxSize GetScaledSize() const
-        { return wxSize(wxRound(GetScaledWidth()), wxRound(GetScaledHeight())); }
+    // old synonyms for CreateWithDIPSize() and GetLogicalXXX() functions
+    bool CreateScaled(int w, int h, int d, double logicalScale)
+        { return CreateWithDIPSize(wxSize(w, h), logicalScale, d); }
+    double GetScaledWidth() const { return GetLogicalWidth(); }
+    double GetScaledHeight() const { return GetLogicalHeight(); }
+    wxSize GetScaledSize() const { return GetLogicalSize(); }
 
     // implementation only from now on
     // -------------------------------
@@ -278,6 +273,10 @@ public:
     // Implementation
     WXHBITMAP GetMaskBitmap() const { return m_maskBitmap; }
     void SetMaskBitmap(WXHBITMAP bmp) { m_maskBitmap = bmp; }
+
+#if wxUSE_IMAGE
+    bool MSWCreateFromImageMask(const wxImage& image);
+#endif // wxUSE_IMAGE
 
 protected:
     WXHBITMAP m_maskBitmap;

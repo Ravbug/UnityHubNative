@@ -22,10 +22,11 @@ class WXDLLIMPEXP_FWD_CORE wxColour;
 class WXDLLIMPEXP_CORE wxGenericImageList: public wxObject
 {
 public:
-    wxGenericImageList() { }
+    wxGenericImageList();
     wxGenericImageList( int width, int height, bool mask = true, int initialCount = 1 );
     virtual ~wxGenericImageList();
     bool Create( int width, int height, bool mask = true, int initialCount = 1 );
+    void Destroy();
 
     virtual int GetImageCount() const;
     virtual bool GetSize( int index, int &width, int &height ) const;
@@ -57,13 +58,13 @@ public:
 private:
     const wxBitmap *DoGetPtr(int index) const;
 
+    wxBitmap GetImageListBitmap(const wxBitmap& bitmap) const;
+
     wxVector<wxBitmap> m_images;
     bool m_useMask;
 
     // Size of a single bitmap in the list.
     wxSize m_size;
-    // Images in the list should have the same scale factor.
-    double m_scaleFactor;
 
     wxDECLARE_DYNAMIC_CLASS_NO_COPY(wxGenericImageList);
 };

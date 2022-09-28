@@ -6,7 +6,7 @@
 #                      \___/_/\_\ .__/ \__,_|\__|
 #                               |_| XML parser
 #
-# Copyright (c) 2019 Expat development team
+# Copyright (c) 2019-2021 Sebastian Pipping <sebastian@pipping.org>
 # Licensed under the MIT license:
 #
 # Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -32,6 +32,18 @@ set -e
 set -u
 set -o pipefail
 
+clang-format --version
+
+clang_format_args=(
+    -i
+    -style=file
+    -verbose
+)
+
+if [[ $# -ge 1 ]]; then
+    exec clang-format "${clang_format_args[@]}" "$@"
+fi
+
 expand --tabs=2 --initial lib/siphash.h | sponge lib/siphash.h
 
 find \
@@ -40,7 +52,7 @@ find \
         -o -name '*.cxx' \
         -o -name '*.h.cmake' \
     | sort \
-    | xargs clang-format -i -style=file -verbose
+    | xargs clang-format "${clang_format_args[@]}"
 
 sed \
         -e 's, @$,@,' \

@@ -16,7 +16,9 @@
 
 #ifndef WX_PRECOMP
     #include "wx/bitmap.h"
+#if WXWIN_COMPATIBILITY_3_0
     #include "wx/dcclient.h"
+#endif // WXWIN_COMPATIBILITY_3_0
     #include "wx/event.h"
     #include "wx/font.h"
     #include "wx/log.h"
@@ -188,26 +190,25 @@ void wxPropertyGridIteratorBase::Next( bool iterateChildren )
 // -----------------------------------------------------------------------
 
 wxPropertyGridPageState::wxPropertyGridPageState()
+    : m_pPropGrid(NULL)
+    , m_properties(&m_regularArray)
+    , m_abcArray(NULL)
+    , m_fSplitterX(wxPG_DEFAULT_SPLITTERX)
+    , m_currentCategory(NULL)
+    , m_width(0)
+    , m_virtualHeight(0)
+    , m_itemsAdded(false)
+    , m_anyModified(false)
+    , m_vhCalcPending(false)
+    , m_isSplitterPreSet(false)
+    , m_dontCenterSplitter(false)
 {
-    m_pPropGrid = NULL;
     m_regularArray.SetParentState(this);
-    m_properties = &m_regularArray;
-    m_abcArray = NULL;
-    m_currentCategory = NULL;
-    m_width = 0;
-    m_virtualHeight = 0;
-    m_itemsAdded = false;
-    m_anyModified = false;
-    m_vhCalcPending = false;
     m_colWidths.push_back( wxPG_DEFAULT_SPLITTERX );
     m_colWidths.push_back( wxPG_DEFAULT_SPLITTERX );
-    m_fSplitterX = wxPG_DEFAULT_SPLITTERX;
 
     m_columnProportions.push_back(1);
     m_columnProportions.push_back(1);
-
-    m_isSplitterPreSet = false;
-    m_dontCenterSplitter = false;
 
     // By default, we only have the 'value' column editable
     m_editableColumns.push_back(1);
@@ -298,6 +299,10 @@ void wxPropertyGridPageState::DoClear()
             m_abcArray->Empty();
 
         m_dictName.clear();
+
+        // We need to clear parent grid's m_propHover
+        if ( m_pPropGrid )
+            m_pPropGrid->m_propHover = NULL;
 
         m_currentCategory = NULL;
         m_itemsAdded = false;
@@ -476,11 +481,8 @@ wxPGProperty* wxPropertyGridPageState::BaseGetPropertyByLabel
 
 wxPGProperty* wxPropertyGridPageState::BaseGetPropertyByName( const wxString& name ) const
 {
-    wxPGHashMapS2P::const_iterator it;
-    it = m_dictName.find(name);
-    if ( it != m_dictName.end() )
-        return (wxPGProperty*) it->second;
-    return NULL;
+    wxPGHashMapS2P::const_iterator it = m_dictName.find(name);
+    return it != m_dictName.end() ? (wxPGProperty*) it->second : NULL;
 }
 
 // -----------------------------------------------------------------------
@@ -715,6 +717,7 @@ wxPropertyGridPageState::HitTest( const wxPoint&pt ) const
 // -----------------------------------------------------------------------
 
 // Used by SetSplitterLeft() and DotFitColumns()
+#if WXWIN_COMPATIBILITY_3_0
 int wxPropertyGridPageState::GetColumnFitWidth(const wxDC& dc,
                                            wxPGProperty* pwc,
                                            unsigned int col,
@@ -749,7 +752,48 @@ int wxPropertyGridPageState::GetColumnFitWidth(const wxDC& dc,
         if ( p->GetChildCount() &&
              ( subProps || p->IsCategory() ) )
         {
-            w = GetColumnFitWidth( dc, p, col, subProps );
+            w = GetColumnFitWidth(p, col, subProps );
+
+            if ( w > maxW )
+                maxW = w;
+        }
+    }
+
+    return maxW;
+}
+#endif // WXWIN_COMPATIBILITY_3_0
+
+int wxPropertyGridPageState::GetColumnFitWidth(const wxPGProperty* p, unsigned int col, bool subProps) const
+{
+    const wxPropertyGrid* pg = GetGrid();
+    int maxW = 0;
+
+    for ( unsigned int i = 0; i < p->GetChildCount(); i++ )
+    {
+        int w;
+        wxPGProperty* pc = p->Item(i);
+        if ( !pc->IsCategory() )
+        {
+            wxString text;
+            pc->GetDisplayInfo(col, -1, 0, &text, (wxPGCell*)NULL);
+            int h;
+            pg->GetTextExtent(text, &w, &h);
+            if ( col == 0 )
+                w += ((pc->GetDepth() - 1) * pg->m_subgroup_extramargin);
+
+            // account for the bitmap
+            if ( col == 1 )
+                w += pc->GetImageOffset(pg->GetImageRect(pc, -1).GetWidth());
+
+            w += (wxPG_XBEFORETEXT * 2);
+
+            if ( w > maxW )
+                maxW = w;
+        }
+
+        if ( pc->GetChildCount() > 0 && (subProps || pc->IsCategory()) )
+        {
+            w = GetColumnFitWidth(pc, col, subProps);
 
             if ( w > maxW )
                 maxW = w;
@@ -759,6 +803,7 @@ int wxPropertyGridPageState::GetColumnFitWidth(const wxDC& dc,
     return maxW;
 }
 
+#if WXWIN_COMPATIBILITY_3_0
 int wxPropertyGridPageState::GetColumnFullWidth(const wxDC& dc, wxPGProperty* p, unsigned int col)
 {
     if ( p->IsCategory() )
@@ -776,6 +821,27 @@ int wxPropertyGridPageState::GetColumnFullWidth(const wxDC& dc, wxPGProperty* p,
         w += p->GetImageOffset(m_pPropGrid->GetImageRect(p, -1).GetWidth());
 
     w += (wxPG_XBEFORETEXT*2);
+    return w;
+}
+#endif // WXWIN_COMPATIBILITY_3_0
+
+int wxPropertyGridPageState::GetColumnFullWidth(wxPGProperty* p, unsigned int col) const
+{
+    if ( p->IsCategory() )
+        return 0;
+
+    wxString text;
+    p->GetDisplayInfo(col, -1, 0, &text, (wxPGCell*)NULL);
+    int w = GetGrid()->GetTextExtent(text).x;
+
+    if ( col == 0 )
+        w += p->GetDepth() * GetGrid()->m_subgroup_extramargin;
+
+    // account for the bitmap
+    if ( col == 1 )
+        w += p->GetImageOffset(GetGrid()->GetImageRect(p, -1).GetWidth());
+
+    w += (wxPG_XBEFORETEXT * 2);
     return w;
 }
 
@@ -870,10 +936,8 @@ void wxPropertyGridPageState::DoSetSplitterPosition( int newXPos,
 void wxPropertyGridPageState::SetSplitterLeft( bool subProps )
 {
     wxPropertyGrid* pg = GetGrid();
-    wxClientDC dc(pg);
-    dc.SetFont(pg->GetFont());
 
-    int maxW = GetColumnFitWidth(dc, m_properties, 0, subProps);
+    int maxW = GetColumnFitWidth(m_properties, 0, subProps);
 
     if ( maxW > 0 )
     {
@@ -887,8 +951,6 @@ void wxPropertyGridPageState::SetSplitterLeft( bool subProps )
 wxSize wxPropertyGridPageState::DoFitColumns( bool WXUNUSED(allowGridResize) )
 {
     wxPropertyGrid* pg = GetGrid();
-    wxClientDC dc(pg);
-    dc.SetFont(pg->GetFont());
 
     int marginWidth = pg->GetMarginWidth();
     int accWid = marginWidth;
@@ -896,7 +958,7 @@ wxSize wxPropertyGridPageState::DoFitColumns( bool WXUNUSED(allowGridResize) )
 
     for ( unsigned int col=0; col < GetColumnCount(); col++ )
     {
-        int fitWid = GetColumnFitWidth(dc, m_properties, col, true);
+        int fitWid = GetColumnFitWidth(m_properties, col, true);
         int colMinWidth = GetColumnMinWidth(col);
         if ( fitWid < colMinWidth )
             fitWid = colMinWidth;
@@ -1659,7 +1721,7 @@ wxPGProperty* wxPropertyGridPageState::DoInsert( wxPGProperty* parent, int index
                  wxNullProperty,
                  wxS("when adding properties to fixed parents, use BeginAddChildren and EndAddChildren.") );
 
-    bool res = PrepareToAddItem( property, (wxPropertyCategory*)parent );
+    bool res = PrepareToAddItem( property, parent );
 
     // PrepareToAddItem() may just decide to use current category
     // instead of adding new one.
@@ -1705,9 +1767,11 @@ wxPGProperty* wxPropertyGridPageState::DoInsert( wxPGProperty* parent, int index
         else if ( parentIsRoot )
             // Parent is root.
             m_regularArray.DoAddChild( property, -1, false );
+        else
+            parent->DoAddChild(property, index, true);
 
         // Add to current mode
-        if ( !property->IsCategory() )
+        if ( !property->IsCategory() && (parentIsCategory || parentIsRoot) )
             m_abcArray->DoAddChild( property, index, true );
     }
 
@@ -1834,6 +1898,36 @@ bool wxPropertyGridPageState::IsChildCategory(wxPGProperty* p,
     return false;
 }
 
+namespace
+{
+static wxPGProperty* FindCategoryForProperty(wxPGProperty* cat, wxPGProperty* prop, int& foundAtIndex)
+{
+    wxASSERT(cat->IsCategory() || cat->IsRoot());
+
+    int idx = cat->Index(prop);
+    if ( idx != wxNOT_FOUND )
+    {
+        foundAtIndex = idx;
+        return cat;
+    }
+
+    for ( unsigned int i = 0; i < cat->GetChildCount(); i++ )
+    {
+        wxPGProperty* p = cat->Item(i);
+        if ( p->IsCategory() )
+        {
+            wxPGProperty* foundCat = FindCategoryForProperty(p, prop, foundAtIndex);
+            if ( foundCat )
+            {
+                return foundCat;
+            }
+        }
+    }
+
+    return NULL;
+}
+};
+
 void wxPropertyGridPageState::DoDelete( wxPGProperty* item, bool doDelete )
 {
     wxCHECK_RET(item != &m_regularArray && item != m_abcArray,
@@ -1943,38 +2037,25 @@ void wxPropertyGridPageState::DoDelete( wxPGProperty* item, bool doDelete )
 
         // categorized mode - categorized array
         parent->RemoveChild(indinparent);
-        item->m_parent->FixIndicesOfChildren();
+        parent->FixIndicesOfChildren();
     }
     else
     {
         // non-categorized mode - categorized array
 
         // We need to find location of item.
-        wxPGProperty* cat_parent = &m_regularArray;
-        int cat_index = m_regularArray.GetChildCount();
-        for ( unsigned int i = 0; i < m_regularArray.GetChildCount(); i++ )
+        int cat_index;
+        wxPGProperty* cat_parent = FindCategoryForProperty(&m_regularArray, item, cat_index);
+        if ( cat_parent )
         {
-            wxPGProperty* p = m_regularArray.Item(i);
-            if ( p == item ) { cat_index = i; break; }
-            if ( p->IsCategory() )
-            {
-                int subind = p->Index(item);
-                if ( subind != wxNOT_FOUND )
-                {
-                    cat_parent = p;
-                    cat_index = subind;
-                    break;
-                }
-            }
+            cat_parent->RemoveChild(cat_index);
         }
-        cat_parent->RemoveChild(cat_index);
 
         // non-categorized mode - non-categorized array
         if ( !item->IsCategory() )
         {
-            wxASSERT( item->m_parent == m_abcArray );
-            item->m_parent->RemoveChild(indinparent);
-            item->m_parent->FixIndicesOfChildren(indinparent);
+            parent->RemoveChild(indinparent);
+            parent->FixIndicesOfChildren(indinparent);
         }
     }
 

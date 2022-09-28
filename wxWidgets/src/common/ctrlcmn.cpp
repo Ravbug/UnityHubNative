@@ -325,10 +325,9 @@ struct EllipsizeCalculator
                     else // Last character is an ampersand.
                     {
                         // This ampersand is removed by RemoveMnemonics() and
-                        // won't be displayed when this string is drawn
-                        // neither, so we intentionally don't use it for our
-                        // calculations neither -- just account for this in the
-                        // assert below.
+                        // won't be displayed when this string is drawn, so we
+                        // intentionally don't use it for our calculations --
+                        // just account for this in the assert below.
                         expectedOffsetsCount--;
                     }
                 }
@@ -619,25 +618,5 @@ wxString wxControlBase::Ellipsize(const wxString& label, const wxDC& dc,
 
     return ret;
 }
-
-// ----------------------------------------------------------------------------
-// wxStaticBitmap
-// ----------------------------------------------------------------------------
-
-#if wxUSE_STATBMP
-
-wxStaticBitmapBase::~wxStaticBitmapBase()
-{
-    // this destructor is required for Darwin
-}
-
-wxSize wxStaticBitmapBase::DoGetBestSize() const
-{
-    // the fall back size is completely arbitrary
-    const wxBitmap bmp = GetBitmap();
-    return bmp.IsOk() ? bmp.GetScaledSize() : wxSize(16, 16);
-}
-
-#endif // wxUSE_STATBMP
 
 #endif // wxUSE_CONTROLS

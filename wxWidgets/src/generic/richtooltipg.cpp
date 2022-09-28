@@ -61,13 +61,16 @@ public:
     wxRichToolTipPopup(wxWindow* parent,
                        const wxString& title,
                        const wxString& message,
-                       const wxIcon& icon,
+                       const wxBitmapBundle& icon,
                        wxTipKind tipKind,
                        const wxFont& titleFont_) :
         m_timer(this)
     {
         Create(parent, wxFRAME_SHAPED);
 
+        // Move to the display where it will be shown,
+        // so below calculations are based on the correct DPI.
+        Move(GetTipPoint(), wxSIZE_ALLOW_MINUS_ONE);
 
         wxBoxSizer* const sizerTitle = new wxBoxSizer(wxHORIZONTAL);
         if ( icon.IsOk() )
@@ -138,7 +141,7 @@ public:
             // Themed tooltips under MSW align the text with the title, not
             // with the icon, so use a helper horizontal sizer in this case.
             wxBoxSizer* const sizerTextIndent = new wxBoxSizer(wxHORIZONTAL);
-            sizerTextIndent->AddSpacer(icon.GetWidth());
+            sizerTextIndent->AddSpacer(icon.GetPreferredLogicalSizeFor(this).x);
             sizerTextIndent->Add(sizerText,
                                     wxSizerFlags().Border(wxLEFT).Centre());
 
@@ -343,7 +346,7 @@ private:
         // The size is the vertical size and the offset is the distance from
         // edge for asymmetric tips, currently hard-coded to be the same as the
         // size.
-        const int tipSize = GetTipHeight();
+        const int tipSize = FromDIP(GetTipHeight());
         const int tipOffset = tipSize;
 
         // The horizontal position of the tip.
@@ -613,7 +616,7 @@ wxRichToolTipGenericImpl::SetBackgroundColour(const wxColour& col,
     m_colEnd = colEnd;
 }
 
-void wxRichToolTipGenericImpl::SetCustomIcon(const wxIcon& icon)
+void wxRichToolTipGenericImpl::SetCustomIcon(const wxBitmapBundle& icon)
 {
     m_icon = icon;
 }
@@ -628,7 +631,7 @@ void wxRichToolTipGenericImpl::SetStandardIcon(int icon)
             // Although we don't use this icon in a list, we need a smallish
             // icon here and not an icon of a typical message box size so use
             // wxART_LIST to get it.
-            m_icon = wxArtProvider::GetIcon
+            m_icon = wxArtProvider::GetBitmapBundle
                      (
                         wxArtProvider::GetMessageBoxIconId(icon),
                         wxART_LIST
@@ -640,7 +643,7 @@ void wxRichToolTipGenericImpl::SetStandardIcon(int icon)
             break;
 
         case wxICON_NONE:
-            m_icon = wxNullIcon;
+            m_icon = wxBitmapBundle();
             break;
     }
 }

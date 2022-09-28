@@ -200,7 +200,7 @@ void wxPopupWindowBase::Position(const wxPoint& ptOrigin,
             // do position the control to the left
             x -= size.x + sizeSelf.x;
         }
-        //else: not enough space there neither, leave in default position
+        //else: not enough space there either, leave in default position
     }
 
     Move(x, y, wxSIZE_NO_ADJUSTMENTS);
@@ -296,7 +296,7 @@ void wxPopupTransientWindow::Popup(wxWindow *winFocus)
     // Notice that this works best for combobox-like popups which have a single
     // control inside them and not so well for popups containing a single
     // wxPanel with multiple children inside it but OTOH it does no harm in
-    // this case neither and we can't reliably distinguish between them.
+    // this case either and we can't reliably distinguish between them.
     const wxWindowList& children = GetChildren();
     if ( children.GetCount() == 1 )
     {
@@ -321,12 +321,7 @@ void wxPopupTransientWindow::Popup(wxWindow *winFocus)
     m_focus = winFocus ? winFocus : this;
     m_focus->SetFocus();
 
-#if defined( __WXMAC__) && wxOSX_USE_COCOA_OR_CARBON
-    // MSW doesn't allow to set focus to the popup window, but we need to
-    // subclass the window which has the focus, and not winFocus passed in or
-    // otherwise everything else breaks down
-    m_focus = FindFocus();
-#elif defined(__WXGTK__)
+#if defined(__WXGTK__)
     // GTK+ catches the activate events from the popup
     // window, not the focus events from the child window
     m_focus = this;

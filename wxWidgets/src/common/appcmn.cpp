@@ -39,6 +39,7 @@
 #include "wx/thread.h"
 #include "wx/vidmode.h"
 #include "wx/evtloop.h"
+#include "wx/uilocale.h"
 
 #if wxUSE_FONTMAP
     #include "wx/fontmap.h"
@@ -193,7 +194,7 @@ wxWindow* wxAppBase::GetTopWindow() const
 /* static */
 wxWindow* wxAppBase::GetMainTopWindow()
 {
-    const wxAppBase* const app = static_cast<wxAppBase*>(GetInstance());
+    const wxAppBase* const app = GetGUIInstance();
 
     return app ? app->GetTopWindow() : NULL;
 }
@@ -206,19 +207,11 @@ wxVideoMode wxAppBase::GetDisplayMode() const
 wxLayoutDirection wxAppBase::GetLayoutDirection() const
 {
 #if wxUSE_INTL
-    const wxLocale *const locale = wxGetLocale();
-    if ( locale )
-    {
-        const wxLanguageInfo *const
-            info = wxLocale::GetLanguageInfo(locale->GetLanguage());
-
-        if ( info )
-            return info->LayoutDirection;
-    }
-#endif // wxUSE_INTL
-
+    return wxUILocale::GetCurrent().GetLayoutDirection();
+#else
     // we don't know
     return wxLayout_Default;
+#endif // wxUSE_INTL
 }
 
 #if wxUSE_CMDLINE_PARSER
@@ -283,7 +276,7 @@ bool wxAppBase::OnCmdLineParsed(wxCmdLineParser& parser)
         wxTheme *theme = wxTheme::Create(themeName);
         if ( !theme )
         {
-            wxLogError(_("Unsupported theme '%s'."), themeName.c_str());
+            wxLogError(_("Unsupported theme '%s'."), themeName);
             return false;
         }
 
@@ -298,9 +291,9 @@ bool wxAppBase::OnCmdLineParsed(wxCmdLineParser& parser)
     if ( parser.Found(OPTION_MODE, &modeDesc) )
     {
         unsigned w, h, bpp;
-        if ( wxSscanf(modeDesc.c_str(), wxT("%ux%u-%u"), &w, &h, &bpp) != 3 )
+        if ( wxSscanf(modeDesc, wxT("%ux%u-%u"), &w, &h, &bpp) != 3 )
         {
-            wxLogError(_("Invalid display mode specification '%s'."), modeDesc.c_str());
+            wxLogError(_("Invalid display mode specification '%s'."), modeDesc);
             return false;
         }
 
@@ -499,7 +492,7 @@ bool wxGUIAppTraitsBase::ShowAssertDialog(const wxString& msg)
     if ( wxIsMainThread() )
     {
         // Note that this and the other messages here are intentionally not
-        // translated -- they are for developpers only.
+        // translated -- they are for developers only.
         static const wxStringCharType* caption = wxS("wxWidgets Debug Alert");
 
         wxString msgDlg = wxS("A debugging check in this application ")

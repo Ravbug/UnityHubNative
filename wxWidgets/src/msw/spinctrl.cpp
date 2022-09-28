@@ -37,6 +37,8 @@
 #include "wx/msw/private.h"
 #include "wx/msw/private/winstyle.h"
 
+#include "wx/scopeguard.h"
+
 #if wxUSE_TOOLTIPS
     #include "wx/tooltip.h"
 #endif // wxUSE_TOOLTIPS
@@ -359,12 +361,9 @@ bool wxSpinCtrl::Create(wxWindow *parent,
     SetRange(min, max);
     SetValue(initial);
 
-    // Also set the text part of the control if it was specified independently
-    // but don't generate an event for this, it would be unexpected.
-    m_blockEvent = true;
+    // Also set the text part of the control if it was specified independently.
     if ( !value.empty() )
         SetValue(value);
-    m_blockEvent = false;
 
     // Finally deal with the size: notice that this can only be done now both
     // windows are created and the text one is set up as buddy because
@@ -442,8 +441,16 @@ bool wxSpinCtrl::SetBase(int base)
 // wxTextCtrl-like methods
 // ----------------------------------------------------------------------------
 
+wxString wxSpinCtrl::GetTextValue() const
+{
+    return wxGetWindowText(m_hwndBuddy);
+}
+
 void wxSpinCtrl::SetValue(const wxString& text)
 {
+    m_blockEvent = true;
+    wxON_BLOCK_EXIT_SET(m_blockEvent, false);
+
     if ( !::SetWindowText(GetBuddyHwnd(), text.c_str()) )
     {
         wxLogLastError(wxT("SetWindowText(buddy)"));
@@ -453,6 +460,7 @@ void wxSpinCtrl::SetValue(const wxString& text)
 void  wxSpinCtrl::SetValue(int val)
 {
     m_blockEvent = true;
+    wxON_BLOCK_EXIT_SET(m_blockEvent, false);
 
     wxSpinButton::SetValue(val);
 
@@ -481,8 +489,6 @@ void  wxSpinCtrl::SetValue(int val)
     }
 
     m_oldValue = GetValue();
-
-    m_blockEvent = false;
 }
 
 int wxSpinCtrl::GetValue() const
@@ -575,7 +581,7 @@ void wxSpinCtrl::UpdateBuddyStyle()
     // keys only -- but only if we don't need to be able to enter "-" in it as
     // otherwise this would become impossible and also if we don't use
     // hexadecimal as entering "x" of the "0x" prefix wouldn't be allowed
-    // neither then
+    // either then
     wxMSWWinStyleUpdater(GetBuddyHwnd())
         .TurnOnOrOff(m_min >= 0 && GetBase() == 10, ES_NUMBER);
 }
@@ -728,6 +734,13 @@ bool wxSpinCtrl::MSWOnNotify(int WXUNUSED(idCtrl), WXLPARAM lParam, WXLPARAM *re
     return TRUE;
 }
 
+// Reuse the function defined in src/msw/textentry.cpp.
+extern bool wxMSWTextEntryShouldPreProcessMessage(WXMSG* msg);
+
+bool wxSpinCtrl::MSWShouldPreProcessMessage(WXMSG* msg)
+{
+    return wxMSWTextEntryShouldPreProcessMessage(msg);
+}
 
 // ----------------------------------------------------------------------------
 // size calculations
@@ -871,5 +884,4 @@ void wxSpinCtrl::DoClientToScreen(int *x, int *y) const
 {
     wxWindow::MSWDoClientToScreen(GetBuddyHwnd(), x, y);
 }
-
 #endif // wxUSE_SPINCTRL

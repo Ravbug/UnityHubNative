@@ -76,8 +76,10 @@
                 #define wxCOMPILER_PREFIX vc140
             #elif _MSC_VER >= 1910 && _MSC_VER < 1920
                 #define wxCOMPILER_PREFIX vc141
-            #elif _MSC_VER >= 1920 && _MSC_VER < 2000
+            #elif _MSC_VER >= 1920 && _MSC_VER < 1930
                 #define wxCOMPILER_PREFIX vc142
+            #elif _MSC_VER >= 1930 && _MSC_VER < 2000
+                #define wxCOMPILER_PREFIX vc143
             #else
                 #error "Unknown MSVC 14.x compiler version, please report to wx-dev."
             #endif
@@ -125,15 +127,15 @@
     #endif
 #endif // wxTOOLKIT_PREFIX
 
+#ifdef wxSUFFIX
+    #define wxTOOLKIT_FULL wxCONCAT(wxTOOLKIT_PREFIX, wxSUFFIX)
+#else // suffix is empty
+    #define wxTOOLKIT_FULL wxTOOLKIT_PREFIX
+#endif
+
 // the real setup.h header file we need is in the build-specific directory,
 // construct the path to it
-#ifdef wxSUFFIX
-    #define wxSETUPH_PATH \
-        wxCONCAT6(../../../lib/, wxLIB_SUBDIR, /, wxTOOLKIT_PREFIX, wxSUFFIX, /wx/setup.h)
-#else // suffix is empty
-    #define wxSETUPH_PATH \
-        wxCONCAT5(../../../lib/, wxLIB_SUBDIR, /, wxTOOLKIT_PREFIX, /wx/setup.h)
-#endif
+#define wxSETUPH_PATH ../../../lib/wxLIB_SUBDIR/wxTOOLKIT_FULL/wx/setup.h
 
 #define wxSETUPH_PATH_STR wxSTRINGIZE(wxSETUPH_PATH)
 
@@ -181,7 +183,7 @@
 
 #if !defined(WXUSINGDLL)
     #if !defined(wxNO_NET_LIB)
-        #pragma comment(lib, "wsock32")
+        #pragma comment(lib, "ws2_32")
     #endif
 
     #if wxUSE_XML && !defined(wxNO_XML_LIB) && !defined(wxNO_EXPAT_LIB)

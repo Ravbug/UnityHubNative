@@ -35,8 +35,7 @@ public:
     virtual void Check(bool check = true) wxOVERRIDE;
     virtual bool IsChecked() const wxOVERRIDE;
 
-    virtual void SetBitmap(const wxBitmap& bitmap);
-    virtual const wxBitmap& GetBitmap() const { return m_bitmap; }
+    virtual void SetBitmap(const wxBitmapBundle& bitmap) wxOVERRIDE;
 
     virtual QAction *GetHandle() const;
 
@@ -44,7 +43,6 @@ public:
 private:
     // Qt is using an action instead of a menu item.
     wxQtAction *m_qtAction;
-    wxBitmap m_bitmap;
 
     wxDECLARE_DYNAMIC_CLASS( wxMenuItem );
 };

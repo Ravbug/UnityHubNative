@@ -58,6 +58,21 @@ public:
     // various bugs arising due to this.
     static bool GTKIsUsingGlobalMenu();
 
+    // Provide the ability to suppress GTK output. By default, all output
+    // will be suppressed, but the user can pass in a mask specifying the
+    // types of messages to suppress. Flags are defined by glib with the
+    // GLogLevelFlags enum.
+    static void GTKSuppressDiagnostics(int flags = -1);
+
+#if wxABI_VERSION >= 30201
+    // Allow wxWidgets to control GTK diagnostics. This is recommended because
+    // it prevents spurious GTK messages from appearing, but can't be done by
+    // default because it would result in a fatal error if the application
+    // calls g_log_set_writer_func() itself.
+    static void GTKAllowDiagnosticsControl();
+#endif // wxABI_VERSION >= 3.2.1
+
+
     // implementation only from now on
     // -------------------------------
 

@@ -23,6 +23,8 @@
 // shared between Cocoa and Carbon
 //
 
+#include "wx/bmpbndl.h"
+
 // bring in theming types without pulling in the headers
 
 #if wxUSE_GUI
@@ -42,7 +44,7 @@ WX_NSImage WXDLLIMPEXP_CORE wxOSXGetNSImageFromIconRef( WXHICON iconref );
 WX_NSImage WXDLLIMPEXP_CORE wxOSXGetNSImageFromCFURL( CFURLRef urlref );
 WX_NSImage WXDLLIMPEXP_CORE wxOSXGetIconForType(OSType type );
 void WXDLLIMPEXP_CORE wxOSXSetImageSize(WX_NSImage image, CGFloat width, CGFloat height);
-wxBitmap WXDLLIMPEXP_CORE wxOSXCreateSystemBitmap(const wxString& id, const wxString &client, const wxSize& size);
+wxBitmapBundle WXDLLIMPEXP_CORE wxOSXCreateSystemBitmapBundle(const wxString& id, const wxString &client, const wxSize& size);
 WXWindow WXDLLIMPEXP_CORE wxOSXGetMainWindow();
 WXWindow WXDLLIMPEXP_CORE wxOSXGetKeyWindow();
 WXImage WXDLLIMPEXP_CORE wxOSXGetNSImageFromNSCursor(const WXHCURSOR cursor);
@@ -109,7 +111,7 @@ public :
     virtual void        GetPosition( int &x, int &y ) const wxOVERRIDE;
     virtual void        GetSize( int &width, int &height ) const wxOVERRIDE;
     virtual void        SetControlSize( wxWindowVariant variant ) wxOVERRIDE;
-
+    virtual void        GetLayoutInset(int &left , int &top , int &right, int &bottom) const wxOVERRIDE;
     virtual void        SetNeedsDisplay( const wxRect* where = NULL ) wxOVERRIDE;
     virtual bool        GetNeedsDisplay() const wxOVERRIDE;
 
@@ -138,7 +140,7 @@ public :
     wxInt32             GetValue() const wxOVERRIDE;
     void                SetValue( wxInt32 v ) wxOVERRIDE;
     wxBitmap            GetBitmap() const wxOVERRIDE;
-    void                SetBitmap( const wxBitmap& bitmap ) wxOVERRIDE;
+    void                SetBitmap( const wxBitmapBundle& bitmap ) wxOVERRIDE;
     void                SetBitmapPosition( wxDirection dir ) wxOVERRIDE;
     void                SetupTabs( const wxNotebook &notebook ) wxOVERRIDE;
     void                GetBestRect( wxRect *r ) const wxOVERRIDE;
@@ -147,8 +149,10 @@ public :
     bool                ButtonClickDidStateChange() wxOVERRIDE { return true; }
     void                SetMinimum( wxInt32 v ) wxOVERRIDE;
     void                SetMaximum( wxInt32 v ) wxOVERRIDE;
+    void                SetIncrement(int value) wxOVERRIDE;
     wxInt32             GetMinimum() const wxOVERRIDE;
     wxInt32             GetMaximum() const wxOVERRIDE;
+    int                 GetIncrement() const wxOVERRIDE;
     void                PulseGauge() wxOVERRIDE;
     void                SetScrollThumb( wxInt32 value, wxInt32 thumbSize ) wxOVERRIDE;
 
@@ -199,7 +203,8 @@ public :
     virtual void                cursorUpdate(WX_NSEvent event, WXWidget slf, void* _cmd);
     virtual void                keyEvent(WX_NSEvent event, WXWidget slf, void* _cmd);
     virtual void                insertText(NSString* text, WXWidget slf, void* _cmd);
-    virtual void                doCommandBySelector(void* sel, WXWidget slf, void* _cmd);
+    // Returns true if the event was processed by a user-defined event handler.
+    virtual bool                doCommandBySelector(void* sel, WXWidget slf, void* _cmd);
     virtual bool                acceptsFirstResponder(WXWidget slf, void* _cmd);
     virtual bool                becomeFirstResponder(WXWidget slf, void* _cmd);
     virtual bool                resignFirstResponder(WXWidget slf, void* _cmd);
@@ -292,6 +297,9 @@ public :
 
     virtual void SetTitle( const wxString& title, wxFontEncoding encoding ) wxOVERRIDE;
 
+    virtual wxContentProtection GetContentProtection() const wxOVERRIDE;
+    virtual bool SetContentProtection(wxContentProtection contentProtection) wxOVERRIDE;
+
     virtual bool EnableCloseButton(bool enable) wxOVERRIDE;
     virtual bool EnableMaximizeButton(bool enable) wxOVERRIDE;
     virtual bool EnableMinimizeButton(bool enable) wxOVERRIDE;
@@ -306,7 +314,7 @@ public :
 
     virtual bool IsFullScreen() const wxOVERRIDE;
 
-    bool EnableFullScreenView(bool enable) wxOVERRIDE;
+    bool EnableFullScreenView(bool enable, long style) wxOVERRIDE;
 
     virtual bool ShowFullScreen(bool show, long style) wxOVERRIDE;
 
@@ -333,6 +341,7 @@ public :
     void            RestoreWindowLevel() wxOVERRIDE;
 
     bool m_macIgnoreNextFullscreenChange = false;
+    long m_macFullscreenStyle = wxFULLSCREEN_ALL;
 
     static WX_NSResponder GetNextFirstResponder() ;
     static WX_NSResponder GetFormerFirstResponder() ;
@@ -353,13 +362,12 @@ class wxButtonCocoaImpl : public wxWidgetCocoaImpl, public wxButtonImpl
 {
 public:
     wxButtonCocoaImpl(wxWindowMac *wxpeer, wxNSButton *v);
-    virtual void SetBitmap(const wxBitmap& bitmap) wxOVERRIDE;
+    virtual void SetBitmap(const wxBitmapBundle& bitmap) wxOVERRIDE;
 #if wxUSE_MARKUP
     virtual void SetLabelMarkup(const wxString& markup) wxOVERRIDE;
 #endif // wxUSE_MARKUP
 
-    void SetPressedBitmap( const wxBitmap& bitmap ) wxOVERRIDE;
-    void GetLayoutInset(int &left, int &top, int &right, int &bottom) const wxOVERRIDE;
+    void SetPressedBitmap( const wxBitmapBundle& bitmap ) wxOVERRIDE;
     void SetAcceleratorFromLabel(const wxString& label);
 
     NSButton *GetNSButton() const;
@@ -371,8 +379,12 @@ public:
     typedef void (*wxOSX_TextEventHandlerPtr)(NSView* self, SEL _cmd, NSString *event);
     typedef void (*wxOSX_EventHandlerPtr)(NSView* self, SEL _cmd, NSEvent *event);
     typedef BOOL (*wxOSX_PerformKeyEventHandlerPtr)(NSView* self, SEL _cmd, NSEvent *event);
+    typedef void (*wxOSX_DoCommandBySelectorPtr)(NSView* self, SEL _cmd, SEL _sel);
     typedef BOOL (*wxOSX_FocusHandlerPtr)(NSView* self, SEL _cmd);
-
+    typedef void (*wxOSX_DoCommandBySelectorPtr)(NSView* self, SEL _cmd, SEL _sel);
+    typedef NSDragOperation (*wxOSX_DraggingEnteredOrUpdatedHandlerPtr)(NSView *self, SEL _cmd, void *sender);
+    typedef void (*wxOSX_DraggingExitedHandlerPtr)(NSView *self, SEL _cmd, void *sender);
+    typedef BOOL (*wxOSX_PerformDragOperationHandlerPtr)(NSView *self, SEL _cmd, void *sender);
 
     WXDLLIMPEXP_CORE NSScreen* wxOSXGetMenuScreen();
     WXDLLIMPEXP_CORE NSRect wxToNSRect( NSView* parent, const wxRect& r );
@@ -433,6 +445,19 @@ public:
     - (void)textDidChange:(NSNotification *)aNotification;
     - (void)changeColor:(id)sender;
 
+    @property (retain) NSUndoManager* undoManager;
+
+    @end
+
+    @interface wxNSSearchField : NSSearchField
+    {
+        wxNSTextFieldEditor* fieldEditor;
+        BOOL m_withinTextDidChange;
+    }
+
+    - (wxNSTextFieldEditor*) fieldEditor;
+    - (void) setFieldEditor:(wxNSTextFieldEditor*) fieldEditor;
+
     @end
 
     @interface wxNSComboBox : NSComboBox
@@ -473,7 +498,8 @@ public:
     // this enum declares which methods should not be overridden in the native view classes
     enum wxOSXSkipOverrides {
         wxOSXSKIP_NONE = 0x0,
-        wxOSXSKIP_DRAW = 0x1
+        wxOSXSKIP_DRAW = 0x1,
+        wxOSXSKIP_DND = 0x2
     };
 
     void WXDLLIMPEXP_CORE wxOSXCocoaClassAddWXMethods(Class c, wxOSXSkipOverrides skipFlags = wxOSXSKIP_NONE);
@@ -497,21 +523,7 @@ public:
     - (void)sheetDidEnd:(NSWindow *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
     @end
 
-    // This interface must be exported in shared 64 bit multilib build but
-    // using WXEXPORT with Objective C interfaces doesn't work with old (4.0.1)
-    // gcc when using 10.4 SDK. It does work with newer gcc even in 32 bit
-    // builds but seems to be unnecessary there so to avoid the expense of a
-    // configure check verifying if this does work or not with the current
-    // compiler we just only use it for 64 bit builds where this is always
-    // supported.
-    //
-    // NB: Currently this is the only place where we need to export an
-    //     interface but if we need to do it elsewhere we should define a
-    //     WXEXPORT_OBJC macro once and reuse it in all places it's needed
-    //     instead of duplicating this preprocessor check.
-#ifdef __LP64__
     WXEXPORT
-#endif // 64 bit builds
     @interface wxNSAppController : NSObject <NSApplicationDelegate>
     {
     }

@@ -81,7 +81,7 @@ protected:
 class WXDLLIMPEXP_ADV wxDataViewBitmapRenderer: public wxDataViewRenderer
 {
 public:
-    static wxString GetDefaultType() { return wxS("wxBitmap"); }
+    static wxString GetDefaultType() { return wxS("wxBitmapBundle"); }
 
     wxDataViewBitmapRenderer( const wxString &varianttype = GetDefaultType(),
                               wxDataViewCellMode mode = wxDATAVIEW_CELL_INERT,
@@ -89,6 +89,9 @@ public:
 
     bool SetValue( const wxVariant &value ) wxOVERRIDE;
     bool GetValue( wxVariant &value ) const wxOVERRIDE;
+
+    virtual
+    bool IsCompatibleVariantType(const wxString& variantType) const wxOVERRIDE;
 
 protected:
     wxDECLARE_DYNAMIC_CLASS_NO_COPY(wxDataViewBitmapRenderer);
@@ -216,6 +219,7 @@ protected:
 
 class WXDLLIMPEXP_ADV wxDataViewIconTextRenderer: public wxDataViewTextRenderer
 {
+    typedef wxDataViewTextRenderer BaseType;
 public:
     static wxString GetDefaultType() { return wxS("wxDataViewIconText"); }
 
@@ -230,6 +234,7 @@ public:
     virtual void GtkPackIntoColumn(GtkTreeViewColumn *column) wxOVERRIDE;
 
 protected:
+    virtual void SetAttr(const wxDataViewItemAttr& attr) wxOVERRIDE;
     virtual wxVariant GtkGetValueFromString(const wxString& str) const wxOVERRIDE;
 
 private:

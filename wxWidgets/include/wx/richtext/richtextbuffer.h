@@ -345,6 +345,8 @@ enum wxTextBoxAttrPosition
     wxTEXT_BOX_ATTR_POSITION_MASK           = 0x00F0
 };
 
+wxALLOW_COMBINING_ENUMS(wxTextAttrUnits, wxTextAttrValueFlags)
+
 /**
     @class wxTextAttrDimension
 
@@ -366,7 +368,8 @@ public:
     /**
         Constructor taking value and units flag.
     */
-    wxTextAttrDimension(int value, wxTextAttrUnits units = wxTEXT_ATTR_UNITS_TENTHS_MM) { m_value = value; m_flags = units|wxTEXT_ATTR_VALUE_VALID; }
+    wxTextAttrDimension(int value, wxTextAttrUnits units = wxTEXT_ATTR_UNITS_TENTHS_MM) { m_value = value;
+        m_flags = static_cast<wxTextAttrDimensionFlags>(units | wxTEXT_ATTR_VALUE_VALID); }
 
     /**
         Resets the dimension value and flags.
@@ -424,7 +427,8 @@ public:
     /**
         Sets the integer value and units.
     */
-    void SetValue(int value, wxTextAttrUnits units) { m_value = value; m_flags = units | wxTEXT_ATTR_VALUE_VALID; }
+    void SetValue(int value, wxTextAttrUnits units) { m_value = value;
+        m_flags = static_cast<wxTextAttrDimensionFlags>(units | wxTEXT_ATTR_VALUE_VALID); }
 
     /**
         Sets the dimension.
@@ -4473,7 +4477,7 @@ protected:
 #endif
 };
 
-WX_DECLARE_LIST_WITH_DECL( wxRichTextLine, wxRichTextLineList , class WXDLLIMPEXP_RICHTEXT );
+typedef wxVector<wxRichTextLine*> wxRichTextLineVector;
 
 /**
     @class wxRichTextParagraph
@@ -4526,7 +4530,7 @@ public:
     /**
         Returns the cached lines.
     */
-    wxRichTextLineList& GetLines() { return m_cachedLines; }
+    const wxRichTextLineVector& GetLines() const { return m_cachedLines; }
 
 // Operations
 
@@ -4651,7 +4655,7 @@ public:
 protected:
 
     // The lines that make up the wrapped paragraph
-    wxRichTextLineList  m_cachedLines;
+    wxRichTextLineVector m_cachedLines;
 
     // Whether the paragraph is impacted by floating objects from above
     int                 m_impactedByFloatingObjects;

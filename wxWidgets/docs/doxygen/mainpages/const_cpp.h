@@ -23,44 +23,43 @@ using @ifdef_ and not @if_.
 @section page_cppconst_guisystem GUI system
 
 @beginDefList
-@itemdef{__WXBASE__, Only wxBase, no GUI features (same as @c wxUSE_GUI == 0)}
-@itemdef{__WXDFB__, wxUniversal using DirectFB}
-@itemdef{__WXGTK__, GTK+}
-@itemdef{__WXGTK127__, GTK+ 1.2.7 or higher}
-@itemdef{__WXGTK20__, GTK+ 2.0 (2.6) or higher}
-@itemdef{__WXGTK210__, GTK+ 2.10 or higher}
-@itemdef{__WXGTK218__, GTK+ 2.18 or higher}
-@itemdef{__WXGTK220__, GTK+ 2.20 or higher}
-@itemdef{__WXMAC__, old define, same as <tt>__WXOSX__</tt>}
-@itemdef{__WXMOTIF__, Motif}
-@itemdef{__WXMOTIF20__, Motif 2.0 or higher}
-@itemdef{__WXMSW__, GUI using <a href="http://en.wikipedia.org/wiki/Windows_User">Windows Controls</a>.
+@itemdef{\__WXBASE__, Only wxBase, no GUI features (same as @c wxUSE_GUI == 0)}
+@itemdef{\__WXDFB__, wxUniversal using DirectFB}
+@itemdef{\__WXGTK__, GTK+}
+@itemdef{\__WXGTK127__, GTK+ 1.2.7 or higher}
+@itemdef{\__WXGTK20__, GTK+ 2.0 (2.6) or higher}
+@itemdef{\__WXGTK210__, GTK+ 2.10 or higher}
+@itemdef{\__WXGTK218__, GTK+ 2.18 or higher}
+@itemdef{\__WXGTK220__, GTK+ 2.20 or higher}
+@itemdef{\__WXMAC__, old define, same as <tt>\__WXOSX__</tt>}
+@itemdef{\__WXMOTIF__, Motif}
+@itemdef{\__WXMOTIF20__, Motif 2.0 or higher}
+@itemdef{\__WXMSW__, GUI using <a href="http://en.wikipedia.org/wiki/Windows_User">Windows Controls</a>.
 Notice that for compatibility reasons, this symbol is defined for console
 applications under Windows as well, but it should only be used in the GUI code
-while <tt>__WINDOWS__</tt> should be used for the platform tests.}
-@itemdef{__WXOSX__, OS X GUI using any Apple widget framework (AppKit or UIKit)}
-@itemdef{__WXOSX_IPHONE__, iPhone (UIKit)}
-@itemdef{__WXOSX_COCOA__, macOS using Cocoa (AppKit)}
-@itemdef{__WXOSX_MAC__, macOS (Cocoa)}
-@itemdef{__WXPM__, OS/2 native Presentation Manager (not used any longer).}
-@itemdef{__WXSTUBS__, Stubbed version ('template' wxWin implementation)}
-@itemdef{__WXXT__, Xt; mutually exclusive with WX_MOTIF, not implemented in wxWidgets 2.x}
-@itemdef{__WXX11__, wxX11 (<tt>__WXUNIVERSAL__</tt> will be also defined)}
-@itemdef{__WXWINE__, WINE (i.e. WIN32 on Unix)}
-@itemdef{__WXUNIVERSAL__, wxUniversal port, always defined in addition
+while <tt>\__WINDOWS__</tt> should be used for the platform tests.}
+@itemdef{\__WXOSX__, OS X GUI using any Apple widget framework (AppKit or UIKit)}
+@itemdef{\__WXOSX_IPHONE__, iPhone (UIKit)}
+@itemdef{\__WXOSX_COCOA__, macOS using Cocoa (AppKit)}
+@itemdef{\__WXOSX_MAC__, macOS (Cocoa)}
+@itemdef{\__WXPM__, OS/2 native Presentation Manager (not used any longer).}
+@itemdef{\__WXXT__, Xt; mutually exclusive with WX_MOTIF, not implemented in wxWidgets 2.x}
+@itemdef{\__WXX11__, wxX11 (<tt>\__WXUNIVERSAL__</tt> will be also defined)}
+@itemdef{\__WXWINE__, WINE (i.e. WIN32 on Unix)}
+@itemdef{\__WXUNIVERSAL__, wxUniversal port, always defined in addition
                         to one of the symbols above so this should be tested first.}
-@itemdef{__X__, any X11-based GUI toolkit except GTK+}
+@itemdef{\__X__, any X11-based GUI toolkit except GTK+}
 @endDefList
 
 wxOSX is the successor of the venerable wxMac, it currently exists in two
 versions: Cocoa for the desktop and a very early iPhone port. To summarize:
 
 @li If you want to test for wxOSX on the desktop, use
-    <tt>__WXOSX_MAC__</tt>.
+    <tt>\__WXOSX_MAC__</tt>.
 @li If you want to test for wxOSX on the iPhone, use
-    <tt>__WXOSX_IPHONE__</tt>.
+    <tt>\__WXOSX_IPHONE__</tt>.
 @li If you want to test for any port under macOS, including, for
-    example, wxGTK and also wxBase, use <tt>__DARWIN__</tt> (see below).
+    example, wxGTK and also wxBase, use <tt>\__DARWIN__</tt> (see below).
 
 The convention is to use the <tt>__WX</tt> prefix for these
 symbols, although this has not always been followed.
@@ -70,34 +69,34 @@ symbols, although this has not always been followed.
 @section page_cppconst_os Operating Systems
 
 @beginDefList
-@itemdef{__APPLE__, any Mac OS version}
-@itemdef{__AIX__, AIX}
-@itemdef{__BSD__, Any *BSD system}
-@itemdef{__CYGWIN__, Cygwin: Unix on Win32}
-@itemdef{__DARWIN__, OS X (with BSD C library), using any port (see also <tt>__WXOSX__</tt>)}
-@itemdef{__DATA_GENERAL__, DG-UX}
-@itemdef{__FREEBSD__, FreeBSD}
-@itemdef{__HPUX__, HP-UX (Unix)}
-@itemdef{__GNU__, GNU Hurd}
-@itemdef{__LINUX__, Linux}
-@itemdef{__MACH__, Mach-O Architecture (OS X only builds)}
-@itemdef{__OSF__, OSF/1}
-@itemdef{__QNX__, QNX Neutrino RTOS}
-@itemdef{__SGI__, IRIX}
-@itemdef{__SOLARIS__, Solaris}
-@itemdef{__SUN__, Any Sun}
-@itemdef{__SUNOS__, Sun OS}
-@itemdef{__SVR4__, SystemV R4}
-@itemdef{__SYSV__, SystemV generic}
-@itemdef{__ULTRIX__, Ultrix}
-@itemdef{__UNIX__, any Unix}
-@itemdef{__UNIX_LIKE__, Unix, BeOS or VMS}
-@itemdef{__VMS__, VMS}
-@itemdef{__WINDOWS__, Any Windows platform, using any port (see also <tt>__WXMSW__</tt>)}
-@itemdef{__WIN16__, Win16 API (not supported since wxWidgets 2.6)}
-@itemdef{__WIN32__, Win32 API}
-@itemdef{__WIN64__, Win64 (mostly same as Win32 but data type sizes are different)}
-@itemdef{__WINE__, Wine}
+@itemdef{\__APPLE__, any Mac OS version}
+@itemdef{\__AIX__, AIX}
+@itemdef{\__BSD__, Any *BSD system}
+@itemdef{\__CYGWIN__, Cygwin: Unix on Win32}
+@itemdef{\__DARWIN__, OS X (with BSD C library), using any port (see also <tt>\__WXOSX__</tt>)}
+@itemdef{\__DATA_GENERAL__, DG-UX}
+@itemdef{\__FREEBSD__, FreeBSD}
+@itemdef{\__HPUX__, HP-UX (Unix)}
+@itemdef{\__GNU__, GNU Hurd}
+@itemdef{\__LINUX__, Linux}
+@itemdef{\__MACH__, Mach-O Architecture (OS X only builds)}
+@itemdef{\__OSF__, OSF/1}
+@itemdef{\__QNX__, QNX Neutrino RTOS}
+@itemdef{\__SGI__, IRIX}
+@itemdef{\__SOLARIS__, Solaris}
+@itemdef{\__SUN__, Any Sun}
+@itemdef{\__SUNOS__, Sun OS}
+@itemdef{\__SVR4__, SystemV R4}
+@itemdef{\__SYSV__, SystemV generic}
+@itemdef{\__ULTRIX__, Ultrix}
+@itemdef{\__UNIX__, any Unix}
+@itemdef{\__UNIX_LIKE__, Unix, BeOS or VMS}
+@itemdef{\__VMS__, VMS}
+@itemdef{\__WINDOWS__, Any Windows platform, using any port (see also <tt>\__WXMSW__</tt>)}
+@itemdef{\__WIN16__, Win16 API (not supported since wxWidgets 2.6)}
+@itemdef{\__WIN32__, Win32 API}
+@itemdef{\__WIN64__, Win64 (mostly same as Win32 but data type sizes are different)}
+@itemdef{\__WINE__, Wine}
 @endDefList
 
 
@@ -108,10 +107,10 @@ Note that not all of these symbols are always defined, it depends on the
 compiler used.
 
 @beginDefList
-@itemdef{__ALPHA__, DEC Alpha architecture}
-@itemdef{__INTEL__, Intel i386 or compatible}
-@itemdef{__IA64__, Intel 64 bit architecture}
-@itemdef{__POWERPC__, Motorola Power PC}
+@itemdef{\__ALPHA__, DEC Alpha architecture}
+@itemdef{\__INTEL__, Intel i386 or compatible}
+@itemdef{\__IA64__, Intel 64 bit architecture}
+@itemdef{\__POWERPC__, Motorola Power PC}
 @endDefList
 
 
@@ -119,28 +118,28 @@ compiler used.
 @section page_cppconst_compiler Compilers
 
 @beginDefList
-@itemdef{__BORLANDC__, Borland C++. The value of the macro corresponds
+@itemdef{\__BORLANDC__, Borland C++. The value of the macro corresponds
                         to the compiler version: 500 is 5.0 (not used any more).}
-@itemdef{__DIGITALMARS__, Digital Mars (not used any more).}
-@itemdef{__GNUG__, Gnu C++ on any platform, see also wxCHECK_GCC_VERSION}
-@itemdef{__GNUWIN32__, Gnu-Win32 compiler, see also wxCHECK_W32API_VERSION}
-@itemdef{__INTELC__, Intel C++ compiler}
-@itemdef{__MINGW32__, Either MinGW32 or MinGW-w64 in either 32 or 64 bits}
+@itemdef{\__DIGITALMARS__, Digital Mars (not used any more).}
+@itemdef{\__GNUG__, Gnu C++ on any platform, see also wxCHECK_GCC_VERSION}
+@itemdef{\__GNUWIN32__, Gnu-Win32 compiler, see also wxCHECK_W32API_VERSION}
+@itemdef{\__INTELC__, Intel C++ compiler}
+@itemdef{\__MINGW32__, Either MinGW32 or MinGW-w64 in either 32 or 64 bits}
 @itemdef{__MINGW32_TOOLCHAIN, MinGW32 only (32 bits only right now)}
-@itemdef{__MINGW64__, MinGW-w64 in 64 bit builds}
-@itemdef{__MINGW64_TOOLCHAIN__, MinGW-w64 in either 32 or 64 bit builds}
-@itemdef{__SUNCC__, Sun CC, see also wxCHECK_SUNCC_VERSION}
-@itemdef{__SYMANTECC__, Symantec C++ (not used any more).}
-@itemdef{__VISAGECPP__, IBM Visual Age (OS/2) (not used any more).}
-@itemdef{__VISUALC__, Microsoft Visual C++, see also ::wxCHECK_VISUALC_VERSION.
+@itemdef{\__MINGW64__, MinGW-w64 in 64 bit builds}
+@itemdef{\__MINGW64_TOOLCHAIN__, MinGW-w64 in either 32 or 64 bit builds}
+@itemdef{\__SUNCC__, Sun CC, see also wxCHECK_SUNCC_VERSION}
+@itemdef{\__SYMANTECC__, Symantec C++ (not used any more).}
+@itemdef{\__VISAGECPP__, IBM Visual Age (OS/2) (not used any more).}
+@itemdef{\__VISUALC__, Microsoft Visual C++, see also ::wxCHECK_VISUALC_VERSION.
                     The value of this macro corresponds to the compiler version:
                     @c 1020 for @c 4.2 (the first supported version), @c 1100 for
                     @c 5.0, @c 1200 for @c 6.0 and so on. For convenience, the symbols
-                    __VISUALCn__ are also defined for each major compiler version from
+                    \__VISUALCn__ are also defined for each major compiler version from
                     5 to 12, i.e. you can use tests such as <tt>\#ifdef \_\_VISUALC7\_\_</tt>
                     to test for compiler version being precisely 7.}
-@itemdef{__XLC__, AIX compiler}
-@itemdef{__WATCOMC__, Watcom C++. The value of this macro corresponds to
+@itemdef{\__XLC__, AIX compiler}
+@itemdef{\__WATCOMC__, Watcom C++. The value of this macro corresponds to
                     the compiler version, @c 1100 is @c 11.0 and @c 1200 is OpenWatcom
                     (not used any more).}
 @endDefList
@@ -171,6 +170,15 @@ Currently the following symbols exist:
     wxBitmapToggleButton class is available in addition to wxToggleButton.}
 @itemdef{wxHAS_CONFIG_TEMPLATE_RW, Defined if the currently used compiler
     supports template Read() and Write() methods in wxConfig.}
+@itemdef{wxHAS_DEPRECATED_ATTR, Defined if C++14 @c [[deprecated]] attribute is
+    supported (this symbol only exists in wxWidgets 3.1.6 or later).}
+@itemdef{wxHAS_DPI_INDEPENDENT_PIXELS, Defined if pixel coordinates on the
+    current platform scale with DPI, i.e. if the given length in pixels has the
+    same apparent size on the display independently of the DPI (this symbol
+    only exists in wxWidgets 3.1.6 or later). Note that it should rarely, if
+    ever, be necessary to use this symbol directly, functions such as
+    wxWindow::FromDIP() and wxBitmap::GetLogicalSize() exist to hide the
+    differences between the platforms with and without DPI-independent pixels.}
 @itemdef{wxHAS_MEMBER_DEFAULT, Defined if the currently used compiler supports
     C++11 @c =default.}
 @itemdef{wxHAS_LARGE_FILES, Defined if wxFile supports files more than 4GB in
@@ -192,14 +200,22 @@ Currently the following symbols exist:
 @itemdef{wxHAS_NATIVE_WINDOW, Defined if wxNativeWindow class is available.}
 @itemdef{wxHAS_NOEXCEPT, Defined if the currently used compiler supports C++11 @c noexcept. @c wxNOEXCEPT is defined as this keyword in this case, and as nothing otherwise.}
 @itemdef{wxHAS_NULLPTR_T, Defined if the currently used compiler supports C++11 @c nullptr.}
+@itemdef{wxHAS_IMAGE_RESOURCES, Defined if images can be embedded into the
+    program as resources, i.e. without being defined in the program text
+    itself. This is currently the case for MSW and Mac platforms. This constant
+    is available since wxWidgets 3.1.6.}
 @itemdef{wxHAS_IMAGES_IN_RESOURCES, Defined if <a href="http://en.wikipedia.org/wiki/Resource_(Windows)">
-    Windows resource files</a> or OS/2 resource files are available on the current platform.}
+    Windows resource files</a> resource files are available on the current platform.
+    Usually wxHAS_IMAGE_RESOURCES should be used instead.}
 @itemdef{wxHAS_POWER_EVENTS, Defined if wxPowerEvent are ever generated on the current platform.}
 @itemdef{wxHAS_RADIO_MENU_ITEMS,
         Defined if the current port supports radio menu items (see wxMenu::AppendRadioItem).}
 @itemdef{wxHAS_RAW_BITMAP, Defined if direct access to bitmap data using the classes in @c wx/rawbmp.h is supported.}
 @itemdef{wxHAS_RAW_KEY_CODES, Defined if raw key codes (see wxKeyEvent::GetRawKeyCode are supported.}
-@itemdef{wxHAS_REGEX_ADVANCED, Defined if advanced syntax is available in wxRegEx.}
+@itemdef{wxHAS_REGEX_ADVANCED, Defined if advanced syntax is available in
+    wxRegEx. This is always the case in wxWidgets 3.1.6 and later, so this
+    symbol doesn't need to be tested any more.}
+@itemdef{wxHAS_SVG, Defined if SVG support (currently only via wxBitmapBundle::FromSVG()) is available.}
 @itemdef{wxHAS_TASK_BAR_ICON, Defined if wxTaskBarIcon is available on the current platform.}
 @itemdef{wxHAS_WINDOW_LABEL_IN_STATIC_BOX, Defined if wxStaticBox::Create()
     overload taking @c wxWindow* instead of the text label is available on the current platform.}
@@ -331,12 +347,12 @@ more details.
 @section page_cppconst_miscellaneous Miscellaneous
 
 @beginDefList
-@itemdef{__WXWINDOWS__,
+@itemdef{\__WXWINDOWS__,
         always defined in wxWidgets applications, see also wxCHECK_VERSION}
 @itemdef{wxDEBUG_LEVEL, defined as 1 by default, may be pre-defined as 0 before
         including wxWidgets headers to disable generation of any code at all
         for the assertion macros, see @ref overview_debugging}
-@itemdef{__WXDEBUG__, defined if wxDEBUG_LEVEL is 1 or more, undefined otherwise}
+@itemdef{\__WXDEBUG__, defined if wxDEBUG_LEVEL is 1 or more, undefined otherwise}
 @itemdef{wxUSE_XXX,
         if defined as 1, feature XXX is active, see the
         @ref page_wxusedef (the symbols of this form are always defined,
@@ -365,7 +381,7 @@ more details.
         if this macro is defined, the compilation options
         don't include compiler flags needed for multithreaded code generation. This
         implies that wxUSE_THREADS is 0 and also that other (non-wx-based) threading
-        packages cannot be used neither.}
+        packages cannot be used either.}
 @itemdef{wxNO_UNSAFE_WXSTRING_CONV,
         this symbol is not defined by wxWidgets itself, but can be defined by
         the applications using the library to disable unsafe implicit
@@ -388,6 +404,9 @@ more details.
         defined when compiling code which uses wxWidgets as a DLL/shared library}
 @itemdef{WXBUILDING,
         defined when building wxWidgets itself, whether as a static or shared library}
+@itemdef{wxICON_IS_BITMAP,
+         defined in the ports where wxIcon inherits from wxBitmap (all but
+         wxMSW currently)}
 @endDefList
 
 */

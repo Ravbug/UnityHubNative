@@ -115,6 +115,12 @@ namespace Catch {
 
 #include <signal.h>
 
+// Work around SIGSTKSZ not being a constant any more in glibc >= 2.34.
+#ifdef __USE_DYNAMIC_STACK_SIZE
+#   undef SIGSTKSZ
+#   define SIGSTKSZ 32768
+#endif // __USE_DYNAMIC_STACK_SIZE
+
 namespace Catch {
 
     struct SignalDefs {

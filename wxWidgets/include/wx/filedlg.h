@@ -24,6 +24,8 @@
     #define wxHAS_MULTIPLE_FILEDLG_FILTERS
 #endif
 
+class WXDLLIMPEXP_FWD_CORE wxFileDialogCustomizeHook;
+
 //----------------------------------------------------------------------------
 // wxFileDialog data
 //----------------------------------------------------------------------------
@@ -53,6 +55,17 @@ enum
 };
 
 #define wxFD_DEFAULT_STYLE      wxFD_OPEN
+
+#if wxABI_VERSION >= 30201
+
+// Flags for wxFileDialog::AddShortcut().
+enum
+{
+    wxFD_SHORTCUT_TOP       = 0x0001,
+    wxFD_SHORTCUT_BOTTOM    = 0x0002
+};
+
+#endif // wxABI_VERSION >= 3.2.1
 
 extern WXDLLIMPEXP_DATA_CORE(const char) wxFileDialogNameStr[];
 extern WXDLLIMPEXP_DATA_CORE(const char) wxFileSelectorPromptStr[];
@@ -127,6 +140,30 @@ public:
     virtual int GetCurrentlySelectedFilterIndex () const
         { return m_currentlySelectedFilterIndex; }
 
+
+#if defined(__WXUNIVERSAL__) || !(defined(__WXMSW__) || defined(__WXGTK20__))
+#if wxABI_VERSION >= 30201
+    // Add a shortcut to the given directory in the sidebar containing such
+    // shortcuts if supported.
+    bool AddShortcut(const wxString& directory, int flags = 0);
+#endif // wxABI_VERSION >= 3.2.1
+#endif // Platforms without native implementation.
+
+    // A customize hook methods will be called by wxFileDialog later if this
+    // function returns true, see its documentation for details.
+    //
+    // Note that the customizeHook object must remain alive at least until
+    // ShowModal() returns.
+    //
+    // If this function returns false, it means that customizing the file
+    // dialog is not supported on this platforms.
+    virtual bool SetCustomizeHook(wxFileDialogCustomizeHook& customizeHook);
+
+
+    // Extra controls support is deprecated now as it doesn't allow to use the
+    // contemporary file dialogs under MSW, use wxFileDialogCustomize-based
+    // API above instead in the new code.
+
     // this function is called with wxFileDialog as parameter and should
     // create the window containing the extra controls we want to show in it
     typedef wxWindow *(*ExtraControlCreatorFunction)(wxWindow*);
@@ -172,18 +209,29 @@ protected:
     // provide a useful implementation of GetCurrentlySelectedFilterIndex().
     int           m_currentlySelectedFilterIndex;
 
+    wxFileDialogCustomizeHook* m_customizeHook;
+
     wxWindow*     m_extraControl;
 
-    // returns true if control is created (if it already exists returns false)
+    // create and return the extra control using the given parent
+    wxWindow* CreateExtraControlWithParent(wxWindow* parent) const;
+    // returns true if control is created, also sets m_extraControl
     bool CreateExtraControl();
+    // destroy m_extraControl and reset it to NULL
+    void DestroyExtraControl();
     // return true if SetExtraControlCreator() was called
     bool HasExtraControlCreator() const
         { return m_extraControlCreator != NULL; }
-    // get the size of the extra control by creating and deleting it
-    wxSize GetExtraControlSize();
     // Helper function for native file dialog usage where no wx events
     // are processed.
     void UpdateExtraControlUI();
+    // Helper function simply transferring data from custom controls if they
+    // are used -- must be called if the dialog was accepted.
+    void TransferDataFromExtraControl();
+
+    // Stub virtual functions for forward binary compatibility. DO NOT USE.
+    virtual void* WXReservedFileDialog1(void*);
+    virtual void* WXReservedFileDialog2(void*);
 
 private:
     ExtraControlCreatorFunction m_extraControlCreator;

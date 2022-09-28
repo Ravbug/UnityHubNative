@@ -10,13 +10,8 @@
 #ifndef __GTKBITMAPH__
 #define __GTKBITMAPH__
 
-#include "wx/defs.h"
-#include "wx/object.h"
-#include "wx/string.h"
 #include "wx/palette.h"
 #include "wx/gdiobj.h"
-
-class WXDLLIMPEXP_FWD_CORE wxPixelDataBase;
 
 //-----------------------------------------------------------------------------
 // classes
@@ -25,6 +20,7 @@ class WXDLLIMPEXP_FWD_CORE wxPixelDataBase;
 class WXDLLIMPEXP_FWD_CORE wxMask;
 class WXDLLIMPEXP_FWD_CORE wxBitmap;
 class WXDLLIMPEXP_FWD_CORE wxImage;
+class WXDLLIMPEXP_FWD_CORE wxCursor;
 
 //-----------------------------------------------------------------------------
 // wxMask
@@ -68,10 +64,13 @@ public:
     wxBitmap() {}
     wxBitmap( int width, int height, int depth = -1 ) { Create( width, height, depth ); }
     wxBitmap( const wxSize& sz, int depth = -1 ) { Create( sz, depth ); }
+    wxBitmap( int width, int height, const wxDC& dc ) { Create(width, height, dc); }
     wxBitmap( const char bits[], int width, int height, int depth = 1 );
     wxBitmap( const char* const* bits );
     wxBitmap( const wxString &filename, wxBitmapType type = wxBITMAP_DEFAULT_TYPE );
     wxBitmap( const wxImage& image, int depth = -1, double WXUNUSED(scale) = 1.0 ) { (void)CreateFromImage(image, depth); }
+    wxBitmap( const wxImage& image, const wxDC& WXUNUSED(dc) ) { (void)CreateFromImage(image, -1); }
+    explicit wxBitmap(const wxCursor& cursor);
     virtual ~wxBitmap();
 
     bool Create(int width, int height, int depth = wxBITMAP_SCREEN_DEPTH);
@@ -85,9 +84,6 @@ public:
     virtual int GetDepth() const;
 
     wxImage ConvertToImage() const;
-
-    // copies the contents and mask of the given (colour) icon to the bitmap
-    virtual bool CopyFromIcon(const wxIcon& icon);
 
     wxMask *GetMask() const;
     void SetMask( wxMask *mask );
@@ -121,6 +117,8 @@ public:
 
     // Basically, this corresponds to Win32 StretchBlt()
     wxBitmap Rescale( int clipx, int clipy, int clipwidth, int clipheight, int width, int height );
+    // OpenVMS needs the next statement to detect Rescale in an inherited class
+    using wxBitmapHelpers::Rescale;
 
     // raw bitmap access support functions
     void *GetRawData(wxPixelDataBase& data, int bpp);

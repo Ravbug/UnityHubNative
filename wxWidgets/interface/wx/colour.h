@@ -9,16 +9,15 @@
 
 /**
     Flags for wxColour -> wxString conversion (see wxColour::GetAsString).
-
-    @{
 */
+///@{
 enum {
     wxC2S_NAME             = 1,   // return colour name, when possible
     wxC2S_CSS_SYNTAX       = 2,   // return colour in rgb(r,g,b) syntax
     wxC2S_HTML_SYNTAX      = 4    // return colour in #rrggbb syntax
 };
 
-//@}
+///@}
 
 const unsigned char wxALPHA_TRANSPARENT = 0;
 const unsigned char wxALPHA_OPAQUE = 0xff;
@@ -34,6 +33,20 @@ const unsigned char wxALPHA_OPAQUE = 0xff;
     Valid RGB values are in the range 0 to 255.
 
     You can retrieve the current system colour settings with wxSystemSettings.
+
+
+    @section colour_accessors Channel Accessor Functions
+
+    Note that this class provides pairs of functions for each of the colour
+    channels, i.e. red, green, blue and alpha values. The one word functions
+    Red(), Green(), Blue() and Alpha() return the values of type @c unsigned @c
+    char, while GetRed(), GetGreen(), GetBlue() and GetAlpha() returns the same
+    value as @c unsigned @c int. According to the C++ integer promotion rules,
+    the result of any arithmetic expression involving the former will be
+    (signed) @c int, while that of the latter will be @c unsigned, which is
+    what would be commonly expected, so the latter family of functions should
+    be typically preferred (but they are only available since wxWidgets 3.1.6).
+
 
     @library{wxcore}
     @category{gdi}
@@ -95,13 +108,46 @@ public:
     /**
         Returns the alpha value, on platforms where alpha is not yet supported, this
         always returns wxALPHA_OPAQUE.
+
+        @see GetAlpha()
     */
     virtual unsigned char Alpha() const;
 
     /**
         Returns the blue intensity.
+
+        @see GetBlue()
     */
     virtual unsigned char Blue() const;
+
+    /**
+        Returns the alpha value, on platforms where alpha is not yet supported, this
+        always returns wxALPHA_OPAQUE.
+
+        @since 3.1.6
+     */
+    unsigned int GetAlpha() const;
+
+    /**
+        Returns the blue intensity as unsigned int.
+
+        @since 3.1.6
+     */
+    unsigned int GetBlue() const;
+
+    /**
+        Returns the green intensity as unsigned int.
+
+        @since 3.1.6
+     */
+    unsigned int GetGreen() const;
+
+    /**
+        Returns the red intensity as unsigned int.
+
+        @since 3.1.6
+     */
+    unsigned int GetRed() const;
 
     /**
         Converts this colour to a wxString using the given flags.
@@ -126,7 +172,7 @@ public:
     */
     virtual wxString GetAsString(long flags = wxC2S_NAME | wxC2S_CSS_SYNTAX) const;
 
-    //@{
+    ///@{
     /**
         Sets the RGB or RGBA colour values from a single 32 bit value.
 
@@ -142,9 +188,9 @@ public:
     */
     void SetRGB(wxUint32 colRGB);
     void SetRGBA(wxUint32 colRGBA);
-    //@}
+    ///@}
 
-    //@{
+    ///@{
     /**
         Gets the RGB or RGBA colour values as a single 32 bit value.
 
@@ -160,7 +206,7 @@ public:
     */
     wxUint32 GetRGB() const;
     wxUint32 GetRGBA() const;
-    //@}
+    ///@}
 
     /**
         Return the perceived brightness of the colour.
@@ -185,6 +231,8 @@ public:
 
     /**
         Returns the green intensity.
+
+        @see GetGreen()
     */
     virtual unsigned char Green() const;
 
@@ -196,6 +244,8 @@ public:
 
     /**
         Returns the red intensity.
+
+        @see GetRed()
     */
     virtual unsigned char Red() const;
 
@@ -206,7 +256,7 @@ public:
         @since 3.1.2
     */
     virtual bool IsSolid() const;
-    //@{
+    ///@{
     /**
         Sets the RGB intensity values using the given values (first overload),
         extracting them from the packed long (second overload), using the given
@@ -226,7 +276,7 @@ public:
              unsigned char alpha = wxALPHA_OPAQUE);
     void Set(unsigned long RGB);
     bool Set(const wxString& str);
-    //@}
+    ///@}
 
     /**
         Tests the inequality of two colours by comparing individual red, green, blue
@@ -306,7 +356,7 @@ public:
 
 
 /** @name Predefined colors. */
-//@{
+///@{
 wxColour wxNullColour;
 wxColour wxTransparentColour;
 wxColour* wxBLACK;
@@ -317,7 +367,7 @@ wxColour* wxYELLOW;
 wxColour* wxLIGHT_GREY;
 wxColour* wxRED;
 wxColour* wxWHITE;
-//@}
+///@}
 
 
 
@@ -326,7 +376,7 @@ wxColour* wxWHITE;
 // ============================================================================
 
 /** @addtogroup group_funcmacro_misc */
-//@{
+///@{
 
 /**
     Converts string to a wxColour best represented by the given string. Returns
@@ -347,5 +397,5 @@ bool wxFromString(const wxString& string, wxColour* colour);
 */
 wxString wxToString(const wxColour& colour);
 
-//@}
+///@}
 

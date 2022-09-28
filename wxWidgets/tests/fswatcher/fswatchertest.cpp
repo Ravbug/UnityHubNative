@@ -23,6 +23,7 @@
 #include "wx/filename.h"
 #include "wx/filefn.h"
 #include "wx/fswatcher.h"
+#include "wx/log.h"
 #include "wx/scopedptr.h"
 #include "wx/stdpaths.h"
 #include "wx/vector.h"
@@ -128,32 +129,36 @@ public:
     // static helpers
     static const wxFileName& GetWatchDir()
     {
-        static wxFileName dir;
-
-        if (dir.DirExists())
-            return dir;
+        if (ms_watchDir.DirExists())
+            return ms_watchDir;
 
         wxString tmp = wxStandardPaths::Get().GetTempDir();
-        dir.AssignDir(tmp);
+        ms_watchDir.AssignDir(tmp);
 
         // XXX look for more unique name? there is no function to generate
         // unique filename, the file always get created...
-        dir.AppendDir("fswatcher_test");
-        REQUIRE(!dir.DirExists());
-        REQUIRE(dir.Mkdir());
+        ms_watchDir.AppendDir("fswatcher_test");
+        REQUIRE(!ms_watchDir.DirExists());
 
-        return dir;
+        TestLogEnabler enableLogs;
+        REQUIRE(ms_watchDir.Mkdir());
+
+        REQUIRE(ms_watchDir.DirExists());
+
+        return ms_watchDir;
     }
 
     static void RemoveWatchDir()
     {
-        wxFileName dir = GetWatchDir();
-        REQUIRE(dir.DirExists());
+        REQUIRE(ms_watchDir.DirExists());
 
         // just to be really sure we know what we remove
-        REQUIRE( dir.GetDirs().Last() == "fswatcher_test" );
+        REQUIRE( ms_watchDir.GetDirs().Last() == "fswatcher_test" );
 
-        CHECK( dir.Rmdir(wxPATH_RMDIR_RECURSIVE) );
+        TestLogEnabler enableLogs;
+        CHECK( ms_watchDir.Rmdir(wxPATH_RMDIR_RECURSIVE) );
+
+        ms_watchDir = wxFileName();
     }
 
     static wxFileName RandomName(const wxFileName& base, int length = 10)
@@ -178,9 +183,13 @@ public:
 
 protected:
     static EventGenerator* ms_instance;
+
+private:
+    static wxFileName ms_watchDir;
 };
 
 EventGenerator* EventGenerator::ms_instance = 0;
+wxFileName EventGenerator::ms_watchDir;
 
 
 // Abstract base class from which concrete event tests inherit.
@@ -432,7 +441,7 @@ TEST_CASE_METHOD(FileSystemWatcherTestCase,
 }
 
 // kqueue-based implementation doesn't collapse create/delete pairs in
-// renames and doesn't detect neither modifications nor access to the
+// renames and detects neither modifications nor access to the
 // files reliably currently so disable these tests
 //
 // FIXME: fix the code and reenable them
@@ -799,7 +808,6 @@ TEST_CASE_METHOD(FileSystemWatcherTestCase,
             // We don't use this function for events. Just run the tests
 
             wxFileName watchdir = EventGenerator::GetWatchDir();
-            REQUIRE(watchdir.DirExists());
 
             wxFileName treedir(watchdir);
             treedir.AppendDir("treetrunk");

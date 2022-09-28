@@ -14,7 +14,7 @@ dnl ---------------------------------------------------------------------------
 dnl initialization
 dnl ---------------------------------------------------------------------------
 
-AC_INIT([wxWidgets], [3.1.5], [wx-dev@googlegroups.com])
+AC_INIT([wxWidgets], [3.2.1], [wx-dev@googlegroups.com])
 
 dnl the file passed to AC_CONFIG_SRCDIR should be specific to our package
 AC_CONFIG_SRCDIR([wx-config.in])
@@ -39,8 +39,8 @@ dnl
 dnl wx_release_number += 1
 
 wx_major_version_number=3
-wx_minor_version_number=1
-wx_release_number=5
+wx_minor_version_number=2
+wx_release_number=1
 wx_subrelease_number=0
 
 WX_RELEASE=$wx_major_version_number.$wx_minor_version_number
@@ -339,11 +339,11 @@ DEFAULT_wxUSE_LIBCURL=auto
 DEFAULT_wxUSE_LIBGNOMEVFS=no
 DEFAULT_wxUSE_LIBMSPACK=no
 DEFAULT_wxUSE_LIBSDL=no
+DEFAULT_wxUSE_LIBLZMA=no
 DEFAULT_wxUSE_CAIRO=no
 
 dnl features disabled by default
 DEFAULT_wxUSE_ACCESSIBILITY=no
-DEFAULT_wxUSE_IPV6=no
 DEFAULT_wxUSE_UNICODE_UTF8=no
 DEFAULT_wxUSE_UNICODE_UTF8_LOCALE=no
 
@@ -354,6 +354,7 @@ DEFAULT_wxUSE_HOTKEY=auto
 DEFAULT_wxUSE_MEDIACTRL=auto
 DEFAULT_wxUSE_METAFILE=auto
 DEFAULT_wxUSE_OPENGL=auto
+DEFAULT_wxUSE_WEBVIEW_EDGE=no
 
 dnl Mac/Cocoa users need to enable building universal binaries explicitly
 DEFAULT_wxUSE_UNIVERSAL_BINARY=no
@@ -556,6 +557,7 @@ WX_ARG_WITH(gnomevfs,      [  --with-gnomevfs         use GNOME VFS for associat
 WX_ARG_WITH(libnotify,     [  --with-libnotify        use libnotify for notifications], wxUSE_LIBNOTIFY)
 WX_ARG_WITH(opengl,        [  --with-opengl           use OpenGL (or Mesa)], wxUSE_OPENGL)
 WX_ARG_WITH(xtest,         [  --with-xtest            use XTest extension], wxUSE_XTEST)
+WX_ARG_WITH(nanosvg,       [  --with-nanosvg          use NanoSVG for rasterizing SVG], wxUSE_NANOSVG)
 
 if test "$wxUSE_GTK" = 1 -o "$wxUSE_QT" = 1 -o "$wxUSE_X11" = 1; then
     wx_needs_cairo_for_gc=1
@@ -665,7 +667,7 @@ dnl ---------------------------------------------------------------------------
 
 WX_ARG_DISABLE(shared,     [  --disable-shared        create static library instead of shared], wxUSE_SHARED)
 AC_ARG_ENABLE(cxx11,       [  --enable-cxx11          use C++11 compiler if available], [wxWITH_CXX=11 wxWITH_CXX_IS_OPTIONAL=1])
-AC_ARG_WITH(cxx,           [  --with-cxx=11|14|17     use the given C++ dialect], [wxWITH_CXX="$withval"])
+AC_ARG_WITH(cxx,           [  --with-cxx=11|14|17|20  use the given C++ dialect], [wxWITH_CXX="$withval"])
 WX_ARG_ENABLE(stl,         [  --enable-stl            use standard C++ classes for everything], wxUSE_STL)
 if test "$wxUSE_STL" = "yes"; then
     DEFAULT_wxUSE_STD_CONTAINERS=yes
@@ -766,6 +768,7 @@ WX_ARG_FEATURE(printfposparam,[  --enable-printfposparam use wxVsnprintf() which
 WX_ARG_FEATURE(secretstore,   [  --enable-secretstore    use wxSecretStore class], wxUSE_SECRETSTORE)
 WX_ARG_FEATURE(snglinst,      [  --enable-snglinst       use wxSingleInstanceChecker class], wxUSE_SNGLINST_CHECKER)
 WX_ARG_FEATURE(sound,         [  --enable-sound          use wxSound class], wxUSE_SOUND)
+WX_ARG_FEATURE(spellcheck,    [  --enable-spellcheck     enable spell checking in wxTextCtrl], wxUSE_SPELLCHECK)
 WX_ARG_FEATURE(stdpaths,      [  --enable-stdpaths       use wxStandardPaths class], wxUSE_STDPATHS)
 WX_ARG_FEATURE(stopwatch,     [  --enable-stopwatch      use wxStopWatch class], wxUSE_STOPWATCH)
 WX_ARG_FEATURE(streams,       [  --enable-streams        use wxStream etc classes], wxUSE_STREAMS)
@@ -826,6 +829,10 @@ dnl wxDC is implemented in terms of wxGraphicsContext in wxOSX so the latter
 dnl can't be disabled, don't even provide an option to do it
 if test "$wxUSE_MAC" != 1; then
 WX_ARG_FEATURE(graphics_ctx,[  --enable-graphics_ctx   use graphics context 2D drawing API], wxUSE_GRAPHICS_CONTEXT)
+fi
+
+if test "$wxUSE_MSW" = 1 ; then
+WX_ARG_FEATURE(graphics_d2d,[  --enable-graphics-d2d   use Direct2D-based graphics context], wxUSE_GRAPHICS_DIRECT2D)
 fi
 
 dnl ---------------------------------------------------------------------------
@@ -1060,6 +1067,7 @@ WX_ARG_FEATURE(ownerdrawn,  [  --enable-ownerdrawn     use owner drawn controls 
 WX_ARG_FEATURE(uxtheme,     [  --enable-uxtheme        enable support for Windows XP themed look (Win32 only)], wxUSE_UXTHEME)
 WX_ARG_FEATURE(wxdib,       [  --enable-wxdib          use wxDIB class (Win32 only)], wxUSE_DIB)
 WX_ARG_FEATURE(webviewie,   [  --enable-webviewie      use wxWebView IE backend (Win32 only)], wxUSE_WEBVIEW_IE)
+WX_ARG_FEATURE(webviewedge, [  --enable-webviewedge    use wxWebView Edge backend (Win32 only)], wxUSE_WEBVIEW_EDGE)
 
 dnl this one is not really MSW-specific but it exists mainly to be turned off
 dnl under MSW, it should be off by default on the other platforms
@@ -1151,8 +1159,13 @@ if test -n "$wxWITH_CXX"; then
             HAVE_CXX11=1
             ;;
 
+        20)
+            AX_CXX_COMPILE_STDCXX(20)
+            HAVE_CXX11=1
+            ;;
+
         *)
-            AC_MSG_ERROR([Invalid --with-cxx=$wxWITH_CXX option value, only 11, 14 or 17 supported])
+            AC_MSG_ERROR([Invalid --with-cxx=$wxWITH_CXX option value, only 11, 14, 17 or 20 supported])
     esac
 
     if test "$HAVE_CXX11" = "1" ; then
@@ -2207,8 +2220,16 @@ case "${host}" in
 
     *-*-solaris2* )
         dnl use ../lib or ../lib/64 depending on the size of void*
+        dnl The pkg-config path should be adjusted for 64-bit.
+        dnl see https://docs.oracle.com/cd/E37838_01/html/E66175/gplhi.html
         if test "$ac_cv_sizeof_void_p" = 8 -a -d "/usr/lib/64"; then
             wx_cv_std_libpath="lib/64"
+            if test -n "$PKG_CONFIG_PATH"; then
+                PKG_CONFIG_PATH="/usr/$wx_cv_std_libpath/pkgconfig:$PKG_CONFIG_PATH"
+            else
+                PKG_CONFIG_PATH="/usr/$wx_cv_std_libpath/pkgconfig"
+            fi
+            export PKG_CONFIG_PATH
         fi
         ;;
 
@@ -2405,29 +2426,69 @@ dnl ------------------------------------------------------------------------
 if test "$wxUSE_REGEX" != "no"; then
     AC_DEFINE(wxUSE_REGEX)
 
-    if test "$wxUSE_UNICODE" = "yes" -a "$wxUSE_REGEX" = "yes"; then
-        AC_MSG_WARN([Defaulting to the builtin regex library for Unicode build.])
-        wxUSE_REGEX=builtin
+    dnl Find the PCRE library we need.
+    if test "$wxUSE_UNICODE" = "yes"; then
+        if test "$wxUSE_UNICODE_UTF8" = "yes"; then
+            pcre_suffix=8
+        else
+            if test "$ac_cv_sizeof_wchar_t" = 2; then
+                pcre_suffix=16
+            elif test "$ac_cv_sizeof_wchar_t" = 4; then
+                pcre_suffix=32
+            else
+                AC_MSG_ERROR([unknown sizeof(wchar_t)])
+            fi
+        fi
+    else
+        pcre_suffix=8
     fi
 
-    if test "$wxUSE_REGEX" = "sys" -o "$wxUSE_REGEX" = "yes" ; then
-        dnl according to Unix 98 specs, regcomp() is in libc but I believe that
-        dnl on some old systems it may be in libregex - check for it too?
-        AC_CHECK_HEADER(regex.h, [AC_CHECK_FUNCS(regcomp re_search)],, [ ])
-
-        if test "x$ac_cv_func_regcomp" != "xyes"; then
-            if test "$wxUSE_REGEX" = "sys" ; then
-                AC_MSG_ERROR([system regex library not found! Use --with-regex to use built-in version])
-            else
-                AC_MSG_WARN([system regex library not found, will use built-in instead])
+    if test "$wxUSE_REGEX" != "builtin"; then
+        PKG_CHECK_MODULES(LIBPCRE, [libpcre2-$pcre_suffix],
+            [
+                PCRE_LINK=$LIBPCRE_LIBS
+                CXXFLAGS="$LIBPCRE_CFLAGS $CXXFLAGS"
+                wxUSE_REGEX=sys
+            ],
+            [
                 wxUSE_REGEX=builtin
-            fi
+            ]
+        )
+    fi
+
+    dnl If builtin library was explicitly requested or has to be used because
+    dnl the system one was not found, build it.
+    if test "$wxUSE_REGEX" = "builtin"; then
+        AC_MSG_CHECKING([whether pcre submodule exists])
+        if ! test -f "$srcdir/3rdparty/pcre/pcre2-config.in" ; then
+            AC_MSG_RESULT([no])
+            AC_MSG_ERROR([
+    Configured to use built-in PCRE library, but the file
+    $srcdir/3rdparty/pcre/pcre2-config.in couldn't be found.
+    You might need to run:
+
+        git submodule update --init 3rdparty/pcre
+
+    to fix this.])
         else
-            dnl we are using the system library
-            wxUSE_REGEX=sys
-            dnl only the built-in supports advanced REs
-            AC_DEFINE(WX_NO_REGEX_ADVANCED)
+            AC_MSG_RESULT([yes])
         fi
+
+        dnl By default 8 bit version is built, so we don't need to do
+        dnl anything if this is the one we want, but otherwise we must
+        dnl explicitly request building the version we use, and we also
+        dnl disable the 8 bit version if it's unnecessary.
+        if test $pcre_suffix != 8; then
+            pcre_config_disable="--disable-pcre2-8"
+            pcre_config_enable="--enable-pcre2-$pcre_suffix"
+        fi
+
+        dnl We'll need to predefine this when building PCRE2.
+        wxPCRE2_CODE_UNIT_WIDTH=$pcre_suffix
+        AC_SUBST(wxPCRE2_CODE_UNIT_WIDTH)
+
+        AX_SUBDIRS_CONFIGURE([3rdparty/pcre],
+            [[$pcre_config_disable],[$pcre_config_enable]])
     fi
 fi
 
@@ -2497,11 +2558,11 @@ if test "$wxUSE_ZLIB" != "no" ; then
     dnl Would be available when downloaded as a zipped or tarball release.
     if test "$wxUSE_ZLIB" = "builtin" ; then
         AC_MSG_CHECKING([whether zlib.h file exists])
-        if ! test -f "$ac_confdir/src/zlib/zlib.h" ; then
+        if ! test -f "$srcdir/src/zlib/zlib.h" ; then
             AC_MSG_RESULT([no])
             AC_MSG_ERROR([
     Configured to use built-in zlib library, but the required file
-    $ac_confdir/src/zlib/zlib.h couldn't be found.
+    $srcdir/src/zlib/zlib.h couldn't be found.
     You might need to run
 
         git submodule update --init src/zlib
@@ -2577,11 +2638,11 @@ if test "$wxUSE_LIBPNG" != "no" ; then
     dnl Would be available when downloaded as a zipped or tarball release.
     if test "$wxUSE_LIBPNG" = "builtin" ; then
         AC_MSG_CHECKING([whether png.c file exists])
-        if ! test -f "$ac_confdir/src/png/png.c" ; then
+        if ! test -f "$srcdir/src/png/png.c" ; then
             AC_MSG_RESULT([no])
             AC_MSG_ERROR([
     Configured to use built-in png library, but the required file
-    $ac_confdir/src/png/png.c couldn't be found.
+    $srcdir/src/png/png.c couldn't be found.
     You might need to run
 
         git submodule update --init src/png
@@ -2669,11 +2730,11 @@ if test "$wxUSE_LIBJPEG" != "no" ; then
     dnl Would be available when downloaded as a zipped or tarball release.
     if test "$wxUSE_LIBJPEG" = "builtin" ; then
         AC_MSG_CHECKING([whether jpeglib.h file exists])
-        if ! test -f "$ac_confdir/src/jpeg/jpeglib.h" ; then
+        if ! test -f "$srcdir/src/jpeg/jpeglib.h" ; then
             AC_MSG_RESULT([no])
             AC_MSG_ERROR([
     Configured to use built-in jpeg library, but the required file
-    $ac_confdir/src/jpeg/jpeglib.h couldn't be found.
+    $srcdir/src/jpeg/jpeglib.h couldn't be found.
     You might need to run
 
         git submodule update --init src/jpeg
@@ -2698,6 +2759,7 @@ if test "$wxUSE_LIBLZMA" != "no"; then
                 LZMA_LINK="-llzma"
                 LIBS="$LZMA_LINK $LIBS"
                 AC_DEFINE(wxUSE_LIBLZMA)
+                wxUSE_LIBLZMA=sys
             ])
     fi
 
@@ -2777,11 +2839,11 @@ if test "$wxUSE_LIBTIFF" != "no" ; then
     if test "$wxUSE_LIBTIFF" = "builtin" ; then
         dnl Test for built-in tiff library avalability.
         AC_MSG_CHECKING([whether tiff.h file exists])
-        if ! test -f "$ac_confdir/src/tiff/libtiff/tiff.h" ; then
+        if ! test -f "$srcdir/src/tiff/libtiff/tiff.h" ; then
             AC_MSG_RESULT([no])
             AC_MSG_ERROR([
     Configured to use built-in tiff library, but the required file
-    $ac_confdir/src/tiff/libtiff/tiff.h couldn't be found.
+    $srcdir/src/tiff/libtiff/tiff.h couldn't be found.
     You might need to run:
 
         git submodule update --init src/tiff
@@ -2791,7 +2853,7 @@ if test "$wxUSE_LIBTIFF" != "no" ; then
             AC_MSG_RESULT([yes])
         fi
 
-        dnl Disable the use of lzma, jbig, webp and zstd in built-in libtiff
+        dnl Disable the use of the external libraries in the built-in libtiff
         dnl explicitly, as otherwise we'd depend on the system libraries, which
         dnl is typically undesirable when using builtin libraries. If we use
         dnl lzma ourselves, keep it enabled (note that we must still define the
@@ -2815,6 +2877,7 @@ if test "$wxUSE_LIBTIFF" != "no" ; then
 
         AX_SUBDIRS_CONFIGURE([src/tiff],
             [[--disable-jbig],
+             [--disable-libdeflate],
              [--disable-webp],
              [--disable-zstd],
              [$tiff_lzma_option],
@@ -2827,10 +2890,6 @@ dnl Check for expat libraries
 dnl ------------------------------------------------------------------------
 
 if test "$wxUSE_EXPAT" != "no"; then
-    wxUSE_XML=yes
-    AC_DEFINE(wxUSE_EXPAT)
-    AC_DEFINE(wxUSE_XML)
-
     if test "$wxUSE_EXPAT" = "sys" -o "$wxUSE_EXPAT" = "yes" ; then
         AC_CHECK_HEADER([expat.h], [found_expat_h=1],, [ ])
         if test "x$found_expat_h" = "x1"; then
@@ -2865,11 +2924,11 @@ if test "$wxUSE_EXPAT" != "no"; then
     if test "$wxUSE_EXPAT" = "builtin" ; then
         dnl Test for built-in expat library avalability.
         AC_MSG_CHECKING([whether expat.h file exists])
-        if ! test -f "$ac_confdir/src/expat/expat/lib/expat.h" ; then
+        if ! test -f "$srcdir/src/expat/expat/lib/expat.h" ; then
             AC_MSG_RESULT([no])
             AC_MSG_ERROR([
     Configured to use built-in expat library, but the required file
-    $ac_confdir/src/expat/expat/lib/expat.h couldn't be found.
+    $srcdir/src/expat/expat/lib/expat.h couldn't be found.
     You might need to run:
 
         git submodule update --init src/expat
@@ -2893,6 +2952,29 @@ if test "$wxUSE_EXPAT" != "no"; then
         dnl Expat needs this:
         AC_CONFIG_SUBDIRS([src/expat/expat])
     fi
+
+    wxUSE_XML=yes
+    AC_DEFINE(wxUSE_XML)
+else
+    wxUSE_XML=no
+fi
+
+dnl ------------------------------------------------------------------------
+dnl Check for NanoSVG libraries
+dnl ------------------------------------------------------------------------
+
+if test "$wxUSE_NANOSVG" = "yes"; then
+    AC_DEFINE(wxUSE_NANOSVG)
+fi
+
+dnl ------------------------------------------------------------------------
+dnl XML and wxrc
+dnl ------------------------------------------------------------------------
+if test "$wxUSE_XML" != "yes"; then
+    AC_MSG_WARN([XML library not built, cannot build wxrc])
+    USE_XML=0
+else
+    USE_XML=1
 fi
 
 
@@ -2950,7 +3032,7 @@ if test "$USE_WIN32" = 1 ; then
     ],
     [ ])
 
-    LIBS="$LIBS -luxtheme -lwinspool -lwinmm -lshell32 -lshlwapi -lcomctl32 -lcomdlg32 -ladvapi32 -lversion -lwsock32 -lgdi32"
+    LIBS="$LIBS -luxtheme -lwinspool -lwinmm -lshell32 -lshlwapi -lcomctl32 -lcomdlg32 -ladvapi32 -lversion -lws2_32 -lgdi32"
     case "${host}" in
         x86_64-*-mingw* )
             dnl we need to define this to embed the manifest for correct
@@ -3955,7 +4037,7 @@ if test "$wxUSE_SHARED" = "yes"; then
             DYLIB_RPATH_POSTLINK="${HOST_PREFIX}install_name_tool -id \$@ \$@"
             cat <<EOF >change-install-names
 #!/bin/sh
-libnames=\`cd \${1} ; ls -1 | grep '\.[[0-9]][[0-9]]*\.dylib\$'\`
+libnames=\`cd lib ; ls -1 | grep '\.[[0-9]][[0-9]]*\.dylib\$'\`
 changes=''
 for dep in \${libnames} ; do
     changes="\${changes} -change \${4}/\${dep} \${3}/\${dep}"
@@ -3963,6 +4045,10 @@ done
 for i in \${libnames} ; do
     ${HOST_PREFIX}install_name_tool \${changes} -id \${3}/\${i} \${1}/\${i}
 done
+
+if test -f "\${2}/wxrc-${WX_RELEASE}" ; then
+    ${HOST_PREFIX}install_name_tool \${changes} \${2}/wxrc-${WX_RELEASE}
+fi
 EOF
             chmod +x change-install-names
             DYLIB_RPATH_INSTALL="\$(wx_top_builddir)/change-install-names \${DESTDIR}\${libdir} \${DESTDIR}\${bindir} \${libdir} \$(wx_top_builddir)/lib"
@@ -4041,15 +4127,6 @@ WX_LIBRARY_BASENAME_GUI="wx_${TOOLKIT_DIR}${TOOLKIT_VERSION}${WIDGET_SET}${lib_u
 dnl ---------------------------------------------------------------------------
 dnl Checks for typedefs
 dnl ---------------------------------------------------------------------------
-
-dnl   defines mode_t if not already defined
-AC_TYPE_MODE_T
-dnl   defines off_t if not already defined
-AC_TYPE_OFF_T
-dnl   defines pid_t if not already defined
-AC_TYPE_PID_T
-dnl   defines size_t if not already defined
-AC_TYPE_SIZE_T
 
 dnl sets HAVE_SSIZE_T if ssize_t is defined
 AC_CHECK_TYPES(ssize_t)
@@ -4209,25 +4286,15 @@ AC_CHECK_TYPES([mbstate_t],
                [],
                [#include <wchar.h>])
 
-dnl check for vsnprintf() -- a safe version of vsprintf())
-dnl
-dnl the trouble here is that on some systems (e.g. HP-UX 10) this function is
-dnl present in libc but not in the system headers and so AC_CHECK_FUNCS (which,
-dnl stupidly, provides a dummy function declaration inside its extension)
-dnl succeeds, even with C++ compiler, but the compilation of wxWidgets fails
-dnl
-dnl so we first check if the function is in the library
-dnl
-dnl FIXME: replace this mess with WX_CHECK_FUNCS()
-AC_CHECK_FUNCS(snprintf vsnprintf vsscanf)
+dnl Check for vararg functions that should be available in stdio.h
+WX_CHECK_FUNCS(snprintf vsnprintf vsscanf)
 
 AC_LANG_PUSH(C++)
-if test "$ac_cv_func_vsnprintf" = "yes"; then
-    dnl yes it is -- now check if it is in the headers
-    AC_CACHE_CHECK([for vsnprintf declaration], wx_cv_func_vsnprintf_decl,
+if test "$wx_cv_func_vsnprintf" = "yes"; then
+    dnl we know there is a vsnprintf declaration, but some old headers
+    dnl may have one taking a "char *" format instead of "const char *"
+    AC_CACHE_CHECK([if vsnprintf declaration is broken], wx_cv_func_broken_vsnprintf_decl,
         [
-            dnl our troubles are not over: HP-UX 11 prototypes vsnprintf() as
-            dnl taking "char *" and not "const char *" so test for this too
             AC_TRY_COMPILE(
                 [
                     #include <stdio.h>
@@ -4236,80 +4303,21 @@ if test "$ac_cv_func_vsnprintf" = "yes"; then
                 [
                     char *buf;
                     va_list ap;
-                    vsnprintf(buf, 10u, "%s", ap);
+                    const char *fmt = "%s";
+                    vsnprintf(buf, 10u, fmt, ap);
                 ],
-                wx_cv_func_vsnprintf_decl=yes,
-                wx_cv_func_vsnprintf_decl=no
+                wx_cv_func_broken_vsnprintf_decl=no,
+                wx_cv_func_broken_vsnprintf_decl=yes
             )
         ]
     )
 
-    if test "$wx_cv_func_vsnprintf_decl" = "yes"; then
-        AC_DEFINE(HAVE_VSNPRINTF_DECL)
-
-        dnl we know there is a vsnprintf declaration, but some old headers
-        dnl may have one taking a "char *" format instead of "const char *"
-        AC_CACHE_CHECK([if vsnprintf declaration is broken], wx_cv_func_broken_vsnprintf_decl,
-            [
-                AC_TRY_COMPILE(
-                    [
-                        #include <stdio.h>
-                        #include <stdarg.h>
-                        #ifdef __MSL__
-                        #if __MSL__ >= 0x6000
-                        namespace std {}
-                        using namespace std;
-                        #endif
-                        #endif
-                    ],
-                    [
-                        char *buf;
-                        va_list ap;
-                        const char *fmt = "%s";
-                        vsnprintf(buf, 10u, fmt, ap);
-                    ],
-                    wx_cv_func_broken_vsnprintf_decl=no,
-                    wx_cv_func_broken_vsnprintf_decl=yes
-                )
-            ]
-        )
-
-        if test "$wx_cv_func_broken_vsnprintf_decl" = "yes"; then
-            AC_DEFINE(HAVE_BROKEN_VSNPRINTF_DECL)
-        fi
+    if test "$wx_cv_func_broken_vsnprintf_decl" = "yes"; then
+        AC_DEFINE(HAVE_BROKEN_VSNPRINTF_DECL)
     fi
 fi
 
-dnl the same as above but for snprintf() now: it's not present in at least AIX
-dnl 4.2 headers
-if test "$ac_cv_func_snprintf" = "yes"; then
-    AC_CACHE_CHECK([for snprintf declaration], wx_cv_func_snprintf_decl,
-        [
-            AC_TRY_COMPILE(
-                [
-                    #include <stdio.h>
-                    #include <stdarg.h>
-                    #ifdef __MSL__
-                    #if __MSL__ >= 0x6000
-                    namespace std {}
-                    using namespace std;
-                    #endif
-                    #endif
-                ],
-                [
-                    char *buf;
-                    snprintf(buf, 10u, "%s", "wx");
-                ],
-                wx_cv_func_snprintf_decl=yes,
-                wx_cv_func_snprintf_decl=no
-            )
-        ]
-    )
-
-    if test "$wx_cv_func_snprintf_decl" = "yes"; then
-        AC_DEFINE(HAVE_SNPRINTF_DECL)
-    fi
-
+if test "$wx_cv_func_snprintf" = "yes"; then
     if test "$wxUSE_PRINTF_POS_PARAMS" = "yes"; then
 
         dnl check if snprintf() has support for positional arguments
@@ -4349,66 +4357,30 @@ define HAVE_UNIX98_PRINTF as 1 in setup.h if it is available.])
     fi
 fi
 
-dnl the same as above but for vsscanf() now: it's not present in at least
-dnl Solaris 9 headers for gcc-3.4 (due to fixinclude's processing of stdio.h)
-if test "$ac_cv_func_vsscanf" = "yes"; then
-    AC_CACHE_CHECK([for vsscanf declaration], wx_cv_func_vsscanf_decl,
+if test "$wx_cv_func_vsscanf" = "yes"; then
+    dnl we know there is a vsscanf() declaration, but it can be broken by
+    dnl declaring vsscanf() as taking a non-const first argument (this
+    dnl happens at least under HP-UX 11.31, see #15638).
+    AC_CACHE_CHECK([if vsscanf() declaration is broken], wx_cv_func_broken_vsscanf_decl,
         [
             AC_TRY_COMPILE(
                 [
                     #include <stdio.h>
                     #include <stdarg.h>
-                    #ifdef __MSL__
-                    #if __MSL__ >= 0x6000
-                    namespace std {}
-                    using namespace std;
-                    #endif
-                    #endif
                 ],
                 [
-                    char *buf;
+                    const char *buf;
                     va_list args;
                     vsscanf(buf, "%s", args);
                 ],
-                wx_cv_func_vsscanf_decl=yes,
-                wx_cv_func_vsscanf_decl=no
+                wx_cv_func_broken_vsscanf_decl=no,
+                wx_cv_func_broken_vsscanf_decl=yes
             )
         ]
     )
 
-    if test "$wx_cv_func_vsscanf_decl" = "yes"; then
-        AC_DEFINE(HAVE_VSSCANF_DECL)
-
-        dnl we know there is a vsscanf() declaration, but it can be broken by
-        dnl declaring vsscanf() as taking a non-const first argument (this
-        dnl happens at least under HP-UX 11.31, see #15638).
-        AC_CACHE_CHECK([if vsscanf() declaration is broken], wx_cv_func_broken_vsscanf_decl,
-            [
-                AC_TRY_COMPILE(
-                    [
-                        #include <stdio.h>
-                        #include <stdarg.h>
-                        #ifdef __MSL__
-                        #if __MSL__ >= 0x6000
-                        namespace std {}
-                        using namespace std;
-                        #endif
-                        #endif
-                    ],
-                    [
-                        const char *buf;
-                        va_list args;
-                        vsscanf(buf, "%s", args);
-                    ],
-                    wx_cv_func_broken_vsscanf_decl=no,
-                    wx_cv_func_broken_vsscanf_decl=yes
-                )
-            ]
-        )
-
-        if test "$wx_cv_func_broken_vsscanf_decl" = "yes"; then
-            AC_DEFINE(HAVE_BROKEN_VSSCANF_DECL)
-        fi
+    if test "$wx_cv_func_broken_vsscanf_decl" = "yes"; then
+        AC_DEFINE(HAVE_BROKEN_VSSCANF_DECL)
     fi
 fi
 AC_LANG_POP()
@@ -5716,6 +5688,34 @@ if test "$wxUSE_SECRETSTORE" = "yes"; then
     fi
 fi
 
+
+dnl ---------------------------------------------------------------------------
+dnl Spellchecking for wxTextCtrl
+dnl ---------------------------------------------------------------------------
+
+if test "$wxUSE_SPELLCHECK" = "yes"; then
+    dnl The required APIs are always available under MSW and OS X and we don't
+    dnl implement support for spell checking in the other ports, but for GTK 3
+    dnl we need to check for the gspell library.
+
+    if test "$WXGTK3" = 1; then
+        PKG_CHECK_MODULES(GSPELL, [gspell-1],
+            [
+                CXXFLAGS="$GSPELL_CFLAGS $CXXFLAGS"
+                GUI_TK_LIBRARY="$GUI_TK_LIBRARY $GSPELL_LIBS"
+            ],
+            [
+                AC_MSG_WARN([gspell-1 not found, spell checking in wxTextCtrl won't be available])
+                wxUSE_SPELLCHECK=no
+            ]
+        )
+    fi
+
+    if test "$wxUSE_SPELLCHECK" = "yes"; then
+        AC_DEFINE(wxUSE_SPELLCHECK)
+    fi
+fi
+
 dnl ---------------------------------------------------------------------------
 dnl Register non-GUI class options for makefiles and setup.h
 dnl ---------------------------------------------------------------------------
@@ -6094,6 +6094,8 @@ if test "$wxUSE_XLOCALE" = "yes" ; then
         [
         locale_t t;
         strtod_l(NULL, NULL, t);
+        strtol_l(NULL, NULL, 0, t);
+        strtoul_l(NULL, NULL, 0, t);
         ],
         wx_cv_type_locale_t=yes,
         wx_cv_type_locale_t=no
@@ -6166,7 +6168,16 @@ if test "$wxUSE_CONSOLE_EVENTLOOP" = "yes"; then
         if test "$wxUSE_EPOLL_DISPATCHER" = "yes"; then
             AC_CHECK_HEADERS(sys/epoll.h,,, [AC_INCLUDES_DEFAULT()])
             if test "$ac_cv_header_sys_epoll_h" = "yes"; then
-                AC_DEFINE(wxUSE_EPOLL_DISPATCHER)
+                dnl On FreeBSD or other *BSD sys/epoll.h may exist, but require
+                dnl linking with extra libraries, so we use epoll on Linux only.
+                case "${host}" in
+                *-*-linux*)
+                    AC_DEFINE(wxUSE_EPOLL_DISPATCHER)
+                ;;
+                *)
+                    AC_MSG_WARN([wxEpollDispatcher disabled, because OS is not Linux])
+                ;;
+                esac
             else
                 AC_MSG_WARN([sys/epoll.h not available, wxEpollDispatcher disabled])
             fi
@@ -7368,8 +7379,6 @@ if test "$wxUSE_XRC" = "yes"; then
         AC_DEFINE(wxUSE_XRC)
         USE_XRC=1
         SAMPLES_SUBDIRS="$SAMPLES_SUBDIRS xrc"
-
-        echo "${HOST_PREFIX}install_name_tool \${changes} \${2}/wxrc-${WX_RELEASE}" >> change-install-names
     fi
 fi
 
@@ -7518,6 +7527,10 @@ if test "$wxUSE_WEBVIEW" = "yes"; then
             dnl       too and do the right thing automatically there too.
             wxUSE_WEBVIEW="yes"
             AC_DEFINE(wxUSE_WEBVIEW_IE)
+        fi
+        if test "$wxUSE_WEBVIEW_EDGE" = "yes"; then
+            wxUSE_WEBVIEW="yes"
+            AC_DEFINE(wxUSE_WEBVIEW_EDGE)
         fi
     fi
 fi
@@ -7790,6 +7803,28 @@ if test "$wxUSE_GRAPHICS_CONTEXT" = "yes"; then
         )
         if test "$wx_cv_lib_gdiplus" = "yes"; then
             wx_has_graphics=1
+        fi
+
+        AC_CACHE_CHECK([if Direct2D is available], wx_cv_lib_direct2d,
+            [
+                dnl same as above, we need to test only for the headers
+                AC_LANG_PUSH(C++)
+                AC_TRY_COMPILE(
+                    [#include <windows.h>
+                     #include <d2d1.h>
+                     #include <dwrite.h>
+                    ],
+                    [
+                        ID2D1Factory* factory = NULL;
+                    ],
+                    wx_cv_lib_direct2d=yes,
+                    wx_cv_lib_direct2d=no
+                )
+                AC_LANG_POP()
+            ]
+        )
+        if test "$wx_cv_lib_direct2d" = "yes"; then
+            AC_DEFINE(wxUSE_GRAPHICS_DIRECT2D)
         fi
     elif test "$WXGTK1" = "1"; then
         AC_MSG_WARN([wxGraphicsContext not supported with GTK +1])
@@ -8177,7 +8212,7 @@ if test "$SHARED" = 1; then
 fi
 
 LIBS=`echo $LIBS`
-EXTRALIBS="$LDFLAGS $LDFLAGS_VERSIONING $LIBS $DMALLOC_LIBS"
+EXTRALIBS="$LDFLAGS $LDFLAGS_VERSIONING $LIBS $PCRE_LINK $DMALLOC_LIBS"
 EXTRALIBS_XML="$EXPAT_LINK"
 EXTRALIBS_HTML="$MSPACK_LINK"
 EXTRALIBS_MEDIA="$GST_LIBS"
@@ -8225,9 +8260,14 @@ if test "$wxUSE_GUI" = "yes"; then
             ;;
     esac
 fi
-if test "$wxUSE_REGEX" = "builtin" ; then
-    wxconfig_3rdparty="regex${lib_unicode_suffix} $wxconfig_3rdparty"
-fi
+case "$wxUSE_REGEX" in
+    builtin)
+        wxconfig_3rdparty="regex${lib_unicode_suffix} $wxconfig_3rdparty"
+        ;;
+    sys)
+        WXCONFIG_LIBS="$PCRE_LINK $WXCONFIG_LIBS"
+        ;;
+esac
 if test "$wxUSE_STC" = "yes" ; then
     wxconfig_3rdparty="scintilla $wxconfig_3rdparty"
 fi
@@ -8279,6 +8319,7 @@ fi
 
 AC_SUBST(wxUSE_ZLIB)
 AC_SUBST(wxUSE_REGEX)
+AC_SUBST(wxUSE_XML)
 AC_SUBST(wxUSE_EXPAT)
 AC_SUBST(wxUSE_LIBJPEG)
 AC_SUBST(wxUSE_LIBPNG)
@@ -8539,6 +8580,7 @@ AC_SUBST(WX_LIBRARY_BASENAME_GUI)
 
 dnl toolkit options
 AC_SUBST(USE_GUI)
+AC_SUBST(USE_XML)
 AC_SUBST(TOOLKIT)
 AC_SUBST(TOOLKIT_DIR)
 AC_SUBST(TOOLCHAIN_NAME)
@@ -8666,11 +8708,11 @@ if test "$wxUSE_TESTS_SUBDIR" != "no"; then
 
     dnl Check for catch (C++ Automated Test Cases in Headers) availability.
     AC_MSG_CHECKING([whether catch.hpp file exists])
-    if ! test -f "$ac_confdir/3rdparty/catch/include/catch.hpp" ; then
+    if ! test -f "$srcdir/3rdparty/catch/include/catch.hpp" ; then
         AC_MSG_RESULT([no])
         AC_MSG_ERROR([
     CATCH (C++ Automated Test Cases in Headers) is required, the required file
-    $ac_confdir/3rdparty/catch/include/catch.hpp couldn't be found.
+    $srcdir/3rdparty/catch/include/catch.hpp couldn't be found.
 
     You might need to run
 
@@ -8725,10 +8767,15 @@ for subdir in $SUBDIRS; do
                 done
             elif test ${subdir} = "utils"; then
                 makefiles=""
-                for util in ifacecheck ; do
+                for util in ifacecheck wxrc ; do
                     if test -d $srcdir/utils/$util ; then
-                        makefiles="utils/$util/src/Makefile.in \
-                                   $makefiles"
+                        dnl Makefile.in could be in $util or in $util/src
+                        if test -f $srcdir/utils/$util/src/Makefile.in; then
+                            makefiles="utils/$util/src/Makefile.in \
+                                       $makefiles"
+                        else
+                            makefiles="utils/$util/Makefile.in $makefiles"
+                        fi
                     fi
                 done
             else

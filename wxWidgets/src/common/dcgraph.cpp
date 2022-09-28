@@ -24,6 +24,9 @@
     #include "wx/geometry.h"
 #endif
 
+#include "wx/display.h"
+#include "wx/scopedarray.h"
+
 //-----------------------------------------------------------------------------
 // Local functions
 //-----------------------------------------------------------------------------
@@ -49,11 +52,13 @@ static wxCompositionMode TranslateRasterOp(wxRasterOperationMode function)
         case wxXOR:        // src XOR dst
             return wxCOMPOSITION_XOR;
 
+        case wxINVERT:     // NOT dst
+            return wxCOMPOSITION_DIFF;
+
         case wxAND:        // src AND dst
         case wxAND_INVERT: // (NOT src) AND dst
         case wxAND_REVERSE:// src AND (NOT dst)
         case wxEQUIV:      // (NOT src) XOR dst
-        case wxINVERT:     // NOT dst
         case wxNAND:       // (NOT src) OR (NOT dst)
         case wxNOR:        // (NOT src) AND (NOT dst)
         case wxOR_INVERT:  // (NOT src) OR dst
@@ -110,6 +115,25 @@ wxGCDC::~wxGCDC()
 {
 }
 
+#ifdef __WXMSW__
+WXHDC wxGCDC::AcquireHDC()
+{
+    wxGraphicsContext* const gc = GetGraphicsContext();
+    wxCHECK_MSG(gc, NULL, "can't acquire HDC because there is no wxGraphicsContext");
+    return gc->GetNativeHDC();
+}
+
+void wxGCDC::ReleaseHDC(WXHDC hdc)
+{
+    if ( !hdc )
+        return;
+
+    wxGraphicsContext* const gc = GetGraphicsContext();
+    wxCHECK_RET(gc, "can't release HDC because there is no wxGraphicsContext");
+    gc->ReleaseNativeHDC(hdc);
+}
+#endif // __WXMSW__
+
 wxIMPLEMENT_ABSTRACT_CLASS(wxGCDCImpl, wxDCImpl);
 
 wxGCDCImpl::wxGCDCImpl(wxDC *owner, wxGraphicsContext* context) :
@@ -139,6 +163,11 @@ void wxGCDCImpl::SetGraphicsContext( wxGraphicsContext* ctx )
 
     if ( DoInitContext(ctx) )
     {
+        if (m_graphicContext->GetWindow())
+        {
+            m_window = m_graphicContext->GetWindow();
+        }
+
         // Reapply our attributes to the context.
         m_graphicContext->SetFont( m_font , m_textForegroundColour );
         m_graphicContext->SetPen( m_pen );
@@ -233,8 +262,8 @@ void wxGCDCImpl::DoDrawBitmap( const wxBitmap &bmp, wxCoord x, wxCoord y,
     wxCHECK_RET( IsOk(), wxT("wxGCDC(cg)::DoDrawBitmap - invalid DC") );
     wxCHECK_RET( bmp.IsOk(), wxT("wxGCDC(cg)::DoDrawBitmap - invalid bitmap") );
 
-    int w = bmp.GetScaledWidth();
-    int h = bmp.GetScaledHeight();
+    int w = bmp.GetLogicalWidth();
+    int h = bmp.GetLogicalHeight();
     if ( bmp.GetDepth() == 1 )
     {
         m_graphicContext->SetPen(*wxTRANSPARENT_PEN);
@@ -256,8 +285,7 @@ void wxGCDCImpl::DoDrawBitmap( const wxBitmap &bmp, wxCoord x, wxCoord y,
         m_graphicContext->DrawBitmap( bmpCopy, x, y, w, h );
     }
 
-    CalcBoundingBox(x, y);
-    CalcBoundingBox(x + w, y + h);
+    CalcBoundingBox(wxPoint(x, y), wxSize(w, h));
 }
 
 void wxGCDCImpl::DoDrawIcon( const wxIcon &icon, wxCoord x, wxCoord y )
@@ -270,8 +298,7 @@ void wxGCDCImpl::DoDrawIcon( const wxIcon &icon, wxCoord x, wxCoord y )
 
     m_graphicContext->DrawIcon( icon , x, y, w, h );
 
-    CalcBoundingBox(x, y);
-    CalcBoundingBox(x + w, y + h);
+    CalcBoundingBox(wxPoint(x, y), wxSize(w, h));
 }
 
 bool wxGCDCImpl::StartDoc( const wxString& message )
@@ -336,7 +363,18 @@ bool wxGCDCImpl::DoGetClippingRect(wxRect& rect) const
         self->UpdateClipBox();
     }
 
-    return wxDCImpl::DoGetClippingRect(rect);
+    // We shouldn't call wxDCImpl::DoGetClippingRect() here
+    // because it wouldn't return the correct result if there is
+    // affine transformation applied to this DC, as the base
+    // class is not aware of affine transformations.
+    // We can just use the value returned by our UpdateClipBox()
+    // which is already correct.
+    if ( m_clipX1 == m_clipX2 || m_clipY1 == m_clipY2 )
+        rect = wxRect(); // empty clip region
+    else
+        rect = wxRect(m_clipX1, m_clipY1, m_clipX2 - m_clipX1, m_clipY2 - m_clipY1);
+
+    return m_clipping;
 }
 
 void wxGCDCImpl::DoSetClippingRegion( wxCoord x, wxCoord y, wxCoord w, wxCoord h )
@@ -401,7 +439,9 @@ void wxGCDCImpl::DestroyClippingRegion()
 #ifdef __WXOSX__
     origin = OSXGetOrigin();
 #endif
-    m_graphicContext->Clip( DeviceToLogicalX(origin.x) , DeviceToLogicalY(origin.y) , DeviceToLogicalXRel(width), DeviceToLogicalYRel(height) );
+    wxPoint clipOrig = DeviceToLogical(origin.x, origin.y);
+    wxSize clipDim = DeviceToLogicalRel(width, height);
+    m_graphicContext->Clip(clipOrig.x, clipOrig.y, clipDim.x, clipDim.y);
 
     m_graphicContext->SetPen( m_pen );
     m_graphicContext->SetBrush( m_brush );
@@ -453,7 +493,7 @@ wxSize wxGCDCImpl::GetPPI() const
 
     // This is the same value that wxGraphicsContext::GetDPI() returns by
     // default.
-    return wxSize(72, 72);
+    return wxDisplay::GetStdPPI();
 }
 
 int wxGCDCImpl::GetDepth() const
@@ -584,7 +624,7 @@ wxAffineMatrix2D wxGCDCImpl::GetTransformMatrix() const
 
 void wxGCDCImpl::ResetTransformMatrix()
 {
-    // Reset affine transfrom matrix (extended) to identity matrix.
+    // Reset affine transform matrix (extended) to identity matrix.
     m_matrixExtTransform.Set(wxMatrix2D(), wxPoint2DDouble());
     ComputeScaleAndOrigin();
 }
@@ -646,8 +686,7 @@ void wxGCDCImpl::DoDrawLine( wxCoord x1, wxCoord y1, wxCoord x2, wxCoord y2 )
 
     m_graphicContext->StrokeLine(x1,y1,x2,y2);
 
-    CalcBoundingBox(x1, y1);
-    CalcBoundingBox(x2, y2);
+    CalcBoundingBox(x1, y1, x2, y2);
 }
 
 void wxGCDCImpl::DoCrossHair( wxCoord x, wxCoord y )
@@ -664,8 +703,7 @@ void wxGCDCImpl::DoCrossHair( wxCoord x, wxCoord y )
     m_graphicContext->StrokeLine(0,y,w,y);
     m_graphicContext->StrokeLine(x,0,x,h);
 
-    CalcBoundingBox(0, 0);
-    CalcBoundingBox(w, h);
+    CalcBoundingBox(0, 0, w, h);
 }
 
 void wxGCDCImpl::DoDrawArc( wxCoord x1, wxCoord y1,
@@ -713,10 +751,7 @@ void wxGCDCImpl::DoDrawArc( wxCoord x1, wxCoord y1,
         path.AddLineToPoint( xc, yc );
     m_graphicContext->DrawPath(path);
 
-    wxRect2DDouble box = path.GetBox();
-    CalcBoundingBox(wxRound(box.m_x), wxRound(box.m_y));
-    CalcBoundingBox(wxRound(box.m_x + box.m_width),
-                    wxRound(box.m_y + box.m_height));
+    CalcBoundingBoxForBox(path.GetBox());
 }
 
 void wxGCDCImpl::DoDrawEllipticArc( wxCoord x, wxCoord y, wxCoord w, wxCoord h,
@@ -727,8 +762,8 @@ void wxGCDCImpl::DoDrawEllipticArc( wxCoord x, wxCoord y, wxCoord w, wxCoord h,
     if ( !m_logicalFunctionSupported )
         return;
 
-    wxCoord dx = x + w / 2.0;
-    wxCoord dy = y + h / 2.0;
+    wxCoord dx = x + w / 2;
+    wxCoord dy = y + h / 2;
     wxDouble factor = ((wxDouble) w) / h;
     m_graphicContext->PushState();
     m_graphicContext->Translate(dx, dy);
@@ -766,9 +801,7 @@ void wxGCDCImpl::DoDrawEllipticArc( wxCoord x, wxCoord y, wxCoord w, wxCoord h,
     box.m_x += dx;
     box.m_y += dy;
 
-    CalcBoundingBox(wxRound(box.m_x), wxRound(box.m_y));
-    CalcBoundingBox(wxRound(box.m_x + box.m_width),
-                    wxRound(box.m_y + box.m_height));
+    CalcBoundingBoxForBox(box);
 
     m_graphicContext->PopState();
 }
@@ -803,7 +836,7 @@ void wxGCDCImpl::DoDrawLines(int n, const wxPoint points[],
     int maxX = minX;
     int maxY = minY;
 
-    wxPoint2DDouble* pointsD = new wxPoint2DDouble[n];
+    wxScopedArray<wxPoint2DDouble> pointsD(n);
     for( int i = 0; i < n; ++i)
     {
         wxPoint p = points[i];
@@ -816,71 +849,49 @@ void wxGCDCImpl::DoDrawLines(int n, const wxPoint points[],
         else if (p.y > maxY) maxY = p.y;
     }
 
-    m_graphicContext->StrokeLines( n , pointsD);
-    delete[] pointsD;
+    m_graphicContext->StrokeLines( n , pointsD.get());
 
-    CalcBoundingBox(minX + xoffset, minY + yoffset);
-    CalcBoundingBox(maxX + xoffset, maxY + yoffset);
+    CalcBoundingBox(minX + xoffset, minY + yoffset,
+                    maxX + xoffset, maxY + yoffset);
 }
 
 #if wxUSE_SPLINES
 void wxGCDCImpl::DoDrawSpline(const wxPointList *points)
 {
     wxCHECK_RET( IsOk(), wxT("wxGCDC(cg)::DoDrawSpline - invalid DC") );
+    wxCHECK_RET(points, "NULL pointer to spline points?");
+    wxCHECK_RET(points->size() >= 2, "incomplete list of spline points?");
 
     if ( !m_logicalFunctionSupported )
         return;
 
     wxGraphicsPath path = m_graphicContext->CreatePath();
 
-    wxPointList::compatibility_iterator node = points->GetFirst();
-    if ( !node )
-        // empty list
-        return;
+    wxPointList::const_iterator itPt = points->begin();
+    const wxPoint* p = *itPt; ++itPt;
+    wxPoint2DDouble p1(*p);
 
-    const wxPoint *p = node->GetData();
+    p = *itPt; ++itPt;
+    wxPoint2DDouble p2(*p);
+    wxPoint2DDouble c1 = (p1 + p2) / 2.0;
 
-    wxCoord x1 = p->x;
-    wxCoord y1 = p->y;
-
-    node = node->GetNext();
-    p = node->GetData();
-
-    wxCoord x2 = p->x;
-    wxCoord y2 = p->y;
-    wxCoord cx1 = ( x1 + x2 ) / 2;
-    wxCoord cy1 = ( y1 + y2 ) / 2;
-
-    path.MoveToPoint( x1 , y1 );
-    path.AddLineToPoint( cx1 , cy1 );
-#if !wxUSE_STD_CONTAINERS
-
-    while ((node = node->GetNext()) != NULL)
-#else
-
-    while ((node = node->GetNext()))
-#endif // !wxUSE_STD_CONTAINERS
-
+    path.MoveToPoint(p1);
+    path.AddLineToPoint(c1);
+    while ( itPt != points->end() )
     {
-        p = node->GetData();
-        x1 = x2;
-        y1 = y2;
-        x2 = p->x;
-        y2 = p->y;
-        wxCoord cx4 = (x1 + x2) / 2;
-        wxCoord cy4 = (y1 + y2) / 2;
+        p = *itPt; ++itPt;
+        p1 = p2;
+        p2 = *p;
+        wxPoint2DDouble c4 = (p1 + p2) / 2.0;
 
-        path.AddQuadCurveToPoint(x1 , y1 ,cx4 , cy4 );
+        path.AddQuadCurveToPoint(p1.m_x , p1.m_y, c4.m_x, c4.m_y);
     }
 
-    path.AddLineToPoint( x2 , y2 );
+    path.AddLineToPoint(p2);
 
     m_graphicContext->StrokePath( path );
 
-    wxRect2DDouble box = path.GetBox();
-    CalcBoundingBox(wxRound(box.m_x), wxRound(box.m_y));
-    CalcBoundingBox(wxRound(box.m_x + box.m_width),
-                    wxRound(box.m_y + box.m_height));
+    CalcBoundingBoxForBox(path.GetBox());
 }
 #endif // wxUSE_SPLINES
 
@@ -906,7 +917,7 @@ void wxGCDCImpl::DoDrawPolygon( int n, const wxPoint points[],
     int maxX = minX;
     int maxY = minY;
 
-    wxPoint2DDouble* pointsD = new wxPoint2DDouble[n+(closeIt?1:0)];
+    wxScopedArray<wxPoint2DDouble> pointsD(n+(closeIt?1:0));
     for( int i = 0; i < n; ++i)
     {
         wxPoint p = points[i];
@@ -921,11 +932,10 @@ void wxGCDCImpl::DoDrawPolygon( int n, const wxPoint points[],
     if ( closeIt )
         pointsD[n] = pointsD[0];
 
-    m_graphicContext->DrawLines( n+(closeIt?1:0) , pointsD, fillStyle);
-    delete[] pointsD;
+    m_graphicContext->DrawLines( n+(closeIt?1:0) , pointsD.get(), fillStyle);
 
-    CalcBoundingBox(minX + xoffset, minY + yoffset);
-    CalcBoundingBox(maxX + xoffset, maxY + yoffset);
+    CalcBoundingBox(minX + xoffset, minY + yoffset,
+                    maxX + xoffset, maxY + yoffset);
 }
 
 void wxGCDCImpl::DoDrawPolyPolygon(int n,
@@ -956,10 +966,7 @@ void wxGCDCImpl::DoDrawPolyPolygon(int n,
     }
     m_graphicContext->DrawPath( path , fillStyle);
 
-    wxRect2DDouble box = path.GetBox();
-    CalcBoundingBox(wxRound(box.m_x), wxRound(box.m_y));
-    CalcBoundingBox(wxRound(box.m_x + box.m_width),
-                    wxRound(box.m_y + box.m_height));
+    CalcBoundingBoxForBox(path.GetBox());
 }
 
 void wxGCDCImpl::DoDrawRectangle(wxCoord x, wxCoord y, wxCoord w, wxCoord h)
@@ -973,8 +980,7 @@ void wxGCDCImpl::DoDrawRectangle(wxCoord x, wxCoord y, wxCoord w, wxCoord h)
     if (w == 0 || h == 0)
         return;
 
-    CalcBoundingBox(x, y);
-    CalcBoundingBox(x + w, y + h);
+    CalcBoundingBox(wxPoint(x, y), wxSize(w, h));
 
     if (m_pen.IsOk() && m_pen.GetStyle() != wxPENSTYLE_TRANSPARENT && m_pen.GetWidth() > 0)
     {
@@ -1001,8 +1007,7 @@ void wxGCDCImpl::DoDrawRoundedRectangle(wxCoord x, wxCoord y,
     if (w == 0 || h == 0)
         return;
 
-    CalcBoundingBox(x, y);
-    CalcBoundingBox(x + w, y + h);
+    CalcBoundingBox(wxPoint(x, y), wxSize(w, h));
 
     if (m_pen.IsOk() && m_pen.GetStyle() != wxPENSTYLE_TRANSPARENT && m_pen.GetWidth() > 0)
     {
@@ -1020,8 +1025,7 @@ void wxGCDCImpl::DoDrawEllipse(wxCoord x, wxCoord y, wxCoord w, wxCoord h)
     if ( !m_logicalFunctionSupported )
         return;
 
-    CalcBoundingBox(x, y);
-    CalcBoundingBox(x + w, y + h);
+    CalcBoundingBox(wxPoint(x, y), wxSize(w, h));
 
     m_graphicContext->DrawEllipse(x,y,w,h);
 }
@@ -1127,8 +1131,7 @@ bool wxGCDCImpl::DoStretchBlit(
     // reset composition
     m_graphicContext->SetCompositionMode(formerMode);
 
-    CalcBoundingBox(xdest, ydest);
-    CalcBoundingBox(xdest + dstWidth, ydest + dstHeight);
+    CalcBoundingBox(wxPoint(xdest, ydest), wxSize(dstWidth, dstHeight));
 
     return retval;
 }
@@ -1181,14 +1184,12 @@ void wxGCDCImpl::DoDrawRotatedText(const wxString& text, wxCoord x, wxCoord y,
     // determining which of them is really topmost/leftmost/...)
 
     // "upper left" and "upper right"
-    CalcBoundingBox(x, y);
-    CalcBoundingBox(x + wxCoord(w*cos(rad)), y - wxCoord(w*sin(rad)));
+    CalcBoundingBox(x, y, x + wxCoord(w*cos(rad)), y - wxCoord(w*sin(rad)));
 
     // "bottom left" and "bottom right"
     x += (wxCoord)(h*sin(rad));
     y += (wxCoord)(h*cos(rad));
-    CalcBoundingBox(x, y);
-    CalcBoundingBox(x + wxCoord(w*cos(rad)), y - wxCoord(w*sin(rad)));
+    CalcBoundingBox(x, y, x + wxCoord(w*cos(rad)), y - wxCoord(w*sin(rad)));
 }
 
 void wxGCDCImpl::DoDrawText(const wxString& str, wxCoord x, wxCoord y)
@@ -1224,10 +1225,7 @@ void wxGCDCImpl::DoDrawText(const wxString& str, wxCoord x, wxCoord y)
 
     m_graphicContext->SetCompositionMode(curMode);
 
-    wxCoord w, h;
-    GetOwner()->GetTextExtent(str, &w, &h);
-    CalcBoundingBox(x, y);
-    CalcBoundingBox(x + w, y + h);
+    CalcBoundingBox(wxPoint(x, y), GetOwner()->GetTextExtent(str));
 }
 
 bool wxGCDCImpl::CanGetTextExtent() const
@@ -1265,13 +1263,13 @@ void wxGCDCImpl::DoGetTextExtent( const wxString &str, wxCoord *width, wxCoord *
                       );
 
     if ( height )
-        *height = (wxCoord)wxRound(h);
+        *height = (wxCoord)ceil(h);
     if ( descent )
-        *descent = (wxCoord)wxRound(d);
+        *descent = (wxCoord)ceil(d);
     if ( externalLeading )
-        *externalLeading = (wxCoord)wxRound(e);
+        *externalLeading = (wxCoord)ceil(e);
     if ( width )
-        *width = (wxCoord)wxRound(w);
+        *width = (wxCoord)ceil(w);
 
     if ( theFont )
     {
@@ -1389,8 +1387,7 @@ void wxGCDCImpl::DoGradientFillLinear(const wxRect& rect,
     m_graphicContext->SetPen(m_pen);
     m_graphicContext->SetBrush(m_brush);
 
-    CalcBoundingBox(rect.x, rect.y);
-    CalcBoundingBox(rect.x + rect.width, rect.y + rect.height);
+    CalcBoundingBox(rect);
 }
 
 void wxGCDCImpl::DoGradientFillConcentric(const wxRect& rect,
@@ -1421,8 +1418,7 @@ void wxGCDCImpl::DoGradientFillConcentric(const wxRect& rect,
     m_graphicContext->SetPen(m_pen);
     m_graphicContext->SetBrush(m_brush);
 
-    CalcBoundingBox(rect.x, rect.y);
-    CalcBoundingBox(rect.x + rect.width, rect.y + rect.height);
+    CalcBoundingBox(rect);
 }
 
 void wxGCDCImpl::DoDrawCheckMark(wxCoord x, wxCoord y,
@@ -1441,7 +1437,7 @@ wxRect wxGCDCImpl::MSWApplyGDIPlusTransform(const wxRect& r) const
     m_graphicContext->GetTransform().TransformPoint(&x, &y);
 
     wxRect rect(r);
-    rect.Offset(x, y);
+    rect.Offset(int(x), int(y));
 
     return rect;
 }

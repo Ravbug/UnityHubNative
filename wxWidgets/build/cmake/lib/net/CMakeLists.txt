@@ -7,8 +7,6 @@
 # Licence:     wxWindows licence
 #############################################################################
 
-include(../../source_groups.cmake)
-
 wx_append_sources(NET_FILES NET_CMN)
 
 if(WIN32)
@@ -27,13 +25,11 @@ if(WIN32)
     wx_lib_link_libraries(wxnet PRIVATE ws2_32)
 
     if(wxUSE_WEBREQUEST_WINHTTP)
-        wx_lib_link_libraries(wxnet PRIVATE Winhttp)
+        wx_lib_link_libraries(wxnet PRIVATE winhttp)
     endif()
 endif()
 
 if (wxUSE_WEBREQUEST_CURL)
-    target_include_directories(wxnet PRIVATE ${CURL_INCLUDE_DIRS})
+    wx_lib_include_directories(wxnet ${CURL_INCLUDE_DIRS})
     wx_lib_link_libraries(wxnet PRIVATE ${CURL_LIBRARIES})
 endif()
-
-wx_finalize_lib(wxnet)

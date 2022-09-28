@@ -611,8 +611,10 @@ public:
         @beginWxPerlOnly
         Not supported by wxPerl.
         @endWxPerlOnly
+
+        This constructor has become @c explicit in wxWidgets 3.1.6.
     */
-    wxImage(const char* const* xpmData);
+    explicit wxImage(const char* const* xpmData);
 
     /**
         Creates an image from a file.
@@ -708,7 +710,7 @@ public:
     /**
         @name Image creation, initialization and deletion functions
     */
-    //@{
+    ///@{
 
     /**
         Returns an identical copy of this image.
@@ -777,13 +779,13 @@ public:
     */
     void InitAlpha();
 
-    //@}
+    ///@}
 
 
     /**
         @name Image manipulation functions
     */
-    //@{
+    ///@{
 
     /**
         Blurs the image in both horizontal and vertical directions by the
@@ -821,6 +823,12 @@ public:
 
         Takes care of the mask colour and out of bounds problems.
 
+        @param image
+            The image containing the data to copy, must be valid.
+        @param x
+            The horizontal position of the position to copy the data to.
+        @param y
+            The vertical position of the position to copy the data to.
         @param alphaBlend
             This parameter (new in wx 3.1.5) determines whether the alpha values
             of the original image replace (default) or are composed with the
@@ -895,11 +903,42 @@ public:
     wxImage Rotate180() const;
 
     /**
-        Rotates the hue of each pixel in the image by @e angle, which is a double in
-        the range of -1.0 to +1.0, where -1.0 corresponds to -360 degrees and +1.0
+        Rotates the hue of each pixel in the image by @e angle, which is a double
+        in the range [-1.0..+1.0], where -1.0 corresponds to -360 degrees and +1.0
         corresponds to +360 degrees.
     */
     void RotateHue(double angle);
+
+    /**
+        Changes the saturation of each pixel in the image. factor is a double in
+        the range [-1.0..+1.0], where -1.0 corresponds to -100 percent and +1.0
+        corresponds to +100 percent.
+
+        @since 3.1.6
+    */
+    void ChangeSaturation(double factor);
+
+    /**
+        Changes the brightness (value) of each pixel in the image. factor is a
+        double in the range [-1.0..+1.0], where -1.0 corresponds to -100 percent
+        and +1.0 corresponds to +100 percent.
+
+        @since 3.1.6
+    */
+    void ChangeBrightness(double factor);
+
+    /**
+        Changes the hue, the saturation and the brightness (value) of each pixel
+        in the image. angleH is a double in the range [-1.0..+1.0], where -1.0
+        corresponds to -360 degrees and +1.0 corresponds to +360 degrees, factorS
+        is a double in the range [-1.0..+1.0], where -1.0 corresponds to -100 percent
+        and +1.0 corresponds to +100 percent and factorV is a double in the range
+        [-1.0..+1.0], where -1.0 corresponds to -100 percent and +1.0 corresponds
+        to +100 percent.
+
+        @since 3.1.6
+    */
+    void ChangeHSV(double angleH, double factorS, double factorV);
 
     /**
         Returns a scaled version of the image.
@@ -939,6 +978,11 @@ public:
         }
         @endcode
 
+        @note The algorithm used for the default (normal) quality value doesn't
+        work with images larger than 65536 (2^16) pixels in either dimension
+        for 32-bit programs. For 64-bit programs the limit is 2^48 and so not
+        relevant in practice.
+
         @see Rescale()
     */
     wxImage Scale(int width, int height,
@@ -962,13 +1006,13 @@ public:
     wxImage Size(const wxSize& size, const wxPoint& pos, int red = -1,
                  int green = -1, int blue = -1) const;
 
-    //@}
+    ///@}
 
 
     /**
         @name Conversion functions
     */
-    //@{
+    ///@{
 
     /**
         If the image has alpha channel, this method converts it to mask.
@@ -1018,6 +1062,9 @@ public:
         calculate the greyscale. Defaults to using the standard ITU-T BT.601
         when converting to YUV, where every pixel equals
         (R * @a weight_r) + (G * @a weight_g) + (B * @a weight_b).
+
+        @remarks
+            This function calls wxColour::MakeGrey() for each pixel in the image.
     */
     wxImage ConvertToGreyscale(double weight_r, double weight_g, double weight_b) const;
 
@@ -1032,22 +1079,42 @@ public:
 
         The returned image has white colour where the original has @e (r,g,b)
         colour and black colour everywhere else.
+
+        @remarks
+            This function calls wxColour::MakeMono() for each pixel in the image.
     */
     wxImage ConvertToMono(unsigned char r, unsigned char g, unsigned char b) const;
 
     /**
         Returns disabled (dimmed) version of the image.
+
+        @remarks
+            This function calls wxColour::MakeDisabled() for each pixel in the image.
+
         @since 2.9.0
     */
     wxImage ConvertToDisabled(unsigned char brightness = 255) const;
 
-    //@}
+    /**
+        Returns a changed version of the image based on the given lightness.
+        This utility function simply darkens or lightens a color, based on the
+        specified percentage @a ialpha. @a ialpha of 0 would make the color
+        completely black, 200 completely white and 100 would not change the color.
+
+        @remarks
+            This function calls wxColour::ChangeLightness() for each pixel in the image.
+
+        @since 3.1.6
+    */
+    wxImage ChangeLightness(int alpha) const;
+
+    ///@}
 
 
     /**
         @name Miscellaneous functions
     */
-    //@{
+    ///@{
 
     /**
         Computes the histogram of the image. @a histogram is a reference to
@@ -1105,13 +1172,13 @@ public:
     */
     wxImage& operator=(const wxImage& image);
 
-    //@}
+    ///@}
 
 
     /**
         @name Getters
     */
-    //@{
+    ///@{
 
     /**
         Returns pointer to the array storing the alpha values for this image.
@@ -1409,13 +1476,13 @@ public:
     bool IsTransparent(int x, int y,
                        unsigned char threshold = wxIMAGE_ALPHA_THRESHOLD) const;
 
-    //@}
+    ///@}
 
 
     /**
         @name Loading and saving functions
     */
-    //@{
+    ///@{
 
     /**
         Loads an image from an input stream.
@@ -1595,14 +1662,14 @@ public:
     */
     virtual bool SaveFile(wxOutputStream& stream, wxBitmapType type) const;
 
-    //@}
+    ///@}
 
 
 
     /**
         @name Setters
     */
-    //@{
+    ///@{
 
     /**
        This function is similar to SetData() and has similar restrictions.
@@ -1800,14 +1867,14 @@ public:
     */
     void SetType(wxBitmapType type);
 
-    //@}
+    ///@}
 
 
 
     /**
         @name Handler management functions
     */
-    //@{
+    ///@{
 
     /**
         Register an image handler.
@@ -1927,7 +1994,7 @@ public:
     */
     static bool RemoveHandler(const wxString& name);
 
-    //@}
+    ///@}
 
 
     /**
@@ -1955,7 +2022,7 @@ public:
      */
     static int GetDefaultLoadFlags();
 
-    //@{
+    ///@{
     /**
         If the image file contains more than one image and the image handler is
         capable of retrieving these individually, this function will return the
@@ -1992,7 +2059,7 @@ public:
                              wxBitmapType type = wxBITMAP_TYPE_ANY);
     static int GetImageCount(wxInputStream& stream,
                              wxBitmapType type = wxBITMAP_TYPE_ANY);
-    //@}
+    ///@}
 
     /**
         Iterates all registered wxImageHandler objects, and returns a string containing
@@ -2067,7 +2134,7 @@ wxImage wxNullImage;
 // ============================================================================
 
 /** @addtogroup group_funcmacro_appinitterm */
-//@{
+///@{
 
 /**
     Initializes all available image handlers.
@@ -2085,5 +2152,5 @@ wxImage wxNullImage;
 */
 void wxInitAllImageHandlers();
 
-//@}
+///@}
 

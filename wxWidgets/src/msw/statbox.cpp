@@ -374,8 +374,8 @@ RECT AdjustRectForRtl(wxLayoutDirection dir, RECT const& childRect, RECT const& 
         // The clipping region too is mirrored in RTL layout.
         // We need to mirror screen coordinates relative to static box window priot to
         // intersecting with region.
-        ret.right = boxRect.right - childRect.left - boxRect.left;
-        ret.left = boxRect.right - childRect.right - boxRect.left;
+        ret.right = boxRect.right - (childRect.left - boxRect.left);
+        ret.left = boxRect.left + (boxRect.right - childRect.right);
     }
 
     return ret;
@@ -498,7 +498,7 @@ void wxStaticBox::PaintForeground(wxDC& dc, const RECT&)
 
 #if wxUSE_UXTHEME
     // when using XP themes, neither setting the text colour nor transparent
-    // background mode doesn't change anything: the static box def window proc
+    // background mode changes anything: the static box def window proc
     // still draws the label in its own colours, so we need to redraw the text
     // ourselves if we have a non default fg colour
     if ( m_hasFgCol && wxUxThemeIsActive() && !m_labelWin )

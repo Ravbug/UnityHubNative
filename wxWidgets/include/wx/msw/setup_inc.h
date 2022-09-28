@@ -94,7 +94,7 @@
 // Set this to 1 to enable wxDIB class used internally for manipulating
 // wxBitmap data.
 //
-// Default is 1, set it to 0 only if you don't use wxImage neither
+// Default is 1, set it to 0 only if you don't use wxImage either
 //
 // Recommended setting: 1 (without it conversion to/from wxImage won't work)
 #define wxUSE_WXDIB 1
@@ -166,12 +166,12 @@
 // Recommended setting: 0, nobody uses .INI files any more
 #define wxUSE_INICONF 0
 
-// Set to 1 if you need to include <winsock2.h> over <winsock.h>
+// Set to 0 if you need to include <winsock.h> rather than <winsock2.h>
 //
-// Default is 0.
+// Default is 1.
 //
-// Recommended setting: 0, set to 1 automatically if wxUSE_IPV6 is 1.
-#define wxUSE_WINSOCK2 0
+// Recommended setting: 1, required to be 1 if wxUSE_IPV6 is 1.
+#define wxUSE_WINSOCK2 1
 
 // ----------------------------------------------------------------------------
 // Generic versions of native controls

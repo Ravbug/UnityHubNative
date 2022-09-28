@@ -788,7 +788,7 @@ public:
     @since 3.1.5
 
     @library{wxnet}
-    @category{net}
+    @category{net,events}
 
     @see wxWebRequest
 */
@@ -799,6 +799,13 @@ public:
         Return the current state of the request
     */
     wxWebRequest::State GetState() const;
+
+    /**
+        Returns a reference to the @c wxWebRequest object which initiated this event.
+
+        @since 3.1.6
+    */
+    const wxWebRequest& GetRequest() const;
 
     /**
         The response with the state set to @c State_Complete or empty response

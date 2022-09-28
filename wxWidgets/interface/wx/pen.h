@@ -192,7 +192,6 @@ public:
      */
     wxPenInfo& HighQuality();
 
-    wxPenInfo& LowQuality();
     wxColour GetColour() const;
     wxBitmap GetStipple() const;
     wxPenStyle GetStyle() const;
@@ -202,7 +201,7 @@ public:
     int GetDashes(wxDash **ptr);
     int GetDashCount() const;
     wxDash* GetDash() const;
-    bool IsTransparent() const;    
+    bool IsTransparent() const;
     int GetWidth() const;
 };
 
@@ -453,7 +452,7 @@ public:
      */
     void SetQuality(wxPenQuality quality);
 
-    //@{
+    ///@{
     /**
         The pen's colour is changed to the given colour.
 
@@ -461,7 +460,7 @@ public:
     */
     virtual void SetColour(wxColour& colour);
     virtual void SetColour(unsigned char red, unsigned char green, unsigned char blue);
-    //@}
+    ///@}
 
     /**
         Associates an array of dash values (defined as @c char in X, @c DWORD under

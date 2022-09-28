@@ -151,10 +151,9 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/libtiff
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = $(DEPDIR)/getopt.Plo $(DEPDIR)/lfind.Plo \
-	$(DEPDIR)/snprintf.Plo $(DEPDIR)/strcasecmp.Plo \
-	$(DEPDIR)/strtol.Plo $(DEPDIR)/strtoll.Plo \
-	$(DEPDIR)/strtoul.Plo $(DEPDIR)/strtoull.Plo \
-	./$(DEPDIR)/dummy.Plo
+	$(DEPDIR)/strcasecmp.Plo $(DEPDIR)/strtol.Plo \
+	$(DEPDIR)/strtoll.Plo $(DEPDIR)/strtoul.Plo \
+	$(DEPDIR)/strtoull.Plo ./$(DEPDIR)/dummy.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -201,8 +200,8 @@ am__define_uniq_tagged_files = \
 ETAGS = etags
 CTAGS = ctags
 am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/config/depcomp \
-	getopt.c lfind.c snprintf.c strcasecmp.c strtol.c strtoll.c \
-	strtoul.c strtoull.c
+	getopt.c lfind.c strcasecmp.c strtol.c strtoll.c strtoul.c \
+	strtoull.c
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -420,7 +419,6 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/getopt.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/lfind.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/snprintf.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/strcasecmp.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/strtol.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/strtoll.Plo@am__quote@ # am--include-marker
@@ -588,7 +586,6 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 distclean: distclean-am
 		-rm -f $(DEPDIR)/getopt.Plo
 	-rm -f $(DEPDIR)/lfind.Plo
-	-rm -f $(DEPDIR)/snprintf.Plo
 	-rm -f $(DEPDIR)/strcasecmp.Plo
 	-rm -f $(DEPDIR)/strtol.Plo
 	-rm -f $(DEPDIR)/strtoll.Plo
@@ -642,7 +639,6 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 		-rm -f $(DEPDIR)/getopt.Plo
 	-rm -f $(DEPDIR)/lfind.Plo
-	-rm -f $(DEPDIR)/snprintf.Plo
 	-rm -f $(DEPDIR)/strcasecmp.Plo
 	-rm -f $(DEPDIR)/strtol.Plo
 	-rm -f $(DEPDIR)/strtoll.Plo

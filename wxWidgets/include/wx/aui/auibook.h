@@ -55,6 +55,7 @@ enum wxAuiNotebookOption
                              wxAUI_NB_MIDDLE_CLICK_CLOSE
 };
 
+wxALLOW_COMBINING_ENUMS(wxAuiNotebookOption, wxBorder)
 
 
 
@@ -90,7 +91,7 @@ public:
     wxWindow* window;     // page's associated window
     wxString caption;     // caption displayed on the tab
     wxString tooltip;     // tooltip displayed when hovering over tab title
-    wxBitmap bitmap;      // tab's bitmap
+    wxBitmapBundle bitmap;// tab's bitmap
     wxRect rect;          // tab's hit rectangle
     bool active;          // true if the page is currently active
     bool hover;           // true if mouse hovering over tab
@@ -103,8 +104,8 @@ public:
     int id;               // button's id
     int curState;        // current state (normal, hover, pressed, etc.)
     int location;         // buttons location (wxLEFT, wxRIGHT, or wxCENTER)
-    wxBitmap bitmap;      // button's hover bitmap
-    wxBitmap disBitmap;  // button's disabled bitmap
+    wxBitmapBundle bitmap;    // button's hover bitmap
+    wxBitmapBundle disBitmap; // button's disabled bitmap
     wxRect rect;          // button's hit rectangle
 };
 
@@ -139,7 +140,7 @@ public:
     bool TabHitTest(int x, int y, wxWindow** hit) const;
     bool ButtonHitTest(int x, int y, wxAuiTabContainerButton** hit) const;
     wxWindow* GetWindowFromIdx(size_t idx) const;
-    int GetIdxFromWindow(wxWindow* page) const;
+    int GetIdxFromWindow(const wxWindow* page) const;
     size_t GetPageCount() const;
     wxAuiNotebookPage& GetPage(size_t idx);
     const wxAuiNotebookPage& GetPage(size_t idx) const;
@@ -150,13 +151,13 @@ public:
     void SetColour(const wxColour& colour);
     void SetActiveColour(const wxColour& colour);
     void DoShowHide();
-    void SetRect(const wxRect& rect);
+    void SetRect(const wxRect& rect, wxWindow* wnd = NULL);
 
     void RemoveButton(int id);
     void AddButton(int id,
                    int location,
-                   const wxBitmap& normalBitmap = wxNullBitmap,
-                   const wxBitmap& disabledBitmap = wxNullBitmap);
+                   const wxBitmapBundle& normalBitmap = wxBitmapBundle(),
+                   const wxBitmapBundle& disabledBitmap = wxBitmapBundle());
 
     size_t GetTabOffset() const;
     void SetTabOffset(size_t offset);
@@ -198,6 +199,8 @@ public:
     ~wxAuiTabCtrl();
 
     bool IsDragging() const { return m_isDragging; }
+
+    void SetRect(const wxRect& rect) { wxAuiTabContainer::SetRect(rect, this); }
 
 protected:
     // choose the default border for this window
@@ -276,20 +279,24 @@ public:
     bool AddPage(wxWindow* page,
                  const wxString& caption,
                  bool select = false,
-                 const wxBitmap& bitmap = wxNullBitmap);
+                 const wxBitmapBundle& bitmap = wxBitmapBundle());
 
     bool InsertPage(size_t pageIdx,
                     wxWindow* page,
                     const wxString& caption,
                     bool select = false,
-                    const wxBitmap& bitmap = wxNullBitmap);
+                    const wxBitmapBundle& bitmap = wxBitmapBundle());
 
     bool DeletePage(size_t page) wxOVERRIDE;
     bool RemovePage(size_t page) wxOVERRIDE;
 
     virtual size_t GetPageCount() const wxOVERRIDE;
     virtual wxWindow* GetPage(size_t pageIdx) const wxOVERRIDE;
-    int GetPageIndex(wxWindow* pageWnd) const;
+    virtual int FindPage(const wxWindow* page) const wxOVERRIDE;
+
+    // This is wxAUI-specific equivalent of FindPage(), prefer to use the other
+    // function.
+    int GetPageIndex(wxWindow* pageWnd) const { return FindPage(pageWnd); }
 
     bool SetPageText(size_t page, const wxString& text) wxOVERRIDE;
     wxString GetPageText(size_t pageIdx) const wxOVERRIDE;
@@ -297,7 +304,7 @@ public:
     bool SetPageToolTip(size_t page, const wxString& text);
     wxString GetPageToolTip(size_t pageIdx) const;
 
-    bool SetPageBitmap(size_t page, const wxBitmap& bitmap);
+    bool SetPageBitmap(size_t page, const wxBitmapBundle& bitmap);
     wxBitmap GetPageBitmap(size_t pageIdx) const;
 
     int SetSelection(size_t newPage) wxOVERRIDE;

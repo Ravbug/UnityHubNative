@@ -30,7 +30,7 @@
 #ifdef __UNIX__
     #define COMMAND "echo hi"
     #define COMMAND_STDERR "cat nonexistentfile"
-    #define ASYNC_COMMAND "xclock"
+    #define ASYNC_COMMAND "sleep 86400"
     #define SHELL_COMMAND "echo hi from shell>/dev/null"
     #define COMMAND_NO_OUTPUT "echo -n"
 #elif defined(__WINDOWS__)
@@ -116,7 +116,13 @@ private:
                      wxProcess* callback_ = NULL)
         {
             forceExitLoop = forceExitLoop_;
-            command = command_;
+
+            // Prepend the command with the value of wxTEST_RUNNER if it's
+            // defined to make this test work when using Wine too.
+            if ( wxGetEnv("wxTEST_RUNNER", &command) )
+                command += ' ';
+            command += command_;
+
             flags = flags_;
             callback = callback_;
 

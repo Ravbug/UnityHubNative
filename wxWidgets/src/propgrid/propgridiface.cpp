@@ -39,19 +39,13 @@ IMPLEMENT_VARIANT_OBJECT_EXPORTED(wxFont, WXDLLIMPEXP_PROPGRID)
 
 wxPGProperty* wxPGPropArgCls::GetPtr( wxPropertyGridInterface* iface ) const
 {
-    if ( m_flags == IsProperty )
+    if ( m_isProperty )
     {
-        wxASSERT_MSG( m_ptr.property, wxS("invalid property ptr") );
-        return m_ptr.property;
+        wxASSERT_MSG( m_property, "invalid property ptr" );
+        return m_property;
     }
-    else if ( m_flags & IsWxString )
-        return iface->GetPropertyByNameA(*m_ptr.stringName);
-    else if ( m_flags & IsCharPtr )
-        return iface->GetPropertyByNameA(m_ptr.charName);
-    else if ( m_flags & IsWCharPtr )
-        return iface->GetPropertyByNameA(m_ptr.wcharName);
 
-    return NULL;
+    return iface->GetPropertyByNameA(m_name);
 }
 
 // -----------------------------------------------------------------------
@@ -340,11 +334,9 @@ void wxPropertyGridInterface::ClearModifiedStatus()
 {
     unsigned int pageIndex = 0;
 
-    for (;;)
+    wxPropertyGridPageState* page;
+    while ( (page = GetPageState(pageIndex)) != NULL )
     {
-        wxPropertyGridPageState* page = GetPageState(pageIndex);
-        if ( !page ) break;
-
         page->DoGetRoot()->SetFlagRecursively(wxPG_PROP_MODIFIED, false);
         page->m_anyModified = false;
 
@@ -452,11 +444,9 @@ void wxPropertyGridInterface::SetPropertyAttributeAll( const wxString& attrName,
 {
     unsigned int pageIndex = 0;
 
-    for (;;)
+    wxPropertyGridPageState* page;
+    while ( (page = GetPageState(pageIndex)) != NULL )
     {
-        wxPropertyGridPageState* page = GetPageState(pageIndex);
-        if ( !page ) break;
-
         DoSetPropertyAttribute(page->DoGetRoot(), attrName, value, wxPG_RECURSE);
 
         pageIndex++;
@@ -596,10 +586,9 @@ void wxPropertyGridInterface::Sort( int flags )
 
     unsigned int pageIndex = 0;
 
-    for (;;)
+    wxPropertyGridPageState* page;
+    while( (page = GetPageState(pageIndex)) != NULL )
     {
-        wxPropertyGridPageState* page = GetPageState(pageIndex);
-        if ( !page ) break;
         page->DoSort(flags);
         pageIndex++;
     }
@@ -739,7 +728,7 @@ void wxPropertyGridInterface::SetPropertyColoursToDefault(wxPGPropArg id, int fl
 void wxPropertyGridInterface::SetPropertyCell( wxPGPropArg id,
                                                int column,
                                                const wxString& text,
-                                               const wxBitmap& bitmap,
+                                               const wxBitmapBundle& bitmap,
                                                const wxColour& fgCol,
                                                const wxColour& bgCol )
 {
@@ -759,17 +748,10 @@ void wxPropertyGridInterface::SetPropertyCell( wxPGPropArg id,
 // -----------------------------------------------------------------------
 // GetPropertyValueAsXXX methods
 
-#define IMPLEMENT_GET_VALUE(TRET,PGTypeName,BIGNAME,DEFRETVAL) \
-TRET wxPropertyGridInterface::GetPropertyValueAs##BIGNAME( wxPGPropArg id ) const \
-{ \
-    wxPG_PROP_ARG_CALL_PROLOG_RETVAL(DEFRETVAL) \
-    wxVariant value = p->GetValue(); \
-    if ( !value.IsType(PGTypeName) ) \
-    { \
-        wxPGGetFailed(p, PGTypeName); \
-        return (TRET)DEFRETVAL; \
-    } \
-    return (TRET)value.Get##BIGNAME(); \
+wxVariant wxPropertyGridInterface::GetPropertyValue(wxPGPropArg id)
+{
+    wxPG_PROP_ARG_CALL_PROLOG_RETVAL(wxVariant())
+    return p->GetValue();
 }
 
 // String is different from others.
@@ -795,8 +777,62 @@ bool wxPropertyGridInterface::GetPropertyValueAsBool( wxPGPropArg id ) const
     return false;
 }
 
-IMPLEMENT_GET_VALUE(long,wxPG_VARIANT_TYPE_LONG,Long,0)
-IMPLEMENT_GET_VALUE(double,wxPG_VARIANT_TYPE_DOUBLE,Double,0.0)
+#define wxPG_PROP_ID_GETPROPVAL_CALL_PROLOG_RETVAL(PGTypeName, DEFVAL) \
+    wxPG_PROP_ARG_CALL_PROLOG_RETVAL(DEFVAL) \
+    wxVariant value = p->GetValue(); \
+    if ( !value.IsType(PGTypeName) ) \
+    { \
+        wxPGGetFailed(p, PGTypeName); \
+        return DEFVAL; \
+    }
+
+long wxPropertyGridInterface::GetPropertyValueAsLong(wxPGPropArg id) const
+{
+    wxPG_PROP_ID_GETPROPVAL_CALL_PROLOG_RETVAL(wxPG_VARIANT_TYPE_LONG, 0L)
+    return value.GetLong();
+}
+
+double wxPropertyGridInterface::GetPropertyValueAsDouble(wxPGPropArg id) const
+{
+    wxPG_PROP_ID_GETPROPVAL_CALL_PROLOG_RETVAL(wxPG_VARIANT_TYPE_DOUBLE, 0.0)
+    return value.GetDouble();
+}
+
+wxArrayString wxPropertyGridInterface::GetPropertyValueAsArrayString(wxPGPropArg id) const
+{
+    wxPG_PROP_ID_GETPROPVAL_CALL_PROLOG_RETVAL(wxPG_VARIANT_TYPE_ARRSTRING, wxArrayString())
+    return value.GetArrayString();
+}
+
+#if defined(wxLongLong_t) && wxUSE_LONGLONG
+wxLongLong_t wxPropertyGridInterface::GetPropertyValueAsLongLong(wxPGPropArg id) const
+{
+    wxPG_PROP_ARG_CALL_PROLOG_RETVAL(0)
+    return p->GetValue().GetLongLong().GetValue();
+}
+
+wxULongLong_t wxPropertyGridInterface::GetPropertyValueAsULongLong(wxPGPropArg id) const
+{
+    wxPG_PROP_ARG_CALL_PROLOG_RETVAL(0)
+    return p->GetValue().GetULongLong().GetValue();
+}
+#endif
+
+wxArrayInt wxPropertyGridInterface::GetPropertyValueAsArrayInt(wxPGPropArg id) const
+{
+    wxPG_PROP_ID_GETPROPVAL_CALL_PROLOG_RETVAL(wxArrayInt_VariantType, wxArrayInt())
+    wxArrayInt arr;
+    arr << value;
+    return arr;
+}
+
+#if wxUSE_DATETIME
+wxDateTime wxPropertyGridInterface::GetPropertyValueAsDateTime(wxPGPropArg id) const
+{
+    wxPG_PROP_ID_GETPROPVAL_CALL_PROLOG_RETVAL(wxPG_VARIANT_TYPE_DATETIME, wxDateTime())
+    return value.GetDateTime();
+}
+#endif
 
 bool wxPropertyGridInterface::IsPropertyExpanded( wxPGPropArg id ) const
 {
@@ -892,12 +928,12 @@ wxString wxPropertyGridInterface::SaveEditableState( int includedStates ) const
     //
     // Save state on page basis
     wxVector<wxPropertyGridPageState*> pageStates;
-    for (int pageIndex = 0; ; pageIndex++)
+    unsigned int pageIndex = 0;
+    wxPropertyGridPageState* page;
+    while ( (page = GetPageState(pageIndex)) != NULL )
     {
-        wxPropertyGridPageState* page = GetPageState(pageIndex);
-        if ( !page ) break;
-
         pageStates.push_back(page);
+        pageIndex++;
     }
 
     for (wxVector<wxPropertyGridPageState*>::const_iterator it_ps = pageStates.begin();
@@ -1135,12 +1171,11 @@ bool wxPropertyGridInterface::RestoreEditableState( const wxString& src, int res
     // Force recalculation of virtual heights of all pages
     // (may be needed on unclean source string).
     pageIndex = 0;
-    wxPropertyGridPageState* pageState = GetPageState(pageIndex);
-    while ( pageState )
+    wxPropertyGridPageState* pageState;
+    while ( (pageState = GetPageState(pageIndex)) != NULL )
     {
         pageState->VirtualHeightChanged();
-        pageIndex += 1;
-        pageState = GetPageState(pageIndex);
+        pageIndex++;
     }
 
     pg->Thaw();

@@ -49,7 +49,7 @@ public:
     wxDIB(HBITMAP hbmp)
         { Init(); (void)Create(hbmp); }
 
-    // load a DIB from file (any depth is supoprted here unlike above)
+    // load a DIB from file (any depth is supported here unlike above)
     //
     // as above, use IsOk() to see if the bitmap was loaded successfully
     wxDIB(const wxString& filename)
@@ -225,7 +225,7 @@ private:
         m_depth;
 
     // in some cases we could be using a handle which we didn't create and in
-    // this case we shouldn't free it neither -- this flag tell us if this is
+    // this case we shouldn't free it either -- this flag tell us if this is
     // the case
     bool m_ownsHandle;
 

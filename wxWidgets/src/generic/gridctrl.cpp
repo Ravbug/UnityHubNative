@@ -25,8 +25,10 @@
     #include "wx/checkbox.h"
 #endif // WX_PRECOMP
 
+#include "wx/numformatter.h"
 #include "wx/tokenzr.h"
 #include "wx/renderer.h"
+#include "wx/uilocale.h"
 
 #include "wx/generic/private/grid.h"
 #include "wx/private/window.h"
@@ -156,21 +158,17 @@ using namespace wxGridPrivate;
 // Enables a grid cell to display a formatted date
 
 wxGridCellDateRenderer::wxGridCellDateRenderer(const wxString& outformat)
+    : wxGridCellStringRenderer()
 {
     if ( outformat.empty() )
     {
-        m_oformat = "%x"; // Localized date representation.
+        m_oformat = wxGetUIDateFormat();
     }
     else
     {
         m_oformat = outformat;
     }
     m_tz = wxDateTime::Local;
-}
-
-wxGridCellRenderer *wxGridCellDateRenderer::Clone() const
-{
-    return new wxGridCellDateRenderer(*this);
 }
 
 wxString wxGridCellDateRenderer::GetString(const wxGrid& grid, int row, int col)
@@ -254,11 +252,6 @@ wxGridCellDateTimeRenderer::wxGridCellDateTimeRenderer(const wxString& outformat
 {
 }
 
-wxGridCellRenderer *wxGridCellDateTimeRenderer::Clone() const
-{
-    return new wxGridCellDateTimeRenderer(*this);
-}
-
 void
 wxGridCellDateTimeRenderer::GetDateParseParams(DateParseParams& params) const
 {
@@ -270,6 +263,19 @@ wxGridCellDateTimeRenderer::GetDateParseParams(DateParseParams& params) const
 // ----------------------------------------------------------------------------
 // wxGridCellChoiceRenderer
 // ----------------------------------------------------------------------------
+
+wxGridCellChoiceRenderer::wxGridCellChoiceRenderer(const wxString& choices)
+    : wxGridCellStringRenderer()
+{
+    if (!choices.empty())
+        SetParameters(choices);
+}
+
+wxGridCellChoiceRenderer::wxGridCellChoiceRenderer(const wxGridCellChoiceRenderer& other)
+    : wxGridCellStringRenderer(other),
+      m_choices(other.m_choices)
+{
+}
 
 wxSize wxGridCellChoiceRenderer::GetMaxBestSize(wxGrid& WXUNUSED(grid),
                                                 wxGridCellAttr& attr,
@@ -306,19 +312,6 @@ void wxGridCellChoiceRenderer::SetParameters(const wxString& params)
 // eg data in cell is 0,1,2 ... n the cell could be rendered as "John","Fred"..."Bob"
 
 
-wxGridCellEnumRenderer::wxGridCellEnumRenderer(const wxString& choices)
-{
-    if (!choices.empty())
-        SetParameters(choices);
-}
-
-wxGridCellRenderer *wxGridCellEnumRenderer::Clone() const
-{
-    wxGridCellEnumRenderer *renderer = new wxGridCellEnumRenderer;
-    renderer->m_choices = m_choices;
-    return renderer;
-}
-
 wxString wxGridCellEnumRenderer::GetString(const wxGrid& grid, int row, int col)
 {
     wxGridTableBase *table = grid.GetTable();
@@ -326,7 +319,7 @@ wxString wxGridCellEnumRenderer::GetString(const wxGrid& grid, int row, int col)
     if ( table->CanGetValueAs(row, col, wxGRID_VALUE_NUMBER) )
     {
         int choiceno = table->GetValueAsLong(row, col);
-        text.Printf(wxT("%s"), m_choices[ choiceno ].c_str() );
+        text.Printf(wxT("%s"), m_choices[ choiceno ] );
     }
     else
     {
@@ -807,21 +800,11 @@ void wxGridCellNumberRenderer::SetParameters(const wxString& params)
 wxGridCellFloatRenderer::wxGridCellFloatRenderer(int width,
                                                  int precision,
                                                  int format)
+    : wxGridCellStringRenderer()
 {
     SetWidth(width);
     SetPrecision(precision);
     SetFormat(format);
-}
-
-wxGridCellRenderer *wxGridCellFloatRenderer::Clone() const
-{
-    wxGridCellFloatRenderer *renderer = new wxGridCellFloatRenderer;
-    renderer->m_width = m_width;
-    renderer->m_precision = m_precision;
-    renderer->m_style = m_style;
-    renderer->m_format = m_format;
-
-    return renderer;
 }
 
 wxString wxGridCellFloatRenderer::GetString(const wxGrid& grid, int row, int col)
@@ -839,7 +822,7 @@ wxString wxGridCellFloatRenderer::GetString(const wxGrid& grid, int row, int col
     else
     {
         text = table->GetValue(row, col);
-        hasDouble = text.ToDouble(&val);
+        hasDouble = wxNumberFormatter::FromString(text, &val);
     }
 
     if ( hasDouble )
@@ -877,8 +860,7 @@ wxString wxGridCellFloatRenderer::GetString(const wxGrid& grid, int row, int col
                 m_format += wxT('f');
         }
 
-        text.Printf(m_format, val);
-
+        text = wxNumberFormatter::Format(m_format, val);
     }
     //else: text already contains the string
 
@@ -934,7 +916,7 @@ void wxGridCellFloatRenderer::SetParameters(const wxString& params)
             }
             else
             {
-                wxLogDebug(wxT("Invalid wxGridCellFloatRenderer width parameter string '%s ignored"), params.c_str());
+                wxLogDebug(wxT("Invalid wxGridCellFloatRenderer width parameter string '%s ignored"), params);
             }
         }
 
@@ -948,7 +930,7 @@ void wxGridCellFloatRenderer::SetParameters(const wxString& params)
             }
             else
             {
-                wxLogDebug(wxT("Invalid wxGridCellFloatRenderer precision parameter string '%s ignored"), params.c_str());
+                wxLogDebug(wxT("Invalid wxGridCellFloatRenderer precision parameter string '%s ignored"), params);
             }
         }
 

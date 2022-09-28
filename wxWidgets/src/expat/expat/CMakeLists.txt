@@ -1,5 +1,37 @@
-# This file is copyrighted under the BSD-license for buildsystem files of KDE
-# copyright 2010, Patrick Spendrin <ps_ml@gmx.de>
+#                          __  __            _
+#                       ___\ \/ /_ __   __ _| |_
+#                      / _ \\  /| '_ \ / _` | __|
+#                     |  __//  \| |_) | (_| | |_
+#                      \___/_/\_\ .__/ \__,_|\__|
+#                               |_| XML parser
+#
+# Copyright (c) 2010      Patrick Spendrin <ps_ml@gmx.de>
+# Copyright (c) 2012      Karl Waclawek <karl@waclawek.net>
+# Copyright (c) 2016-2022 Sebastian Pipping <sebastian@pipping.org>
+# Copyright (c) 2016      Sergei Nikulov <sergey.nikulov@gmail.com>
+# Copyright (c) 2016      Björn Lindahl <bjorn.lindahl@foi.se>
+# Copyright (c) 2016      Tobias Taschner <github@tc84.de>
+# Copyright (c) 2016      Ben Boeckel <ben.boeckel@kitware.com>
+# Copyright (c) 2017      Rhodri James <rhodri@wildebeest.org.uk>
+# Copyright (c) 2017      Rolf Eike Beer <eike@sf-mail.de>
+# Copyright (c) 2017      Stephen Groat <stephen@groat.us>
+# Copyright (c) 2017      Franek Korta <fkorta@gmail.com>
+# Copyright (c) 2018      pedro-vicente <pedro.vicente@space-research.org>
+# Copyright (c) 2018      Frank Rast <frank.rast@gefeg.com>
+# Copyright (c) 2018      userwithuid <userwithuid@gmail.com>
+# Copyright (c) 2018      Yury Gribov <tetra2005@gmail.com>
+# Copyright (c) 2019      Kishore Kunche <kishore.kunche@intel.com>
+# Copyright (c) 2019      xantares <xantares09@hotmail.com>
+# Copyright (c) 2019      Mohammed Khajapasha <mohammed.khajapasha@intel.com>
+# Copyright (c) 2019      David Loffredo <loffredo@steptools.com>
+# Copyright (c) 2019      Bhargava Shastry <bhargava.shastry@ethereum.org>
+# Copyright (c) 2020      Maciej Sroczyński <macieksroczynski@poczta.fm>
+# Copyright (c) 2020      Gulliver <gulliver@traumkristalle.net>
+# Copyright (c) 2020      Thomas Beutlich <tc@tbeu.de>
+# Copyright (c) 2021      Alex Richardson <Alexander.Richardson@cl.cam.ac.uk>
+# Copyright (c) 2022      Johnny Jazeix <jazeix@gmail.com>
+# Unlike most of Expat,
+# this file is copyrighted under the BSD-license for buildsystem files of KDE.
 
 cmake_minimum_required(VERSION 3.1.3)
 
@@ -33,7 +65,7 @@ endif()
 
 project(expat
     VERSION
-        2.2.10
+        2.4.8
     LANGUAGES
         C
 )
@@ -46,11 +78,6 @@ set(PACKAGE_TARNAME "${PACKAGE_NAME}")
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
-
-#
-# Detect use by means of add_subdirectory
-#
-get_directory_property(_EXPAT_PARENT_DIRECTORY PARENT_DIRECTORY)
 
 #
 # Configuration defaults
@@ -75,6 +102,15 @@ if(MSVC)
 else()
     set(_EXPAT_BUILD_PKGCONFIG_DEFAULT ON)
 endif()
+if(DEFINED BUILD_SHARED_LIBS)
+    set(_EXPAT_SHARED_LIBS_DEFAULT ${BUILD_SHARED_LIBS})
+else()
+    set(_EXPAT_SHARED_LIBS_DEFAULT ON)
+endif()
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE NoConfig)  # so that accessing CMAKE_*_POSTFIX will be waterproof
+endif()
+string(TOUPPER "${CMAKE_BUILD_TYPE}" _EXPAT_BUILD_TYPE_UPPER)
 
 #
 # Configuration
@@ -82,7 +118,7 @@ endif()
 option(EXPAT_BUILD_TOOLS "build the xmlwf tool for expat library" ${_EXPAT_BUILD_TOOLS_DEFAULT})
 option(EXPAT_BUILD_EXAMPLES "build the examples for expat library" ON)
 option(EXPAT_BUILD_TESTS "build the tests for expat library" ON)
-option(EXPAT_SHARED_LIBS "build a shared expat library" ON)
+option(EXPAT_SHARED_LIBS "build a shared expat library" ${_EXPAT_SHARED_LIBS_DEFAULT})
 option(EXPAT_BUILD_DOCS "build man page for xmlwf" ${_EXPAT_BUILD_DOCS_DEFAULT})
 option(EXPAT_BUILD_FUZZERS "build fuzzers for the expat library" OFF)
 option(EXPAT_BUILD_PKGCONFIG "build pkg-config file" ${_EXPAT_BUILD_PKGCONFIG_DEFAULT})
@@ -116,6 +152,14 @@ mark_as_advanced(EXPAT_MIN_SIZE)
 if(MSVC OR _EXPAT_HELP)
     set(EXPAT_MSVC_STATIC_CRT OFF CACHE BOOL "Use /MT flag (static CRT) when compiling in MSVC")
 endif()
+if(NOT _EXPAT_HELP)
+    set(_EXPAT_M32 OFF CACHE BOOL "(Unofficial!) Produce 32bit code with -m32")
+endif()
+
+if(EXPAT_BUILD_TESTS)
+    # We have to call enable_language() before modifying any CMAKE_CXX_* variables
+    enable_language(CXX)
+endif()
 
 #
 # Environment checks
@@ -126,6 +170,26 @@ if(EXPAT_WITH_LIBBSD)
         message(SEND_ERROR "EXPAT_WITH_LIBBSD option is enabled, but libbsd was not found")
     else()
         set(HAVE_LIBBSD TRUE)
+    endif()
+endif()
+
+if(MSVC)
+    # For the three types of MSVC version values, please see:
+    # - https://cmake.org/cmake/help/latest/variable/MSVC_VERSION.html
+    # - https://sourceforge.net/p/predef/wiki/Compilers/
+    # - https://en.wikipedia.org/wiki/Microsoft_Visual_Studio#History
+    set(_EXPAT_MSVC_REQUIRED_INT 1800)  # i.e. 12.0/2013/1800; see PR #426
+    set(_EXPAT_MSVC_SUPPORTED_INT 1910)
+    set(_EXPAT_MSVC_SUPPORTED_DISPLAY "Visual Studio 15.0/2017/${_EXPAT_MSVC_SUPPORTED_INT}")
+
+    if(MSVC_VERSION VERSION_LESS ${_EXPAT_MSVC_SUPPORTED_INT})
+        if(MSVC_VERSION VERSION_LESS ${_EXPAT_MSVC_REQUIRED_INT})
+            message(SEND_ERROR "MSVC_VERSION ${MSVC_VERSION} is TOO OLD to compile Expat without errors.")
+            message(SEND_ERROR "Please use officially supported ${_EXPAT_MSVC_SUPPORTED_DISPLAY} or later.  Thank you!")
+        else()
+            message(WARNING "MSVC_VERSION ${MSVC_VERSION} is NOT OFFICIALLY SUPPORTED by Expat.")
+            message(WARNING "Please use ${_EXPAT_MSVC_SUPPORTED_DISPLAY} or later.  Thank you!")
+        endif()
     endif()
 endif()
 
@@ -217,7 +281,6 @@ macro(expat_install)
 endmacro()
 
 configure_file(expat_config.h.cmake "${CMAKE_CURRENT_BINARY_DIR}/expat_config.h")
-add_definitions(-DHAVE_EXPAT_CONFIG_H)
 expat_install(FILES "${CMAKE_CURRENT_BINARY_DIR}/expat_config.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 
@@ -228,6 +291,10 @@ endif()
 if(FLAG_VISIBILITY)
   add_definitions(-DXML_ENABLE_VISIBILITY=1)
   set(EXTRA_COMPILE_FLAGS "${EXTRA_COMPILE_FLAGS} -fvisibility=hidden")
+endif()
+if(MINGW)
+    # Without __USE_MINGW_ANSI_STDIO the compiler produces a false positive
+    set(EXTRA_COMPILE_FLAGS "${EXTRA_COMPILE_FLAGS} -Wno-pedantic-ms-format")
 endif()
 if (EXPAT_WARNINGS_AS_ERRORS)
     if(MSVC)
@@ -243,10 +310,12 @@ if (MSVC)
     if (EXPAT_MSVC_STATIC_CRT)
         message("-- Using static CRT ${EXPAT_MSVC_STATIC_CRT}")
         foreach(flag_var
+                CMAKE_CXX_FLAGS_${_EXPAT_BUILD_TYPE_UPPER}
                 CMAKE_CXX_FLAGS_DEBUG
                 CMAKE_CXX_FLAGS_RELEASE
                 CMAKE_CXX_FLAGS_MINSIZEREL
                 CMAKE_CXX_FLAGS_RELWITHDEBINFO
+                CMAKE_C_FLAGS_${_EXPAT_BUILD_TYPE_UPPER}
                 CMAKE_C_FLAGS_DEBUG
                 CMAKE_C_FLAGS_RELEASE
                 CMAKE_C_FLAGS_MINSIZEREL
@@ -257,43 +326,63 @@ if (MSVC)
     endif()
 endif()
 
+if(_EXPAT_M32 AND NOT MSVC)
+    foreach(flag_var
+            CMAKE_CXX_FLAGS_${_EXPAT_BUILD_TYPE_UPPER}
+            CMAKE_CXX_FLAGS_DEBUG
+            CMAKE_CXX_FLAGS_RELEASE
+            CMAKE_CXX_FLAGS_MINSIZEREL
+            CMAKE_CXX_FLAGS_RELWITHDEBINFO
+            CMAKE_C_FLAGS_${_EXPAT_BUILD_TYPE_UPPER}
+            CMAKE_C_FLAGS_DEBUG
+            CMAKE_C_FLAGS_RELEASE
+            CMAKE_C_FLAGS_MINSIZEREL
+            CMAKE_C_FLAGS_RELWITHDEBINFO
+            )
+        set(${flag_var} "${${flag_var}} -m32")
+    endforeach()
+endif()
+
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -wd4996)
 endif()
-if(WIN32)
-    if(_EXPAT_UNICODE_WCHAR_T)
-        set(_POSTFIX_WIDE "w")
-    endif()
 
-    if(MSVC AND NOT EXPAT_SHARED_LIBS)
-        if(EXPAT_MSVC_STATIC_CRT)
-            set(_POSTFIX_CRT "MT")
-        else()
-            set(_POSTFIX_CRT "MD")
-        endif()
-    endif()
-
-    foreach(postfix_var
-            CMAKE_DEBUG_POSTFIX
-            CMAKE_RELEASE_POSTFIX
-            CMAKE_MINSIZEREL_POSTFIX
-            CMAKE_RELWITHDEBINFO_POSTFIX
-            )
-        if(postfix_var STREQUAL "CMAKE_DEBUG_POSTFIX")
-            set(_POSTFIX_DEBUG "d")
-        else()
-            set(_POSTFIX_DEBUG "")
-        endif()
-
-        set(${postfix_var} "${_POSTFIX_WIDE}${_POSTFIX_DEBUG}${_POSTFIX_CRT}" CACHE STRING "Windows binary postfix, e.g. libexpat<postfix=[w][d][MD|MT]>.lib")
-    endforeach()
+#
+# Library filename postfix
+#
+if(_EXPAT_UNICODE)
+    set(_POSTFIX_WIDE "w")
 endif()
+
+if(MSVC AND NOT EXPAT_SHARED_LIBS)
+    if(EXPAT_MSVC_STATIC_CRT)
+        set(_POSTFIX_CRT "MT")
+    else()
+        set(_POSTFIX_CRT "MD")
+    endif()
+endif()
+
+foreach(postfix_var
+        CMAKE_${_EXPAT_BUILD_TYPE_UPPER}_POSTFIX
+        CMAKE_DEBUG_POSTFIX
+        CMAKE_RELEASE_POSTFIX
+        CMAKE_MINSIZEREL_POSTFIX
+        CMAKE_RELWITHDEBINFO_POSTFIX
+        )
+    if(WIN32 AND postfix_var STREQUAL "CMAKE_DEBUG_POSTFIX")
+        set(_POSTFIX_DEBUG "d")
+    else()
+        set(_POSTFIX_DEBUG "")  # needs a reset because of being looped
+    endif()
+
+    set(${postfix_var} "${_POSTFIX_WIDE}${_POSTFIX_DEBUG}${_POSTFIX_CRT}" CACHE STRING "Library filename postfix, e.g. libexpat<postfix=[w][d][MD|MT]>.lib")
+endforeach()
 
 #
 # C library
 #
-set(expat_SRCS
+set(_EXPAT_C_SOURCES
     lib/xmlparse.c
     lib/xmlrole.c
     lib/xmltok.c
@@ -305,38 +394,58 @@ set(expat_SRCS
 if(EXPAT_SHARED_LIBS)
     set(_SHARED SHARED)
     if(MSVC)
-        set(expat_SRCS ${expat_SRCS} lib/libexpat.def)
+        set(_EXPAT_EXTRA_SOURCES ${_EXPAT_EXTRA_SOURCES} lib/libexpat.def)
+    endif()
+    if(WIN32)
+        # Add DLL version
+        string(REPLACE "." "," _EXPAT_DLL_VERSION ${PROJECT_VERSION}.0)
+        set(_EXPAT_EXTRA_SOURCES ${_EXPAT_EXTRA_SOURCES} win32/version.rc)
     endif()
 else()
     set(_SHARED STATIC)
 endif()
 
-# Avoid colliding with Expat.dll of Perl's XML::Parser::Expat
-if(WIN32 AND NOT MINGW)
-    set(_EXPAT_OUTPUT_NAME libexpat)  # CMAKE_*_POSTFIX applies, see above
-else()
-    if(_EXPAT_UNICODE)
-        set(_EXPAT_OUTPUT_NAME expatw)
-    else()
-        set(_EXPAT_OUTPUT_NAME expat)
-    endif()
+add_library(expat ${_SHARED} ${_EXPAT_C_SOURCES} ${_EXPAT_EXTRA_SOURCES})
+if(_EXPAT_LIBM_FOUND)
+    target_link_libraries(expat m)
 endif()
-
-add_library(expat ${_SHARED} ${expat_SRCS})
 if(EXPAT_WITH_LIBBSD)
     target_link_libraries(expat ${LIB_BSD})
 endif()
 
-set(LIBCURRENT 7)    # sync
-set(LIBREVISION 12)  # with
-set(LIBAGE 6)        # configure.ac!
+set(LIBCURRENT 9)   # sync
+set(LIBREVISION 8)  # with
+set(LIBAGE 8)       # configure.ac!
 math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
 
-set_property(TARGET expat PROPERTY OUTPUT_NAME "${_EXPAT_OUTPUT_NAME}")
 if(NOT WIN32)
     set_property(TARGET expat PROPERTY VERSION ${LIBCURRENT_MINUS_AGE}.${LIBAGE}.${LIBREVISION})
     set_property(TARGET expat PROPERTY SOVERSION ${LIBCURRENT_MINUS_AGE})
     set_property(TARGET expat PROPERTY NO_SONAME ${NO_SONAME})
+
+    if(APPLE)
+        if(NOT CMAKE_VERSION VERSION_GREATER_EQUAL 3.17)
+            message(FATAL_ERROR "Expat requires CMake >=3.17 on platform \"APPLE\".")
+        endif()
+
+        # NOTE: This intends to talk CMake into compatiblity with GNU Libtool
+        math(EXPR _EXPAT_MACHO_COMPATIBILITY_VERSION "${LIBCURRENT} + 1")
+        set(_EXPAT_MACHO_CURRENT_VERSION "${_EXPAT_MACHO_COMPATIBILITY_VERSION}.${LIBREVISION}")
+        set_property(TARGET expat PROPERTY MACHO_COMPATIBILITY_VERSION ${_EXPAT_MACHO_COMPATIBILITY_VERSION})
+        set_property(TARGET expat PROPERTY MACHO_CURRENT_VERSION ${_EXPAT_MACHO_CURRENT_VERSION})
+    endif()
+endif()
+if(WIN32 AND NOT MINGW)
+    # NOTE: This avoids a name collision with Expat.dll of Perl's XML::Parser::Expat
+    #       on Windows by resorting to filename libexpat.dll since Expat 1.95.3.
+    #       Everything but MSVC is already adding prefix "lib", automatically.
+    # NOTE: "set_property(TARGET expat PROPERTY PREFIX lib)" would only affect *.dll
+    #       files but not *.lib files, so we have to rely on property OUTPUT_NAME, instead.
+    #       Property CMAKE_*_POSTFIX still applies.
+    set(_EXPAT_OUTPUT_NAME libexpat)
+    set_property(TARGET expat PROPERTY OUTPUT_NAME ${_EXPAT_OUTPUT_NAME})
+else()
+    set(_EXPAT_OUTPUT_NAME expat)
 endif()
 
 target_include_directories(expat
@@ -346,8 +455,12 @@ target_include_directories(expat
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-if(NOT EXPAT_SHARED_LIBS AND WIN32)
-    target_compile_definitions(expat PUBLIC -DXML_STATIC)
+if(WIN32)
+    if(EXPAT_SHARED_LIBS)
+        target_compile_definitions(expat PRIVATE VER_FILEVERSION=${_EXPAT_DLL_VERSION})
+    else()
+        target_compile_definitions(expat PUBLIC -DXML_STATIC)
+    endif()
 endif()
 
 expat_install(TARGETS expat EXPORT expat
@@ -361,12 +474,42 @@ expat_install(FILES lib/expat.h lib/expat_external.h DESTINATION ${CMAKE_INSTALL
 # pkg-config file
 #
 if(EXPAT_BUILD_PKGCONFIG)
-    set(prefix ${CMAKE_INSTALL_PREFIX})
-    set(exec_prefix "\${prefix}")
-    set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
-    set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
-    configure_file(expat.pc.in ${CMAKE_CURRENT_BINARY_DIR}/expat.pc @ONLY)
-    expat_install(FILES ${CMAKE_CURRENT_BINARY_DIR}/expat.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+    if(CMAKE_INSTALL_LIBDIR MATCHES "^/")
+        set(_expat_pkgconfig_libdir "${CMAKE_INSTALL_LIBDIR}")
+    else()
+        set(_expat_pkgconfig_libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
+    endif()
+
+    if(CMAKE_INSTALL_INCLUDEDIR MATCHES "^/")
+        set(_expat_pkgconfig_includedir "${CMAKE_INSTALL_INCLUDEDIR}")
+    else()
+        set(_expat_pkgconfig_includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+    endif()
+
+    set_target_properties(expat PROPERTIES
+        pkgconfig_prefix "${CMAKE_INSTALL_PREFIX}"
+        pkgconfig_exec_prefix "\${prefix}"
+        pkgconfig_libdir "${_expat_pkgconfig_libdir}"
+        pkgconfig_includedir "${_expat_pkgconfig_includedir}"
+        pkgconfig_version "${PACKAGE_VERSION}")
+
+    foreach(_build_type ${CMAKE_BUILD_TYPE} Debug Release RelWithDebInfo MinSizeRel)
+        string(TOLOWER "${_build_type}" _build_type_lower)
+        string(TOUPPER "${_build_type}" _build_type_upper)
+        set_property(TARGET expat PROPERTY "pkgconfig_${_build_type_lower}_name" "expat${CMAKE_${_build_type_upper}_POSTFIX}")
+        set_property(TARGET expat PROPERTY "pkgconfig_${_build_type_lower}_output_name" "${_EXPAT_OUTPUT_NAME}${CMAKE_${_build_type_upper}_POSTFIX}")
+        if(_EXPAT_LIBM_FOUND)
+            set_property(TARGET expat PROPERTY "pkgconfig_libm" "-lm")
+        else()
+            set_property(TARGET expat PROPERTY "pkgconfig_libm" "")
+        endif()
+    endforeach()
+
+    file(GENERATE
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/expat.pc
+        INPUT ${PROJECT_SOURCE_DIR}/expat.pc.cmake)
+
+    expat_install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/expat.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
 
 #
@@ -383,6 +526,9 @@ if(EXPAT_BUILD_TOOLS)
     add_executable(xmlwf ${xmlwf_SRCS})
     set_property(TARGET xmlwf PROPERTY RUNTIME_OUTPUT_DIRECTORY xmlwf)
     target_link_libraries(xmlwf expat)
+    if(_EXPAT_LIBM_FOUND)
+        target_link_libraries(xmlwf m)
+    endif()
     expat_install(TARGETS xmlwf DESTINATION ${CMAKE_INSTALL_BINDIR})
 
     if(MINGW AND _EXPAT_UNICODE_WCHAR_T)
@@ -423,7 +569,6 @@ endif()
 #
 if(EXPAT_BUILD_TESTS)
     ## these are unittests that can be run on any platform
-    enable_language(CXX)
     enable_testing()
 
     set(test_SRCS
@@ -431,6 +576,7 @@ if(EXPAT_BUILD_TESTS)
         tests/memcheck.c
         tests/minicheck.c
         tests/structdata.c
+        ${_EXPAT_C_SOURCES}
     )
 
     if(NOT MSVC)
@@ -450,13 +596,21 @@ if(EXPAT_BUILD_TESTS)
 
     add_executable(runtests tests/runtests.c ${test_SRCS})
     set_property(TARGET runtests PROPERTY RUNTIME_OUTPUT_DIRECTORY tests)
-    target_link_libraries(runtests expat)
     expat_add_test(runtests $<TARGET_FILE:runtests>)
 
     add_executable(runtestspp tests/runtestspp.cpp ${test_SRCS})
     set_property(TARGET runtestspp PROPERTY RUNTIME_OUTPUT_DIRECTORY tests)
-    target_link_libraries(runtestspp expat)
     expat_add_test(runtestspp $<TARGET_FILE:runtestspp>)
+
+    if(_EXPAT_LIBM_FOUND)
+        target_link_libraries(runtests m)
+        target_link_libraries(runtestspp m)
+    endif()
+
+    if(EXPAT_WITH_LIBBSD)
+        target_link_libraries(runtests ${LIB_BSD})
+        target_link_libraries(runtestspp ${LIB_BSD})
+    endif()
 endif()
 
 if(EXPAT_BUILD_FUZZERS)
@@ -491,7 +645,7 @@ if(EXPAT_BUILD_FUZZERS)
     set(encoding_types UTF-16 UTF-8 ISO-8859-1 US-ASCII UTF-16BE UTF-16LE)
     set(fuzz_targets xml_parse_fuzzer xml_parsebuffer_fuzzer)
 
-    add_library(fuzzpat STATIC ${expat_SRCS})
+    add_library(fuzzpat STATIC ${_EXPAT_C_SOURCES})
     if(NOT EXPAT_OSSFUZZ_BUILD)
         target_compile_options(fuzzpat PRIVATE -fsanitize=fuzzer-no-link)
     endif()
@@ -656,20 +810,31 @@ elseif(EXPAT_CHAR_TYPE STREQUAL "wchar_t")
 else()
     set(_EXPAT_CHAR_TYPE_SUMMARY "ERROR")
 endif()
-string(TOUPPER "${CMAKE_BUILD_TYPE}" _EXPAT_BUILD_TYPE_UPPER)
+# NOTE: We're not accessing global property GENERATOR_IS_MULTI_CONFIG
+#       because that would require CMake >=3.9
+if(CMAKE_CONFIGURATION_TYPES)
+    set(_EXPAT_GENERATOR_IS_MULTI_CONFIG TRUE)
+else()
+    set(_EXPAT_GENERATOR_IS_MULTI_CONFIG FALSE)
+endif()
 
 message(STATUS "===========================================================================")
 message(STATUS "")
 message(STATUS "Configuration")
+message(STATUS "  Generator .................. ${CMAKE_GENERATOR}")
+if(_EXPAT_GENERATOR_IS_MULTI_CONFIG)
+    message(STATUS "  Build types ................ ${CMAKE_CONFIGURATION_TYPES}")
+else()
+    message(STATUS "  Build type ................. ${CMAKE_BUILD_TYPE}")
+endif()
 message(STATUS "  Prefix ..................... ${CMAKE_INSTALL_PREFIX}")
-message(STATUS "  Build type ................. ${CMAKE_BUILD_TYPE}")
 message(STATUS "  Shared libraries ........... ${EXPAT_SHARED_LIBS}")
 if(MSVC)
     message(STATUS "  Static CRT ................. ${EXPAT_MSVC_STATIC_CRT}")
 endif()
 message(STATUS "  Character type ............. ${_EXPAT_CHAR_TYPE_SUMMARY}")
-if(WIN32)
-    message(STATUS "  Binary postfix ............. ${CMAKE_${_EXPAT_BUILD_TYPE_UPPER}_POSTFIX}")
+if(NOT _EXPAT_GENERATOR_IS_MULTI_CONFIG)
+    message(STATUS "  Library name postfix ....... ${CMAKE_${_EXPAT_BUILD_TYPE_UPPER}_POSTFIX}")
 endif()
 message(STATUS "")
 message(STATUS "  Build documentation ........ ${EXPAT_BUILD_DOCS}")

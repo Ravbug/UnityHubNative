@@ -7,7 +7,20 @@
                                  |_| XML parser
 
    Copyright (c) 1997-2000 Thai Open Source Software Center Ltd
-   Copyright (c) 2000-2017 Expat development team
+   Copyright (c) 2000      Clark Cooper <coopercc@users.sourceforge.net>
+   Copyright (c) 2001-2003 Fred L. Drake, Jr. <fdrake@users.sourceforge.net>
+   Copyright (c) 2002      Greg Stein <gstein@users.sourceforge.net>
+   Copyright (c) 2002-2016 Karl Waclawek <karl@waclawek.net>
+   Copyright (c) 2005-2009 Steven Solie <steven@solie.ca>
+   Copyright (c) 2016-2022 Sebastian Pipping <sebastian@pipping.org>
+   Copyright (c) 2016      Pascal Cuoq <cuoq@trust-in-soft.com>
+   Copyright (c) 2016      Don Lewis <truckman@apache.org>
+   Copyright (c) 2017      Rhodri James <rhodri@wildebeest.org.uk>
+   Copyright (c) 2017      Alexander Bluhm <alexander.bluhm@gmx.net>
+   Copyright (c) 2017      Benbuck Nason <bnason@netflix.com>
+   Copyright (c) 2017      José Gutiérrez de la Concha <jose@zeroc.com>
+   Copyright (c) 2019      David Loffredo <loffredo@steptools.com>
+   Copyright (c) 2021      Dong-hee Na <donghee.na@python.org>
    Licensed under the MIT license:
 
    Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -30,6 +43,16 @@
    USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#ifdef _WIN32
+#  include "winconfig.h"
+#else
+#  ifdef HAVE_EXPAT_CONFIG_H
+#    include <expat_config.h>
+#  else
+#    include "macconfig.h"
+#  endif
+#endif /* ndef _WIN32 */
+
 #include <stddef.h>
 #include <string.h> /* memcpy */
 
@@ -41,16 +64,6 @@
 #else
 #  include <stdbool.h>
 #endif
-
-#ifdef _WIN32
-#  include "winconfig.h"
-#else
-#  ifdef HAVE_EXPAT_CONFIG_H
-#    include <expat_config.h>
-#  else
-#    include "macconfig.h"
-#  endif
-#endif /* ndef _WIN32 */
 
 #include "expat_external.h"
 #include "internal.h"
@@ -96,11 +109,6 @@
          << 3)                                                                 \
         + ((((byte)[1]) & 3) << 1) + ((((byte)[2]) >> 5) & 1)]                 \
    & (1u << (((byte)[2]) & 0x1F)))
-
-#define UTF8_GET_NAMING(pages, p, n)                                           \
-  ((n) == 2                                                                    \
-       ? UTF8_GET_NAMING2(pages, (const unsigned char *)(p))                   \
-       : ((n) == 3 ? UTF8_GET_NAMING3(pages, (const unsigned char *)(p)) : 0))
 
 /* Detection of invalid UTF-8 sequences is based on Table 3.1B
    of Unicode 3.2: http://www.unicode.org/unicode/reports/tr28/
@@ -271,8 +279,14 @@ sb_byteToAscii(const ENCODING *enc, const char *p) {
 
 #define IS_NAME_CHAR(enc, p, n) (AS_NORMAL_ENCODING(enc)->isName##n(enc, p))
 #define IS_NMSTRT_CHAR(enc, p, n) (AS_NORMAL_ENCODING(enc)->isNmstrt##n(enc, p))
-#define IS_INVALID_CHAR(enc, p, n)                                             \
-  (AS_NORMAL_ENCODING(enc)->isInvalid##n(enc, p))
+#ifdef XML_MIN_SIZE
+#  define IS_INVALID_CHAR(enc, p, n)                                           \
+    (AS_NORMAL_ENCODING(enc)->isInvalid##n                                     \
+     && AS_NORMAL_ENCODING(enc)->isInvalid##n(enc, p))
+#else
+#  define IS_INVALID_CHAR(enc, p, n)                                           \
+    (AS_NORMAL_ENCODING(enc)->isInvalid##n(enc, p))
+#endif
 
 #ifdef XML_MIN_SIZE
 #  define IS_NAME_CHAR_MINBPC(enc, p)                                          \

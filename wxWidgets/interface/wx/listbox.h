@@ -141,7 +141,7 @@ public:
     */
     virtual ~wxListBox();
 
-    //@{
+    ///@{
     /**
         Creates the listbox for two-step construction.
         See wxListBox() for further details.
@@ -160,7 +160,7 @@ public:
                 long style = 0,
                 const wxValidator& validator = wxDefaultValidator,
                 const wxString& name = wxListBoxNameStr);
-    //@}
+    ///@}
 
     /**
         Deselects an item in the list box.
@@ -350,7 +350,7 @@ public:
 
         @since 3.1.4
      */
-    virtual void MSWSetTabStops(const wxVector<int>& tabStops);
+    virtual bool MSWSetTabStops(const wxVector<int>& tabStops);
 
     // NOTE: Phoenix needs to see the implementation of pure virtuals so it
     // knows that this class is not abstract.

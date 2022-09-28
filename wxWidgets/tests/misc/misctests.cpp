@@ -22,6 +22,11 @@
 #include "wx/tarstrm.h"
 #include "wx/zipstrm.h"
 
+#ifdef __WINDOWS__
+    // Needed for wxMulDivInt32().
+    #include "wx/msw/wrapwin.h"
+#endif
+
 // ----------------------------------------------------------------------------
 // test class
 // ----------------------------------------------------------------------------
@@ -120,12 +125,16 @@ void MiscTestCase::Delete()
 namespace
 {
 
+#ifdef __WXDEBUG__
+
 // helper function used just to avoid warnings about value computed not being
 // used in WX_ASSERT_FAILS_WITH_ASSERT() in StaticCast() below
 bool IsNull(void *p)
 {
     return p == NULL;
 }
+
+#endif // __WXDEBUG__
 
 } // anonymous namespace
 
@@ -147,6 +156,18 @@ void MiscTestCase::StaticCast()
 
     WX_ASSERT_FAILS_WITH_ASSERT( IsNull(wxStaticCast(entry, wxTarEntry)) );
 #endif // wxUSE_TARSTREAM
+}
+
+TEST_CASE("RTTI::ClassInfo", "[rtti]")
+{
+    wxObject obj;
+    CHECK( obj.GetClassInfo()->IsKindOf(wxCLASSINFO(wxObject)) );
+    CHECK( !obj.GetClassInfo()->IsKindOf(wxCLASSINFO(wxArchiveEntry)) );
+
+#if wxUSE_ZIPSTREAM
+    wxZipEntry zipEntry;
+    CHECK( zipEntry.GetClassInfo()->IsKindOf(wxCLASSINFO(wxArchiveEntry)) );
+#endif // wxUSE_ZIPSTREAM
 }
 
 TEST_CASE("wxCTZ", "[math]")
@@ -186,4 +207,13 @@ TEST_CASE("wxRound", "[math]")
         #pragma warning(pop)
     #endif
 #endif // WXWIN_COMPATIBILITY_3_0
+}
+
+TEST_CASE("wxMulDivInt32", "[math]")
+{
+    // Check that it rounds correctly.
+    CHECK( wxMulDivInt32(15, 3, 2) == 23 );
+
+    // Check that it doesn't overflow.
+    CHECK( wxMulDivInt32((INT_MAX - 1)/2, 200, 100) == INT_MAX - 1 );
 }

@@ -139,7 +139,7 @@ public:
     */
     bool AddPage(wxWindow* page, const wxString& caption,
                  bool select = false,
-                 const wxBitmap& bitmap = wxNullBitmap);
+                 const wxBitmapBundle& bitmap = wxBitmapBundle());
 
     /**
         Adds a new page.
@@ -238,6 +238,9 @@ public:
     /**
         Returns the page index for the specified window.
         If the window is not found in the notebook, wxNOT_FOUND is returned.
+
+        This is AUI-specific equivalent to wxBookCtrl::FindPage() and it is
+        recommended to use that generic method instead of this one.
     */
     int GetPageIndex(wxWindow* page_wnd) const;
 
@@ -272,7 +275,7 @@ public:
     bool InsertPage(size_t page_idx, wxWindow* page,
                     const wxString& caption,
                     bool select = false,
-                    const wxBitmap& bitmap = wxNullBitmap);
+                    const wxBitmapBundle& bitmap = wxBitmapBundle());
 
     /**
         Inserts a new page at the specified position.
@@ -326,9 +329,9 @@ public:
 
     /**
         Sets the bitmap for the page.  To remove a bitmap from the tab caption, pass
-        wxNullBitmap.
+        an empty wxBitmapBundle.
     */
-    bool SetPageBitmap(size_t page, const wxBitmap& bitmap);
+    bool SetPageBitmap(size_t page, const wxBitmapBundle& bitmap);
 
     /**
         Sets the image index for the given page. @a image is an index into
@@ -445,7 +448,7 @@ public:
     wxWindow* window;     // page's associated window
     wxString caption;     // caption displayed on the tab
     wxString tooltip;     // tooltip displayed when hovering over tab title
-    wxBitmap bitmap;      // tab's bitmap
+    wxBitmapBundle bitmap;// tab's bitmap
     wxRect rect;          // tab's hit rectangle
     bool active;          // true if the page is currently active
 };
@@ -469,9 +472,9 @@ public:
     /// buttons location (wxLEFT, wxRIGHT, or wxCENTER)
     int location;
     /// button's hover bitmap
-    wxBitmap bitmap;
+    wxBitmapBundle bitmap;
     /// button's disabled bitmap
-    wxBitmap disBitmap;
+    wxBitmapBundle disBitmap;
     /// button's hit rectangle
     wxRect rect;
 };
@@ -523,7 +526,7 @@ public:
     bool TabHitTest(int x, int y, wxWindow** hit) const;
     bool ButtonHitTest(int x, int y, wxAuiTabContainerButton** hit) const;
     wxWindow* GetWindowFromIdx(size_t idx) const;
-    int GetIdxFromWindow(wxWindow* page) const;
+    int GetIdxFromWindow(const wxWindow* page) const;
     size_t GetPageCount() const;
     wxAuiNotebookPage& GetPage(size_t idx);
     const wxAuiNotebookPage& GetPage(size_t idx) const;
@@ -534,13 +537,13 @@ public:
     void SetColour(const wxColour& colour);
     void SetActiveColour(const wxColour& colour);
     void DoShowHide();
-    void SetRect(const wxRect& rect);
+    void SetRect(const wxRect& rect, wxWindow* wnd = NULL);
 
     void RemoveButton(int id);
     void AddButton(int id,
                    int location,
-                   const wxBitmap& normalBitmap = wxNullBitmap,
-                   const wxBitmap& disabledBitmap = wxNullBitmap);
+                   const wxBitmapBundle& normalBitmap = wxBitmapBundle(),
+                   const wxBitmapBundle& disabledBitmap = wxBitmapBundle());
 
     size_t GetTabOffset() const;
     void SetTabOffset(size_t offset);
@@ -633,7 +636,7 @@ public:
         Returns the tab size for the given caption, bitmap and state.
     */
     virtual wxSize GetTabSize(wxDC& dc, wxWindow* wnd, const wxString& caption,
-                              const wxBitmap& bitmap, bool active,
+                              const wxBitmapBundle& bitmap, bool active,
                               int close_button_state, int* x_extent) = 0;
 
     /**
@@ -672,8 +675,13 @@ public:
 
     /**
         Sets sizing information.
+
+        The @a wnd argument is only present in wxWidgets 3.1.6 and newer and is
+        required, it only has @NULL default value for compatibility reasons.
     */
-    virtual void SetSizingInfo(const wxSize& tab_ctrl_size, size_t tab_count) = 0;
+    virtual void SetSizingInfo(const wxSize& tab_ctrl_size,
+                               size_t tab_count,
+                               wxWindow* wnd = NULL) = 0;
 };
 
 /**
@@ -767,7 +775,8 @@ public:
     wxAuiTabArt* Clone();
     void SetFlags(unsigned int flags);
     void SetSizingInfo(const wxSize& tabCtrlSize,
-                       size_t tabCount);
+                       size_t tabCount,
+                       wxWindow* wnd = NULL);
 
     void SetNormalFont(const wxFont& font);
     void SetSelectedFont(const wxFont& font);
@@ -804,7 +813,7 @@ public:
                  wxDC& dc,
                  wxWindow* wnd,
                  const wxString& caption,
-                 const wxBitmap& bitmap,
+                 const wxBitmapBundle& bitmap,
                  bool active,
                  int closeButtonState,
                  int* xExtent);
@@ -830,14 +839,14 @@ protected:
     wxPen m_borderPen;
     wxBrush m_baseColourBrush;
     wxColour m_activeColour;
-    wxBitmap m_activeCloseBmp;
-    wxBitmap m_disabledCloseBmp;
-    wxBitmap m_activeLeftBmp;
-    wxBitmap m_disabledLeftBmp;
-    wxBitmap m_activeRightBmp;
-    wxBitmap m_disabledRightBmp;
-    wxBitmap m_activeWindowListBmp;
-    wxBitmap m_disabledWindowListBmp;
+    wxBitmapBundle m_activeCloseBmp;
+    wxBitmapBundle m_disabledCloseBmp;
+    wxBitmapBundle m_activeLeftBmp;
+    wxBitmapBundle m_disabledLeftBmp;
+    wxBitmapBundle m_activeRightBmp;
+    wxBitmapBundle m_disabledRightBmp;
+    wxBitmapBundle m_activeWindowListBmp;
+    wxBitmapBundle m_disabledWindowListBmp;
 
     int m_fixedTabWidth;
     int m_tabCtrlHeight;
@@ -872,7 +881,8 @@ public:
     void SetFlags(unsigned int flags);
 
     void SetSizingInfo(const wxSize& tabCtrlSize,
-                       size_t tabCount);
+                       size_t tabCount,
+                       wxWindow* wnd = NULL);
 
     void SetNormalFont(const wxFont& font);
     void SetSelectedFont(const wxFont& font);
@@ -933,14 +943,14 @@ protected:
     wxBrush m_normalBkBrush;
     wxBrush m_selectedBkBrush;
     wxBrush m_bkBrush;
-    wxBitmap m_activeCloseBmp;
-    wxBitmap m_disabledCloseBmp;
-    wxBitmap m_activeLeftBmp;
-    wxBitmap m_disabledLeftBmp;
-    wxBitmap m_activeRightBmp;
-    wxBitmap m_disabledRightBmp;
-    wxBitmap m_activeWindowListBmp;
-    wxBitmap m_disabledWindowListBmp;
+    wxBitmapBundle m_activeCloseBmp;
+    wxBitmapBundle m_disabledCloseBmp;
+    wxBitmapBundle m_activeLeftBmp;
+    wxBitmapBundle m_disabledLeftBmp;
+    wxBitmapBundle m_activeRightBmp;
+    wxBitmapBundle m_disabledRightBmp;
+    wxBitmapBundle m_activeWindowListBmp;
+    wxBitmapBundle m_disabledWindowListBmp;
 
     int m_fixedTabWidth;
     unsigned int m_flags;

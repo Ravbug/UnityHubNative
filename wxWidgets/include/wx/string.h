@@ -480,7 +480,7 @@ private:
   // however notice that this approach does not work when compiler TLS is used,
   // at least not with g++ 4.1.2 under amd64 as it apparently compiles code
   // using this accessor incorrectly when optimizations are enabled (-O2 is
-  // enough) -- luckily we don't need it then neither as static __thread
+  // enough) -- luckily we don't need it then either as static __thread
   // variables are initialized by 0 anyhow then and so we can use the variable
   // directly
   WXEXPORT static Cache& GetCache()
@@ -1507,7 +1507,7 @@ public:
     }
 
     /*
-       Note that we we must define all of the overloads below to avoid
+       Note that we must define all of the overloads below to avoid
        ambiguity when using str[0].
      */
     wxUniChar operator[](int n) const
@@ -2310,9 +2310,14 @@ public:
   // provided, the base is the numeric base in which the conversion should be
   // done and must be comprised between 2 and 36 or be 0 in which case the
   // standard C rules apply (leading '0' => octal, "0x" => hex)
-      // convert to a signed integer
+
+    // convert to a signed integer
+  bool ToInt(int *val, int base = 10) const;
+    // convert to an unsigned integer
+  bool ToUInt(unsigned int *val, int base = 10) const;
+    // convert to a signed long
   bool ToLong(long *val, int base = 10) const;
-      // convert to an unsigned integer
+      // convert to an unsigned long
   bool ToULong(unsigned long *val, int base = 10) const;
       // convert to wxLongLong
 #if defined(wxLongLong_t)
@@ -4211,12 +4216,7 @@ wxDEFINE_ALL_COMPARISONS(const char *, const wxCStrData&, wxCMP_CHAR_CSTRDATA)
 // Implement hashing using C++11 std::hash<>.
 // ----------------------------------------------------------------------------
 
-// Check for both compiler and standard library support for C++11: normally the
-// former implies the latter but under Mac OS X < 10.7 C++11 compiler can (and
-// even has to be) used with non-C++11 standard library, so explicitly exclude
-// this case.
-#if (__cplusplus >= 201103L || wxCHECK_VISUALC_VERSION(10)) \
-        && ( (!defined __GLIBCXX__) || (__GLIBCXX__ > 20070719) )
+#if __cplusplus >= 201103L || wxCHECK_VISUALC_VERSION(10)
 
 // Don't do this if ToStdWstring() is not available. We could work around it
 // but, presumably, if using std::wstring is undesirable, then so is using
@@ -4315,7 +4315,7 @@ inline const wchar_t* wxCStrData::AsWChar() const
         // if conversion fails, return empty string and not NULL to avoid
         // crashes in code written with either wxWidgets 2 wxString or
         // std::string behaviour in mind: neither of them ever returns NULL
-        // from its c_str() and so we shouldn't neither
+        // from its c_str() and so we shouldn't either
         //
         // notice that the same is done in AsChar() below and
         // wxString::wc_str() and mb_str() for the same reasons

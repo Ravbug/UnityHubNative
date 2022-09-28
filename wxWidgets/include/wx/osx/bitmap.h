@@ -14,15 +14,7 @@
 #include "wx/palette.h"
 
 // Bitmap
-class WXDLLIMPEXP_FWD_CORE wxBitmap;
 class wxBitmapRefData ;
-class WXDLLIMPEXP_FWD_CORE wxBitmapHandler;
-class WXDLLIMPEXP_FWD_CORE wxControl;
-class WXDLLIMPEXP_FWD_CORE wxCursor;
-class WXDLLIMPEXP_FWD_CORE wxDC;
-class WXDLLIMPEXP_FWD_CORE wxIcon;
-class WXDLLIMPEXP_FWD_CORE wxImage;
-class WXDLLIMPEXP_FWD_CORE wxPixelDataBase;
 
 // A mask is a bitmap used for drawing bitmaps
 // Internally it is stored as a 8 bit deep memory chunk, 0 = black means the source will be drawn
@@ -122,6 +114,7 @@ public:
 
     // Convert from wxImage:
     wxBitmap(const wxImage& image, int depth = -1, double scale = 1.0);
+    wxBitmap(const wxImage& image, const wxDC& dc);
 
     // Convert from wxIcon
     wxBitmap(const wxIcon& icon) { CopyFromIcon(icon); }
@@ -150,9 +143,6 @@ public:
     // Create a bitmap compatible with the given DC, inheriting its magnification factor
     bool Create(int width, int height, const wxDC& dc);
 
-    // Create a bitmap with a scale factor, width and height are multiplied with that factor
-    bool CreateScaled(int logwidth, int logheight, int depth, double logicalScale) wxOVERRIDE;
-
     // virtual bool Create( WXHICON icon) ;
     virtual bool LoadFile(const wxString& name, wxBitmapType type = wxBITMAP_DEFAULT_TYPE) wxOVERRIDE;
     virtual bool SaveFile(const wxString& name, wxBitmapType type, const wxPalette *cmap = NULL) const wxOVERRIDE;
@@ -162,9 +152,6 @@ public:
 
     wxBitmapRefData *GetBitmapData()
         { return (wxBitmapRefData *)m_refData; }
-
-    // copies the contents and mask of the given (colour) icon to the bitmap
-    virtual bool CopyFromIcon(const wxIcon& icon) wxOVERRIDE;
 
     int GetWidth() const wxOVERRIDE;
     int GetHeight() const wxOVERRIDE;
@@ -193,10 +180,8 @@ public:
     void *GetRawData(wxPixelDataBase& data, int bpp);
     void UngetRawData(wxPixelDataBase& data);
 
-    // these functions are internal and shouldn't be used, they risk to
-    // disappear in the future
-    bool HasAlpha() const;
-    void UseAlpha(bool use = true);
+    bool HasAlpha() const wxOVERRIDE;
+    bool UseAlpha(bool use = true) wxOVERRIDE;
 
     // returns the 'native' implementation, a GWorldPtr for the content and one for the mask
     WXHBITMAP GetHBITMAP( WXHBITMAP * mask = NULL ) const;
@@ -204,16 +189,17 @@ public:
     // returns a CGImageRef which must released after usage with CGImageRelease
     CGImageRef CreateCGImage() const ;
 
-    WXImage GetImage() const;
+    // returns nil for invalid bitmap
+    WXImage OSXGetImage() const;
 #if wxOSX_USE_COCOA
     // returns an autoreleased version of the image
     WX_NSImage GetNSImage() const
-        { return GetImage(); }
+        { return OSXGetImage(); }
 #endif
 #if wxOSX_USE_IPHONE
     // returns an autoreleased version of the image
     WX_UIImage GetUIImage() const
-        { return GetImage(); }
+        { return OSXGetImage(); }
 #endif
 
 #if WXWIN_COMPATIBILITY_3_0
@@ -238,6 +224,7 @@ public:
     void EndRawAccess();
 #endif
 
+    void SetScaleFactor(double scale) wxOVERRIDE;
     double GetScaleFactor() const wxOVERRIDE;
 
     void SetSelectedInto(wxDC *dc);
@@ -246,6 +233,11 @@ public:
 protected:
     virtual wxGDIRefData *CreateGDIRefData() const wxOVERRIDE;
     virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const wxOVERRIDE;
+
+    virtual bool DoCreate(const wxSize& sz, double scale, int depth) wxOVERRIDE;
+
+private:
+    void InitFromImage(const wxImage& image, int depth, double scale);
 };
 
 #endif // _WX_BITMAP_H_

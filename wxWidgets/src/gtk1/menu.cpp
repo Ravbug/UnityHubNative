@@ -978,7 +978,7 @@ bool wxMenu::GtkAppend(wxMenuItem *mitem, int pos)
     else if (mitem->GetBitmap().IsOk())
     {
         text = mitem->wxMenuItemBase::GetItemLabel();
-        const wxBitmap *bitmap = &mitem->GetBitmap();
+        const wxBitmap bitmap = mitem->GetBitmap();
 
         // TODO
         wxUnusedVar(bitmap);

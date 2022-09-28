@@ -134,9 +134,25 @@ public:
     int GetMin() const;
 
     /**
+        Returns the text in the text entry part of the control.
+
+        @since 3.1.6
+    */
+    wxString GetTextValue() const;
+
+    /**
         Gets the value of the spin control.
     */
     int GetValue() const;
+
+    /**
+        Get the value for increment for a spin control.
+
+        The default value is 1 but it can be changed using SetIncrement().
+
+        @since 3.1.6
+    */
+    int GetIncrement() const;
 
     /**
         Sets the base to use for the numbers in this control.
@@ -190,6 +206,10 @@ public:
         Sets the value of the spin control.
 
         It is recommended to use the overload taking an integer value instead.
+        If @a text doesn't represent a valid number, it may not be shown in the
+        text part of the control at all (only empty string is guaranteed to be
+        supported under all platforms) and the numeric value will be changed to
+        GetMin().
 
         Notice that, unlike wxTextCtrl::SetValue(), but like most of the other
         setter methods in wxWidgets, calling this method does not generate any
@@ -203,6 +223,22 @@ public:
         Calling this method doesn't generate any @c wxEVT_SPINCTRL events.
     */
     void SetValue(int value);
+
+    /**
+        Sets the increment for the control.
+
+        The increment is the number by which the value changes when the up or
+        down arrow is used.
+
+        The default is 1, but it can be useful to set it to a higher value when
+        using the control for bigger numbers.
+
+        Note that it is still possible to enter any value (in the valid range)
+        into the control manually, whatever is the value of the increment.
+
+        @since 3.1.6
+    */
+    void SetIncrement(int value);
 };
 
 /**
@@ -242,6 +278,14 @@ public:
 
     /**
         Constructor, creating and showing a spin control.
+
+        If @a value is non-empty, it will be shown in the text entry part of
+        the control and if it has numeric value, the initial numeric value of
+        the control, as returned by GetValue() will also be determined by it
+        instead of by @a initial. Hence, it only makes sense to specify @a
+        initial if @a value is an empty string or is not convertible to a
+        number, otherwise @a initial is simply ignored and the number specified
+        by @a value is used.
 
         @param parent
             Parent window. Must not be @NULL.
@@ -316,6 +360,13 @@ public:
     double GetMin() const;
 
     /**
+        Returns the text in the text entry part of the control.
+
+        @since 3.1.6
+    */
+    wxString GetTextValue() const;
+
+    /**
         Gets the value of the spin control.
     */
     double GetValue() const;
@@ -328,8 +379,15 @@ public:
 
     /**
         Sets the increment value.
-        @note You may also need to change the precision of the value
-        using SetDigits().
+
+        Using this method changes the number of digits used by the control to
+        at least match the value of @a inc, e.g. using the increment of @c 0.01
+        sets the number of digits to 2 if it had been less than 2 before.
+        However it doesn't change the number of digits if it had been already
+        high enough.
+
+        In any case, you may call SetDigits() explicitly to override the
+        automatic determination of the number of digits.
     */
     void SetIncrement(double inc);
 
@@ -342,6 +400,10 @@ public:
         Sets the value of the spin control.
 
         It is recommended to use the overload taking a double value instead.
+        If @a text doesn't represent a valid number, it may not be shown in the
+        text part of the control at all (only empty string is guaranteed to be
+        supported under all platforms) and the numeric value will be changed to
+        GetMin().
 
         Notice that, unlike wxTextCtrl::SetValue(), but like most of the other
         setter methods in wxWidgets, calling this method does not generate any

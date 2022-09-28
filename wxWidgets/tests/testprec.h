@@ -128,6 +128,7 @@ public:
     // normal build with wxDEBUG_LEVEL != 0 we can pass something not
     // evaluating to a bool at all but it then would fail to compile in
     // wxDEBUG_LEVEL == 0 case, so just don't do anything at all now).
+    #define WX_ASSERT_FAILS_WITH_ASSERT_MESSAGE(msg, code)
     #define WX_ASSERT_FAILS_WITH_ASSERT(cond)
 #endif
 
@@ -147,41 +148,24 @@ extern bool IsAutomaticTest();
 
 extern bool IsRunningUnderXVFB();
 
-#ifdef __LINUX__
-extern bool IsRunningInLXC();
-#endif // __LINUX__
-
-// Helper class setting the locale to the given one for its lifetime.
-class LocaleSetter
+#if wxUSE_LOG
+// Logging is disabled by default when running the tests, but sometimes it can
+// be helpful to see the errors in case of unexpected failure, so this class
+// re-enables logs in its scope.
+//
+// It's a counterpart to wxLogNull.
+class TestLogEnabler
 {
 public:
-    LocaleSetter(const char *loc)
-        : m_locOld(wxStrdupA(setlocale(LC_ALL, NULL)))
-    {
-        setlocale(LC_ALL, loc);
-    }
-
-    ~LocaleSetter()
-    {
-        setlocale(LC_ALL, m_locOld);
-        free(m_locOld);
-    }
+    TestLogEnabler();
+    ~TestLogEnabler();
 
 private:
-    char * const m_locOld;
-
-    wxDECLARE_NO_COPY_CLASS(LocaleSetter);
+    wxDECLARE_NO_COPY_CLASS(TestLogEnabler);
 };
-
-// An even simpler helper for setting the locale to "C" one during its lifetime.
-class CLocaleSetter : private LocaleSetter
-{
-public:
-    CLocaleSetter() : LocaleSetter("C") { }
-
-private:
-    wxDECLARE_NO_COPY_CLASS(CLocaleSetter);
-};
+#else // !wxUSE_LOG
+class TestLogEnabler { };
+#endif // wxUSE_LOG/!wxUSE_LOG
 
 #if wxUSE_GUI
 

@@ -461,7 +461,7 @@ public:
 
         See also the static function FindFocus().
     */
-    //@{
+    ///@{
 
     /**
         This method may be overridden in the derived classes to return @false to
@@ -573,13 +573,13 @@ public:
     */
     virtual void SetFocusFromKbd();
 
-    //@}
+    ///@}
 
 
     /**
         @name Child management functions
     */
-    //@{
+    ///@{
 
     /**
         Adds a child window. This is called automatically by window creation
@@ -643,13 +643,13 @@ public:
     */
     virtual void RemoveChild(wxWindow* child);
 
-    //@}
+    ///@}
 
 
     /**
         @name Sibling and parent management functions
     */
-    //@{
+    ///@{
 
     /**
         Returns the grandparent of a window, or @NULL if there isn't one.
@@ -710,7 +710,7 @@ public:
     */
     virtual bool Reparent(wxWindow* newParent);
 
-    //@}
+    ///@}
 
 
     /**
@@ -719,7 +719,7 @@ public:
         Note that these methods don't work with native controls which don't use
         wxWidgets scrolling framework (i.e. don't derive from wxScrolledWindow).
     */
-    //@{
+    ///@{
 
     /**
         Call this function to force one or both scrollbars to be always shown, even if
@@ -918,7 +918,7 @@ public:
     virtual void SetScrollbar(int orientation, int position,
                               int thumbSize, int range,
                               bool refresh = true);
-    //@}
+    ///@}
 
 
     /**
@@ -927,7 +927,7 @@ public:
         See also the protected functions DoGetBestSize() and
         DoGetBestClientSize().
     */
-    //@{
+    ///@{
 
     /**
         Helper for ensuring EndRepositioningChildren() is called correctly.
@@ -1198,6 +1198,104 @@ public:
     /// @overload
     static int ToDIP(int d, const wxWindow* w);
 
+
+    /**
+        Convert from physical pixels to logical pixels.
+
+        All window coordinates in wxWidgets API are always expressed in logical
+        pixels, but the meaning of logical pixels depends on the platform.
+        Physical pixels always mean the same thing and refer to the actual
+        display pixels or, also, sizes of the bitmaps. Under some platforms
+        logical pixels are actually the same as physical ones (this is the case
+        for MSW), but under other platforms (e.g. GTK or macOS) this is not the
+        case and GetContentScaleFactor() defines the ratio between one logical
+        and one physical pixel.
+
+        This function can be used to convert a value in physical pixels to
+        logical pixels independently of the platform used. It simply does
+        nothing under MSW, but divides the input value by the content scale
+        factor under the other platforms.
+
+        Note that dividing an integer value by scale factor doesn't always
+        yield an integer value. This function rounds the resulting value to
+        the closest integer, e.g. 15 physical pixels are translated to 8, not
+        7, logical pixels in 200% DPI scaling. This ensures that a physical
+        bitmap of size 15 is not truncated if the result of this function is
+        used to create a window to show it, but it does mean that there will be
+        one extra pixel, not covered by this bitmap, left.
+
+        @see FromDIP(), ToPhys()
+
+        @since 3.1.6
+     */
+    wxSize FromPhys(const wxSize& sz) const;
+
+    /// @overload
+    wxPoint FromPhys(const wxPoint& pt) const;
+
+    /// @overload
+    int FromPhys(int d) const;
+
+    /**
+        Convert from physical pixels to logical pixels for any window.
+
+        This function can be used without any window pointer, i.e. @a w can be
+        @NULL. In this case, it uses the content scale factor of the main
+        screen if supported or just does nothing (i.e. uses scale factor of 1)
+        otherwise.
+
+        Using member overloads is always preferable, if possible, as they
+        always use the actually appropriate content scale factor.
+
+        @since 3.1.6
+     */
+    static wxSize FromPhys(const wxSize& sz, const wxWindow* w);
+
+    /// @overload
+    static wxPoint FromPhys(const wxPoint& pt, const wxWindow* w);
+
+    /// @overload
+    static int FromPhys(int d, const wxWindow* w);
+
+
+    /**
+        Convert from logical pixels to physical pixels.
+
+        This function performs the transformation in the converse direction
+        compared to FromPhys().
+
+        @since 3.1.6
+     */
+    wxSize ToPhys(const wxSize& sz) const;
+
+    /// @overload
+    wxPoint ToPhys(const wxPoint& pt) const;
+
+    /// @overload
+    int ToPhys(int d) const;
+
+    /**
+        Convert from logical pixels to physical pixels for any window.
+
+        This function can be used without any window pointer, i.e. @a w can be
+        @NULL. In this case, it uses the content scale factor of the main
+        screen if supported or just does nothing (i.e. uses scale factor of 1)
+        otherwise.
+
+        Using member overloads is always preferable, if possible, as they
+        always use the actually appropriate content scale factor.
+
+        @since 3.1.6
+     */
+    static wxSize ToPhys(const wxSize& sz, const wxWindow* w);
+
+    /// @overload
+    static wxPoint ToPhys(const wxPoint& pt, const wxWindow* w);
+
+    /// @overload
+    static int ToPhys(int d, const wxWindow* w);
+
+
     /**
         This functions returns the best acceptable minimal size for the window.
 
@@ -1416,7 +1514,7 @@ public:
        For the platforms not doing any pixel mapping, i.e. where logical and
        physical pixels are one and the same, this function always returns 1.0
        and so using it is, in principle, unnecessary and could be avoided by
-       using preprocessor check for @c wxHAVE_DPI_INDEPENDENT_PIXELS @e not
+       using preprocessor check for @c wxHAS_DPI_INDEPENDENT_PIXELS @e not
        being defined, however using this function unconditionally under all
        platforms is usually simpler and so preferable.
 
@@ -1424,7 +1522,7 @@ public:
            3.0, but different from its behaviour in versions 3.1.0 to 3.1.3,
            where it returned the same value as GetDPIScaleFactor(). Please use
            the other function if you need to use a scaling factor greater than
-           1.0 even for the platforms without @c wxHAVE_DPI_INDEPENDENT_PIXELS,
+           1.0 even for the platforms without @c wxHAS_DPI_INDEPENDENT_PIXELS,
            such as wxMSW.
 
        @since 2.9.5
@@ -1539,6 +1637,10 @@ public:
         than SetSize(), since the application need not worry about what dimensions
         the border or title bar have when trying to fit the window around panel
         items, for example.
+
+        Note that special value of -1 which can be used in some other functions
+        to preserve the existing size is @e not supported for @a width and @a
+        height here, i.e. they both must be valid, positive integers.
 
         @see @ref overview_windowsizing
     */
@@ -1736,13 +1838,13 @@ public:
     */
     void SetVirtualSize(const wxSize& size);
 
-    //@}
+    ///@}
 
 
     /**
         @name Positioning functions
     */
-    //@{
+    ///@{
 
     /**
         A synonym for Centre().
@@ -1906,13 +2008,13 @@ public:
      */
     void SetPosition(const wxPoint& pt);
 
-    //@}
+    ///@}
 
 
     /**
         @name Coordinate conversion functions
     */
-    //@{
+    ///@{
 
     /**
         Converts to screen coordinates from coordinates relative to this window.
@@ -2002,13 +2104,13 @@ public:
     */
     wxPoint ScreenToClient(const wxPoint& pt) const;
 
-    //@}
+    ///@}
 
 
     /**
         @name Drawing-related functions
     */
-    //@{
+    ///@{
 
     /**
         Clears the window by filling it with the current background colour.
@@ -2196,13 +2298,14 @@ public:
     virtual bool HasTransparentBackground();
 
     /**
-        Causes this window, and all of its children recursively (except under wxGTK1
-        where this is not implemented), to be repainted. Note that repainting doesn't
-        happen immediately but only during the next event loop iteration, if you need
-        to update the window immediately you should use Update() instead.
+        Causes this window, and all of its children recursively, to be repainted.
+        Note that repainting doesn't happen immediately but only during the next
+        event loop iteration, if you need to update the window immediately you
+        should use Update() instead.
 
         @param eraseBackground
-            If @true, the background will be erased.
+            If @true, the background will be erased too. Note that in non-MSW
+            ports background is always erased.
         @param rect
             If non-@NULL, only the given rectangle will be treated as damaged.
 
@@ -2296,7 +2399,9 @@ public:
         Under wxGTK and wxOSX, you can use ::wxBG_STYLE_TRANSPARENT to obtain
         full transparency of the window background. Note that wxGTK supports
         this only since GTK 2.12 with a compositing manager enabled, call
-        IsTransparentBackgroundSupported() to check whether this is the case.
+        IsTransparentBackgroundSupported() to check whether this is the case,
+        see the example of doing it in @ref page_samples_shaped "the shaped
+        sample".
 
         Also, in order for @c SetBackgroundStyle(wxBG_STYLE_TRANSPARENT) to
         work, it must be called before Create(). If you're using your own
@@ -2498,7 +2603,7 @@ public:
     */
     virtual bool SetTransparent(wxByte alpha);
 
-    //@}
+    ///@}
 
 
     /**
@@ -2507,7 +2612,7 @@ public:
         wxWindow allows you to build a (sort of) stack of event handlers which
         can be used to override the window's own event handling.
     */
-    //@{
+    ///@{
 
     /**
         Returns the event handler for this window.
@@ -2666,14 +2771,14 @@ public:
     */
     virtual void SetPreviousHandler(wxEvtHandler* handler);
 
-    //@}
+    ///@}
 
 
 
     /**
         @name Window styles functions
     */
-    //@{
+    ///@{
 
     /**
         Returns the extra style bits for the window.
@@ -2742,13 +2847,13 @@ public:
     */
     bool ToggleWindowStyle(int flag);
 
-    //@}
+    ///@}
 
 
     /**
         @name Tab order functions
     */
-    //@{
+    ///@{
 
     /**
         Moves this window in the tab navigation order after the specified @e win.
@@ -2799,14 +2904,14 @@ public:
     */
     bool NavigateIn(int flags = wxNavigationKeyEvent::IsForward);
 
-    //@}
+    ///@}
 
 
 
     /**
         @name Z order functions
     */
-    //@{
+    ///@{
 
     /**
         Lowers the window to the bottom of the window hierarchy (Z-order).
@@ -2834,13 +2939,13 @@ public:
     */
     virtual void Raise();
 
-    //@}
+    ///@}
 
 
     /**
         @name Window status functions
     */
-    //@{
+    ///@{
 
 
     /**
@@ -2981,13 +3086,13 @@ public:
     virtual bool ShowWithEffect(wxShowEffect effect,
                                 unsigned int timeout = 0);
 
-    //@}
+    ///@}
 
 
     /**
         @name Context-sensitive help functions
     */
-    //@{
+    ///@{
 
     /**
         Gets the help text to be used as context-sensitive help for this window.
@@ -3059,13 +3164,13 @@ public:
      */
     void UnsetToolTip();
 
-    //@}
+    ///@}
 
 
     /**
         @name Popup/context menu functions
     */
-    //@{
+    ///@{
 
     /**
         This function shows a popup menu at the given position in this window and
@@ -3137,13 +3242,13 @@ public:
     */
     bool PopupMenu(wxMenu* menu, int x, int y);
 
-    //@}
+    ///@}
 
 
     /**
         Validator functions
     */
-    //@{
+    ///@{
 
     /**
         Returns a pointer to the current validator for the window, or @NULL if
@@ -3193,13 +3298,13 @@ public:
     */
     virtual bool Validate();
 
-    //@}
+    ///@}
 
 
     /**
         @name wxWindow properties functions
     */
-    //@{
+    ///@{
 
     /**
         Returns the identifier of the window.
@@ -3333,13 +3438,13 @@ public:
     */
     void SetAccessible(wxAccessible* accessible);
 
-    //@}
+    ///@}
 
 
     /**
         @name Window deletion functions
     */
-    //@{
+    ///@{
 
     /**
         This function simply generates a wxCloseEvent whose handler usually tries
@@ -3401,14 +3506,14 @@ public:
      */
     bool IsBeingDeleted() const;
 
-    //@}
+    ///@}
 
 
 
     /**
         @name Drag and drop functions
     */
-    //@{
+    ///@{
 
     /**
         Returns the associated drop target, which may be @NULL.
@@ -3440,13 +3545,13 @@ public:
     */
     virtual void DragAcceptFiles(bool accept);
 
-    //@}
+    ///@}
 
 
     /**
         @name Constraints, sizers and window layout functions
     */
-    //@{
+    ///@{
 
     /**
         Returns the sizer of which this window is a member, if any, otherwise @NULL.
@@ -3562,14 +3667,14 @@ public:
      */
     bool GetAutoLayout() const;
 
-    //@}
+    ///@}
 
 
 
     /**
         @name Mouse functions
     */
-    //@{
+    ///@{
 
     /**
         Directs all mouse input to this window.
@@ -3673,7 +3778,7 @@ public:
      */
     virtual bool EnableTouchEvents(int eventsMask);
 
-    //@}
+    ///@}
 
 
 
@@ -3681,7 +3786,7 @@ public:
     /**
         @name Miscellaneous functions
     */
-    //@{
+    ///@{
 
     /**
         Return where the given point lies, exactly.
@@ -3924,7 +4029,7 @@ public:
     */
     virtual void UpdateWindowUI(long flags = wxUPDATE_UI_NONE);
 
-    //@}
+    ///@}
 
 
     // NOTE: static functions must have their own group or Doxygen will screw
@@ -3933,7 +4038,7 @@ public:
     /**
         @name Miscellaneous static functions
     */
-    //@{
+    ///@{
 
     /**
         Returns the default font and colours which are used by the control.
@@ -4065,7 +4170,7 @@ public:
     */
     static void UnreserveControlId(wxWindowID id, int count = 1);
 
-    //@}
+    ///@}
 
 
 
@@ -4202,7 +4307,7 @@ protected:
     */
     virtual bool ProcessEvent(wxEvent& event);
 
-    //@{
+    ///@{
     /**
         See ProcessEvent() for more info about why you shouldn't use this function
         and the reason for making this function protected in wxWindow.
@@ -4212,7 +4317,7 @@ protected:
     virtual void AddPendingEvent(const wxEvent& event);
     void ProcessPendingEvents();
     bool ProcessThreadEvent(const wxEvent& event);
-    //@}
+    ///@}
 };
 
 
@@ -4222,7 +4327,7 @@ protected:
 // ============================================================================
 
 /** @addtogroup group_funcmacro_misc */
-//@{
+///@{
 
 /**
     Find the deepest window at the mouse pointer position, returning the window
@@ -4250,5 +4355,22 @@ wxWindow* wxGetActiveWindow();
 */
 wxWindow* wxGetTopLevelParent(wxWindow* window);
 
-//@}
+/**
+    Return a string with human-readable platform-specific description of
+    the window useful for diagnostic purposes.
+
+    The string returned from this function doesn't have any fixed form and can
+    vary between different wxWidgets ports and versions, but contains some
+    useful description of the window and uniquely identifies it. This can be
+    useful to include in debug or tracing messages.
+
+    @param window Window pointer which is allowed to be @NULL.
+
+    @header{wx/window.h}
+
+    @since 3.1.6
+ */
+wxString wxDumpWindow(const wxWindow* window);
+
+///@}
 

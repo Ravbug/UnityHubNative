@@ -322,6 +322,8 @@ static void *EffectiveAppearanceContext = &EffectiveAppearanceContext;
 - (BOOL)windowShouldZoom:(NSWindow *)window toFrame:(NSRect)newFrame;
 - (void)windowWillEnterFullScreen:(NSNotification *)notification;
 - (void)windowDidChangeBackingProperties:(NSNotification *)notification;
+- (NSApplicationPresentationOptions)window:(NSWindow *)window
+      willUseFullScreenPresentationOptions:(NSApplicationPresentationOptions)proposedOptions;
 
 @end
 
@@ -333,6 +335,27 @@ extern int wxOSXGetIdFromSelector(SEL action );
 {
     self = [super init];
     return self;
+}
+
+- (NSApplicationPresentationOptions)window:(NSWindow *)window
+      willUseFullScreenPresentationOptions:(NSApplicationPresentationOptions)proposedOptions
+{
+    NSApplicationPresentationOptions options =
+        NSApplicationPresentationFullScreen | NSApplicationPresentationHideDock;
+
+    wxNonOwnedWindowCocoaImpl* windowimpl = [window WX_implementation];
+    if ( windowimpl )
+    {
+        if (windowimpl->m_macFullscreenStyle & wxFULLSCREEN_NOMENUBAR)
+            options |= NSApplicationPresentationAutoHideMenuBar;
+
+        // Auto hide toolbar requires auto hide menu
+        if (windowimpl->m_macFullscreenStyle & wxFULLSCREEN_NOTOOLBAR)
+            options |= NSApplicationPresentationAutoHideToolbar |
+                NSApplicationPresentationAutoHideMenuBar;
+    }
+
+    return options;
 }
 
 - (BOOL) triggerMenu:(SEL) action sender:(id)sender
@@ -574,6 +597,20 @@ extern int wxOSXGetIdFromSelector(SEL action );
         }
         return editor;
     } 
+    else if ([anObject isKindOfClass:[wxNSSearchField class]])
+    {
+        wxNSSearchField* sf = (wxNSSearchField*) anObject;
+        wxNSTextFieldEditor* editor = [sf fieldEditor];
+        if ( editor == nil )
+        {
+            editor = [[wxNSTextFieldEditor alloc] init];
+            [editor setFieldEditor:YES];
+            [editor setTextField:sf];
+            [sf setFieldEditor:editor];
+            [editor release];
+        }
+        return editor;
+    }
     else if ([anObject isKindOfClass:[wxNSComboBox class]])
     {
         wxNSComboBox * cb = (wxNSComboBox*) anObject;
@@ -821,16 +858,21 @@ long style, long extraStyle, const wxString& WXUNUSED(name) )
     if ( ( style & wxPOPUP_WINDOW ) )
         level = NSPopUpMenuWindowLevel;
 
-    NSRect r = wxToNSRect( NULL, wxRect( pos, size) );
+    NSRect frameRect = wxToNSRect( NULL, wxRect( pos, size) );
 
-    r = [NSWindow contentRectForFrameRect:r styleMask:windowstyle];
+    NSRect contentRect = [NSWindow contentRectForFrameRect:frameRect styleMask:windowstyle];
 
-    [m_macWindow initWithContentRect:r
+    [m_macWindow initWithContentRect:contentRect
         styleMask:windowstyle
         backing:NSBackingStoreBuffered
         defer:NO
         ];
-    
+
+    if (!NSEqualRects([m_macWindow frame], frameRect))
+    {
+        [m_macWindow setFrame:frameRect display:NO];
+    }
+
     // if we just have a title bar with no buttons needed, hide them
     if ( (windowstyle & NSTitledWindowMask) && 
         !(style & wxCLOSE_BOX) && !(style & wxMAXIMIZE_BOX) && !(style & wxMINIMIZE_BOX) )
@@ -913,6 +955,7 @@ void wxNonOwnedWindowCocoaImpl::SetUpForModalParent()
 void wxNonOwnedWindowCocoaImpl::ShowWithoutActivating()
 {
     SetUpForModalParent();
+    [m_macWindow setHidesOnDeactivate:YES];
     [m_macWindow orderFront:nil];
     [[m_macWindow contentView] setNeedsDisplay: YES];
 }
@@ -933,7 +976,10 @@ bool wxNonOwnedWindowCocoaImpl::Show(bool show)
                 {
                     NSWindow* parentNSWindow = [parentView window];
                     if ( parentNSWindow ) {
-                        [parentNSWindow addChildWindow:m_macWindow ordered:NSWindowAbove];
+                        // we used to call [parentNSWindow addChildWindow:m_macWindow here
+                        // but this lead to problems with Spaces (modal windows disappeared
+                        // when dragged to a different space)
+
                         // If the parent is modal, windows with wxFRAME_FLOAT_ON_PARENT style need
                         // to be in NSModalPanelWindowLevel and not NSFloatingWindowLevel to stay
                         // above the parent.
@@ -1093,6 +1139,20 @@ void wxNonOwnedWindowCocoaImpl::SetTitle( const wxString& title, wxFontEncoding 
     [m_macWindow setTitle:wxCFStringRef( title , encoding ).AsNSString()];
 }
 
+wxContentProtection wxNonOwnedWindowCocoaImpl::GetContentProtection() const
+{
+    return (m_macWindow.sharingType == NSWindowSharingNone) ?
+        wxCONTENT_PROTECTION_ENABLED : wxCONTENT_PROTECTION_NONE;
+}
+
+bool wxNonOwnedWindowCocoaImpl::SetContentProtection(wxContentProtection contentProtection)
+{
+    m_macWindow.sharingType = (contentProtection == wxCONTENT_PROTECTION_ENABLED) ?
+        NSWindowSharingNone : NSWindowSharingReadOnly;
+
+    return true;
+}
+
 bool wxNonOwnedWindowCocoaImpl::EnableCloseButton(bool enable)
 {
     [[m_macWindow standardWindowButton:NSWindowCloseButton] setEnabled:enable];
@@ -1174,8 +1234,9 @@ bool wxNonOwnedWindowCocoaImpl::IsFullScreen() const
     return m_macFullScreenData != NULL ;
 }
 
-bool wxNonOwnedWindowCocoaImpl::EnableFullScreenView(bool enable)
+bool wxNonOwnedWindowCocoaImpl::EnableFullScreenView(bool enable, long style)
 {
+    m_macFullscreenStyle = style;
     NSUInteger collectionBehavior = [m_macWindow collectionBehavior];
     if (enable)
     {
@@ -1198,12 +1259,13 @@ bool wxNonOwnedWindowCocoaImpl::EnableFullScreenView(bool enable)
     return true;
 }
 
-bool wxNonOwnedWindowCocoaImpl::ShowFullScreen(bool show, long WXUNUSED(style))
+bool wxNonOwnedWindowCocoaImpl::ShowFullScreen(bool show, long style)
 {
     if ( IsUsingFullScreenApi(m_macWindow) )
     {
         if ( show != IsFullScreen() )
         {
+            m_macFullscreenStyle = style;
             m_macIgnoreNextFullscreenChange = true;
             [m_macWindow toggleFullScreen: nil];
         }

@@ -42,7 +42,11 @@ namespace Catch {
 #pragma warning(disable:4996) // std::uncaught_exception is deprecated in C++17
 #endif
     ScopedMessage::~ScopedMessage() {
+#ifdef __cpp_lib_uncaught_exceptions
+        if ( std::uncaught_exceptions() == 0 ){
+#else
         if ( !std::uncaught_exception() ){
+#endif
             getResultCapture().popScopedMessage(m_info);
         }
     }

@@ -38,7 +38,7 @@ public:
 
 #ifdef __WXMSW__
     // override wxDC virtual functions to provide access to HDC associated with
-    // this Graphics object (implemented in src/msw/graphics.cpp)
+    // underlying wxGraphicsContext
     virtual WXHDC AcquireHDC() wxOVERRIDE;
     virtual void ReleaseHDC(WXHDC hdc) wxOVERRIDE;
 #endif // __WXMSW__
@@ -256,6 +256,15 @@ private:
     // This method initializes m_graphicContext, m_ok and m_matrixOriginal
     // fields, returns true if the context was valid.
     bool DoInitContext(wxGraphicsContext* ctx);
+
+    // Another convenient wrapper for CalcBoundingBox().
+    // This is not an overload in order to avoid hiding the base class ones.
+    void CalcBoundingBoxForBox(const wxRect2DDouble& box)
+    {
+        CalcBoundingBox(wxRound(box.m_x), wxRound(box.m_y));
+        CalcBoundingBox(wxRound(box.m_x + box.m_width),
+                        wxRound(box.m_y + box.m_height));
+    }
 
     wxDECLARE_CLASS(wxGCDCImpl);
     wxDECLARE_NO_COPY_CLASS(wxGCDCImpl);

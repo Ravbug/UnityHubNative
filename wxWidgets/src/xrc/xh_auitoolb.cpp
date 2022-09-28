@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        src/xrc/xh_toolb.cpp
+// Name:        src/xrc/xh_auitoolb.cpp
 // Purpose:     XRC resource for wxAuiToolBar
 // Author:      Vaclav Slavik
 // Created:     2000/08/11
@@ -31,6 +31,7 @@ wxAuiToolBarXmlHandler::wxAuiToolBarXmlHandler()
     , m_isInside(false)
     , m_toolbar(NULL)
 {
+    XRC_ADD_STYLE(wxAUI_TB_DEFAULT_STYLE);
     XRC_ADD_STYLE(wxAUI_TB_TEXT);
     XRC_ADD_STYLE(wxAUI_TB_NO_TOOLTIPS);
     XRC_ADD_STYLE(wxAUI_TB_NO_AUTORESIZE);
@@ -111,8 +112,8 @@ wxObject *wxAuiToolBarXmlHandler::DoCreateResource()
                        (
                           GetID(),
                           GetText(wxS("label")),
-                          GetBitmap(wxS("bitmap"), wxART_TOOLBAR, m_toolSize),
-                          GetBitmap(wxS("bitmap2"), wxART_TOOLBAR, m_toolSize),
+                          GetBitmapBundle(wxS("bitmap"), wxART_TOOLBAR, m_toolSize),
+                          GetBitmapBundle(wxS("bitmap2"), wxART_TOOLBAR, m_toolSize),
                           kind,
                           GetText(wxS("tooltip")),
                           GetText(wxS("longhelp")),
@@ -201,9 +202,10 @@ wxObject *wxAuiToolBarXmlHandler::DoCreateResource()
         toolbar->SetName(GetName());
         SetupWindow(toolbar);
 
-        m_toolSize = GetSize(wxS("bitmapsize"));
+        // See comment for the same code in the wxToolBar XRC handler.
+        m_toolSize = GetPairInts(wxS("bitmapsize"));
         if (!(m_toolSize == wxDefaultSize))
-            toolbar->SetToolBitmapSize(m_toolSize);
+            toolbar->SetToolBitmapSize(toolbar->FromDIP(m_toolSize));
         wxSize margins = GetSize(wxS("margins"));
         if (!(margins == wxDefaultSize))
             toolbar->SetMargins(margins.x, margins.y);

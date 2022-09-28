@@ -504,7 +504,7 @@ void wxWindow::Refresh(bool eraseBackground, const wxRect *rect)
         childrect.Offset(-child->GetPosition());
         // NB: We must call wxWindowNative version because we need to refresh
         //     the entire control, not just its client area, and this is why we
-        //     don't account for child client area origin here neither. Also
+        //     don't account for child client area origin here either. Also
         //     note that we don't pass eraseBackground to the child, but use
         //     true instead: this is because we can't be sure that
         //     eraseBackground=false is safe for children as well and not only
@@ -712,7 +712,7 @@ void wxWindow::OnSize(wxSizeEvent& event)
 #endif
 }
 
-wxSize wxWindow::DoGetBorderSize() const
+wxSize wxWindow::GetWindowBorderSize() const
 {
     return AdjustSize(wxSize(0, 0));
 }
@@ -915,7 +915,7 @@ void wxWindow::SetScrollbar(int orient,
                             bool refresh)
 {
 #if wxUSE_SCROLLBAR
-    wxASSERT_MSG( pageSize <= range,
+    wxASSERT_MSG( (range == -1 || pageSize <= range),
                     wxT("page size can't be greater than range") );
 
     bool hasClientSizeChanged = false;
@@ -958,10 +958,10 @@ void wxWindow::SetScrollbar(int orient,
         if ( scrollbar )
         {
             // wxALWAYS_SHOW_SB only applies to the vertical scrollbar
-            if ( (orient & wxVERTICAL) && (GetWindowStyle() & wxALWAYS_SHOW_SB) )
+            if ( range == -1 || ((orient & wxVERTICAL) && (GetWindowStyle() & wxALWAYS_SHOW_SB)) )
             {
                 // just disable the scrollbar
-                scrollbar->SetScrollbar(pos, pageSize, range, pageSize, refresh);
+                scrollbar->SetScrollbar(pos, pageSize, range == -1 ? 0 : range, pageSize, refresh);
                 scrollbar->Disable();
             }
             else // really remove the scrollbar

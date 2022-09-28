@@ -156,6 +156,9 @@ WXDLLIMPEXP_BASE bool wxIsPlatform64Bit();
 // Get machine CPU architecture
 WXDLLIMPEXP_BASE wxString wxGetCpuArchitectureName();
 
+// Get native machine CPU architecture
+WXDLLIMPEXP_BASE wxString wxGetNativeCpuArchitectureName();
+
 #ifdef __LINUX__
 // Get linux-distro information
 WXDLLIMPEXP_BASE wxLinuxDistributionInfo wxGetLinuxDistributionInfo();
@@ -323,6 +326,12 @@ inline int wxHexToDec(const char* buf)
 WXDLLIMPEXP_BASE void wxDecToHex(unsigned char dec, wxChar *buf);
 WXDLLIMPEXP_BASE void wxDecToHex(unsigned char dec, char* ch1, char* ch2);
 WXDLLIMPEXP_BASE wxString wxDecToHex(unsigned char dec);
+
+// ----------------------------------------------------------------------------
+// Security
+// ----------------------------------------------------------------------------
+
+WXDLLIMPEXP_BASE void wxSecureZeroMemory(void *p, size_t n);
 
 // ----------------------------------------------------------------------------
 // Process management
@@ -721,17 +730,17 @@ class WXDLLIMPEXP_CORE wxWindowDisabler
 public:
     // this ctor conditionally disables all windows: if the argument is false,
     // it doesn't do anything
-    wxWindowDisabler(bool disable = true);
+    explicit wxWindowDisabler(bool disable = true);
 
-    // ctor disables all windows except winToSkip
-    wxWindowDisabler(wxWindow *winToSkip);
+    // ctor disables all windows except the given one(s)
+    explicit wxWindowDisabler(wxWindow *winToSkip, wxWindow *winToSkip2 = NULL);
 
     // dtor enables back all windows disabled by the ctor
     ~wxWindowDisabler();
 
 private:
-    // disable all windows except the given one (used by both ctors)
-    void DoDisable(wxWindow *winToSkip = NULL);
+    // disable all windows not in m_windowsToSkip
+    void DoDisable();
 
 #if defined(__WXOSX__) && wxOSX_USE_COCOA
     void AfterDisable(wxWindow* winToSkip);
@@ -739,7 +748,7 @@ private:
 
     wxEventLoop* m_modalEventLoop = NULL;
 #endif
-    wxVector<wxWindow*> m_winDisabled;
+    wxVector<wxWindow*> m_windowsToSkip;
     bool m_disabled;
 
     wxDECLARE_NO_COPY_CLASS(wxWindowDisabler);

@@ -293,13 +293,12 @@ void SurfaceImpl::InitPixMap(int width, int height, Surface *surface, WindowID w
     wxMemoryDC* mdc = surface
         ? new wxMemoryDC(static_cast<SurfaceImpl*>(surface)->hdc)
         : new wxMemoryDC();
-    mdc->GetImpl()->SetWindow(GETWIN(winid));
     hdc = mdc;
     hdcOwned = true;
     if (width < 1) width = 1;
     if (height < 1) height = 1;
-    bitmap = new wxBitmap();
-    bitmap->CreateScaled(width, height,wxBITMAP_SCREEN_DEPTH,(GETWIN(winid))->GetContentScaleFactor());
+    bitmap = new wxBitmap(GETWIN(winid)->ToPhys(wxSize(width, height)));
+    bitmap->SetScaleFactor(GETWIN(winid)->GetDPIScaleFactor());
     mdc->SelectObject(*bitmap);
 }
 
@@ -2940,7 +2939,7 @@ void wxSTCListBox::OnSysColourChanged(wxSysColourChangedEvent& WXUNUSED(event))
     GetParent()->Refresh();
 }
 
-void wxSTCListBox::OnDPIChanged(wxDPIChangedEvent& WXUNUSED(event))
+void wxSTCListBox::OnDPIChanged(wxDPIChangedEvent& event)
 {
     m_imagePadding = FromDIP(1);
     m_textBoxToTextGap = FromDIP(3);
@@ -2950,6 +2949,8 @@ void wxSTCListBox::OnDPIChanged(wxDPIChangedEvent& WXUNUSED(event))
     GetTextExtent(EXTENT_TEST, &w, &m_textHeight);
 
     RecalculateItemHeight();
+
+    event.Skip();
 }
 
 void wxSTCListBox::OnMouseLeaveWindow(wxMouseEvent& event)

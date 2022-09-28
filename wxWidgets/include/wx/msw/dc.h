@@ -78,7 +78,6 @@ public:
     virtual int GetDepth() const wxOVERRIDE;
     virtual wxSize GetPPI() const wxOVERRIDE;
 
-
     virtual void SetMapMode(wxMappingMode mode) wxOVERRIDE;
     virtual void SetUserScale(double x, double y) wxOVERRIDE;
     virtual void SetLogicalScale(double x, double y) wxOVERRIDE;
@@ -170,6 +169,9 @@ protected:
 #endif // wxUSE_PALETTE
         m_isClipBoxValid = false;
     }
+
+    // Unlike the public SetWindow(), this one doesn't call InitializePalette().
+    void InitWindow(wxWindow* window);
 
     // create an uninitialized DC: this should be only used by the derived
     // classes
@@ -281,7 +283,7 @@ protected:
     void DrawAnyText(const wxString& text, wxCoord x, wxCoord y);
 
     // common part of DoSetClippingRegion() and DoSetDeviceClippingRegion()
-    void SetClippingHrgn(WXHRGN hrgn);
+    void SetClippingHrgn(WXHRGN hrgn, bool doRtlOffset = false);
 
     // implementation of DoGetSize() for wxScreen/PrinterDC: this simply
     // returns the size of the entire device this DC is associated with

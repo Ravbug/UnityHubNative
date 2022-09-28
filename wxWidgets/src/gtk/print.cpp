@@ -29,6 +29,7 @@
 #include "wx/dynlib.h"
 #include "wx/paper.h"
 #include "wx/modalhook.h"
+#include "wx/display.h"
 
 #include "wx/gtk/private/wrapgtk.h"
 
@@ -583,8 +584,11 @@ void wxGtkPrintNativeData::SetPrintConfig( GtkPrintSettings * config )
     }
 }
 
+namespace
+{
+
 // Extract page setup from settings.
-GtkPageSetup* wxGtkPrintNativeData::GetPageSetupFromSettings(GtkPrintSettings* settings)
+GtkPageSetup* GetPageSetupFromSettings(GtkPrintSettings* settings)
 {
     GtkPageSetup* page_setup = gtk_page_setup_new();
     gtk_page_setup_set_orientation (page_setup, gtk_print_settings_get_orientation (settings));
@@ -600,11 +604,13 @@ GtkPageSetup* wxGtkPrintNativeData::GetPageSetupFromSettings(GtkPrintSettings* s
 }
 
 // Insert page setup into a given GtkPrintSettings.
-void wxGtkPrintNativeData::SetPageSetupToSettings(GtkPrintSettings* settings, GtkPageSetup* page_setup)
+void SetPageSetupToSettings(GtkPrintSettings* settings, GtkPageSetup* page_setup)
 {
     gtk_print_settings_set_orientation ( settings, gtk_page_setup_get_orientation (page_setup));
     gtk_print_settings_set_paper_size ( settings, gtk_page_setup_get_paper_size (page_setup));
 }
+
+} // anonymous namespace
 
 //----------------------------------------------------------------------------
 // wxGtkPrintDialog
@@ -692,7 +698,7 @@ int wxGtkPrintDialog::ShowModal()
     // If the settings are OK, we restore it.
     if (settings != NULL)
         gtk_print_operation_set_print_settings (printOp, settings);
-    GtkPageSetup* pgSetup = native->GetPageSetupFromSettings(settings);
+    GtkPageSetup* pgSetup = GetPageSetupFromSettings(settings);
     gtk_print_operation_set_default_page_setup (printOp, pgSetup);
     g_object_unref(pgSetup);
 
@@ -724,6 +730,19 @@ int wxGtkPrintDialog::ShowModal()
 
     // Now get the settings and save it.
     GtkPrintSettings* newSettings = gtk_print_operation_get_print_settings(printOp);
+
+    // When embedding the page setup tab into the dialog, as we do, changes to
+    // the settings such as the paper size and orientation there are not
+    // reflected in the print settings, but must be retrieved from the page
+    // setup struct itself separately.
+    GtkPageSetup* defPageSetup = NULL;
+    g_object_get(printOp, "default-page-setup", &defPageSetup, NULL);
+    if ( defPageSetup )
+    {
+        SetPageSetupToSettings(newSettings, defPageSetup);
+        g_object_unref(defPageSetup);
+    }
+
     native->SetPrintConfig(newSettings);
     data.ConvertFromNative();
 
@@ -803,7 +822,7 @@ int wxGtkPageSetupDialog::ShowModal()
     GtkPrintSettings* nativeData = native->GetPrintConfig();
 
     // We only need the pagesetup data which are part of the settings.
-    GtkPageSetup* oldPageSetup = native->GetPageSetupFromSettings(nativeData);
+    GtkPageSetup* oldPageSetup = GetPageSetupFromSettings(nativeData);
 
     // If the user used a custom paper format the last time he printed, we have to restore it too.
     wxPaperSize paperId = m_pageDialogData.GetPrintData().GetPaperId();
@@ -858,7 +877,7 @@ int wxGtkPageSetupDialog::ShowModal()
                 wxGtkObject<GtkPageSetup>
                     newPageSetup(gtk_page_setup_unix_dialog_get_page_setup(
                                         GTK_PAGE_SETUP_UNIX_DIALOG(dlg)));
-                native->SetPageSetupToSettings(nativeData, newPageSetup);
+                SetPageSetupToSettings(nativeData, newPageSetup);
 
                 m_pageDialogData.GetPrintData().ConvertFromNative();
 
@@ -977,19 +996,25 @@ bool wxGtkPrinter::Print(wxWindow *parent, wxPrintout *printout, bool prompt )
 
     // doesn't necessarily show
     int ret = dialog.ShowModal();
-    if (ret == wxID_CANCEL)
-    {
-        sm_lastError = wxPRINTER_CANCELLED;
-    }
-    if (ret == wxID_NO)
-    {
-        sm_lastError = wxPRINTER_ERROR;
-    }
 
     printout->SetDC(NULL);
     wxDELETE(m_dc);
 
-    return (sm_lastError == wxPRINTER_NO_ERROR);
+    if (ret == wxID_CANCEL)
+    {
+        sm_lastError = wxPRINTER_CANCELLED;
+        return false;
+    }
+    if (ret == wxID_NO)
+    {
+        sm_lastError = wxPRINTER_ERROR;
+        return false;
+    }
+
+    m_printDialogData = dialog.GetPrintDialogData();
+
+    sm_lastError = wxPRINTER_NO_ERROR;
+    return true;
 }
 
 void wxGtkPrinter::BeginPrint(wxPrintout *printout, GtkPrintOperation *operation, GtkPrintContext *context)
@@ -1318,8 +1343,7 @@ void wxGtkPrinterDCImpl::DoGradientFillConcentric(const wxRect& rect, const wxCo
 
     cairo_pattern_destroy(gradient);
 
-    CalcBoundingBox(xR, yR);
-    CalcBoundingBox(xR+w, yR+h);
+    CalcBoundingBox(wxPoint(xR, yR), wxSize(w, h));
 }
 
 void wxGtkPrinterDCImpl::DoGradientFillLinear(const wxRect& rect, const wxColour& initialColour, const wxColour& destColour, wxDirection nDirection)
@@ -1368,8 +1392,7 @@ void wxGtkPrinterDCImpl::DoGradientFillLinear(const wxRect& rect, const wxColour
 
     cairo_pattern_destroy(gradient);
 
-    CalcBoundingBox(x, y);
-    CalcBoundingBox(x+w, y+h);
+    CalcBoundingBox(wxPoint(x, y), wxSize(w, h));
 }
 
 bool wxGtkPrinterDCImpl::DoGetPixel(wxCoord WXUNUSED(x1),
@@ -1390,8 +1413,7 @@ void wxGtkPrinterDCImpl::DoDrawLine(wxCoord x1, wxCoord y1, wxCoord x2, wxCoord 
     cairo_line_to ( m_cairo, XLOG2DEV(x2), YLOG2DEV(y2) );
     cairo_stroke ( m_cairo );
 
-    CalcBoundingBox( x1, y1 );
-    CalcBoundingBox( x2, y2 );
+    CalcBoundingBox( x1, y1, x2, y2 );
 }
 
 void wxGtkPrinterDCImpl::DoCrossHair(wxCoord x, wxCoord y)
@@ -1407,8 +1429,7 @@ void wxGtkPrinterDCImpl::DoCrossHair(wxCoord x, wxCoord y)
     cairo_line_to (m_cairo, XLOG2DEVREL(w), YLOG2DEV(y));
 
     cairo_stroke (m_cairo);
-    CalcBoundingBox( 0, 0 );
-    CalcBoundingBox( w, h );
+    CalcBoundingBox( 0, 0, w, h );
 }
 
 void wxGtkPrinterDCImpl::DoDrawArc(wxCoord x1,wxCoord y1,wxCoord x2,wxCoord y2,wxCoord xc,wxCoord yc)
@@ -1487,8 +1508,7 @@ void wxGtkPrinterDCImpl::DoDrawEllipticArc(wxCoord x,wxCoord y,wxCoord w,wxCoord
 
     cairo_restore( m_cairo );
 
-    CalcBoundingBox( x, y);
-    CalcBoundingBox( x+w, y+h );
+    CalcBoundingBox(wxPoint(x, y), wxSize(w, h));
 }
 
 void wxGtkPrinterDCImpl::DoDrawPoint(wxCoord x, wxCoord y)
@@ -1600,8 +1620,7 @@ void wxGtkPrinterDCImpl::DoDrawRectangle(wxCoord x, wxCoord y, wxCoord width, wx
         cairo_stroke(m_cairo);
     }
 
-    CalcBoundingBox( x, y );
-    CalcBoundingBox( x + width, y + height );
+    CalcBoundingBox(wxPoint(x, y), wxSize(width, height));
 }
 
 void wxGtkPrinterDCImpl::DoDrawRoundedRectangle(wxCoord x, wxCoord y, wxCoord width, wxCoord height, double radius)
@@ -1654,8 +1673,7 @@ void wxGtkPrinterDCImpl::DoDrawRoundedRectangle(wxCoord x, wxCoord y, wxCoord wi
         cairo_stroke(m_cairo);
     }
 
-    CalcBoundingBox(x,y);
-    CalcBoundingBox(x+width,y+height);
+    CalcBoundingBox(wxPoint(x, y), wxSize(width, height));
 }
 
 void wxGtkPrinterDCImpl::DoDrawEllipse(wxCoord x, wxCoord y, wxCoord width, wxCoord height)
@@ -1683,8 +1701,7 @@ void wxGtkPrinterDCImpl::DoDrawEllipse(wxCoord x, wxCoord y, wxCoord width, wxCo
         cairo_stroke(m_cairo);
     }
 
-    CalcBoundingBox( x, y );
-    CalcBoundingBox( x + width, y + height );
+    CalcBoundingBox(wxPoint(x, y), wxSize(width, height));
 
     cairo_restore (m_cairo);
 }
@@ -1692,6 +1709,9 @@ void wxGtkPrinterDCImpl::DoDrawEllipse(wxCoord x, wxCoord y, wxCoord width, wxCo
 #if wxUSE_SPLINES
 void wxGtkPrinterDCImpl::DoDrawSpline(const wxPointList *points)
 {
+    wxCHECK_RET(points, "NULL pointer to spline points?");
+    wxCHECK_RET(points->GetCount() >= 2, "incomplete list of spline points?");
+
     SetPen (m_pen);
 
     double c, d, x1, y1, x3, y3;
@@ -1715,8 +1735,7 @@ void wxGtkPrinterDCImpl::DoDrawSpline(const wxPointList *points)
     cairo_move_to( m_cairo, XLOG2DEV((wxCoord)x1), YLOG2DEV((wxCoord)y1) );
     cairo_line_to( m_cairo, XLOG2DEV((wxCoord)x3), YLOG2DEV((wxCoord)y3) );
 
-    CalcBoundingBox( (wxCoord)x1, (wxCoord)y1 );
-    CalcBoundingBox( (wxCoord)x3, (wxCoord)y3 );
+    CalcBoundingBox( (wxCoord)x1, (wxCoord)y1, (wxCoord)x3, (wxCoord)y3 );
 
     node = node->GetNext();
     while (node)
@@ -1738,8 +1757,7 @@ void wxGtkPrinterDCImpl::DoDrawSpline(const wxPointList *points)
             XLOG2DEV((wxCoord)x2), YLOG2DEV((wxCoord)y2),
             XLOG2DEV((wxCoord)x3), YLOG2DEV((wxCoord)y3) );
 
-        CalcBoundingBox( (wxCoord)x1, (wxCoord)y1 );
-        CalcBoundingBox( (wxCoord)x3, (wxCoord)y3 );
+        CalcBoundingBox( (wxCoord)x1, (wxCoord)y1, (wxCoord)x3, (wxCoord)y3 );
 
         node = node->GetNext();
     }
@@ -1815,8 +1833,7 @@ void wxGtkPrinterDCImpl::DoDrawBitmap( const wxBitmap& bitmap, wxCoord x, wxCoor
     cairo_fill(m_cairo);
 #endif
 
-    CalcBoundingBox(0,0);
-    CalcBoundingBox(bw,bh);
+    CalcBoundingBox(0, 0, bw, bh);
 
     cairo_restore(m_cairo);
 }
@@ -1904,9 +1921,7 @@ void wxGtkPrinterDCImpl::DoDrawRotatedText(const wxString& text, wxCoord x, wxCo
         pango_layout_set_attributes(m_layout, NULL);
     }
 
-    // Back to device units:
-    CalcBoundingBox (x, y);
-    CalcBoundingBox (x + w, y + h);
+    CalcBoundingBox(wxPoint(x, y), wxSize(w, h));
 }
 
 void wxGtkPrinterDCImpl::Clear()
@@ -2449,7 +2464,7 @@ void wxGtkPrintPreview::DetermineScaling()
 
     if (paper)
     {
-        const wxSize screenPPI = wxGetDisplayPPI();
+        const wxSize screenPPI = wxDisplay::GetStdPPI();
         int logPPIScreenX = screenPPI.GetWidth();
         int logPPIScreenY = screenPPI.GetHeight();
         int logPPIPrinterX = m_resolution;

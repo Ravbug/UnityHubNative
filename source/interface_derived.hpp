@@ -39,7 +39,7 @@ private:
 	void ReloadData();
 	void OnActivateProPlus(wxCommandEvent&);
 	void OnActivatePersonal(wxCommandEvent&);
-    void Filter(wxCommandEvent&);
+    void Filter(wxKeyEvent&);
     void LoadProjects(const std::string& filter);
 	
 	//will store the list of projects

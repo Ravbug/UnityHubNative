@@ -15,8 +15,6 @@
 // headers
 // ----------------------------------------------------------------------------
 
-#include "wx/bitmap.h"
-
 #if wxUSE_OWNER_DRAWN
     #include "wx/ownerdrw.h"
 
@@ -73,30 +71,41 @@ public:
     );
 #endif
 
-    void SetBitmaps(const wxBitmap& bmpChecked,
-                    const wxBitmap& bmpUnchecked = wxNullBitmap)
+    void SetBitmaps(const wxBitmapBundle& bmpChecked,
+                    const wxBitmapBundle& bmpUnchecked = wxNullBitmap)
     {
         DoSetBitmap(bmpChecked, true);
         DoSetBitmap(bmpUnchecked, false);
     }
 
-    void SetBitmap(const wxBitmap& bmp, bool bChecked = true)
+    virtual void SetBitmap(const wxBitmapBundle& bmp) wxOVERRIDE
+    {
+        DoSetBitmap(bmp, true);
+    }
+
+    virtual wxBitmap GetBitmap() const wxOVERRIDE
+    {
+        return GetBitmap(true);
+    }
+
+    void SetupBitmaps();
+
+    // The functions taking bChecked are wxMSW-specific.
+    void SetBitmap(const wxBitmapBundle& bmp, bool bChecked)
     {
         DoSetBitmap(bmp, bChecked);
     }
 
-    const wxBitmap& GetBitmap(bool bChecked = true) const
-        { return (bChecked ? m_bmpChecked : m_bmpUnchecked); }
+    wxBitmap GetBitmap(bool bChecked) const;
 
 #if wxUSE_OWNER_DRAWN
-    void SetDisabledBitmap(const wxBitmap& bmpDisabled)
+    void SetDisabledBitmap(const wxBitmapBundle& bmpDisabled)
     {
         m_bmpDisabled = bmpDisabled;
         SetOwnerDrawn(true);
     }
 
-    const wxBitmap& GetDisabledBitmap() const
-        { return m_bmpDisabled; }
+    wxBitmap GetDisabledBitmap() const;
 
     int MeasureAccelWidth() const;
 
@@ -128,7 +137,7 @@ private:
     WXHBITMAP GetHBitmapForMenu(BitmapKind kind) const;
 
     // helper function to set/change the bitmap
-    void DoSetBitmap(const wxBitmap& bmp, bool bChecked);
+    void DoSetBitmap(const wxBitmapBundle& bmp, bool bChecked);
 
 private:
     // common part of all ctors
@@ -141,11 +150,16 @@ private:
     int MSGetMenuItemPos() const;
 
     // item bitmaps
-    wxBitmap m_bmpChecked,     // bitmap to put near the item
-             m_bmpUnchecked;   // (checked is used also for 'uncheckable' items)
+    wxBitmapBundle m_bmpUnchecked;   // (used only for checkable items)
 #if wxUSE_OWNER_DRAWN
-    wxBitmap m_bmpDisabled;
+    wxBitmapBundle m_bmpDisabled;
 #endif // wxUSE_OWNER_DRAWN
+
+    // Bitmaps being currently used: we must store them separately from the
+    // bundle itself because their HBITMAPs must remain valid as long as
+    // they're used by Windows.
+    wxBitmap m_bmpCheckedCurrent,
+             m_bmpUncheckedCurrent;
 
     // Give wxMenu access to our MSWMustUseOwnerDrawn() and GetHBitmapForMenu().
     friend class wxMenu;

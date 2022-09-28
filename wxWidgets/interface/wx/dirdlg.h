@@ -47,7 +47,7 @@ const char wxDirDialogNameStr[] = "wxDirCtrl";
     @style{wxDD_CHANGE_DIR}
            Change the current working directory to the directory chosen by the
            user.
-           @note This flag cannot be used with the @c wxDD_MULTIPLE style.
+           This flag cannot be used with the @c wxDD_MULTIPLE style.
     @style{wxDD_MULTIPLE}
            Allow the user to select multiple directories.
            This flag is only available since wxWidgets 3.1.4
@@ -162,7 +162,7 @@ public:
 // ============================================================================
 
 /** @addtogroup group_funcmacro_dialog */
-//@{
+///@{
 
 /**
     Pops up a directory selector dialog. The arguments have the same meaning
@@ -188,5 +188,5 @@ wxString wxDirSelector(const wxString& message = wxDirSelectorPromptStr,
                        const wxPoint& pos = wxDefaultPosition,
                        wxWindow* parent = NULL);
 
-//@}
+///@}
 

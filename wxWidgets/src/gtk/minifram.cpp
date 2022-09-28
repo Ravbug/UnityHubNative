@@ -26,6 +26,7 @@
 
 #include "wx/gtk/private/wrapgtk.h"
 #include "wx/gtk/private/gtk3-compat.h"
+#include "wx/gtk/private/backend.h"
 
 //-----------------------------------------------------------------------------
 // data
@@ -91,6 +92,7 @@ static gboolean expose_event(GtkWidget* widget, GdkEventExpose* gdk_event, wxMin
     if (win->m_miniTitle && !win->GetTitle().empty())
     {
         dc.SetFont( *wxSMALL_FONT );
+        int height = wxMax(dc.GetTextExtent("X").y, 16);
 
         wxBrush brush(wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHT));
         dc.SetBrush( brush );
@@ -98,16 +100,20 @@ static gboolean expose_event(GtkWidget* widget, GdkEventExpose* gdk_event, wxMin
         dc.DrawRectangle( win->m_miniEdge-1,
                           win->m_miniEdge-1,
                           win->m_width - (2*(win->m_miniEdge-1)),
-                          15  );
+                          height );
 
         const wxColour textColor = wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHTTEXT);
         dc.SetTextForeground(textColor);
-        dc.DrawText( win->GetTitle(), 6, 4 );
+        dc.DrawText( win->GetTitle(), 6, 2 );
 
         if (style & wxCLOSE_BOX)
         {
             dc.SetTextBackground(textColor);
-            dc.DrawBitmap( win->m_closeButton, win->m_width-18, 3, true );
+            dc.DrawBitmap(
+                    win->m_closeButton,
+                    win->m_width-18,
+                    win->m_miniEdge - 1 + (height - 16) / 2,
+                    true );
         }
     }
 
@@ -161,8 +167,7 @@ gtk_window_button_press_callback(GtkWidget* widget, GdkEventButton* gdk_event, w
 
 #ifdef __WXGTK3__
 #ifndef __WXGTK4__
-    GdkDisplay* display = gdk_window_get_display(gdk_event->window);
-    if (strcmp("GdkWaylandDisplay", g_type_name(G_TYPE_FROM_INSTANCE(display))) == 0)
+    if (wxGTKImpl::IsWayland(gdk_event->window))
 #endif
     {
         gtk_window_begin_move_drag(GTK_WINDOW(win->m_widget),
@@ -323,10 +328,16 @@ bool wxMiniFrame::Create( wxWindow *parent, wxWindowID id, const wxString &title
       const wxPoint &pos, const wxSize &size,
       long style, const wxString &name )
 {
+    wxFrame::Create( parent, id, title, pos, size, style, name );
+
     m_isDragMove = false;
     m_miniTitle = 0;
     if (style & wxCAPTION)
-        m_miniTitle = 16;
+    {
+        wxClientDC dc(this);
+        dc.SetFont(*wxSMALL_FONT);
+        m_miniTitle = wxMax(dc.GetTextExtent("X").y, 16);
+    }
 
     if (style & wxRESIZE_BORDER)
         m_miniEdge = 4;
@@ -340,8 +351,6 @@ bool wxMiniFrame::Create( wxWindow *parent, wxWindowID id, const wxString &title
         m_minWidth = minWidth;
     if (m_minHeight < minHeight)
         m_minHeight = minHeight;
-
-    wxFrame::Create( parent, id, title, pos, size, style, name );
 
     // Use a GtkEventBox for the title and borders. Using m_widget for this
     // almost works, except that setting the resize cursor has no effect.

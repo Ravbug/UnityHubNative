@@ -32,8 +32,6 @@ public:
     virtual void Enable( bool enable = TRUE );
     virtual void Check( bool check = TRUE );
     virtual bool IsChecked() const;
-    virtual void SetBitmap(const wxBitmap& bitmap) { m_bitmap = bitmap; }
-    virtual const wxBitmap& GetBitmap() const { return m_bitmap; }
 
 #if wxUSE_ACCEL
     virtual wxAcceleratorEntry *GetAccel() const;
@@ -65,7 +63,6 @@ private:
     void DoSetText(const wxString& text);
 
     wxString  m_hotKey;
-    wxBitmap  m_bitmap; // Bitmap for menuitem, if any
 
     GtkWidget *m_menuItem;  // GtkMenuItem
     GtkWidget* m_labelWidget; // Label widget

@@ -101,7 +101,7 @@ public:
         // wxGTK as the derived window is not fully created yet and calling its
         // SetSize() may be unexpected. This does mean that any future calls to
         // SetLayoutDirection(wxLayout_Default) wouldn't result in a re-layout
-        // neither, but then we're not supposed to be called with it at all.
+        // either, but then we're not supposed to be called with it at all.
         if ( dir != wxLayout_Default )
             this->SetSize(-1, -1, -1, -1, wxSIZE_FORCE);
     }
@@ -218,11 +218,17 @@ private:
             win = win->GetParent();
         }
 
-        child->Bind(wxEVT_CHAR, &wxCompositeWindow::OnChar, this);
+        // Make all keyboard events occurring in sub-windows appear as coming
+        // from the main window itself.
+        child->Bind(wxEVT_KEY_DOWN, &wxCompositeWindow::OnKeyEvent, this);
+        child->Bind(wxEVT_CHAR, &wxCompositeWindow::OnKeyEvent, this);
+        child->Bind(wxEVT_KEY_UP, &wxCompositeWindow::OnKeyEvent, this);
     }
 
-    void OnChar(wxKeyEvent& event)
+    void OnKeyEvent(wxKeyEvent& event)
     {
+        wxEventObjectOriginSetter setThis(event, this, this->GetId());
+
         if ( !this->ProcessWindowEvent(event) )
             event.Skip();
     }

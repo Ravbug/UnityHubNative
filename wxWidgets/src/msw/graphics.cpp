@@ -483,6 +483,9 @@ public:
 
     Graphics* GetGraphics() const { return m_context; }
 
+    virtual WXHDC GetNativeHDC() wxOVERRIDE;
+    virtual void ReleaseNativeHDC(WXHDC hdc) wxOVERRIDE;
+
 protected:
     // Used from ctors (including those in the derived classes) and takes
     // ownership of the graphics pointer that must be non-NULL.
@@ -1859,9 +1862,35 @@ wxGDIPlusContext::wxGDIPlusContext( wxGraphicsRenderer* renderer, HDC hdc, wxDou
 wxGDIPlusContext::wxGDIPlusContext( wxGraphicsRenderer* renderer, const wxDC& dc )
     : wxGraphicsContext(renderer, dc.GetWindow())
 {
-    wxMSWDCImpl *msw = wxDynamicCast( dc.GetImpl() , wxMSWDCImpl );
-    HDC hdc = (HDC) msw->GetHDC();
+    HDC hdc = (HDC) dc.GetHDC();
     wxSize sz = dc.GetSize();
+
+    // We don't set HDC origin at MSW level in wxDC because this limits it to
+    // 2^27 range and we prefer to handle it ourselves to allow using the full
+    // 2^32 range of int coordinates, but we need to let GDI+ know about the
+    // origin shift. It would seem that using TranslateTransform() should be
+    // the right way to do it, but using it results in drawing artifacts when
+    // scrolling (see #22480), so we temporarily set the origin instead: this
+    // won't work for the shifts beyond 2^27 GDI range, but is better than
+    // nothing.
+    class TempSetViewportOrg
+    {
+    public:
+        TempSetViewportOrg(HDC hdc, const wxPoint& origin)
+            : m_hdc(hdc)
+        {
+            ::SetViewportOrgEx(m_hdc, origin.x, origin.y, &m_originPrev);
+        }
+
+        ~TempSetViewportOrg()
+        {
+            ::SetViewportOrgEx(m_hdc, m_originPrev.x, m_originPrev.y, NULL);
+        }
+
+    private:
+        const HDC m_hdc;
+        POINT m_originPrev;
+    } tempSetViewportOrg(hdc, dc.GetDeviceOrigin());
 
     Init(new Graphics(hdc), sz.x, sz.y);
 }
@@ -2500,10 +2529,21 @@ void wxGDIPlusContext::GetDPI(wxDouble* dpiX, wxDouble* dpiY) const
     else
     {
         if ( dpiX )
-            *dpiX = GetGraphics()->GetDpiX();
+            *dpiX = GetGraphics()->GetDpiX()*GetContentScaleFactor();
         if ( dpiY )
-            *dpiY = GetGraphics()->GetDpiY();
+            *dpiY = GetGraphics()->GetDpiY()*GetContentScaleFactor();
     }
+}
+
+WXHDC wxGDIPlusContext::GetNativeHDC()
+{
+    return m_context->GetHDC();
+}
+
+void wxGDIPlusContext::ReleaseNativeHDC(WXHDC hdc)
+{
+    if ( hdc )
+        m_context->ReleaseHDC((HDC)hdc);
 }
 
 //-----------------------------------------------------------------------------
@@ -2530,12 +2570,10 @@ wxGDIPlusPrintingContext::wxGDIPlusPrintingContext( wxGraphicsRenderer* renderer
 
 void wxGDIPlusPrintingContext::GetDPI(wxDouble* dpiX, wxDouble* dpiY) const
 {
-    // override to use same scaling as wxWindowsPrintPreview::DetermineScaling
-    ScreenHDC hdc;
     if ( dpiX )
-        *dpiX = ::GetDeviceCaps(hdc, LOGPIXELSX);
+        *dpiX = 96.0;
     if ( dpiY )
-        *dpiY = ::GetDeviceCaps(hdc, LOGPIXELSY);
+        *dpiY = 96.0;
 }
 
 //-----------------------------------------------------------------------------
@@ -2716,6 +2754,14 @@ wxGraphicsContext * wxGDIPlusRenderer::CreateContext( const wxMemoryDC& dc)
 
     wxGDIPlusContext* context = new wxGDIPlusContext(this, dc);
     context->EnableOffset(true);
+
+    // GDI+ uses the default system DPI, so we don't need to do anything if the
+    // scale factor of the associated bitmap is already the same, but we do
+    // need to scale it correctly if it is different from the scale factor for
+    // the default DPI. To get the latter, we would normally use a screen HDC
+    // but we already have a memory HDC at hand, so we can just use it instead.
+    const int defDPI = wxGetDPIofHDC(GetHdcOf(dc)).y;
+    context->SetContentScaleFactor(dc.GetContentScaleFactor() * 96.0 / defDPI);
     return context;
 }
 
@@ -3002,49 +3048,5 @@ private:
 };
 
 wxIMPLEMENT_DYNAMIC_CLASS(wxGDIPlusRendererModule, wxModule);
-
-// ----------------------------------------------------------------------------
-// wxMSW-specific parts of wxGCDC
-// ----------------------------------------------------------------------------
-
-WXHDC wxGCDC::AcquireHDC()
-{
-    wxGraphicsContext * const gc = GetGraphicsContext();
-    if ( !gc )
-        return NULL;
-
-#if wxUSE_CAIRO
-    // we can't get the HDC if it is not a GDI+ context
-    wxGraphicsRenderer* r1 = gc->GetRenderer();
-    wxGraphicsRenderer* r2 = wxGraphicsRenderer::GetCairoRenderer();
-    if (r1 == r2)
-        return NULL;
-#endif
-
-    Graphics * const g = static_cast<Graphics *>(gc->GetNativeContext());
-    return g ? g->GetHDC() : NULL;
-}
-
-void wxGCDC::ReleaseHDC(WXHDC hdc)
-{
-    if ( !hdc )
-        return;
-
-    wxGraphicsContext * const gc = GetGraphicsContext();
-    wxCHECK_RET( gc, "can't release HDC because there is no wxGraphicsContext" );
-
-#if wxUSE_CAIRO
-    // we can't get the HDC if it is not a GDI+ context
-    wxGraphicsRenderer* r1 = gc->GetRenderer();
-    wxGraphicsRenderer* r2 = wxGraphicsRenderer::GetCairoRenderer();
-    if (r1 == r2)
-        return;
-#endif
-
-    Graphics * const g = static_cast<Graphics *>(gc->GetNativeContext());
-    wxCHECK_RET( g, "can't release HDC because there is no Graphics" );
-
-    g->ReleaseHDC((HDC)hdc);
-}
 
 #endif // wxUSE_GRAPHICS_GDIPLUS

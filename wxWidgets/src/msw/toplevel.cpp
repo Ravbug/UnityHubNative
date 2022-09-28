@@ -34,6 +34,7 @@
     #include "wx/module.h"
 #endif //WX_PRECOMP
 
+#include "wx/dynlib.h"
 #include "wx/scopeguard.h"
 #include "wx/tooltip.h"
 
@@ -496,8 +497,6 @@ bool wxTopLevelWindowMSW::Create(wxWindow *parent,
         EnableCloseButton(false);
     }
 
-    InheritAttributes();
-
     // for standard dialogs the dialog manager generates WM_CHANGEUISTATE
     // itself but for custom windows we have to do it ourselves in order to
     // make the keyboard indicators (such as underlines for accelerators and
@@ -766,9 +765,9 @@ bool wxTopLevelWindowMSW::Destroy()
     // Under Windows 10 iconized windows don't get any messages, so delayed
     // destruction doesn't work for them if we don't force a message dispatch
     // here (and it doesn't seem useful to test for MSWIsIconized() as doing
-    // this doesn't do any harm for non-iconized windows neither). For that
+    // this doesn't do any harm for non-iconized windows either). For that
     // matter, doing this shouldn't do any harm under previous OS versions
-    // neither, so checking for the OS version doesn't seem useful too.
+    // either, so checking for the OS version doesn't seem useful too.
     wxWakeUpIdle();
 
     return true;
@@ -868,7 +867,7 @@ wxTopLevelWindowMSW::MSWGetCreateWindowCoords(const wxPoint& pos,
     else
     {
         // OTOH, if x is not set to CW_USEDEFAULT, y shouldn't be set to it
-        // neither because it is not handled as a special value by Windows then
+        // either because it is not handled as a special value by Windows then
         // and so we have to choose some default value for it, even if a
         // completely arbitrary one
         static const int DEFAULT_Y = 200;
@@ -1046,6 +1045,47 @@ void wxTopLevelWindowMSW::SetIcons(const wxIconBundle& icons)
 
     DoSelectAndSetIcon(icons, SM_CXSMICON, SM_CYSMICON, ICON_SMALL);
     DoSelectAndSetIcon(icons, SM_CXICON, SM_CYICON, ICON_BIG);
+}
+
+wxContentProtection wxTopLevelWindowMSW::GetContentProtection() const
+{
+#if wxUSE_DYNLIB_CLASS
+    typedef BOOL(WINAPI *GetWindowDisplayAffinity_t)(HWND, DWORD *);
+
+    wxDynamicLibrary dllUser32("user32.dll");
+    GetWindowDisplayAffinity_t pfnGetWindowDisplayAffinity =
+        (GetWindowDisplayAffinity_t)dllUser32.RawGetSymbol("GetWindowDisplayAffinity");
+    if (pfnGetWindowDisplayAffinity)
+    {
+        DWORD affinity = 0;
+        if (!pfnGetWindowDisplayAffinity(GetHWND(), &affinity))
+            wxLogLastError("GetWindowDisplayAffinity");
+        else if (affinity & WDA_MONITOR)
+            return wxCONTENT_PROTECTION_ENABLED;
+    }
+#endif
+    return wxCONTENT_PROTECTION_NONE;
+}
+
+bool wxTopLevelWindowMSW::SetContentProtection(wxContentProtection contentProtection)
+{
+#if wxUSE_DYNLIB_CLASS
+    typedef BOOL(WINAPI *SetWindowDisplayAffinity_t)(HWND, DWORD);
+
+    wxDynamicLibrary dllUser32("user32.dll");
+    SetWindowDisplayAffinity_t pfnSetWindowDisplayAffinity =
+        (SetWindowDisplayAffinity_t)dllUser32.RawGetSymbol("SetWindowDisplayAffinity");
+    if (pfnSetWindowDisplayAffinity)
+    {
+        if (pfnSetWindowDisplayAffinity(GetHWND(),
+            (contentProtection == wxCONTENT_PROTECTION_ENABLED) ?
+            WDA_MONITOR : WDA_NONE))
+            return true;
+        else
+            wxLogLastError("SetWindowDisplayAffinity");
+    }
+#endif
+    return false;
 }
 
 // static

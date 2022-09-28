@@ -18158,7 +18158,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-for ac_func in mmap setmode snprintf
+for ac_func in mmap setmode
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
@@ -18179,20 +18179,6 @@ else
   case " $LIBOBJS " in
   *" getopt.$ac_objext "* ) ;;
   *) LIBOBJS="$LIBOBJS getopt.$ac_objext"
- ;;
-esac
-
-fi
-
-
-ac_fn_c_check_func "$LINENO" "snprintf" "ac_cv_func_snprintf"
-if test "x$ac_cv_func_snprintf" = xyes; then :
-  $as_echo "#define HAVE_SNPRINTF 1" >>confdefs.h
-
-else
-  case " $LIBOBJS " in
-  *" snprintf.$ac_objext "* ) ;;
-  *) LIBOBJS="$LIBOBJS snprintf.$ac_objext"
  ;;
 esac
 

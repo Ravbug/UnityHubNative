@@ -517,8 +517,10 @@ public:
 
     void OnTestDefaultActionDialog(wxCommandEvent& event);
     void OnModalHook(wxCommandEvent& event);
+    void OnSimulatedUnsaved(wxCommandEvent& event);
 
     void OnExit(wxCommandEvent& event);
+    void OnClose(wxCloseEvent& event);
 
 private:
 #if wxUSE_COLOURDLG
@@ -564,6 +566,7 @@ private:
     wxTipWindow *m_tipWindow;
 #endif // wxUSE_TIPWINDOW
 
+    bool m_confirmExit;
     wxDECLARE_EVENT_TABLE();
 };
 
@@ -617,6 +620,8 @@ enum
     DIALOGS_FILE_OPEN_GENERIC,
     DIALOGS_FILES_OPEN_GENERIC,
     DIALOGS_FILE_SAVE_GENERIC,
+    DIALOGS_FILE_USE_CUSTOMIZER,
+    DIALOGS_FILE_USE_EXTRA_CONTROL_CREATOR,
     DIALOGS_MAC_TOGGLE_ALWAYS_SHOW_TYPES,
     DIALOGS_DIR_CHOOSE,
     DIALOGS_DIR_CHOOSE_WINDOW_MODAL,
@@ -656,7 +661,8 @@ enum
     DIALOGS_PROPERTY_SHEET_BUTTONTOOLBOOK,
     DIALOGS_STANDARD_BUTTON_SIZER_DIALOG,
     DIALOGS_TEST_DEFAULT_ACTION,
-    DIALOGS_MODAL_HOOK
+    DIALOGS_MODAL_HOOK,
+    DIALOGS_SIMULATE_UNSAVED
 };
 
 #endif

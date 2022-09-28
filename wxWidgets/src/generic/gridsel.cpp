@@ -72,6 +72,20 @@ void wxGridSelection::EndSelecting()
     m_grid->GetEventHandler()->ProcessEvent(gridEvt);
 }
 
+void wxGridSelection::CancelSelecting()
+{
+    // It's possible that nothing was selected finally, e.g. the mouse could
+    // have been dragged around only to return to the starting cell, just don't
+    // do anything in this case.
+    if ( !IsSelection() )
+        return;
+
+    const wxGridBlockCoords& block = m_selection.back();
+    m_grid->RefreshBlock(block.GetTopLeft(), block.GetBottomRight());
+    m_selection.pop_back();
+}
+
+
 bool wxGridSelection::IsInSelection( int row, int col ) const
 {
     // Check whether the given cell is contained in one of the selected blocks.
@@ -173,7 +187,7 @@ void wxGridSelection::SelectRow(int row, const wxKeyboardState& kbd)
         return;
 
     Select(wxGridBlockCoords(row, 0, row, m_grid->GetNumberCols() - 1),
-           kbd, true);
+           kbd, wxEVT_GRID_RANGE_SELECTED);
 }
 
 void wxGridSelection::SelectCol(int col, const wxKeyboardState& kbd)
@@ -183,7 +197,7 @@ void wxGridSelection::SelectCol(int col, const wxKeyboardState& kbd)
         return;
 
     Select(wxGridBlockCoords(0, col, m_grid->GetNumberRows() - 1, col),
-           kbd, true);
+           kbd, wxEVT_GRID_RANGE_SELECTED);
 }
 
 void wxGridSelection::SelectBlock( int topRow, int leftCol,
@@ -251,7 +265,7 @@ wxGridSelection::SelectAll()
     if ( numRows && numCols )
     {
         Select(wxGridBlockCoords(0, 0, numRows - 1, numCols - 1),
-               wxKeyboardState(), true /* send event */);
+               wxKeyboardState(), wxEVT_GRID_RANGE_SELECTED);
     }
 }
 
@@ -746,10 +760,6 @@ wxGridCellCoordsArray wxGridSelection::GetCellSelection() const
 
 wxGridCellCoordsArray wxGridSelection::GetBlockSelectionTopLeft() const
 {
-    // return blocks only in wxGridSelectCells selection mode
-    if ( m_selectionMode != wxGrid::wxGridSelectCells )
-        return wxGridCellCoordsArray();
-
     wxGridCellCoordsArray coords;
     const size_t count = m_selection.size();
     coords.reserve(count);
@@ -762,9 +772,6 @@ wxGridCellCoordsArray wxGridSelection::GetBlockSelectionTopLeft() const
 
 wxGridCellCoordsArray wxGridSelection::GetBlockSelectionBottomRight() const
 {
-    if ( m_selectionMode != wxGrid::wxGridSelectCells )
-        return wxGridCellCoordsArray();
-
     wxGridCellCoordsArray coords;
     const size_t count = m_selection.size();
     coords.reserve(count);

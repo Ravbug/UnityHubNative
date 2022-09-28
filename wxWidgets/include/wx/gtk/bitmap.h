@@ -14,8 +14,6 @@ typedef struct _cairo cairo_t;
 typedef struct _cairo_surface cairo_surface_t;
 #endif
 typedef struct _GdkPixbuf GdkPixbuf;
-class WXDLLIMPEXP_FWD_CORE wxPixelDataBase;
-class WXDLLIMPEXP_FWD_CORE wxCursor;
 
 //-----------------------------------------------------------------------------
 // wxMask
@@ -70,11 +68,14 @@ public:
         { Create(width, height, depth); }
     wxBitmap( const wxSize& sz, int depth = wxBITMAP_SCREEN_DEPTH )
         { Create(sz, depth); }
+    wxBitmap( int width, int height, const wxDC& dc )
+        { Create(width, height, dc); }
     wxBitmap( const char bits[], int width, int height, int depth = 1 );
     wxBitmap( const char* const* bits );
     wxBitmap( const wxString &filename, wxBitmapType type = wxBITMAP_DEFAULT_TYPE );
 #if wxUSE_IMAGE
     wxBitmap(const wxImage& image, int depth = wxBITMAP_SCREEN_DEPTH, double scale = 1.0);
+    wxBitmap(const wxImage& image, const wxDC& dc);
 #endif // wxUSE_IMAGE
     wxBitmap(GdkPixbuf* pixbuf, int depth = 0);
     explicit wxBitmap(const wxCursor& cursor);
@@ -83,11 +84,13 @@ public:
     bool Create(int width, int height, int depth = wxBITMAP_SCREEN_DEPTH) wxOVERRIDE;
     bool Create(const wxSize& sz, int depth = wxBITMAP_SCREEN_DEPTH) wxOVERRIDE
         { return Create(sz.GetWidth(), sz.GetHeight(), depth); }
+#ifdef __WXGTK3__
+    bool Create(int width, int height, const wxDC& dc);
+    virtual void SetScaleFactor(double scale) wxOVERRIDE;
+    virtual double GetScaleFactor() const wxOVERRIDE;
+#else
     bool Create(int width, int height, const wxDC& WXUNUSED(dc))
         { return Create(width,height); }
-#ifdef __WXGTK3__
-    virtual bool CreateScaled(int w, int h, int depth, double scale) wxOVERRIDE;
-    virtual double GetScaleFactor() const wxOVERRIDE;
 #endif
 
     virtual int GetHeight() const wxOVERRIDE;
@@ -97,9 +100,6 @@ public:
 #if wxUSE_IMAGE
     wxImage ConvertToImage() const wxOVERRIDE;
 #endif // wxUSE_IMAGE
-
-    // copies the contents and mask of the given (colour) icon to the bitmap
-    virtual bool CopyFromIcon(const wxIcon& icon) wxOVERRIDE;
 
     wxMask *GetMask() const wxOVERRIDE;
     void SetMask( wxMask *mask ) wxOVERRIDE;
@@ -145,17 +145,22 @@ public:
     void *GetRawData(wxPixelDataBase& data, int bpp);
     void UngetRawData(wxPixelDataBase& data);
 
-    bool HasAlpha() const;
+    bool HasAlpha() const wxOVERRIDE;
 
 protected:
-#ifndef __WXGTK3__
 #if wxUSE_IMAGE
+    void InitFromImage(const wxImage& image, int depth, double scale);
+#ifndef __WXGTK3__
     bool CreateFromImage(const wxImage& image, int depth);
-#endif // wxUSE_IMAGE
 #endif
+#endif // wxUSE_IMAGE
 
     virtual wxGDIRefData* CreateGDIRefData() const wxOVERRIDE;
     virtual wxGDIRefData* CloneGDIRefData(const wxGDIRefData* data) const wxOVERRIDE;
+
+#ifdef __WXGTK3__
+    virtual bool DoCreate(const wxSize& sz, double scale, int depth) wxOVERRIDE;
+#endif
 
 private:
 #ifndef __WXGTK3__

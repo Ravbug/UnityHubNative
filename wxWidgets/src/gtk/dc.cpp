@@ -91,7 +91,8 @@ void wxGTKCairoDCImpl::DoDrawText(const wxString& text, int x, int y)
     if (text.empty())
         return;
 
-    if (m_layoutDir == wxLayout_RightToLeft && text.find('\n') != wxString::npos)
+    const bool xInverted = m_signX < 0 || m_layoutDir == wxLayout_RightToLeft;
+    if (xInverted && text.find('\n') != wxString::npos)
     {
         // RTL needs each line separately to position text properly.
         // DrawLabel() will split the text and call back for each line.
@@ -102,15 +103,21 @@ void wxGTKCairoDCImpl::DoDrawText(const wxString& text, int x, int y)
     int w, h;
     DoGetTextExtent(text, &w, &h);
 
-    CalcBoundingBox(x, y);
-    CalcBoundingBox(x + w, y + h);
+    CalcBoundingBox(wxPoint(x, y), wxSize(w, h));
 
-    if (m_layoutDir == wxLayout_RightToLeft)
-    {
+    const bool yInverted = m_signY < 0;
+    if (xInverted || yInverted)
         m_graphicContext->PushState();
+    if (xInverted)
+    {
         // text is not mirrored
         m_graphicContext->Scale(-1, 1);
         x = -x - w;
+    }
+    if (yInverted)
+    {
+        m_graphicContext->Scale(1, -1);
+        y = -y - h;
     }
 
     wxCompositionMode curMode = m_graphicContext->GetCompositionMode();
@@ -123,7 +130,7 @@ void wxGTKCairoDCImpl::DoDrawText(const wxString& text, int x, int y)
 
     m_graphicContext->SetCompositionMode(curMode);
 
-    if (m_layoutDir == wxLayout_RightToLeft)
+    if (xInverted || yInverted)
         m_graphicContext->PopState();
 }
 
@@ -242,9 +249,6 @@ bool wxGTKCairoDCImpl::DoStretchBlit(int xdest, int ydest, int dstWidth, int dst
     if (cr == NULL || cr_src == NULL)
         return false;
 
-    const int xsrc_dev = source->LogicalToDeviceX(xsrc);
-    const int ysrc_dev = source->LogicalToDeviceY(ysrc);
-
     cairo_surface_t* surfaceSrc = cairo_get_target(cr_src);
     cairo_surface_flush(surfaceSrc);
 
@@ -302,6 +306,9 @@ bool wxGTKCairoDCImpl::DoStretchBlit(int xdest, int ydest, int dstWidth, int dst
     const wxBitmap& bitmap = source->GetImpl()->GetSelectedBitmap();
     const double bmpScale = bitmap.IsOk() ? bitmap.GetScaleFactor() : 1.0;
 
+    const int xsrc_dev = int(source->LogicalToDeviceX(xsrc) * bmpScale);
+    const int ysrc_dev = int(source->LogicalToDeviceY(ysrc) * bmpScale);
+
     cairo_scale(cr, dstWidth / (sx * srcWidth * bmpScale), dstHeight / (sy * srcHeight * bmpScale));
     cairo_set_source_surface(cr, surfaceSrc, -xsrc_dev, -ysrc_dev);
     const wxRasterOperationMode rop_save = m_logicalFunction;
@@ -322,11 +329,21 @@ bool wxGTKCairoDCImpl::DoStretchBlit(int xdest, int ydest, int dstWidth, int dst
         int xsrcMask_dev = xsrc_dev;
         int ysrcMask_dev = ysrc_dev;
         if (xsrcMask != -1)
-            xsrcMask_dev = source->LogicalToDeviceX(xsrcMask);
+            xsrcMask_dev = int(source->LogicalToDeviceX(xsrcMask) * bmpScale);
         if (ysrcMask != -1)
-            ysrcMask_dev = source->LogicalToDeviceY(ysrcMask);
+            ysrcMask_dev = int(source->LogicalToDeviceY(ysrcMask) * bmpScale);
         cairo_clip(cr);
-        cairo_mask_surface(cr, maskSurf, -xsrcMask_dev, -ysrcMask_dev);
+
+        cairo_pattern_t* pattern = cairo_pattern_create_for_surface(maskSurf);
+        cairo_pattern_set_filter(pattern, CAIRO_FILTER_NEAREST);
+        if (xsrcMask_dev || ysrcMask_dev)
+        {
+            cairo_matrix_t matrix;
+            cairo_matrix_init_translate(&matrix, xsrcMask_dev, ysrcMask_dev);
+            cairo_pattern_set_matrix(pattern, &matrix);
+        }
+        cairo_mask(cr, pattern);
+        cairo_pattern_destroy(pattern);
     }
     else
     {
@@ -567,7 +584,7 @@ void wxMemoryDCImpl::Setup()
     m_ok = m_bitmap.IsOk();
     if (m_ok)
     {
-        m_size = m_bitmap.GetScaledSize();
+        m_size = m_bitmap.GetLogicalSize();
         m_contentScaleFactor = m_bitmap.GetScaleFactor();
         cairo_t* cr = m_bitmap.CairoCreate();
         AdjustForRTL(cr);

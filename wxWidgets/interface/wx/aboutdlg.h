@@ -37,7 +37,7 @@
         aboutInfo.SetName("MyApp");
         aboutInfo.SetVersion(MY_APP_VERSION_STRING);
         aboutInfo.SetDescription(_("My wxWidgets-based application!"));
-        aboutInfo.SetCopyright("(C) 1992-2021");
+        aboutInfo.SetCopyright("(C) 1992-2022");
         aboutInfo.SetWebSite("http://myapp.org");
         aboutInfo.AddDeveloper("My Self");
 
@@ -325,7 +325,7 @@ public:
 // ============================================================================
 
 /** @addtogroup group_funcmacro_dialog */
-//@{
+///@{
 
 /**
     This function shows the standard about dialog containing the information
@@ -374,4 +374,4 @@ void wxAboutBox(const wxAboutDialogInfo& info, wxWindow* parent = NULL);
 */
 void wxGenericAboutBox(const wxAboutDialogInfo& info, wxWindow* parent = NULL);
 
-//@}
+///@}

@@ -62,6 +62,7 @@ public:
     void SetSelection(long from, long to);
 
     // wxSpinCtrlBase methods
+    virtual wxString GetTextValue() const;
     virtual int GetBase() const;
     virtual bool SetBase(int base);
 
@@ -138,6 +139,10 @@ protected:
     void OnChar(wxKeyEvent& event);
     void OnSetFocus(wxFocusEvent& event);
     void OnKillFocus(wxFocusEvent& event);
+
+    // returns true for special keys like "Ctrl+C" that should be handled
+    // by the text control
+    virtual bool MSWShouldPreProcessMessage(WXMSG* msg) wxOVERRIDE;
 
     // generate spin control update event with the given value
     void SendSpinUpdate(int value);

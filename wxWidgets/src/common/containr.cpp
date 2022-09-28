@@ -358,7 +358,7 @@ void wxControlContainer::HandleOnNavigationKey( wxNavigationKeyEvent& event )
     if ( goingDown )
     {
         // just to be sure it's not used (normally this is not necessary, but
-        // doesn't hurt neither)
+        // doesn't hurt either)
         m_winLastFocused = NULL;
 
         // start from first or last depending on where we're going
@@ -607,7 +607,7 @@ bool wxSetFocusToChild(wxWindow *win, wxWindow **childLastFocused)
 {
     wxCHECK_MSG( win, false, wxT("wxSetFocusToChild(): invalid window") );
     //    wxCHECK_MSG( childLastFocused, false,
-    //             wxT("wxSetFocusToChild(): NULL child poonter") );
+    //             wxT("wxSetFocusToChild(): NULL child pointer") );
 
     if ( childLastFocused && *childLastFocused )
     {

@@ -147,12 +147,7 @@ void wxAutoScrollTimer::Notify()
 
             // the mouse event coordinates should be client, not screen as
             // returned by wxGetMousePosition
-            wxWindow *parentTop = m_win;
-            while ( parentTop->GetParent() )
-                parentTop = parentTop->GetParent();
-            wxPoint ptOrig = parentTop->GetPosition();
-            event2.m_x -= ptOrig.x;
-            event2.m_y -= ptOrig.y;
+            m_win->ScreenToClient(&event2.m_x, &event2.m_y);
 
             event2.SetEventObject(m_win);
 
@@ -561,6 +556,12 @@ void wxScrollHelperBase::HandleOnScroll(wxScrollWinEvent& event)
     {
         m_targetWindow->ScrollWindow(dx, dy, GetScrollRect());
     }
+#ifdef __WXUNIVERSAL__
+    if (m_win != m_targetWindow)
+    {
+        m_win->Refresh(true, GetScrollRect());
+    }
+#endif // __WXUNIVERSAL__
 }
 
 int wxScrollHelperBase::CalcScrollInc(wxScrollWinEvent& event)
@@ -1073,7 +1074,7 @@ void wxScrollHelperBase::HandleOnChildFocus(wxChildFocusEvent& event)
         return;
     }
 
-    // Fixing ticket: https://trac.wxwidgets.org/ticket/9563
+    // Fixing ticket: https://github.com/wxWidgets/wxWidgets/issues/9563
     // When a child inside a wxControlContainer receives a focus, the
     // wxControlContainer generates an artificial wxChildFocusEvent for
     // itself, telling its parent that 'it' received the focus. The effect is

@@ -57,8 +57,8 @@ endif()
 
 if(WXGTK)
     # Add GTK version definitions
-    foreach(gtk_version 1.2.7 2.0 2.10 2.18 2.20 3.0 3.90.0)
-        if(wxTOOLKIT_VERSION VERSION_GREATER gtk_version)
+    foreach(gtk_version 2.0 2.10 2.18 2.20 3.0 3.90.0)
+        if(NOT wxTOOLKIT_VERSION VERSION_LESS gtk_version)
             if(gtk_version EQUAL 3.90.0)
                 set(__WXGTK4__ ON)
             elseif(gtk_version EQUAL 3.0)
@@ -71,7 +71,7 @@ if(WXGTK)
     endforeach()
 endif()
 
-set(wxINSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+set(wxINSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
 check_include_files("stdlib.h;stdarg.h;string.h;float.h" STDC_HEADERS)
 
@@ -290,27 +290,23 @@ if(UNIX)
     wx_check_funcs(mkstemp mktemp)
 
     # get the library function to use for wxGetDiskSpace(): it is statfs() under
-    # Linux and *BSD and statvfs() under Solaris
+    # Linux and *BSD and statvfs() under Solaris and NetBSD
     wx_check_c_source_compiles("
         return 0; }
-        #if defined(__BSD__)
-        #include <sys/param.h>
-        #include <sys/mount.h>
-        #else
-        #include <sys/vfs.h>
-        #endif
+        #include <sys/statvfs.h>
 
         int foo() {
         long l;
-        struct statfs fs;
-        statfs(\"/\", &fs);
+        struct statvfs fs;
+        statvfs(\"/\", &fs);
         l = fs.f_bsize;
         l += fs.f_blocks;
         l += fs.f_bavail;"
-        HAVE_STATFS)
-    if(HAVE_STATFS)
-        set(WX_STATFS_T "struct statfs")
-        wx_check_cxx_source_compiles("
+        HAVE_STATVFS)
+    if(HAVE_STATVFS)
+        set(WX_STATFS_T "struct statvfs")
+    else()
+        wx_check_c_source_compiles("
             return 0; }
             #if defined(__BSD__)
             #include <sys/param.h>
@@ -320,13 +316,28 @@ if(UNIX)
             #endif
 
             int foo() {
+            long l;
             struct statfs fs;
-            statfs(\"/\", &fs);"
-            HAVE_STATFS_DECL)
-    else()
-        # TODO: implement statvfs checks
-        if(HAVE_STATVFS)
-            set(WX_STATFS_T statvfs_t)
+            statfs(\"/\", &fs);
+            l = fs.f_bsize;
+            l += fs.f_blocks;
+            l += fs.f_bavail;"
+            HAVE_STATFS)
+        if(HAVE_STATFS)
+            set(WX_STATFS_T "struct statfs")
+            wx_check_cxx_source_compiles("
+                return 0; }
+                #if defined(__BSD__)
+                #include <sys/param.h>
+                #include <sys/mount.h>
+                #else
+                #include <sys/vfs.h>
+                #endif
+
+                int foo() {
+                struct statfs fs;
+                statfs(\"/\", &fs);"
+                HAVE_STATFS_DECL)
         endif()
     endif()
 
@@ -433,6 +444,14 @@ if(UNIX)
         check_symbol_exists(inet_aton arpa/inet.h HAVE_INET_ATON)
         check_symbol_exists(inet_addr arpa/inet.h HAVE_INET_ADDR)
     endif(wxUSE_SOCKETS)
+
+    if(wxUSE_JOYSTICK AND NOT APPLE)
+        check_include_files("linux/joystick.h" HAVE_JOYSTICK_H)
+        if(NOT HAVE_JOYSTICK_H)
+            message(WARNING "wxJoystick is not available")
+            wx_option_force_value(wxUSE_JOYSTICK OFF)
+        endif()
+    endif()
 endif(UNIX)
 
 if(CMAKE_USE_PTHREADS_INIT)
@@ -611,7 +630,7 @@ if(wxUSE_DATETIME)
 endif()
 
 cmake_push_check_state(RESET)
-set(CMAKE_REQUIRED_LIBRARIES dl)
+set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_DL_LIBS})
 check_symbol_exists(dlopen dlfcn.h HAVE_DLOPEN)
 cmake_pop_check_state()
 if(HAVE_DLOPEN)
@@ -646,15 +665,8 @@ if(wxUSE_XLOCALE)
     set(CMAKE_EXTRA_INCLUDE_FILES)
 endif()
 
-# Check size and availability of various types
-set(SYSTYPES
-    pid_t size_t
-    wchar_t int long short
-    gid_t uid_t
-    )
-if(NOT MSVC)
-    list(APPEND SYSTYPES mode_t off_t)
-endif()
+# Check sizes of various types
+set(SYSTYPES size_t wchar_t int long short)
 
 foreach(SYSTYPE ${SYSTYPES})
     string(TOUPPER ${SYSTYPE} SYSTYPE_UPPER)

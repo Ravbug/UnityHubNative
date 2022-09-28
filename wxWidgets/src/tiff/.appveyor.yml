@@ -83,7 +83,7 @@ build_script:
   - 'if %compiler%==mingw-cmake cmake --build . --config %configuration% --target install'
   - 'if %compiler%==vc14-cmake cmake --build . --config %configuration% --target install'
   - 'if %compiler%==vc9-cmake cmake --build . --config %configuration% --target install'
-  - 'if %compiler%==vc14-nmake nmake /f Makefile.vc EXTRAFLAGS=/DHAVE_SNPRINTF=1'
+  - 'if %compiler%==vc14-nmake nmake /f Makefile.vc'
   - 'if %compiler%==vc14-nmake mkdir %AV_TIFF_INSTALL%'
   - 'if %compiler%==vc14-nmake mkdir %AV_TIFF_INSTALL%\bin'
   - 'if %compiler%==vc14-nmake mkdir %AV_TIFF_INSTALL%\lib'

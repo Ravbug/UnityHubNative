@@ -214,16 +214,18 @@ wxSize wxTopLevelWindowBase::GetDefaultSize()
 {
     wxSize size = wxGetClientDisplayRect().GetSize();
 #ifndef __WXOSX_IPHONE__
-    // create proportionally bigger windows on small screens
+    // create proportionally bigger windows on small screens but also scale the
+    // size with DPI on the large screens to avoid creating windows too small
+    // to fit anything at all when using high DPI
     if ( size.x >= 1024 )
-        size.x = 400;
+        size.x = FromDIP(400, NULL /* no window */);
     else if ( size.x >= 800 )
         size.x = 300;
     else if ( size.x >= 320 )
         size.x = 240;
 
     if ( size.y >= 768 )
-        size.y = 250;
+        size.y = FromDIP(250, NULL /* no window */);
     else if ( size.y > 200 )
     {
         size.y *= 2;
@@ -503,3 +505,7 @@ void wxTopLevelWindowBase::RequestUserAttention(int WXUNUSED(flags))
     // it's probably better than do nothing, isn't it?
     Raise();
 }
+
+void* wxTopLevelWindowBase::WXReservedTLW1(void*) { return NULL; }
+void* wxTopLevelWindowBase::WXReservedTLW2(void*) { return NULL; }
+void* wxTopLevelWindowBase::WXReservedTLW3(void*) { return NULL; }

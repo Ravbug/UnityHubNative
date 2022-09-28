@@ -37,19 +37,24 @@ class WXDLLIMPEXP_CORE wxDataViewIconText : public wxObject
 {
 public:
     wxDataViewIconText( const wxString &text = wxEmptyString,
-                        const wxIcon& icon = wxNullIcon )
+                        const wxBitmapBundle& bitmap = wxBitmapBundle() )
         : m_text(text),
-          m_icon(icon)
+          m_bitmap(bitmap)
     { }
 
     void SetText( const wxString &text ) { m_text = text; }
     wxString GetText() const             { return m_text; }
-    void SetIcon( const wxIcon &icon )   { m_icon = icon; }
-    const wxIcon &GetIcon() const        { return m_icon; }
+
+    void SetBitmapBundle(const wxBitmapBundle& bitmap) { m_bitmap = bitmap; }
+    const wxBitmapBundle& GetBitmapBundle() const { return m_bitmap; }
+
+    // These methods exist for compatibility, prefer using the methods above.
+    void SetIcon( const wxIcon &icon ) { m_bitmap = wxBitmapBundle(icon); }
+    wxIcon GetIcon() const { return m_bitmap.GetIcon(wxDefaultSize); }
 
     bool IsSameAs(const wxDataViewIconText& other) const
     {
-        return m_text == other.m_text && m_icon.IsSameAs(other.m_icon);
+        return m_text == other.m_text && m_bitmap.IsSameAs(other.m_bitmap);
     }
 
     bool operator==(const wxDataViewIconText& other) const
@@ -64,7 +69,7 @@ public:
 
 private:
     wxString    m_text;
-    wxIcon      m_icon;
+    wxBitmapBundle m_bitmap;
 
     wxDECLARE_DYNAMIC_CLASS(wxDataViewIconText);
 };
@@ -79,7 +84,7 @@ class WXDLLIMPEXP_CORE wxDataViewCheckIconText : public wxDataViewIconText
 {
 public:
     wxDataViewCheckIconText(const wxString& text = wxString(),
-                            const wxIcon& icon = wxNullIcon,
+                            const wxBitmapBundle& icon = wxBitmapBundle(),
                             wxCheckBoxState checkedState = wxCHK_UNDETERMINED)
         : wxDataViewIconText(text, icon),
           m_checkedState(checkedState)
@@ -150,6 +155,15 @@ public:
 
     wxString GetVariantType() const             { return m_variantType; }
 
+    // Check if the given variant type is compatible with the type expected by
+    // this renderer: by default, just compare it with GetVariantType(), but
+    // can be overridden to accept other types that can be converted to the
+    // type needed by the renderer.
+    virtual bool IsCompatibleVariantType(const wxString& variantType) const
+    {
+        return variantType == GetVariantType();
+    }
+
     // Prepare for rendering the value of the corresponding item in the given
     // column taken from the provided non-null model.
     //
@@ -158,8 +172,9 @@ public:
     // it and should probably be removed in the future.
     //
     // Return true if this cell is non-empty or false otherwise (and also if
-    // the model returned a value of the wrong, i.e. different from our
-    // GetVariantType(), type, in which case a debug error is also logged).
+    // the model returned a value of the wrong type, i.e. such that our
+    // IsCompatibleVariantType() returned false for it, in which case a debug
+    // error is also logged).
     bool PrepareForItem(const wxDataViewModel *model,
                         const wxDataViewItem& item,
                         unsigned column);
@@ -527,6 +542,8 @@ public:
     virtual wxSize GetSize() const wxOVERRIDE;
 
 private:
+    wxString FormatDate() const;
+
     wxDateTime    m_date;
 };
 #else // !wxUSE_DATEPICKCTRL

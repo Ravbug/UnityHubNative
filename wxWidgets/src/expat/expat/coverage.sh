@@ -1,6 +1,34 @@
 #! /usr/bin/env bash
-# Copyright (C) Sebastian Pipping <sebastian@pipping.org>
-# Licensed under the MIT license
+#                          __  __            _
+#                       ___\ \/ /_ __   __ _| |_
+#                      / _ \\  /| '_ \ / _` | __|
+#                     |  __//  \| |_) | (_| | |_
+#                      \___/_/\_\ .__/ \__,_|\__|
+#                               |_| XML parser
+#
+# Copyright (c) 2017-2021 Sebastian Pipping <sebastian@pipping.org>
+# Copyright (c) 2018      Marco Maggi <marco.maggi-ipsu@poste.it>
+# Copyright (c) 2019      Mohammed Khajapasha <mohammed.khajapasha@intel.com>
+# Licensed under the MIT license:
+#
+# Permission is  hereby granted,  free of charge,  to any  person obtaining
+# a  copy  of  this  software   and  associated  documentation  files  (the
+# "Software"),  to  deal in  the  Software  without restriction,  including
+# without  limitation the  rights  to use,  copy,  modify, merge,  publish,
+# distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons  to whom  the Software  is  furnished to  do so,  subject to  the
+# following conditions:
+#
+# The above copyright  notice and this permission notice  shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE  SOFTWARE  IS  PROVIDED  "AS  IS",  WITHOUT  WARRANTY  OF  ANY  KIND,
+# EXPRESS  OR IMPLIED,  INCLUDING  BUT  NOT LIMITED  TO  THE WARRANTIES  OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+# NO EVENT SHALL THE AUTHORS OR  COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR  OTHER LIABILITY, WHETHER  IN AN  ACTION OF CONTRACT,  TORT OR
+# OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+# USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 export PS4='# '
 
@@ -22,8 +50,14 @@ _get_build_dir() {
     fi
 
     local char_part=
-    if ${with_unsigned_char}; then
-        char_part=__unsigned_char
+    if ${unicode_enabled}; then
+        if ${with_unsigned_char}; then
+            char_part=__ushort
+        else
+            char_part=__wchar_t
+        fi
+    else
+        char_part=__char
     fi
 
     local xml_attr_part=
@@ -31,7 +65,12 @@ _get_build_dir() {
         xml_attr_part=__attr_info
     fi
 
-    echo "build__${version}__unicode_${unicode_enabled}__xml_context_${xml_context}${libbsd_part}${mingw_part}${char_part}${xml_attr_part}"
+    local m32_part=
+    if ${with_m32}; then
+        m32_part=__m32
+    fi
+
+    echo "build__${version}__xml_context_${xml_context}${libbsd_part}${mingw_part}${char_part}${xml_attr_part}${m32_part}"
 }
 
 
@@ -57,6 +96,7 @@ _call_cmake() {
 
     ${with_libbsd} && cmake_args+=( -DEXPAT_WITH_LIBBSD=ON )
     ${with_mingw} && cmake_args+=( -DCMAKE_TOOLCHAIN_FILE="${abs_source_dir}"/cmake/mingw-toolchain.cmake )
+    ${with_m32} && cmake_args+=( -D_EXPAT_M32=ON )
 
     (
         set -x
@@ -248,6 +288,7 @@ _main() {
     # All combinations:
     with_unsigned_char=false
     with_libbsd=false
+    with_m32=false
     for with_mingw in true false ; do
         for unicode_enabled in true false ; do
             if ${unicode_enabled} && ! ${with_mingw} ; then
@@ -265,6 +306,7 @@ _main() {
     # Single cases:
     with_libbsd=true _build_case
     with_unsigned_char=true _build_case
+    with_m32=true _build_case
 
     echo
     echo 'Merging coverage files...'

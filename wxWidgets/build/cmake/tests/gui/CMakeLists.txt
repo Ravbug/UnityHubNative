@@ -141,9 +141,16 @@ set(TEST_GUI_DATA
     horse.pcx
     horse.png
     horse.pnm
+    horse.svg
     horse.tga
     horse.tif
     horse.xpm
+    image/bitfields.bmp
+    image/8bpp-colorsused-large.bmp
+    image/8bpp-colorsused-negative.bmp
+    image/rle4-delta-320x240.bmp
+    image/rle8-delta-320x240-expected.bmp
+    image/rle8-delta-320x240.bmp
     image/horse_grey.bmp
     image/horse_grey_flipped.bmp
     image/horse_rle4.bmp
@@ -176,7 +183,17 @@ set(TEST_GUI_DATA
     image/paste_result_background_plus_overlay_transparent_border_semitransparent_square.png
     image/paste_result_no_background_square_over_circle.png
     image/wx.png
-    image/wx.ico
+    image/toucan.png
+    image/toucan_hue_0.538.png
+    image/toucan_sat_-0.41.png
+    image/toucan_bright_-0.259.png
+    image/toucan_hsv_0.538_-0.41_-0.259.png
+    image/toucan_light_46.png
+    image/toucan_dis_240.png
+    image/toucan_grey.png
+    image/toucan_mono_255_255_255.png
+    image/width-times-height-overflow.bmp
+    image/width_height_32_bit_overflow.pgm
     intl/ja/internat.mo
     intl/ja/internat.po
     )

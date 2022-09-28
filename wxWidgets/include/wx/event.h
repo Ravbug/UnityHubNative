@@ -31,14 +31,10 @@
 #include "wx/vector.h"
 
 #include "wx/meta/convertible.h"
+#include "wx/meta/removeref.h"
 
-// Currently VC7 is known to not be able to compile CallAfter() code, so
-// disable it for it (FIXME-VC7).
-#if !defined(__VISUALC__) || wxCHECK_VISUALC_VERSION(8)
-    #include "wx/meta/removeref.h"
-
-    #define wxHAS_CALL_AFTER
-#endif
+// This is now always defined, but keep it for backwards compatibility.
+#define wxHAS_CALL_AFTER
 
 // ----------------------------------------------------------------------------
 // forward declarations
@@ -149,7 +145,7 @@ inline wxEventFunction wxEventFunctionCast(void (wxEvtHandler::*func)(T&))
 // a type of wxEvtHandler method. But with C++17 this doesn't work when the
 // handler is a noexcept function, so we need to cast it to a noexcept function
 // pointer first.
-#if __cplusplus >= 201703L
+#if wxCHECK_CXX_STD(201703L)
 
 namespace wxPrivate
 {
@@ -1201,6 +1197,35 @@ private:
     wxDECLARE_NO_COPY_CLASS(wxPropagateOnce);
 };
 
+// Helper class changing the event object to make the event appear as coming
+// from a different source: this is somewhat of a hack, but avoids copying the
+// events just to change their event object field.
+class wxEventObjectOriginSetter
+{
+public:
+    wxEventObjectOriginSetter(wxEvent& event, wxObject* source, int winid = 0)
+        : m_event(event),
+          m_sourceOrig(event.GetEventObject()),
+          m_idOrig(event.GetId())
+    {
+        m_event.SetEventObject(source);
+        m_event.SetId(winid);
+    }
+
+    ~wxEventObjectOriginSetter()
+    {
+        m_event.SetId(m_idOrig);
+        m_event.SetEventObject(m_sourceOrig);
+    }
+
+private:
+    wxEvent& m_event;
+    wxObject* const m_sourceOrig;
+    const int m_idOrig;
+
+    wxDECLARE_NO_COPY_CLASS(wxEventObjectOriginSetter);
+};
+
 // A helper object used to temporarily make wxEvent::ShouldProcessOnlyIn()
 // return true for the handler passed to its ctor.
 class wxEventProcessInHandlerOnly
@@ -1251,7 +1276,7 @@ protected:
     int               m_commandInt;
     long              m_extraLong;     // Additional information (e.g. select/deselect)
 
-    wxDECLARE_NO_ASSIGN_CLASS(wxEventBasicPayloadMixin);
+    wxDECLARE_NO_ASSIGN_DEF_COPY(wxEventBasicPayloadMixin);
 };
 
 class WXDLLIMPEXP_BASE wxEventAnyPayloadMixin : public wxEventBasicPayloadMixin
@@ -1372,8 +1397,6 @@ private:
 // specified method. The difference with a simple method call is that this is
 // done asynchronously, i.e. at some later time, instead of immediately when
 // the event object is constructed.
-
-#ifdef wxHAS_CALL_AFTER
 
 // This is a base class used to process all method calls.
 class wxAsyncMethodCallEvent : public wxEvent
@@ -1555,9 +1578,6 @@ private:
     FunctorType m_fn;
 };
 
-#endif // wxHAS_CALL_AFTER
-
-
 #if wxUSE_GUI
 
 
@@ -1672,7 +1692,7 @@ private:
 };
 
 
-// Scroll event class, derived form wxCommandEvent. wxScrollEvents are
+// Scroll event class, derived from wxCommandEvent. wxScrollEvents are
 // sent by wxSlider and wxScrollBar.
 /*
  wxEVT_SCROLL_TOP
@@ -1700,7 +1720,7 @@ public:
     virtual wxEvent *Clone() const wxOVERRIDE { return new wxScrollEvent(*this); }
 
 private:
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxScrollEvent);
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxScrollEvent);
 };
 
 // ScrollWin event class, derived fom wxEvent. wxScrollWinEvents
@@ -2198,6 +2218,9 @@ public:
     // get the raw key flags (platform-dependent)
     wxUint32 GetRawKeyFlags() const { return m_rawFlags; }
 
+    // returns true if this is a key auto repeat event
+    bool IsAutoRepeat() const { return m_isRepeat; }
+
     // Find the position of the event
     void GetPosition(wxCoord *xpos, wxCoord *ypos) const
     {
@@ -2259,6 +2282,9 @@ public:
     wxUint32      m_rawCode;
     wxUint32      m_rawFlags;
 
+    // Indicates whether the key event is a repeat
+    bool          m_isRepeat;
+
 private:
     // Set the event to propagate if necessary, i.e. if it's of wxEVT_CHAR_HOOK
     // type. This is used by all ctors.
@@ -2285,6 +2311,7 @@ private:
 #if wxUSE_UNICODE
         m_uniChar = evt.m_uniChar;
 #endif
+        m_isRepeat = evt.m_isRepeat;
     }
 
     // Initialize m_x and m_y using the current mouse cursor position if
@@ -2401,7 +2428,7 @@ public:
     virtual wxEvent *Clone() const wxOVERRIDE { return new wxPaintEvent(*this); }
 
 private:
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxPaintEvent);
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxPaintEvent);
 };
 
 class WXDLLIMPEXP_CORE wxNcPaintEvent : public wxEvent
@@ -2417,7 +2444,7 @@ public:
     virtual wxEvent *Clone() const wxOVERRIDE { return new wxNcPaintEvent(*this); }
 
 private:
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxNcPaintEvent);
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxNcPaintEvent);
 };
 
 // Erase background event class
@@ -2493,7 +2520,7 @@ public:
     virtual wxEvent *Clone() const wxOVERRIDE { return new wxChildFocusEvent(*this); }
 
 private:
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxChildFocusEvent);
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxChildFocusEvent);
 };
 
 // Activate event class
@@ -2556,7 +2583,7 @@ public:
     virtual wxEvent *Clone() const wxOVERRIDE { return new wxInitDialogEvent(*this); }
 
 private:
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxInitDialogEvent);
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxInitDialogEvent);
 };
 
 // Miscellaneous menu event class
@@ -2724,7 +2751,7 @@ public:
     virtual wxEvent *Clone() const wxOVERRIDE { return new wxMaximizeEvent(*this); }
 
 private:
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxMaximizeEvent);
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxMaximizeEvent);
 };
 
 /*
@@ -3025,7 +3052,7 @@ public:
     virtual wxEvent *Clone() const wxOVERRIDE { return new wxSysColourChangedEvent(*this); }
 
 private:
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxSysColourChangedEvent);
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxSysColourChangedEvent);
 };
 
 /*
@@ -3059,7 +3086,7 @@ private:
 
 /*
  wxEVT_MOUSE_CAPTURE_LOST
- The window losing the capture receives this message, unless it released it
+ The window losing the capture receives this message, unless it released
  it itself or unless wxWindow::CaptureMouse was called on another window
  (and so capture will be restored when the new capturer releases it).
  */
@@ -3085,15 +3112,15 @@ public:
  */
 class WXDLLIMPEXP_CORE wxDisplayChangedEvent : public wxEvent
 {
-private:
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxDisplayChangedEvent);
-
 public:
     wxDisplayChangedEvent()
         : wxEvent(0, wxEVT_DISPLAY_CHANGED)
         { }
 
     virtual wxEvent *Clone() const wxOVERRIDE { return new wxDisplayChangedEvent(*this); }
+
+private:
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxDisplayChangedEvent);
 };
 
 /*
@@ -3113,13 +3140,20 @@ public:
     wxSize GetOldDPI() const { return m_oldDPI; }
     wxSize GetNewDPI() const { return m_newDPI; }
 
+    // Scale the value by the ratio between new and old DPIs carried by this
+    // event.
+    wxSize Scale(wxSize sz) const;
+
+    int ScaleX(int x) const { return Scale(wxSize(x, -1)).x; }
+    int ScaleY(int y) const { return Scale(wxSize(-1, y)).y; }
+
     virtual wxEvent *Clone() const wxOVERRIDE { return new wxDPIChangedEvent(*this); }
 
 private:
     wxSize m_oldDPI;
     wxSize m_newDPI;
 
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxDPIChangedEvent);
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxDPIChangedEvent);
 };
 
 /*
@@ -3268,7 +3302,7 @@ public:
     virtual wxEvent *Clone() const wxOVERRIDE { return new wxWindowCreateEvent(*this); }
 
 private:
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxWindowCreateEvent);
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxWindowCreateEvent);
 };
 
 class WXDLLIMPEXP_CORE wxWindowDestroyEvent : public wxCommandEvent
@@ -3281,7 +3315,7 @@ public:
     virtual wxEvent *Clone() const wxOVERRIDE { return new wxWindowDestroyEvent(*this); }
 
 private:
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxWindowDestroyEvent);
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxWindowDestroyEvent);
 };
 
 // A help event is sent when the user clicks on a window in context-help mode.
@@ -3705,7 +3739,6 @@ public:
     static void WXConsumeException();
 #endif // wxUSE_EXCEPTIONS
 
-#ifdef wxHAS_CALL_AFTER
     // Asynchronous method calls: these methods schedule the given method
     // pointer for a later call (during the next idle event loop iteration).
     //
@@ -3749,7 +3782,6 @@ public:
     {
         QueueEvent(new wxAsyncMethodCallEventFunctor<T>(this, fn));
     }
-#endif // wxHAS_CALL_AFTER
 
 
     // Connecting and disconnecting
@@ -4047,6 +4079,10 @@ protected:
     // Search tracker objects for event connection with this sink
     wxEventConnectionRef *FindRefInTrackerList(wxEvtHandler *handler);
 
+    // Stub virtual functions for forward binary compatibility. DO NOT USE.
+    virtual void* WXReservedEvtHandler1(void*);
+    virtual void* WXReservedEvtHandler2(void*);
+
 private:
     // pass the event to wxTheApp instance, called from TryAfter()
     bool DoTryApp(wxEvent& event);
@@ -4322,8 +4358,8 @@ typedef void (wxEvtHandler::*wxPressAndTapEventFunction)(wxPressAndTapEvent&);
         static const wxEventTableEntry sm_eventTableEntries[];          \
     protected:                                                          \
         wxWARNING_SUPPRESS_MISSING_OVERRIDE()                           \
-        const wxEventTable* GetEventTable() const;                      \
-        wxEventHashTable& GetEventHashTable() const;                    \
+        const wxEventTable* GetEventTable() const wxDUMMY_OVERRIDE;     \
+        wxEventHashTable& GetEventHashTable() const wxDUMMY_OVERRIDE;   \
         wxWARNING_RESTORE_MISSING_OVERRIDE()                            \
         static const wxEventTable        sm_eventTable;                 \
         static wxEventHashTable          sm_eventHashTable
