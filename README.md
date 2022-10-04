@@ -4,7 +4,7 @@ UnityHubNative is a lightweight C++ / wxWidgets alternative to the unnecessarily
 
 It launches many times faster, uses far less memory and CPU, and is a fraction of the total size of the offical Unity Hub.
 
-![Mac Dark Mode screenshot](https://i.imgur.com/pE1q5HV.png)
+<img width="912" alt="image" src="https://user-images.githubusercontent.com/22283943/193929653-a4aad2b6-229b-4438-afee-c30a7ae39949.png">
 > Supports Mac dark mode!
 
 
@@ -13,9 +13,11 @@ It launches many times faster, uses far less memory and CPU, and is a fraction o
 - Open projects by double-clicking them in the list, or by selecting them and pressing Enter
 - Create new unity projects with templates, for any modern Unity version you have installed, with the Create New button
 - View Unity installs by double clicking them in the list views in the Editor Versions section
+- Manage Unity installs
+- Manage Unity licenses
 - Update projects to a Unity version of your choosing
 
-UnityHubNative does not have every feature that the official hub has, namely managing licenses. In addition, depending on your license, you may not be able to uninstall the official Unity Hub. UnityHubNative serves as a shortcut to get into your projects faster. 
+UnityHubNative does not have every feature that the official hub has, but it has most of them. UnityHubNative serves as a shortcut to get into your projects faster. 
 
 ## Installation
 This application is self-contained.
@@ -40,4 +42,4 @@ cmake --build . --config Release --target install
 
 ## Issues
 Please report all problems in the [Issues](https://github.com/Ravbug/UnityHubNative/issues) section of this repository. 
-Make sure to include as many details as possible, or I won't be able to fix it.
+Make sure to include as many details as possible, otherwise I won't be able to fix it.

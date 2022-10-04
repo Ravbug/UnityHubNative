@@ -24,18 +24,20 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	projectManSizer->SetFlexibleDirection( wxBOTH );
 	projectManSizer->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
-	projectsList = new wxListCtrl( projects_pane, wxID_HARDDISK, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_SINGLE_SEL );
+	projectsList = new wxListCtrl( projects_pane, wxID_HARDDISK, wxDefaultPosition, wxDefaultSize, wxLC_ALIGN_LEFT|wxLC_REPORT|wxLC_SINGLE_SEL );
 	projectManSizer->Add( projectsList, wxGBPosition( 2, 0 ), wxGBSpan( 1, 3 ), wxALL|wxEXPAND|wxFIXED_MINSIZE, 5 );
 
 	wxBoxSizer* pManSizer;
 	pManSizer = new wxBoxSizer( wxHORIZONTAL );
 
-	wxButton* revealProjBtn;
 	revealProjBtn = new wxButton( projects_pane, wxID_JUMP_TO, wxT("Reveal"), wxDefaultPosition, wxDefaultSize, 0 );
+	revealProjBtn->Enable( false );
+
 	pManSizer->Add( revealProjBtn, 0, wxALL, 5 );
 
-	wxButton* removeProjBtn;
 	removeProjBtn = new wxButton( projects_pane, wxID_DELETE, wxT(" Remove from list"), wxDefaultPosition, wxDefaultSize, 0 );
+	removeProjBtn->Enable( false );
+
 	pManSizer->Add( removeProjBtn, 0, wxALL, 5 );
 
 	wxButton* add_new_proj;
@@ -46,8 +48,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	add_existing_proj = new wxButton( projects_pane, wxID_ADD, wxT("Add Existing"), wxDefaultPosition, wxDefaultSize, 0 );
 	pManSizer->Add( add_existing_proj, 0, wxALL, 5 );
 
-	wxButton* openWithBtn;
 	openWithBtn = new wxButton( projects_pane, OPEN_WITH, wxT("Open With"), wxDefaultPosition, wxDefaultSize, 0 );
+	openWithBtn->Enable( false );
+
 	pManSizer->Add( openWithBtn, 0, wxALL, 5 );
 
 
@@ -102,9 +105,10 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	m_button5 = new wxButton( installs_pane, wxID_FIND, wxT("Add Location"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer4->Add( m_button5, 0, wxALL|wxEXPAND, 5 );
 
-	wxButton* m_button6;
-	m_button6 = new wxButton( installs_pane, wxID_CLEAR, wxT("Remove"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer4->Add( m_button6, 0, wxALL|wxEXPAND, 5 );
+	removeInstallPathBtn = new wxButton( installs_pane, wxID_CLEAR, wxT("Remove"), wxDefaultPosition, wxDefaultSize, 0 );
+	removeInstallPathBtn->Enable( false );
+
+	bSizer4->Add( removeInstallPathBtn, 0, wxALL|wxEXPAND, 5 );
 
 
 	MainSizer->Add( bSizer4, wxGBPosition( 3, 1 ), wxGBSpan( 1, 1 ), wxEXPAND, 5 );
@@ -112,21 +116,27 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* bSizer5;
 	bSizer5 = new wxBoxSizer( wxVERTICAL );
 
-	launchHubBtn = new wxButton( installs_pane, wxID_BACKWARD, wxT("Add New"), wxDefaultPosition, wxDefaultSize, 0 );
+	launchHubBtn = new wxButton( installs_pane, wxID_BACKWARD, wxT("Install New"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer5->Add( launchHubBtn, 0, wxALL|wxEXPAND, 5 );
 
 	removeInstallBtn = new wxButton( installs_pane, wxID_NO, wxT("Uninstall"), wxDefaultPosition, wxDefaultSize, 0 );
+	removeInstallBtn->Enable( false );
+
 	bSizer5->Add( removeInstallBtn, 0, wxALL|wxEXPAND, 5 );
+
+	activateProPlusBtn = new wxButton( installs_pane, ACTIV_PROPLUS, wxT("Activate (Plus/Pro)"), wxDefaultPosition, wxDefaultSize, 0 );
+	activateProPlusBtn->Enable( false );
+
+	bSizer5->Add( activateProPlusBtn, 0, wxALL|wxEXPAND, 5 );
+
+	activatePersonalBtn = new wxButton( installs_pane, ACTIV_PERSONAL, wxT("Activate (Personal)"), wxDefaultPosition, wxDefaultSize, 0 );
+	activatePersonalBtn->Enable( false );
+
+	bSizer5->Add( activatePersonalBtn, 0, wxALL|wxEXPAND, 5 );
 
 	wxButton* reloadInstalls;
 	reloadInstalls = new wxButton( installs_pane, wxID_RELOAD, wxT("Reload"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer5->Add( reloadInstalls, 0, wxALL|wxEXPAND, 5 );
-
-	activateProPlusBtn = new wxButton( installs_pane, ACTIV_PROPLUS, wxT("Activate (Plus/Pro)"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer5->Add( activateProPlusBtn, 0, wxALL|wxEXPAND, 5 );
-
-	activatePersonalBtn = new wxButton( installs_pane, ACTIV_PERSONAL, wxT("Activate (Personal)"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer5->Add( activatePersonalBtn, 0, wxALL|wxEXPAND, 5 );
 
 
 	MainSizer->Add( bSizer5, wxGBPosition( 1, 1 ), wxGBSpan( 1, 1 ), wxEXPAND, 5 );
@@ -157,18 +167,19 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	menuAdd = new wxMenuItem( menuProject, wxID_ADD, wxString( wxT("Add Existing Project") ) + wxT('\t') + wxT("Ctrl-Shift-N"), wxEmptyString, wxITEM_NORMAL );
 	menuProject->Append( menuAdd );
 
-	wxMenuItem* menuRemove;
 	menuRemove = new wxMenuItem( menuProject, wxID_DELETE, wxString( wxT("Remove Project From List") ) + wxT('\t') + wxT("Ctrl--"), wxEmptyString, wxITEM_NORMAL );
 	menuProject->Append( menuRemove );
+	menuRemove->Enable( false );
 
 	menuProject->AppendSeparator();
 
 	menuReveal = new wxMenuItem( menuProject, wxID_FIND, wxString( wxT("Reveal") ) + wxT('\t') + wxT("Ctrl-F"), wxEmptyString, wxITEM_NORMAL );
 	menuProject->Append( menuReveal );
+	menuReveal->Enable( false );
 
-	wxMenuItem* menuOpenWith;
 	menuOpenWith = new wxMenuItem( menuProject, wxID_PROPERTIES, wxString( wxT("Open In Different Version") ) + wxT('\t') + wxT("Ctrl-O"), wxEmptyString, wxITEM_NORMAL );
 	menuProject->Append( menuOpenWith );
+	menuOpenWith->Enable( false );
 
 	wxMenuItem* menuReload;
 	menuReload = new wxMenuItem( menuProject, wxID_REFRESH, wxString( wxT("Reload Data") ) + wxT('\t') + wxT("Ctrl-R"), wxEmptyString, wxITEM_NORMAL );

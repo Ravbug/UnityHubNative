@@ -41,6 +41,34 @@ private:
 	void OnActivatePersonal(wxCommandEvent&);
     void Filter(wxKeyEvent&);
     void LoadProjects(const std::string& filter);
+    
+    void OnSelectProject(wxListEvent&);
+    void OnDeselectProject(wxListEvent&);
+    
+    void OnSelectEditor(wxCommandEvent&);
+    void OnSelectEditorPath(wxCommandEvent&);
+    
+    wxWindow* const projectActionItems[3]{
+        revealProjBtn,
+        removeProjBtn,
+        openWithBtn
+    };
+    
+    wxMenuItem* const projectActionMenus[3]{
+        menuRemove,
+        menuReveal,
+        menuOpenWith
+    };
+    
+    wxWindow* const editorActionItems[3]{
+        removeInstallBtn,
+        activateProPlusBtn,
+        activatePersonalBtn
+    };
+    
+    wxWindow* const editorPathActionItems[1]{
+        removeInstallPathBtn
+    };
 	
 	//will store the list of projects
 	std::vector<project> projects;

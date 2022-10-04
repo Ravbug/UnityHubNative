@@ -42,9 +42,9 @@
 #define OPEN_WITH 1003
 #define FILTER_PROJ_ID 1004
 #define wxID_FLOPPY 1005
-#define wxID_RELOAD 1006
-#define ACTIV_PROPLUS 1007
-#define ACTIV_PERSONAL 1008
+#define ACTIV_PROPLUS 1006
+#define ACTIV_PERSONAL 1007
+#define wxID_RELOAD 1008
 #define wxID_TOP 1009
 #define PAD_CREATE 1010
 #define PAD_ACTIVATE 1011
@@ -62,15 +62,21 @@ class MainFrame : public wxFrame
 	protected:
 		wxNotebook* notebook;
 		wxListCtrl* projectsList;
+		wxButton* revealProjBtn;
+		wxButton* removeProjBtn;
+		wxButton* openWithBtn;
 		wxSearchCtrl* projSearchCtrl;
 		wxListBox* installsList;
 		wxListBox* installsPathsList;
+		wxButton* removeInstallPathBtn;
 		wxButton* launchHubBtn;
 		wxButton* removeInstallBtn;
 		wxButton* activateProPlusBtn;
 		wxButton* activatePersonalBtn;
 		wxMenuBar* menubar;
+		wxMenuItem* menuRemove;
 		wxMenuItem* menuReveal;
+		wxMenuItem* menuOpenWith;
 
 	public:
 

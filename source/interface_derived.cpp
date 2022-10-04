@@ -53,7 +53,15 @@ EVT_BUTTON(wxID_RELOAD,MainFrameDerived::OnReloadEditors)
 EVT_BUTTON(OPEN_WITH, MainFrameDerived::OnOpenWith)
 EVT_BUTTON(ACTIV_PROPLUS, MainFrameDerived::OnActivateProPlus)
 EVT_BUTTON(ACTIV_PERSONAL, MainFrameDerived::OnActivatePersonal)
+
 EVT_LIST_ITEM_ACTIVATED(wxID_HARDDISK, MainFrameDerived::OnOpenProject)
+EVT_LIST_ITEM_SELECTED(wxID_HARDDISK, MainFrameDerived::OnSelectProject)
+EVT_LIST_ITEM_DESELECTED(wxID_HARDDISK, MainFrameDerived::OnDeselectProject)
+EVT_LIST_DELETE_ITEM(wxID_HARDDISK,  MainFrameDerived::OnDeselectProject)
+
+EVT_LISTBOX(wxID_FLOPPY, MainFrameDerived::OnSelectEditor)
+EVT_LISTBOX(wxID_HOME, MainFrameDerived::OnSelectEditorPath)
+
 EVT_LISTBOX_DCLICK(wxID_FLOPPY,MainFrameDerived::OnRevealEditor)
 EVT_LISTBOX_DCLICK(wxID_HOME,MainFrameDerived::OnRevealInstallLocation)
 //EVT_SEARCHCTRL_SEARCH_BTN(FILTER_PROJ_ID,MainFrameDerived::Filter)
@@ -98,13 +106,65 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	projSearchCtrl->SetFocus();
 }
 
+void MainFrameDerived::OnSelectProject(wxListEvent&){
+    for (auto ptr : projectActionItems){
+        ptr->Enable();
+    }
+    for (auto ptr : projectActionMenus){
+        ptr->Enable();
+    }
+}
+
+void MainFrameDerived::OnDeselectProject(wxListEvent&){
+    for (auto ptr : projectActionItems){
+        ptr->Disable();
+    }
+    for (auto ptr : projectActionMenus){
+        ptr->Enable(false);
+    }
+}
+
+void MainFrameDerived::OnSelectEditor(wxCommandEvent& evt){
+    if ( installsList->GetSelection() != -1) {
+        for (auto ptr : editorActionItems){
+            ptr->Enable();
+        }
+    }
+    else{
+        for (auto ptr : editorActionItems){
+            ptr->Disable();
+        }
+    }
+}
+
+void MainFrameDerived::OnSelectEditorPath(wxCommandEvent&){
+    if ( installsPathsList->GetSelection() != -1) {
+        for (auto ptr : editorPathActionItems){
+            ptr->Enable();
+        }
+    }
+    else{
+        for (auto ptr : editorPathActionItems){
+            ptr->Disable();
+        }
+    }
+}
+
 /**
  Loads the data in the main view. If anything is currently loaded, it will be cleared and re-loaded
  */
 void MainFrameDerived::ReloadData(){
 	//clear any existing items
+    {
+        wxListEvent e;
+        OnDeselectProject(e);
+    }
 	projectsList->DeleteAllItems();
 	installsPathsList->Clear();
+    {
+        wxCommandEvent e;
+        OnSelectEditorPath(e);
+    }
 	projects.clear();
 	installPaths.clear();
 	editors.clear();
@@ -167,6 +227,8 @@ void MainFrameDerived::LoadProjects(const std::string &filter){
 
 void MainFrameDerived::Filter(wxKeyEvent &){
     projectsList->DeleteAllItems();
+    wxListEvent e;
+    OnDeselectProject(e);
     projects.clear();
     auto filter = projSearchCtrl->GetValue();
     transform(filter.begin(), filter.end(), filter.begin(), ::tolower);
@@ -259,6 +321,8 @@ void MainFrameDerived::OnRemoveInstallPath(wxCommandEvent& event){
 		
 		//update the UI
 		installsPathsList->Delete(itemIndex);
+        wxCommandEvent e;
+        OnSelectEditorPath(e);
 		
 		//commit to file
 		SaveEditorVersions();
@@ -284,7 +348,7 @@ void MainFrameDerived::OnCreateProject(wxCommandEvent& event){
 		dialog->show();
 	}
 	else{
-		wxMessageBox("UnityHubNative could not find any Unity Editors installed on this sytem. If you have an editor installed, make sure UnityHubNative can find it by adding its location to the Install Search Paths section of the Editor Versions Tab.\n\nIf you do not have any Unity editors installed, you must use the official hub to install one before you can create a new project with UnityHubNative.","Cannot Create Project",wxOK | wxICON_ERROR);
+		wxMessageBox("UnityHubNative could not find any Unity Editors installed on this sytem. If you have an editor installed, make sure UnityHubNative can find it by adding its location to the Install Search Paths section of the Editor Versions Tab.","Cannot Create Project",wxOK | wxICON_ERROR);
 	}
 }
 
@@ -497,6 +561,8 @@ void MainFrameDerived::AddProject(const project& p, const std::string& filter){
 void MainFrameDerived::LoadEditorVersions(){
 	//clear list control
 	installsList->Clear();
+    wxCommandEvent e;
+    OnSelectEditor(e);
 	editors.clear();
 	
 	//iterate over the search paths
