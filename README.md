@@ -5,6 +5,7 @@ UnityHubNative is a lightweight C++ / wxWidgets alternative to the unnecessarily
 It launches many times faster, uses far less memory and CPU, and is a fraction of the total size of the offical Unity Hub.
 
 <img width="912" alt="image" src="https://user-images.githubusercontent.com/22283943/193929653-a4aad2b6-229b-4438-afee-c30a7ae39949.png">
+
 > Supports Mac dark mode!
 
 
