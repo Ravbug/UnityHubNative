@@ -39,7 +39,7 @@ CreateProjectDialogD::CreateProjectDialogD(wxWindow* parent, const vector<editor
 	unityVersionChoice->SetSelection(0);
 	
 	//populate the template chooser
-	loadTemplates(editors[0]);
+	loadTemplates(editors[GetSelectedEditorIndex()]);
 	
 	this->Fit();
 }
@@ -69,7 +69,8 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 	string message = validateForm();
 	if (message == ""){
 		//assemble the command that will create the project described by the dialog
-		editor& e = editors[unityVersionChoice->GetSelection()];
+        
+		editor& e = editors[GetSelectedEditorIndex()];
 		auto executablePath = e.path / e.name / executable;
 		auto executableTemplatesPath = e.path / e.name / templatesDir;
 		string projName = projNameTxt->GetValue().ToStdString();
@@ -165,7 +166,18 @@ void CreateProjectDialogD::loadTemplates(const editor& e){
 
 void CreateProjectDialogD::OnChoiceChanged(wxCommandEvent& event){
 	//get the editor struct for the selected id
-	editor& e = editors[event.GetInt()];
+	editor& e = editors[GetSelectedEditorIndex()];
 	//load the templates for this editor
 	loadTemplates(e);
+}
+
+
+size_t CreateProjectDialogD::GetSelectedEditorIndex(){
+    auto str = unityVersionChoice->GetStringSelection();
+    
+    auto itr = std::find_if(editors.begin(), editors.end(), [&str](const editor& e){
+        return e.name == str;
+    });
+    auto idx = std::distance(editors.begin(), itr);
+    return idx;
 }

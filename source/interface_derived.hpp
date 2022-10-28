@@ -178,6 +178,8 @@ private:
 	void loadTemplates(const editor& e);
 	DialogCallback callback;
 	std::vector<editor> editors;
+    
+    size_t GetSelectedEditorIndex();
 	
 	//events
 	void OnCancel(wxCommandEvent& event){
