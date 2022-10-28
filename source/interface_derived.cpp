@@ -272,7 +272,7 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
             //check that the project does not already exist
             for(project& p : projects){
                 if (p.path == path){
-                    wxMessageBox( "This project has already been added.", "Cannot add project", wxOK | wxICON_WARNING );
+                    wxMessageBox( fmt::format("Project \"{}\" has already been added.", p.path.string()), "Cannot add project", wxOK | wxICON_WARNING );
                     return;
                 }
             }
