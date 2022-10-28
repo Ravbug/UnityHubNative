@@ -280,7 +280,7 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
             //add it to the projects list
             try{
                 project p = LoadProject(path);
-                AddProject(p,"");
+                AddProject(p,"",true);
             }
             catch(runtime_error& e){
                 wxMessageBox(e.what(),"Unable to add project",wxOK | wxICON_ERROR);
@@ -340,7 +340,7 @@ void MainFrameDerived::OnCreateProject(wxCommandEvent& event){
 	if (editors.size() > 0){
 		DialogCallback d = [&](string str, project p){
 			//add the project
-			this->AddProject(p,"");
+			this->AddProject(p,"",true);
 			
 			//launch the process
 			launch_process(str);
@@ -515,7 +515,7 @@ void MainFrameDerived::SaveEditorVersions(){
  @param p the project struct to add
  @note Ensure all the fields on the struct are initialized
  */
-void MainFrameDerived::AddProject(const project& p, const std::string& filter){
+void MainFrameDerived::AddProject(const project& p, const std::string& filter, bool select){
 	//add to the vector backing the UI
 	projects.insert(projects.begin(),p);
 	
@@ -551,6 +551,10 @@ void MainFrameDerived::AddProject(const project& p, const std::string& filter){
         int cols = projectsList->GetColumnCount();
         for (int i = 0; i < cols; i++){
             projectsList->SetColumnWidth(i, wxLIST_AUTOSIZE);
+        }
+        
+        if(select){
+            projectsList->SetItemState(i, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
         }
     }
 	
