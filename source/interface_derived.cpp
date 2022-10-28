@@ -417,9 +417,9 @@ void MainFrameDerived::OpenProject(const long& index){
 		}
 #endif 
 	}
-	//alert user
-	wxMessageBox("The editor version " + p.version + " could not be found.\n\nCheck that it is installed, and that the folder where it has been installed is listed in the Editor Versions tab, under Install Search Paths.", "Unable to start Unity", wxOK | wxICON_ERROR);
-	
+    // prompt the user to choose a new editor because we couldn't locate one
+    wxCommandEvent evt;
+    MainFrameDerived::OnOpenWith(evt);
 }
 
 /**
