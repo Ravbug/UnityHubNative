@@ -8,7 +8,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIGURATION>)
 option(BUILD_SHARED_LIBS OFF "Build static")
 
 if(MSVC)
-  add_definitions(/MP)
+  add_compile_options(/MP)
 endif()
 
 set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE INTERNAL "")

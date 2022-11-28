@@ -41,7 +41,10 @@ static const std::string AppVersion = "v1.5";
 #define pclose _pclose
 #define mkdir _mkdir
 #include <wx/wx.h> 
-	static const std::filesystem::path homedir = getenv("HOMEPATH");
+	static const std::filesystem::path homepath = getenv("HOMEPATH");
+	static const std::filesystem::path homedrive = getenv("HOMEDRIVE");
+	static const std::filesystem::path homedir = homedrive / homepath;
+
 	static const std::filesystem::path datapath = homedir / std::filesystem::path("AppData\\Roaming\\UnityHubNative");
 	static const char dirsep = '\\';
 
