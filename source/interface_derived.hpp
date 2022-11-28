@@ -15,6 +15,7 @@
 #include <wx/timer.h>
 #include <wx/msgdlg.h>
 #include <functional>
+#include <deque>
 
 #if defined __linux__
 #include "wxlin.xpm"

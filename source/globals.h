@@ -6,7 +6,6 @@
 #pragma once
 
 #include <sys/stat.h>
-#include <wx/listctrl.h>
 #include <string>
 #include <filesystem>
 
@@ -15,6 +14,9 @@ static constexpr std::string_view projectsFile = "projects.txt";
 static constexpr std::string_view editorPathsFile = "editorPaths.txt";
 static constexpr std::string_view templatePrefix = "com.unity.template";
 static constexpr std::string_view AppVersion = "v1.51";
+
+struct wxListCtrl;
+struct wxWindow;
 
 #if defined __APPLE__
 	#include <pwd.h>
@@ -39,7 +41,6 @@ static constexpr std::string_view AppVersion = "v1.51";
 #define popen _popen
 #define pclose _pclose
 #define mkdir _mkdir
-#include <wx/wx.h> 
 	static const std::filesystem::path homepath = getenv("HOMEPATH");
 	static const std::filesystem::path homedrive = getenv("HOMEDRIVE");
 	static const std::filesystem::path homedir = homedrive / homepath;
@@ -47,7 +48,7 @@ static constexpr std::string_view AppVersion = "v1.51";
 	static const std::filesystem::path datapath = homedir / std::filesystem::path("AppData\\Roaming\\UnityHubNative");
 
 	static const std::filesystem::path cachedir = std::filesystem::temp_directory_path();
-	static const std::string installerExt = "exe";
+	static constexpr std::string_view installerExt = "exe";
 
 	//where to find various Unity things on windows
 	static const std::filesystem::path executable = "Editor\\Unity.exe";
@@ -55,19 +56,6 @@ static constexpr std::string_view AppVersion = "v1.51";
 	
 	static const std::filesystem::path hubDefault = "\\Program Files\\Unity Hub\\Unity Hub.exe";
 	static const std::filesystem::path templatesDir = "Editor\\Data\\Resources\\PackageManager\\ProjectTemplates\\";
-	
-	/**
-	@returns the calculated display scale factor using GDI+
-	*/
-	inline float get_WIN_dpi_multiple() {
-		return 1;
-		/*
-		FLOAT dpiX;
-		HDC screen = GetDC(0);
-		dpiX = static_cast<FLOAT>(GetDeviceCaps(screen, LOGPIXELSX));
-		ReleaseDC(0, screen);
-		return dpiX / 96;*/
-	}
 
 	/**
 	Scales a wxWindow to the correct size using the monitor's DPI factor (Windows only)
@@ -75,46 +63,12 @@ static constexpr std::string_view AppVersion = "v1.51";
 	of DPI, use fitWindowMinSize.
 	@param window the wxWindow to scale
 	*/
-	inline void dpi_scale(wxWindow* window) {
-		//fit size to children
-		window->Fit();
-
-		//calculate the scaled min size
-		float fac = get_WIN_dpi_multiple();
-		float minh = window->GetMinHeight() * fac;
-		float minw = window->GetMinWidth() * fac;
-		//set the minimum size
-		window->SetSizeHints(wxSize(minw,minh));
-	}
-
-	/**
-	Replaces all instances of a string with another string, within a string
-	@param str the string to operate on
-	@param from the string to be replaced
-	@param to the string to replace `from` with
-	*/
-	inline std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
-		size_t start_pos = 0;
-		while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
-			str.replace(start_pos, from.length(), to);
-			start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
-		}
-		return str;
-	}
-
-	/**
-	Escapes Windows paths by replacing spaces ' ' with  '^ '
-	@param path the windows path to escape
-	@return the escaped path
-	*/
-	inline std::string WinEscapePath(std::string& path) {
-		return ReplaceAll(path, std::string(" "), std::string("^ "));
-	}
+	void dpi_scale(wxWindow* window);
 
 #elif defined __linux__
 	#include <pwd.h>
 	static const std::filesystem::path datapath = std::filesystem::path(getpwuid(getuid())->pw_dir) / "UnityHubNative";
-	static const std::string null_device = ">/dev/null 2>&1";
+	static constexpr std::string_view null_device = ">/dev/null 2>&1";
 	
 	static const std::filesystem::path executable = "Editor/Unity";
     static const std::vector<std::filesystem::path> defaultInstall = {std::filesystem::path(getpwuid(getuid())->pw_dir) / "Unity/Hub/Editor"};
@@ -127,17 +81,6 @@ static constexpr std::string_view AppVersion = "v1.51";
 #error You are compiling on an unsupported operating system. Currently only macOS, Windows, and Linux are supported. If you know how to support your system, submit a pull request.
 #endif
 
-//structure containing all the info needed to display a project
-struct project{
-	std::string name;
-	std::string version;
-	std::string modifiedDate;
-	std::filesystem::path path;
-    bool operator==(const project& other) const{
-        return this->path == other.path;
-    }
-};
-
 /**
  Launches a shell command as a separate, non-connected process. The output of this
  command is not captured (sent to the system's null device)
@@ -146,19 +89,11 @@ struct project{
  */
 void launch_process(const std::string& command, int flags = 0);
 
-inline void reveal_in_explorer(const std::string& path){
-#if defined __APPLE__
-	std::string command = "open \"" + path + "\"";
-
-#elif defined __linux__
-	std::string command = "xdg-open \"" + path + "\"";
-	
-#elif defined _WIN32
-	//do not surround the paths in quotes, it will not work
-	std::string command = "\\Windows\\explorer.exe \"" + path + "\"";
-#endif
-	launch_process(command);
-}
+/**
+* Open system file explorer to path
+* @param path the item to show
+*/
+void reveal_in_explorer(const std::string& path);
 
 /**
  Gets the first selected item in a wxListCtrl. If the wxListCtrl is set to single selection, this method will retrive the only selected item.
@@ -166,36 +101,34 @@ inline void reveal_in_explorer(const std::string& path){
  @return index of the first selected item, or -1 if no item is selected.
  @note wxListCtrl does not have a built in method for this.
  */
-inline long wxListCtrl_get_selected(wxListCtrl* listCtrl){
-	long itemIndex = -1;
-	while ((itemIndex = listCtrl->GetNextItem(itemIndex,wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != wxNOT_FOUND) {
-		break;
-	}
-	return itemIndex;
-}
+long wxListCtrl_get_selected(wxListCtrl* listCtrl);
 
 /**
 Fits a wxWindow to its contents, and then sets that size as the window's minimum size
 @param window the wxWindow to apply size changes
 */
-inline void fitWindowMinSize(wxWindow* window) {
-	//fit size to children
-	window->Fit();
-
-	//constrain minimum size to the minimum fitting size
-	wxSize size = window->GetSize();
-	window->SetSizeHints(size);
-}
+void fitWindowMinSize(wxWindow* window);
 
 //structure for representing an editor and for locating it
 struct editor {
 	std::string name;
 	std::filesystem::path path;
-	decltype(path) executablePath() const{
+	decltype(path) executablePath() const {
 		return path / name / executable;
 	}
-    
-    bool operator==(const editor& other){
-        return this->name == other.name;    // many editors can share a root path
-    }
+
+	bool operator==(const editor& other) {
+		return this->name == other.name;    // many editors can share a root path
+	}
+};
+
+//structure containing all the info needed to display a project
+struct project {
+	std::string name;
+	std::string version;
+	std::string modifiedDate;
+	std::filesystem::path path;
+	bool operator==(const project& other) const {
+		return this->path == other.path;
+	}
 };

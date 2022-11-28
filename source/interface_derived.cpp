@@ -249,7 +249,7 @@ void MainFrameDerived::OnAbout(wxCommandEvent& event)
 	aboutInfo.SetIcon(wxIcon(wxICON(wxlin)));
 	aboutInfo.SetVersion(AppVersion);
 #elif defined _WIN32
-	aboutInfo.SetVersion(AppVersion);
+	aboutInfo.SetVersion(AppVersion.data());
 	aboutInfo.SetIcon(wxIcon("IDI_WXWIN"));
 #endif
 	wxAboutBox(aboutInfo);

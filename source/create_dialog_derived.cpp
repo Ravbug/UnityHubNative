@@ -94,11 +94,20 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
                                      templateName
                                      );
 		#elif defined _WIN32
-			auto fullProj = std::filesystem::path("\"") / projPath / projName / "\"";
-			auto fullTemplate = std::filesystem::path("\"") / executableTemplatesPath / (templatePrefix + "." + templateName + "\"");
-			string command = "\"" + executablePath.string() + "\" -createproject " + fullProj.string() + " -cloneFromTemplate \"" + fullTemplate.string();
+			auto fullProj = filesystem::path(projPath) / projName;
+			auto fullTemplate = executableTemplatesPath / fmt::format("{}.{}",templatePrefix,templateName);
+			string command = fmt::format("\"{}\" -createproject {} -cloneFromTemplate \"{}\"",
+				executablePath.string(),
+				fullProj.string(),
+				fullTemplate.string());
 		#elif defined __linux__
-			string command = "\"" + executablePath.string() + "\" -createproject \"" + (filesystem::path(projPath) / projName).string() + "\" -cloneFromTemplate \"" + executableTemplatesPath.string() + templatePrefix + "." + templateName + "\"";
+			string command = fmt::format("\"{}\"  -createproject \"{}\" -cloneFromTemplate \"{}{}.{}\"",
+				executablePath.string(),
+				(filesystem::path(projPath) / projName).string(),
+				executableTemplatesPath.string(),
+				templatePrefix,
+				templateName
+			);
 		#endif
 		//TODO: return this command to what summoned this dialog
 		project p = {projName,e.name,"",filesystem::path(projPath) / filesystem::path(projName)};
