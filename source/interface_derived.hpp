@@ -75,7 +75,7 @@ private:
     };
 	
 	//will store the list of projects
-	std::vector<project> projects;
+	std::deque<project> projects;
 	std::vector<std::filesystem::path> installPaths;
 	std::vector<editor> editors;
 	

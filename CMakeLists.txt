@@ -25,7 +25,7 @@ if (APPLE)
 	set(OBJCPP "source/AppleUtilities.h" "source/AppleUtilities.mm")
 endif()
 add_executable("${PROJECT_NAME}" WIN32 ${source} "source/wxmac.icns" "source/windows.rc" ${OBJCPP})
-target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 #wxwidgets
 set(wxBUILD_SHARED OFF CACHE INTERNAL "")

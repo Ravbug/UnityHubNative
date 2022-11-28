@@ -11,6 +11,7 @@
 #include <dirent.h>
 #endif
 #include <wx/msgdlg.h>
+#include <fmt/format.h>
 
 using namespace std;
 
@@ -85,7 +86,13 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 		
 		//create the command string
 		#if defined __APPLE__
-			string command = "\"" + executablePath.string() + "\" -createproject \"" + (filesystem::path(projPath) / projName).string() + "\" -cloneFromTemplate \"" + executableTemplatesPath.string() + templatePrefix + "." + templateName + "\"";
+        string command = fmt::format("\"{}\" -createProject \"{}\" -cloneFromTemplate \"{}{}.{}\"",
+                                     executablePath.string(),
+                                     (filesystem::path(projPath) / projName).string(),
+                                     executableTemplatesPath.string(),
+                                     templatePrefix,
+                                     templateName
+                                     );
 		#elif defined _WIN32
 			auto fullProj = std::filesystem::path("\"") / projPath / projName / "\"";
 			auto fullTemplate = std::filesystem::path("\"") / executableTemplatesPath / (templatePrefix + "." + templateName + "\"");

@@ -102,7 +102,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	//if no projects to load, the interface will be blank
 
 	//show current version in titlebar
-	this->SetLabel("Unity Hub Native " + AppVersion);
+	this->SetLabel(fmt::format("Unity Hub Native {}",AppVersion));
     projSearchCtrl->Bind(wxEVT_KEY_UP, &MainFrameDerived::Filter, this);
 	projSearchCtrl->SetFocus();
 }
@@ -303,6 +303,9 @@ void MainFrameDerived::OnPageChanging(wxBookCtrlEvent& event){
  */
 void MainFrameDerived::LoadEditorPath(const std::filesystem::path& path){
 	//add to internal structure and to file
+    if (std::find(installPaths.begin(),installPaths.end(),path) != installPaths.end()){
+        return;
+    }
 	installPaths.push_back(path);
 	SaveEditorVersions();
 	
@@ -517,6 +520,11 @@ void MainFrameDerived::SaveEditorVersions(){
  */
 void MainFrameDerived::AddProject(const project& p, const std::string& filter, bool select){
 	//add to the vector backing the UI
+    if (std::find_if(projects.begin(),projects.end(),[&](const auto& item){
+        return p == item;
+    }) != projects.end()){
+        return;
+    }
 	projects.insert(projects.begin(),p);
 	
 	//save to file
@@ -597,21 +605,23 @@ void MainFrameDerived::LoadEditorVersions(){
                                 char buffer[16];
                                 getCFBundleVersionFromPlist(infopath.string().c_str(), buffer, sizeof(buffer));
                                 
-                                a.Add(string(buffer) + " - " + path.string());
                                 //add it to the backing datastructure
                                 editor e = {buffer, path};
-
-                                editors.push_back(e);
+                                if (std::find(editors.begin(), editors.end(), e) == editors.end()){
+                                    a.Add(e.name + " - " + e.path.string());
+                                    editors.push_back(e);
+                                }
                             }
                         }
                         else
 #endif
                         {
-                            a.Add(string(entry->d_name) + " - " + path.string());
                             //add it to the backing datastructure
                             editor e = {entry->d_name, path};
-
-                            editors.push_back(e);
+                            if (std::find(editors.begin(), editors.end(), e) == editors.end()){
+                                a.Add(e.name + " - " + e.path.string());
+                                editors.push_back(e);
+                            }
                         }
 					}
 				}

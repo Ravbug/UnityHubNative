@@ -11,19 +11,18 @@
 #include <filesystem>
 
 //data file names
-static const std::string projectsFile = "projects.txt";
-static const std::string editorPathsFile = "editorPaths.txt";
-static const std::string templatePrefix = "com.unity.template";
-static const std::string AppVersion = "v1.5";
+static constexpr std::string_view projectsFile = "projects.txt";
+static constexpr std::string_view editorPathsFile = "editorPaths.txt";
+static constexpr std::string_view templatePrefix = "com.unity.template";
+static constexpr std::string_view AppVersion = "v1.51";
 
 #if defined __APPLE__
 	#include <pwd.h>
 	//the location to store application data
 	static const std::filesystem::path datapath = std::filesystem::path(getpwuid(getuid())->pw_dir) / "Library/Application Support/UnityHubNative";
-	static const char dirsep = '/';
 
     static const std::filesystem::path cachedir = std::filesystem::path(getpwuid(getuid())->pw_dir) / "/Library/Caches/com.ravbug.UnityHubNative/";
-	static const std::string installerExt = "dmg";
+	static constexpr std::string_view installerExt = "dmg";
 
 	//where to find various Unity things on macOS
 	static const std::filesystem::path executable = "Unity.app/Contents/MacOS/Unity";
@@ -33,7 +32,7 @@ static const std::string AppVersion = "v1.5";
 	static const std::filesystem::path templatesDir = "Unity.app/Contents/Resources/PackageManager/ProjectTemplates/";
 
 	//for stream redirecting to dev/null
-	static const std::string null_device = ">/dev/null 2>&1";
+	static constexpr std::string_view null_device = ">/dev/null 2>&1";
 
 #elif defined _WIN32
 //naming conflicts
@@ -46,7 +45,6 @@ static const std::string AppVersion = "v1.5";
 	static const std::filesystem::path homedir = homedrive / homepath;
 
 	static const std::filesystem::path datapath = homedir / std::filesystem::path("AppData\\Roaming\\UnityHubNative");
-	static const char dirsep = '\\';
 
 	static const std::filesystem::path cachedir = std::filesystem::temp_directory_path();
 	static const std::string installerExt = "exe";
@@ -117,7 +115,6 @@ static const std::string AppVersion = "v1.5";
 	#include <pwd.h>
 	static const std::filesystem::path datapath = std::filesystem::path(getpwuid(getuid())->pw_dir) / "UnityHubNative";
 	static const std::string null_device = ">/dev/null 2>&1";
-	static const char dirsep = '/';
 	
 	static const std::filesystem::path executable = "Editor/Unity";
     static const std::vector<std::filesystem::path> defaultInstall = {std::filesystem::path(getpwuid(getuid())->pw_dir) / "Unity/Hub/Editor"};
@@ -136,6 +133,9 @@ struct project{
 	std::string version;
 	std::string modifiedDate;
 	std::filesystem::path path;
+    bool operator==(const project& other) const{
+        return this->path == other.path;
+    }
 };
 
 /**
@@ -144,18 +144,7 @@ struct project{
  @param command the shell command to run on the system
  @note The command passed to this function must be correct for the system it is running on. If it is not correct, the function will appear to do nothing.
  */
-inline void launch_process(const std::string& command, int flags = 0) {
-#if defined __APPLE__ || defined __linux__
-	//the '&' runs the command nonblocking, and >/dev/null 2>&1 destroys output
-	FILE* stream = popen(std::string(command + null_device + " &").c_str(), "r");
-	pclose(stream);
-
-#elif _WIN32
-	//call wxExecute with the Async flag
-	wxExecute(wxString(command),flags);
-
-#endif
-}
+void launch_process(const std::string& command, int flags = 0);
 
 inline void reveal_in_explorer(const std::string& path){
 #if defined __APPLE__
@@ -205,4 +194,8 @@ struct editor {
 	decltype(path) executablePath() const{
 		return path / name / executable;
 	}
+    
+    bool operator==(const editor& other){
+        return this->name == other.name;    // many editors can share a root path
+    }
 };
