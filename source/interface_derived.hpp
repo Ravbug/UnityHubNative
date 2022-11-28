@@ -28,7 +28,7 @@ public:
 	static std::string GetPathFromDialog(const std::string& message);
 	
 private:
-	void AddProject(const project& p, const std::string& filter);
+	void AddProject(const project& p, const std::string& filter, bool select=false);
 	project LoadProject(const std::filesystem::path& path);
 	void SaveProjects();
 	void OpenProject(const long& index);
@@ -75,7 +75,7 @@ private:
     };
 	
 	//will store the list of projects
-	std::vector<project> projects;
+	std::deque<project> projects;
 	std::vector<std::filesystem::path> installPaths;
 	std::vector<editor> editors;
 	
@@ -178,6 +178,8 @@ private:
 	void loadTemplates(const editor& e);
 	DialogCallback callback;
 	std::vector<editor> editors;
+    
+    size_t GetSelectedEditorIndex();
 	
 	//events
 	void OnCancel(wxCommandEvent& event){

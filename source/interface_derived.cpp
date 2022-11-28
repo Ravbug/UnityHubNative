@@ -102,7 +102,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	//if no projects to load, the interface will be blank
 
 	//show current version in titlebar
-	this->SetLabel("Unity Hub Native " + AppVersion);
+	this->SetLabel(fmt::format("Unity Hub Native {}",AppVersion));
     projSearchCtrl->Bind(wxEVT_KEY_UP, &MainFrameDerived::Filter, this);
 	projSearchCtrl->SetFocus();
 }
@@ -272,7 +272,7 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
             //check that the project does not already exist
             for(project& p : projects){
                 if (p.path == path){
-                    wxMessageBox( "This project has already been added.", "Cannot add project", wxOK | wxICON_WARNING );
+                    wxMessageBox( fmt::format("Project \"{}\" has already been added.", p.path.string()), "Cannot add project", wxOK | wxICON_WARNING );
                     return;
                 }
             }
@@ -280,7 +280,7 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
             //add it to the projects list
             try{
                 project p = LoadProject(path);
-                AddProject(p,"");
+                AddProject(p,"",true);
             }
             catch(runtime_error& e){
                 wxMessageBox(e.what(),"Unable to add project",wxOK | wxICON_ERROR);
@@ -303,6 +303,9 @@ void MainFrameDerived::OnPageChanging(wxBookCtrlEvent& event){
  */
 void MainFrameDerived::LoadEditorPath(const std::filesystem::path& path){
 	//add to internal structure and to file
+    if (std::find(installPaths.begin(),installPaths.end(),path) != installPaths.end()){
+        return;
+    }
 	installPaths.push_back(path);
 	SaveEditorVersions();
 	
@@ -340,7 +343,7 @@ void MainFrameDerived::OnCreateProject(wxCommandEvent& event){
 	if (editors.size() > 0){
 		DialogCallback d = [&](string str, project p){
 			//add the project
-			this->AddProject(p,"");
+			this->AddProject(p,"",true);
 			
 			//launch the process
 			launch_process(str);
@@ -417,9 +420,9 @@ void MainFrameDerived::OpenProject(const long& index){
 		}
 #endif 
 	}
-	//alert user
-	wxMessageBox("The editor version " + p.version + " could not be found.\n\nCheck that it is installed, and that the folder where it has been installed is listed in the Editor Versions tab, under Install Search Paths.", "Unable to start Unity", wxOK | wxICON_ERROR);
-	
+    // prompt the user to choose a new editor because we couldn't locate one
+    wxCommandEvent evt;
+    MainFrameDerived::OnOpenWith(evt);
 }
 
 /**
@@ -515,8 +518,13 @@ void MainFrameDerived::SaveEditorVersions(){
  @param p the project struct to add
  @note Ensure all the fields on the struct are initialized
  */
-void MainFrameDerived::AddProject(const project& p, const std::string& filter){
+void MainFrameDerived::AddProject(const project& p, const std::string& filter, bool select){
 	//add to the vector backing the UI
+    if (std::find_if(projects.begin(),projects.end(),[&](const auto& item){
+        return p == item;
+    }) != projects.end()){
+        return;
+    }
 	projects.insert(projects.begin(),p);
 	
 	//save to file
@@ -551,6 +559,10 @@ void MainFrameDerived::AddProject(const project& p, const std::string& filter){
         int cols = projectsList->GetColumnCount();
         for (int i = 0; i < cols; i++){
             projectsList->SetColumnWidth(i, wxLIST_AUTOSIZE);
+        }
+        
+        if(select){
+            projectsList->SetItemState(i, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
         }
     }
 	
@@ -593,21 +605,23 @@ void MainFrameDerived::LoadEditorVersions(){
                                 char buffer[16];
                                 getCFBundleVersionFromPlist(infopath.string().c_str(), buffer, sizeof(buffer));
                                 
-                                a.Add(string(buffer) + " - " + path.string());
                                 //add it to the backing datastructure
                                 editor e = {buffer, path};
-
-                                editors.push_back(e);
+                                if (std::find(editors.begin(), editors.end(), e) == editors.end()){
+                                    a.Add(e.name + " - " + e.path.string());
+                                    editors.push_back(e);
+                                }
                             }
                         }
                         else
 #endif
                         {
-                            a.Add(string(entry->d_name) + " - " + path.string());
                             //add it to the backing datastructure
                             editor e = {entry->d_name, path};
-
-                            editors.push_back(e);
+                            if (std::find(editors.begin(), editors.end(), e) == editors.end()){
+                                a.Add(e.name + " - " + e.path.string());
+                                editors.push_back(e);
+                            }
                         }
 					}
 				}

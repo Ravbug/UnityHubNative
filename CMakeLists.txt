@@ -8,7 +8,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIGURATION>)
 option(BUILD_SHARED_LIBS OFF "Build static")
 
 if(MSVC)
-  add_definitions(/MP)
+  add_compile_options(/MP)
 endif()
 
 set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE INTERNAL "")
@@ -25,7 +25,7 @@ if (APPLE)
 	set(OBJCPP "source/AppleUtilities.h" "source/AppleUtilities.mm")
 endif()
 add_executable("${PROJECT_NAME}" WIN32 ${source} "source/wxmac.icns" "source/windows.rc" ${OBJCPP})
-target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 #wxwidgets
 set(wxBUILD_SHARED OFF CACHE INTERNAL "")
