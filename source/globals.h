@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <string>
 #include <filesystem>
+#include <vector>
 
 //data file names
 static constexpr std::string_view projectsFile = "projects.txt";
@@ -20,6 +21,7 @@ struct wxWindow;
 
 #if defined __APPLE__
 	#include <pwd.h>
+    #include <unistd.h>
 	//the location to store application data
 	static const std::filesystem::path datapath = std::filesystem::path(getpwuid(getuid())->pw_dir) / "Library/Application Support/UnityHubNative";
 
@@ -67,6 +69,7 @@ struct wxWindow;
 
 #elif defined __linux__
 	#include <pwd.h>
+    #include <unistd.h>
 	static const std::filesystem::path datapath = std::filesystem::path(getpwuid(getuid())->pw_dir) / "UnityHubNative";
 	static constexpr std::string_view null_device = ">/dev/null 2>&1";
 	
