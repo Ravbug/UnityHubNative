@@ -247,7 +247,7 @@ void MainFrameDerived::OnAbout(wxCommandEvent& event)
 	aboutInfo.SetWebSite("https://github.com/ravbug/UnityHubNative");
 	aboutInfo.AddDeveloper("Ravbug (github.com/ravbug)");
 	aboutInfo.SetIcon(wxIcon(wxICON(wxlin)));
-	aboutInfo.SetVersion(AppVersion);
+	aboutInfo.SetVersion(AppVersion.data());
 #elif defined _WIN32
 	aboutInfo.SetVersion(AppVersion.data());
 	aboutInfo.SetIcon(wxIcon("IDI_WXWIN"));
