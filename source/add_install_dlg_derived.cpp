@@ -85,7 +85,7 @@ void AddNewInstallDlg::GetAllVersions(){
 				}
 				// installation URLs
 				{
-					auto r = fetch("https://unity3d.com/get-unity/download/archive");
+					auto r = fetch("https://unity.com/releases/editor/archive");
 					
 					// check if succeeded
 					if (r.code != 200){
@@ -95,7 +95,7 @@ void AddNewInstallDlg::GetAllVersions(){
 						// get all the Unity versions
 						// they are prefixed with unityhub:// links
 						
-						std::string_view match("unityhub://");
+						constexpr std::string_view match("unityhub://");
 						
 						for(size_t i = 0; i < r.text.size(); i++){
 							std::string_view section(r.text.data() + i,match.size());
