@@ -12,7 +12,7 @@ jobs:
       - name: Install Dependencies
         run: |
             sudo apt-get update
-            sudo apt-get install cmake ninja-build libx11-dev libgtk-3-dev -y --no-install-recommends
+            sudo apt-get install cmake ninja-build libx11-dev libgtk-3-dev fuse libfuse2 -y --no-install-recommends
       - name: Configure
         run: |
             mkdir -p build
