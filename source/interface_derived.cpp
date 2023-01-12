@@ -608,6 +608,10 @@ void MainFrameDerived::LoadEditorVersions(){
                                 //add it to the backing datastructure
                                 editor e = {buffer, path};
                                 if (std::find(editors.begin(), editors.end(), e) == editors.end()){
+                                    //get the target architecture
+                                    auto bundlepath = path / entry->d_name / "Unity.app";
+                                    auto arch = getArchitectureFromBundle(bundlepath.string().c_str());
+                                    
                                     a.Add(e.name + " - " + e.path.string());
                                     editors.push_back(e);
                                 }
@@ -619,6 +623,8 @@ void MainFrameDerived::LoadEditorVersions(){
                             //add it to the backing datastructure
                             editor e = {entry->d_name, path};
                             if (std::find(editors.begin(), editors.end(), e) == editors.end()){
+                                auto bundlepath = path / entry->d_name / "Unity.app";
+                                auto arch = getArchitectureFromBundle(bundlepath.string().c_str());
                                 a.Add(e.name + " - " + e.path.string());
                                 editors.push_back(e);
                             }
