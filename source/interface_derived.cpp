@@ -577,6 +577,8 @@ void MainFrameDerived::LoadEditorVersions(){
     wxCommandEvent e;
     OnSelectEditor(e);
 	editors.clear();
+    
+
 	
 	//iterate over the search paths
 	for (auto& path : installPaths){
@@ -586,6 +588,19 @@ void MainFrameDerived::LoadEditorVersions(){
 			struct dirent *entry = readdir(dir);
 			//loop over the contents
 			wxArrayString a;
+            auto addInstall = [this,&a,entry](const editor& e){
+                if (std::find(editors.begin(), editors.end(), e) == editors.end()){
+                    //get the target architecture
+#if __APPLE
+                    auto bundlepath = e.path / entry->d_name / "Unity.app";
+                    auto arch = getArchitectureFromBundle(bundlepath.string().c_str());
+#else
+                    
+#endif
+                    a.Add(e.name + " - " + e.path.string());
+                    editors.push_back(e);
+                }
+            };
 			while (entry != nullptr)
 			{
 				//is this a folder?
@@ -607,14 +622,7 @@ void MainFrameDerived::LoadEditorVersions(){
                                 
                                 //add it to the backing datastructure
                                 editor e = {buffer, path};
-                                if (std::find(editors.begin(), editors.end(), e) == editors.end()){
-                                    //get the target architecture
-                                    auto bundlepath = path / entry->d_name / "Unity.app";
-                                    auto arch = getArchitectureFromBundle(bundlepath.string().c_str());
-                                    
-                                    a.Add(e.name + " - " + e.path.string());
-                                    editors.push_back(e);
-                                }
+                                addInstall(e);
                             }
                         }
                         else
@@ -622,12 +630,7 @@ void MainFrameDerived::LoadEditorVersions(){
                         {
                             //add it to the backing datastructure
                             editor e = {entry->d_name, path};
-                            if (std::find(editors.begin(), editors.end(), e) == editors.end()){
-                                auto bundlepath = path / entry->d_name / "Unity.app";
-                                auto arch = getArchitectureFromBundle(bundlepath.string().c_str());
-                                a.Add(e.name + " - " + e.path.string());
-                                editors.push_back(e);
-                            }
+                            addInstall(e);
                         }
 					}
 				}
