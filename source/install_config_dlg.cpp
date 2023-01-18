@@ -8,6 +8,10 @@
 #include <charconv>
 #include <array>
 
+wxBEGIN_EVENT_TABLE(ConfigureInstallDlg, wxDialog)
+EVT_TREELIST_ITEM_CHECKED(ID_MODULESELECTTREE, ConfigureInstallDlg::OnCheckedChanged)
+wxEND_EVENT_TABLE()
+
 constexpr static const char* const ini_platform =
 #if __APPLE__
 "osx";
@@ -63,7 +67,7 @@ std::string sizeToString(const uint64_t& fileSize){
 
 
 auto parseIni (std::string_view string, uint32_t index = 0){
-    std::unordered_map<std::string_view, std::unordered_map<std::string_view, std::string_view>> inidata;
+    decltype(ConfigureInstallDlg::inidata) inidata;
     
     // get the name of a section
     auto getSectionName = [&string](uint32_t& index){
@@ -117,6 +121,13 @@ auto parseIni (std::string_view string, uint32_t index = 0){
     return inidata;
 };
 
+template<typename T>
+T sv_to_t(const std::string_view sv){
+    T value;
+    std::from_chars(sv.data(), sv.data() + sv.size(), value);
+    return value;
+}
+
 ConfigureInstallDlg::ConfigureInstallDlg(wxWindow* parent, const installVersionData& version) : ConfigureEditorDlgBase(parent){
     // download the INI file
     auto iniresult = fetch(fmt::format("https://download.unity3d.com/download_unity/{}/unity-{}.ini", version.hashcode,ini_platform));
@@ -127,11 +138,14 @@ ConfigureInstallDlg::ConfigureInstallDlg(wxWindow* parent, const installVersionD
     
     // parse the ini
    
-    auto inidata = parseIni(iniresult.text);
+    // NOTE: do not modify this structure after it is set!
+    initext = std::move(iniresult.text);
+    inidata = parseIni(initext);
     
     this->SetTitle(fmt::format("Install {}",inidata["Unity"]["title"]));
     
     // populate the data table
+ 
     
     for(const auto& component : inidata){
         if (component.first == "Unity"){    // don't show Unity row
@@ -143,11 +157,35 @@ ConfigureInstallDlg::ConfigureInstallDlg(wxWindow* parent, const installVersionD
         uint64_t size = 0;
 
         auto sv = component.second.at("size");
-        std::from_chars(sv.data(), sv.data() + sv.size(), size);
+        size = sv_to_t<decltype(size)>(sv);
         moduleSelectTree->SetItemText(item, 1, sizeToString(size));
         
         sv = component.second.at("installedsize");
-        std::from_chars(sv.data(), sv.data() + sv.size(), size);
+        size = sv_to_t<decltype(size)>(sv);
         moduleSelectTree->SetItemText(item, 2, sizeToString(size));
+        moduleSelectTree->SetItemData(item, new treeItemData(&component.second));   // will be freed by the tree list
     }
+}
+
+void ConfigureInstallDlg::OnCheckedChanged(wxTreeListEvent& evt){
+    // go through all the items and compute the total download and install size
+    uint64_t installedSize = 0;
+    uint64_t downloadSize = 0;
+    for(auto item = moduleSelectTree->GetRootItem(); item ; item = moduleSelectTree->GetNextItem(item)){
+        treeItemData* data = static_cast<decltype(data)>(moduleSelectTree->GetItemData(item));
+        if (!data){
+            continue;
+        }
+        
+        if (!moduleSelectTree->GetCheckedState(item)){
+            continue;
+        }
+        
+        auto sv = data->data->at("installedsize");
+        installedSize += sv_to_t<decltype(installedSize)>(sv);
+        
+        sv = data->data->at("size");
+        downloadSize += sv_to_t<decltype(installedSize)>(sv);
+    }
+    totalInstallLabel->SetLabelText(fmt::format("Installed: {} / Download: {}", sizeToString(installedSize), sizeToString(downloadSize)));
 }

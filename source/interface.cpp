@@ -70,7 +70,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	projects_pane->SetSizer( projectManSizer );
 	projects_pane->Layout();
 	projectManSizer->Fit( projects_pane );
-	notebook->AddPage( projects_pane, wxT("Projects"), false );
+	notebook->AddPage( projects_pane, wxT("Projects"), true );
 	wxPanel* installs_pane;
 	installs_pane = new wxPanel( notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxGridBagSizer* MainSizer;
@@ -149,7 +149,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	installs_pane->SetSizer( MainSizer );
 	installs_pane->Layout();
 	MainSizer->Fit( installs_pane );
-	notebook->AddPage( installs_pane, wxT("Editor Versions"), true );
+	notebook->AddPage( installs_pane, wxT("Editor Versions"), false );
 
 	main_sizer->Add( notebook, 1, wxEXPAND | wxALL, 5 );
 
@@ -533,11 +533,11 @@ ConfigureEditorDlgBase::ConfigureEditorDlgBase( wxWindow* parent, wxWindowID id,
 	installBtn = new wxButton( this, wxID_ANY, wxT("Install"), wxDefaultPosition, wxDefaultSize, 0 );
 	gbSizer5->Add( installBtn, wxGBPosition( 2, 1 ), wxGBSpan( 1, 1 ), wxALL|wxALIGN_RIGHT, 5 );
 
-	totalInstallLabel = new wxStaticText( this, wxID_ANY, wxT("MyLabel"), wxDefaultPosition, wxDefaultSize, 0 );
+	totalInstallLabel = new wxStaticText( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	totalInstallLabel->Wrap( -1 );
 	gbSizer5->Add( totalInstallLabel, wxGBPosition( 2, 0 ), wxGBSpan( 1, 1 ), wxALL, 5 );
 
-	moduleSelectTree = new wxTreeListCtrl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTL_CHECKBOX|wxTL_DEFAULT_STYLE );
+	moduleSelectTree = new wxTreeListCtrl( this, ID_MODULESELECTTREE, wxDefaultPosition, wxDefaultSize, wxTL_CHECKBOX|wxTL_DEFAULT_STYLE );
 	moduleSelectTree->AppendColumn( wxT("Name"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE );
 	moduleSelectTree->AppendColumn( wxT("Download Size"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE );
 	moduleSelectTree->AppendColumn( wxT("Installed Size"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE );

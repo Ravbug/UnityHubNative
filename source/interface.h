@@ -52,6 +52,7 @@
 #define VERSIONS_LIST 1012
 #define INSTALLVIAHUB 1013
 #define PPA_ACTIVATE 1014
+#define ID_MODULESELECTTREE 1015
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class MainFrame
