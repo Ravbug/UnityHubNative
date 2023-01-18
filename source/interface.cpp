@@ -70,7 +70,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	projects_pane->SetSizer( projectManSizer );
 	projects_pane->Layout();
 	projectManSizer->Fit( projects_pane );
-	notebook->AddPage( projects_pane, wxT("Projects"), true );
+	notebook->AddPage( projects_pane, wxT("Projects"), false );
 	wxPanel* installs_pane;
 	installs_pane = new wxPanel( notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxGridBagSizer* MainSizer;
@@ -149,7 +149,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	installs_pane->SetSizer( MainSizer );
 	installs_pane->Layout();
 	MainSizer->Fit( installs_pane );
-	notebook->AddPage( installs_pane, wxT("Editor Versions"), false );
+	notebook->AddPage( installs_pane, wxT("Editor Versions"), true );
 
 	main_sizer->Add( notebook, 1, wxEXPAND | wxALL, 5 );
 
@@ -538,9 +538,9 @@ ConfigureEditorDlgBase::ConfigureEditorDlgBase( wxWindow* parent, wxWindowID id,
 	gbSizer5->Add( totalInstallLabel, wxGBPosition( 2, 0 ), wxGBSpan( 1, 1 ), wxALL, 5 );
 
 	moduleSelectTree = new wxTreeListCtrl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTL_CHECKBOX|wxTL_DEFAULT_STYLE );
-	moduleSelectTree->AppendColumn( wxT("Name"), wxCOL_WIDTH_DEFAULT, wxALIGN_LEFT, wxCOL_RESIZABLE );
-	moduleSelectTree->AppendColumn( wxT("Download Size"), wxCOL_WIDTH_DEFAULT, wxALIGN_LEFT, wxCOL_RESIZABLE );
-	moduleSelectTree->AppendColumn( wxT("Installed Size"), wxCOL_WIDTH_DEFAULT, wxALIGN_LEFT, wxCOL_RESIZABLE );
+	moduleSelectTree->AppendColumn( wxT("Name"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE );
+	moduleSelectTree->AppendColumn( wxT("Download Size"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE );
+	moduleSelectTree->AppendColumn( wxT("Installed Size"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE );
 
 	gbSizer5->Add( moduleSelectTree, wxGBPosition( 1, 0 ), wxGBSpan( 1, 2 ), wxEXPAND | wxALL, 5 );
 
