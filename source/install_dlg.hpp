@@ -9,6 +9,10 @@ public:
     std::unordered_map<std::string_view, std::unordered_map<std::string_view, std::string_view>> inidata;
     std::string initext;
     void OnCheckedChanged(wxTreeListEvent&);
+    void OnInstallClicked(wxCommandEvent&);
+    
+    void RecalculateSize();
+    
     wxDECLARE_EVENT_TABLE();
 private:
     
@@ -18,6 +22,13 @@ private:
     };
 };
 
+struct ComponentInstaller{
+    std::string name;
+    std::string installerURL;
+    ComponentInstaller(const decltype(name)& name, const decltype(installerURL)& installerURL): name(name), installerURL(installerURL){}
+};
+
 struct InstallProgressDlg : public InstallProgressDlgBase{
-    InstallProgressDlg(wxWindow* parent);
+   
+    InstallProgressDlg(wxWindow* parent, const std::string& editorInstaller, const std::vector<ComponentInstaller>& componentInstallers);
 };

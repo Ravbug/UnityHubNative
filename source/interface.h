@@ -52,7 +52,8 @@
 #define VERSIONS_LIST 1012
 #define INSTALLVIAHUB 1013
 #define PPA_ACTIVATE 1014
-#define ID_MODULESELECTTREE 1015
+#define ID_INSTALL_BTN 1015
+#define ID_MODULESELECTTREE 1016
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class MainFrame
@@ -251,15 +252,15 @@ class InstallProgressDlgBase : public wxDialog
 	private:
 
 	protected:
-		wxDataViewListCtrl* installProgressList;
-		wxDataViewColumn* m_dataViewListColumn3;
-		wxDataViewColumn* m_dataViewListColumn4;
-		wxDataViewColumn* m_dataViewListColumn5;
-		wxButton* cancelDoneBtn;
+		wxDataViewListCtrl* statusList;
+		wxDataViewColumn* m_dataViewListColumn6;
+		wxDataViewColumn* m_dataViewListColumn7;
+		wxDataViewColumn* m_dataViewListColumn8;
+		wxButton* cancelCloseBtn;
 
 	public:
 
-		InstallProgressDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE );
+		InstallProgressDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX|wxMINIMIZE_BOX );
 
 		~InstallProgressDlgBase();
 

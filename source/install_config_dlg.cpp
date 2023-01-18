@@ -10,6 +10,7 @@
 
 wxBEGIN_EVENT_TABLE(ConfigureInstallDlg, wxDialog)
 EVT_TREELIST_ITEM_CHECKED(ID_MODULESELECTTREE, ConfigureInstallDlg::OnCheckedChanged)
+EVT_BUTTON(ID_INSTALL_BTN, ConfigureInstallDlg::OnInstallClicked)
 wxEND_EVENT_TABLE()
 
 constexpr static const char* const ini_platform =
@@ -165,9 +166,11 @@ ConfigureInstallDlg::ConfigureInstallDlg(wxWindow* parent, const installVersionD
         moduleSelectTree->SetItemText(item, 2, sizeToString(size));
         moduleSelectTree->SetItemData(item, new treeItemData(&component.second));   // will be freed by the tree list
     }
+    
+    RecalculateSize();
 }
 
-void ConfigureInstallDlg::OnCheckedChanged(wxTreeListEvent& evt){
+void ConfigureInstallDlg::RecalculateSize(){
     // go through all the items and compute the total download and install size
     uint64_t installedSize = 0;
     uint64_t downloadSize = 0;
@@ -185,7 +188,39 @@ void ConfigureInstallDlg::OnCheckedChanged(wxTreeListEvent& evt){
         installedSize += sv_to_t<decltype(installedSize)>(sv);
         
         sv = data->data->at("size");
-        downloadSize += sv_to_t<decltype(installedSize)>(sv);
+        downloadSize += sv_to_t<decltype(downloadSize)>(sv);
     }
+    // account for the Editor
+    installedSize += sv_to_t<decltype(installedSize)>(inidata["Unity"]["installedsize"]);
+    downloadSize += sv_to_t<decltype(downloadSize)>(inidata["Unity"]["size"]);
+    
     totalInstallLabel->SetLabelText(fmt::format("Installed: {} / Download: {}", sizeToString(installedSize), sizeToString(downloadSize)));
+}
+
+void ConfigureInstallDlg::OnCheckedChanged(wxTreeListEvent& evt){
+    RecalculateSize();
+}
+
+void ConfigureInstallDlg::OnInstallClicked(wxCommandEvent &){
+    std::vector<ComponentInstaller> componentInstallers;
+    
+    auto editorInstaller = inidata["Unity"]["url"];
+    
+    for(auto item = moduleSelectTree->GetRootItem(); item ; item = moduleSelectTree->GetNextItem(item)){
+        treeItemData* data = static_cast<decltype(data)>(moduleSelectTree->GetItemData(item));
+        if (!data){
+            continue;
+        }
+        
+        if (!moduleSelectTree->GetCheckedState(item)){
+            continue;
+        }
+        
+        auto url = data->data->at("url");
+        auto name = data->data->at("title");
+        componentInstallers.emplace_back(std::string(name), std::string(url));
+    }
+    auto installProgressDlg = new InstallProgressDlg(GetParent(), std::string(editorInstaller), componentInstallers);
+    installProgressDlg->Show();
+    this->Close();
 }

@@ -70,7 +70,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	projects_pane->SetSizer( projectManSizer );
 	projects_pane->Layout();
 	projectManSizer->Fit( projects_pane );
-	notebook->AddPage( projects_pane, wxT("Projects"), true );
+	notebook->AddPage( projects_pane, wxT("Projects"), false );
 	wxPanel* installs_pane;
 	installs_pane = new wxPanel( notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxGridBagSizer* MainSizer;
@@ -149,7 +149,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	installs_pane->SetSizer( MainSizer );
 	installs_pane->Layout();
 	MainSizer->Fit( installs_pane );
-	notebook->AddPage( installs_pane, wxT("Editor Versions"), false );
+	notebook->AddPage( installs_pane, wxT("Editor Versions"), true );
 
 	main_sizer->Add( notebook, 1, wxEXPAND | wxALL, 5 );
 
@@ -530,7 +530,7 @@ ConfigureEditorDlgBase::ConfigureEditorDlgBase( wxWindow* parent, wxWindowID id,
 	m_staticText17->Wrap( -1 );
 	gbSizer5->Add( m_staticText17, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	installBtn = new wxButton( this, wxID_ANY, wxT("Install"), wxDefaultPosition, wxDefaultSize, 0 );
+	installBtn = new wxButton( this, ID_INSTALL_BTN, wxT("Install"), wxDefaultPosition, wxDefaultSize, 0 );
 	gbSizer5->Add( installBtn, wxGBPosition( 2, 1 ), wxGBSpan( 1, 1 ), wxALL|wxALIGN_RIGHT, 5 );
 
 	totalInstallLabel = new wxStaticText( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
@@ -563,22 +563,27 @@ InstallProgressDlgBase::InstallProgressDlgBase( wxWindow* parent, wxWindowID id,
 {
 	this->SetSizeHints( wxSize( 320,260 ), wxDefaultSize );
 
-	wxBoxSizer* bSizer10;
-	bSizer10 = new wxBoxSizer( wxVERTICAL );
+	wxGridBagSizer* gbSizer6;
+	gbSizer6 = new wxGridBagSizer( 0, 0 );
+	gbSizer6->SetFlexibleDirection( wxBOTH );
+	gbSizer6->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
-	installProgressList = new wxDataViewListCtrl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
-	m_dataViewListColumn3 = installProgressList->AppendTextColumn( wxT("Name"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
-	m_dataViewListColumn4 = installProgressList->AppendProgressColumn( wxT("Progress"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
-	m_dataViewListColumn5 = installProgressList->AppendTextColumn( wxT("Status"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
-	bSizer10->Add( installProgressList, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL, 5 );
+	statusList = new wxDataViewListCtrl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
+	m_dataViewListColumn6 = statusList->AppendTextColumn( wxT("Name"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn7 = statusList->AppendProgressColumn( wxT("Progress"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn8 = statusList->AppendTextColumn( wxT("Status"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	gbSizer6->Add( statusList, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALL|wxEXPAND, 5 );
 
-	cancelDoneBtn = new wxButton( this, wxID_ANY, wxT("Cancel"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer10->Add( cancelDoneBtn, 0, wxALL|wxALIGN_RIGHT, 5 );
+	cancelCloseBtn = new wxButton( this, wxID_ANY, wxT("Cancel"), wxDefaultPosition, wxDefaultSize, 0 );
+	gbSizer6->Add( cancelCloseBtn, wxGBPosition( 1, 0 ), wxGBSpan( 1, 1 ), wxALL|wxALIGN_RIGHT, 5 );
 
 
-	this->SetSizer( bSizer10 );
+	gbSizer6->AddGrowableCol( 0 );
+	gbSizer6->AddGrowableRow( 0 );
+
+	this->SetSizer( gbSizer6 );
 	this->Layout();
-	bSizer10->Fit( this );
+	gbSizer6->Fit( this );
 
 	this->Centre( wxBOTH );
 }
