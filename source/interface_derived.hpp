@@ -230,12 +230,8 @@ public:
         this->ShowModal();
     }
 private:
-    struct version{
-        std::string name, hashcode, date;
-        version(const decltype(name)& name, const decltype(hashcode)& hashcode, const decltype(date)& date) : name(name), hashcode(hashcode), date(date){}
-    };
     
-    std::vector<version> versions;
+    std::vector<installVersionData> versions;
     void GetAllVersions();
     void PopulateTable(wxCommandEvent&);
     void InstallSelected(wxCommandEvent&);
@@ -244,6 +240,6 @@ private:
     void Reenable(wxCommandEvent&);
 	void ExecuteProc(wxCommandEvent&);
     
-    void PopulateWithFilter(const std::function<bool(const version&)>);
+    void PopulateWithFilter(const std::function<bool(const installVersionData&)>);
     wxDECLARE_EVENT_TABLE();
 };

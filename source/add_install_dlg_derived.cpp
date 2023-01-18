@@ -5,6 +5,7 @@
 #include <sstream>
 #include <fstream>
 #include <fmt/format.h>
+#include "install_dlg.hpp"
 
 using namespace std;
 #define UPDATEEVT 2004
@@ -43,7 +44,7 @@ AddNewInstallDlg::AddNewInstallDlg(wxWindow* parent) : AddNewInstallDlgBase(pare
 
 void AddNewInstallDlg::PopulateTable(wxCommandEvent&){
     // populate the data view
-    PopulateWithFilter([](const version&){return true;});
+    PopulateWithFilter([](const installVersionData&){return true;});
 
     installBtn->SetLabel("Install Selected");
     installBtn->Enable();
@@ -133,13 +134,13 @@ void AddNewInstallDlg::Filter(wxCommandEvent& evt){
     // get filter string
     auto filter = evt.GetString();
     versionsListCtrl->DeleteAllItems();
-    PopulateWithFilter([&](const version& item) -> bool{
+    PopulateWithFilter([&](const installVersionData& item) -> bool{
         return item.name.find(filter) != string::npos;
     });
    
 }
 
-void AddNewInstallDlg::PopulateWithFilter(const std::function<bool (const version &)> func){
+void AddNewInstallDlg::PopulateWithFilter(const std::function<bool (const installVersionData &)> func){
     for(const auto& version : versions){
         if (func(version)){
             wxVector<wxVariant> data;
@@ -154,8 +155,13 @@ void AddNewInstallDlg::InstallSelected(wxCommandEvent&){
 #ifndef __linux__ 
     // get the selected item
     auto item = versionsListCtrl->GetSelection();
-    auto data = *(reinterpret_cast<version*>(versionsListCtrl->GetItemData(item)));
+    auto data = *(reinterpret_cast<installVersionData*>(versionsListCtrl->GetItemData(item)));
     installBtn->Disable();
+    this->Close();
+    auto configureInstall = new ConfigureInstallDlg(GetParent(),data);
+    configureInstall->Show();   // it will clean itself up when it closes
+    
+#if 0
     installBtn->SetLabel("Downloading...");
     if (item.IsOk()){
         
@@ -215,11 +221,12 @@ void AddNewInstallDlg::InstallSelected(wxCommandEvent&){
         wxMessageBox("Select a version", "Error", wxOK | wxICON_ERROR);
     }
 #endif
+#endif
 }
 
 void AddNewInstallDlg::InstallSelectedWithHub(wxCommandEvent &){
     auto item = versionsListCtrl->GetSelection();
-    auto data = *(reinterpret_cast<version*>(versionsListCtrl->GetItemData(item)));
+    auto data = *(reinterpret_cast<installVersionData*>(versionsListCtrl->GetItemData(item)));
     
     auto url = fmt::format("unityhub://{}/{}", data.name,data.hashcode);
     

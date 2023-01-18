@@ -33,6 +33,7 @@
 #include <wx/textctrl.h>
 #include <wx/choice.h>
 #include <wx/dataview.h>
+#include <wx/treelist.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -217,6 +218,49 @@ class OutputDialogBase : public wxDialog
 		OutputDialogBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Output"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 388,256 ), long style = wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX|wxRESIZE_BORDER|wxSTAY_ON_TOP );
 
 		~OutputDialogBase();
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Class ConfigureEditorDlgBase
+///////////////////////////////////////////////////////////////////////////////
+class ConfigureEditorDlgBase : public wxDialog
+{
+	private:
+
+	protected:
+		wxStaticText* m_staticText17;
+		wxButton* installBtn;
+		wxStaticText* totalInstallLabel;
+		wxTreeListCtrl* moduleSelectTree;
+
+	public:
+
+		ConfigureEditorDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX );
+
+		~ConfigureEditorDlgBase();
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Class InstallProgressDlgBase
+///////////////////////////////////////////////////////////////////////////////
+class InstallProgressDlgBase : public wxDialog
+{
+	private:
+
+	protected:
+		wxDataViewListCtrl* installProgressList;
+		wxDataViewColumn* m_dataViewListColumn3;
+		wxDataViewColumn* m_dataViewListColumn4;
+		wxDataViewColumn* m_dataViewListColumn5;
+		wxButton* cancelDoneBtn;
+
+	public:
+
+		InstallProgressDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE );
+
+		~InstallProgressDlgBase();
 
 };
 

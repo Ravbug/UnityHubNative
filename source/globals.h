@@ -19,6 +19,11 @@ static constexpr std::string_view AppVersion = "v1.52";
 struct wxListCtrl;
 struct wxWindow;
 
+struct installVersionData{
+    std::string name, hashcode, date;
+    installVersionData(const decltype(name)& name, const decltype(hashcode)& hashcode, const decltype(date)& date) : name(name), hashcode(hashcode), date(date){}
+};
+
 #if defined __APPLE__
 	#include <pwd.h>
     #include <unistd.h>

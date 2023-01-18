@@ -516,3 +516,73 @@ OutputDialogBase::OutputDialogBase( wxWindow* parent, wxWindowID id, const wxStr
 OutputDialogBase::~OutputDialogBase()
 {
 }
+
+ConfigureEditorDlgBase::ConfigureEditorDlgBase( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
+{
+	this->SetSizeHints( wxSize( 480,320 ), wxDefaultSize );
+
+	wxGridBagSizer* gbSizer5;
+	gbSizer5 = new wxGridBagSizer( 0, 0 );
+	gbSizer5->SetFlexibleDirection( wxBOTH );
+	gbSizer5->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+
+	m_staticText17 = new wxStaticText( this, wxID_ANY, wxT("Add Modules"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText17->Wrap( -1 );
+	gbSizer5->Add( m_staticText17, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	installBtn = new wxButton( this, wxID_ANY, wxT("Install"), wxDefaultPosition, wxDefaultSize, 0 );
+	gbSizer5->Add( installBtn, wxGBPosition( 2, 1 ), wxGBSpan( 1, 1 ), wxALL|wxALIGN_RIGHT, 5 );
+
+	totalInstallLabel = new wxStaticText( this, wxID_ANY, wxT("MyLabel"), wxDefaultPosition, wxDefaultSize, 0 );
+	totalInstallLabel->Wrap( -1 );
+	gbSizer5->Add( totalInstallLabel, wxGBPosition( 2, 0 ), wxGBSpan( 1, 1 ), wxALL, 5 );
+
+	moduleSelectTree = new wxTreeListCtrl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTL_CHECKBOX|wxTL_DEFAULT_STYLE );
+	moduleSelectTree->AppendColumn( wxT("Name"), wxCOL_WIDTH_DEFAULT, wxALIGN_LEFT, wxCOL_RESIZABLE );
+	moduleSelectTree->AppendColumn( wxT("Download Size"), wxCOL_WIDTH_DEFAULT, wxALIGN_LEFT, wxCOL_RESIZABLE );
+	moduleSelectTree->AppendColumn( wxT("Installed Size"), wxCOL_WIDTH_DEFAULT, wxALIGN_LEFT, wxCOL_RESIZABLE );
+
+	gbSizer5->Add( moduleSelectTree, wxGBPosition( 1, 0 ), wxGBSpan( 1, 2 ), wxEXPAND | wxALL, 5 );
+
+
+	gbSizer5->AddGrowableCol( 0 );
+	gbSizer5->AddGrowableRow( 1 );
+
+	this->SetSizer( gbSizer5 );
+	this->Layout();
+	gbSizer5->Fit( this );
+
+	this->Centre( wxBOTH );
+}
+
+ConfigureEditorDlgBase::~ConfigureEditorDlgBase()
+{
+}
+
+InstallProgressDlgBase::InstallProgressDlgBase( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
+{
+	this->SetSizeHints( wxSize( 320,260 ), wxDefaultSize );
+
+	wxBoxSizer* bSizer10;
+	bSizer10 = new wxBoxSizer( wxVERTICAL );
+
+	installProgressList = new wxDataViewListCtrl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
+	m_dataViewListColumn3 = installProgressList->AppendTextColumn( wxT("Name"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn4 = installProgressList->AppendProgressColumn( wxT("Progress"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn5 = installProgressList->AppendTextColumn( wxT("Status"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	bSizer10->Add( installProgressList, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL, 5 );
+
+	cancelDoneBtn = new wxButton( this, wxID_ANY, wxT("Cancel"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer10->Add( cancelDoneBtn, 0, wxALL|wxALIGN_RIGHT, 5 );
+
+
+	this->SetSizer( bSizer10 );
+	this->Layout();
+	bSizer10->Fit( this );
+
+	this->Centre( wxBOTH );
+}
+
+InstallProgressDlgBase::~InstallProgressDlgBase()
+{
+}
