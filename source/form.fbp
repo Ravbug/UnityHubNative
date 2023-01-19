@@ -4394,7 +4394,7 @@
             <property name="minimum_size">480,320</property>
             <property name="name">ConfigureEditorDlgBase</property>
             <property name="pos"></property>
-            <property name="size"></property>
+            <property name="size">480,320</property>
             <property name="style">wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX</property>
             <property name="subclass">; ; forward_declare</property>
             <property name="title"></property>
@@ -4714,10 +4714,10 @@
             <property name="hidden">0</property>
             <property name="id">wxID_ANY</property>
             <property name="maximum_size"></property>
-            <property name="minimum_size">320,260</property>
+            <property name="minimum_size">480,260</property>
             <property name="name">InstallProgressDlgBase</property>
             <property name="pos"></property>
-            <property name="size"></property>
+            <property name="size">480,260</property>
             <property name="style">wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX|wxMINIMIZE_BOX</property>
             <property name="subclass">; ; forward_declare</property>
             <property name="title"></property>
@@ -4771,7 +4771,7 @@
                             <property name="flags">wxDATAVIEW_COL_RESIZABLE</property>
                             <property name="label">Name</property>
                             <property name="mode">wxDATAVIEW_CELL_INERT</property>
-                            <property name="name">m_dataViewListColumn6</property>
+                            <property name="name">nameCol</property>
                             <property name="permission">protected</property>
                             <property name="type">Text</property>
                             <property name="width">-1</property>
@@ -4840,7 +4840,7 @@
                         <property name="font"></property>
                         <property name="gripper">0</property>
                         <property name="hidden">0</property>
-                        <property name="id">wxID_ANY</property>
+                        <property name="id">ID_INSTALL_BTN_CANCEL</property>
                         <property name="label">Cancel</property>
                         <property name="margins"></property>
                         <property name="markup">0</property>

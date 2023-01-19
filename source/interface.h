@@ -54,6 +54,7 @@
 #define PPA_ACTIVATE 1014
 #define ID_INSTALL_BTN 1015
 #define ID_MODULESELECTTREE 1016
+#define ID_INSTALL_BTN_CANCEL 1017
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class MainFrame
@@ -238,7 +239,7 @@ class ConfigureEditorDlgBase : public wxDialog
 
 	public:
 
-		ConfigureEditorDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX );
+		ConfigureEditorDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 480,320 ), long style = wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX );
 
 		~ConfigureEditorDlgBase();
 
@@ -253,14 +254,14 @@ class InstallProgressDlgBase : public wxDialog
 
 	protected:
 		wxDataViewListCtrl* statusList;
-		wxDataViewColumn* m_dataViewListColumn6;
+		wxDataViewColumn* nameCol;
 		wxDataViewColumn* m_dataViewListColumn7;
 		wxDataViewColumn* m_dataViewListColumn8;
 		wxButton* cancelCloseBtn;
 
 	public:
 
-		InstallProgressDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX|wxMINIMIZE_BOX );
+		InstallProgressDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 480,260 ), long style = wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX|wxMINIMIZE_BOX );
 
 		~InstallProgressDlgBase();
 

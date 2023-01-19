@@ -7,6 +7,14 @@ size_t writeFunction(void* ptr, size_t size, size_t nmemb, std::string* data) {
 	return size * nmemb;
 }
 
+int progress_callback(void *clientp,
+                      curl_off_t dltotal,
+                      curl_off_t dlnow,
+                      curl_off_t ultotal,
+                      curl_off_t ulnow){
+    
+}
+
 fetchResult fetch(const std::string& url) {
 	auto curl = curl_easy_init();
 	if (curl) {

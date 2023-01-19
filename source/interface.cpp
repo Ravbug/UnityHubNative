@@ -550,7 +550,6 @@ ConfigureEditorDlgBase::ConfigureEditorDlgBase( wxWindow* parent, wxWindowID id,
 
 	this->SetSizer( gbSizer5 );
 	this->Layout();
-	gbSizer5->Fit( this );
 
 	this->Centre( wxBOTH );
 }
@@ -561,7 +560,7 @@ ConfigureEditorDlgBase::~ConfigureEditorDlgBase()
 
 InstallProgressDlgBase::InstallProgressDlgBase( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
 {
-	this->SetSizeHints( wxSize( 320,260 ), wxDefaultSize );
+	this->SetSizeHints( wxSize( 480,260 ), wxDefaultSize );
 
 	wxGridBagSizer* gbSizer6;
 	gbSizer6 = new wxGridBagSizer( 0, 0 );
@@ -569,12 +568,12 @@ InstallProgressDlgBase::InstallProgressDlgBase( wxWindow* parent, wxWindowID id,
 	gbSizer6->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
 	statusList = new wxDataViewListCtrl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
-	m_dataViewListColumn6 = statusList->AppendTextColumn( wxT("Name"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	nameCol = statusList->AppendTextColumn( wxT("Name"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn7 = statusList->AppendProgressColumn( wxT("Progress"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn8 = statusList->AppendTextColumn( wxT("Status"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	gbSizer6->Add( statusList, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALL|wxEXPAND, 5 );
 
-	cancelCloseBtn = new wxButton( this, wxID_ANY, wxT("Cancel"), wxDefaultPosition, wxDefaultSize, 0 );
+	cancelCloseBtn = new wxButton( this, ID_INSTALL_BTN_CANCEL, wxT("Cancel"), wxDefaultPosition, wxDefaultSize, 0 );
 	gbSizer6->Add( cancelCloseBtn, wxGBPosition( 1, 0 ), wxGBSpan( 1, 1 ), wxALL|wxALIGN_RIGHT, 5 );
 
 
@@ -583,7 +582,6 @@ InstallProgressDlgBase::InstallProgressDlgBase( wxWindow* parent, wxWindowID id,
 
 	this->SetSizer( gbSizer6 );
 	this->Layout();
-	gbSizer6->Fit( this );
 
 	this->Centre( wxBOTH );
 }

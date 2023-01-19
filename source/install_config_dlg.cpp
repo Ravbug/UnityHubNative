@@ -129,7 +129,7 @@ T sv_to_t(const std::string_view sv){
     return value;
 }
 
-ConfigureInstallDlg::ConfigureInstallDlg(wxWindow* parent, const installVersionData& version) : ConfigureEditorDlgBase(parent){
+ConfigureInstallDlg::ConfigureInstallDlg(wxWindow* parent, const installVersionData& version) : hashcode(version.hashcode), ConfigureEditorDlgBase(parent){
     // download the INI file
     auto iniresult = fetch(fmt::format("https://download.unity3d.com/download_unity/{}/unity-{}.ini", version.hashcode,ini_platform));
     if (iniresult.code != 200){
@@ -220,7 +220,7 @@ void ConfigureInstallDlg::OnInstallClicked(wxCommandEvent &){
         auto name = data->data->at("title");
         componentInstallers.emplace_back(std::string(name), std::string(url));
     }
-    auto installProgressDlg = new InstallProgressDlg(GetParent(), std::string(editorInstaller), componentInstallers);
+    auto installProgressDlg = new InstallProgressDlg(GetParent(), {"Editor Application", std::string(editorInstaller)}, componentInstallers, fmt::format("https://download.unity3d.com/download_unity/{}",hashcode));
     installProgressDlg->Show();
     this->Close();
 }
