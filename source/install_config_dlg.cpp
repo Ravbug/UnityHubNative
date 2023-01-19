@@ -131,7 +131,7 @@ T sv_to_t(const std::string_view sv){
 
 ConfigureInstallDlg::ConfigureInstallDlg(wxWindow* parent, const installVersionData& version) : hashcode(version.hashcode), ConfigureEditorDlgBase(parent){
     // download the INI file
-    auto iniresult = fetch(fmt::format("https://download.unity3d.com/download_unity/{}/unity-{}.ini", version.hashcode,ini_platform));
+    auto iniresult = fetch_to_mem(fmt::format("https://download.unity3d.com/download_unity/{}/unity-{}.ini", version.hashcode,ini_platform));
     if (iniresult.code != 200){
         wxMessageBox("Unable to get Editor version data","Install failed",wxOK | wxICON_ERROR);
         this->Close();

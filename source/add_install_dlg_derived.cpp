@@ -61,7 +61,7 @@ void AddNewInstallDlg::GetAllVersions(){
     unordered_map<string,string> versionDates;
     {
 		try{
-			auto r = fetch("https://symbolserver.unity3d.com/000Admin/history.txt");
+			auto r = fetch_to_mem("https://symbolserver.unity3d.com/000Admin/history.txt");
 			if (r.code != 200){
 				wxMessageBox("Unable to access Unity version metadata", "Download error", wxOK | wxICON_ERROR);
 			}
@@ -86,7 +86,7 @@ void AddNewInstallDlg::GetAllVersions(){
 				}
 				// installation URLs
 				{
-					auto r = fetch("https://unity.com/releases/editor/archive");
+					auto r = fetch_to_mem("https://unity.com/releases/editor/archive");
 					
 					// check if succeeded
 					if (r.code != 200){
