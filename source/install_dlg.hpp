@@ -28,7 +28,8 @@ private:
 struct ComponentInstaller{
     std::string name;
     std::string installerURL;
-    ComponentInstaller(const decltype(name)& name, const decltype(installerURL)& installerURL): name(name), installerURL(installerURL){}
+    std::string outputFileName;
+    ComponentInstaller(const decltype(name)& name, const decltype(installerURL)& installerURL, const decltype(outputFileName)& outputFileName): name(name), installerURL(installerURL), outputFileName(outputFileName){}
 };
 
 struct InstallProgressDlg : public InstallProgressDlgBase{

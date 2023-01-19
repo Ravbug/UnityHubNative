@@ -2,6 +2,7 @@
 #include "HTTP.hpp"
 #include <wx/msgdlg.h>
 #include <fmt/format.h>
+#include "globals.h"
 
 #define PROGEVT 99999999
 #define STATUSEVT 89999
@@ -52,13 +53,25 @@ InstallProgressDlg::InstallProgressDlg(wxWindow* parent, const ComponentInstalle
 
 void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, uint32_t row){
     auto fullurl = fmt::format("{}/{}",baseURL, installer.installerURL);
-    sleep(1);
-    PostStatusUpdate("Downloading", row);
-    PostProgressUpdate(10, row);
     
-    sleep(5);
-    PostProgressUpdate(100, row);
-    //fetch(fullurl);
+    FunctionCallback progressCallback{[this,row](long totaldownload, long currentDownload, long, long){
+        auto progress = currentDownload / static_cast<float>(totaldownload) * 100;
+        if (!isnan(progress)){
+            PostProgressUpdate(progress, row);
+        }
+    }};
+    
+    // download to the temp folder
+    auto destpath = std::filesystem::temp_directory_path() / "UnityHubNativeDownloads" / installer.outputFileName;
+    
+    std::filesystem::create_directories(destpath.parent_path());
+    
+    PostStatusUpdate("Downloading", row);
+    stream_to_file(fullurl, destpath, progressCallback);
+    
+    // TODO: perform install actions
+    
+    // TODO: clean up
     
     // update completion
     ncomplete++;

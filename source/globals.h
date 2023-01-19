@@ -27,10 +27,12 @@ struct installVersionData{
 #if defined __APPLE__
 	#include <pwd.h>
     #include <unistd.h>
-	//the location to store application data
-	static const std::filesystem::path datapath = std::filesystem::path(getpwuid(getuid())->pw_dir) / "Library/Application Support/UnityHubNative";
+    static const std::filesystem::path homepath = std::filesystem::path(getpwuid(getuid())->pw_dir);
 
-    static const std::filesystem::path cachedir = std::filesystem::path(getpwuid(getuid())->pw_dir) / "/Library/Caches/com.ravbug.UnityHubNative/";
+	//the location to store application data
+	static const std::filesystem::path datapath =  homepath / "Library/Application Support/UnityHubNative";
+
+    static const std::filesystem::path cachedir = homepath / "/Library/Caches/com.ravbug.UnityHubNative/";
 	static constexpr std::string_view installerExt = "dmg";
 
 	//where to find various Unity things on macOS
@@ -75,7 +77,8 @@ struct installVersionData{
 #elif defined __linux__
 	#include <pwd.h>
     #include <unistd.h>
-	static const std::filesystem::path datapath = std::filesystem::path(getpwuid(getuid())->pw_dir) / "UnityHubNative";
+    static const std::filesystem::path homepath = std::filesystem::path(getpwuid(getuid())->pw_dir)
+	static const std::filesystem::path datapath = homepath / "UnityHubNative";
 	static constexpr std::string_view null_device = ">/dev/null 2>&1";
 	
 	static const std::filesystem::path executable = "Editor/Unity";

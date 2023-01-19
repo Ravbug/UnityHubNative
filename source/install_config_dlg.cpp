@@ -90,7 +90,7 @@ auto parseIni (std::string_view string, uint32_t index = 0){
             return std::string_view(string.data() + startidx,index - startidx);
         };
         
-        while (string[index] != '['){
+        while (string[index] != '[' && index < string.size()){
             auto name = getUntilChar(index,'=');
             index++;    // advance past the '='
             auto data = getUntilChar(index,'\n');
@@ -146,8 +146,6 @@ ConfigureInstallDlg::ConfigureInstallDlg(wxWindow* parent, const installVersionD
     this->SetTitle(fmt::format("Install {}",inidata["Unity"]["title"]));
     
     // populate the data table
- 
-    
     for(const auto& component : inidata){
         if (component.first == "Unity"){    // don't show Unity row
             continue;
@@ -205,6 +203,7 @@ void ConfigureInstallDlg::OnInstallClicked(wxCommandEvent &){
     std::vector<ComponentInstaller> componentInstallers;
     
     auto editorInstaller = inidata["Unity"]["url"];
+    auto editorInstallerFilename = std::filesystem::path(editorInstaller).filename();
     
     for(auto item = moduleSelectTree->GetRootItem(); item ; item = moduleSelectTree->GetNextItem(item)){
         treeItemData* data = static_cast<decltype(data)>(moduleSelectTree->GetItemData(item));
@@ -218,9 +217,10 @@ void ConfigureInstallDlg::OnInstallClicked(wxCommandEvent &){
         
         auto url = data->data->at("url");
         auto name = data->data->at("title");
-        componentInstallers.emplace_back(std::string(name), std::string(url));
+        auto outfilename = std::filesystem::path(url).filename();
+        componentInstallers.emplace_back(std::string(name), std::string(url), std::string(outfilename));
     }
-    auto installProgressDlg = new InstallProgressDlg(GetParent(), {"Editor Application", std::string(editorInstaller)}, componentInstallers, fmt::format("https://download.unity3d.com/download_unity/{}",hashcode));
+    auto installProgressDlg = new InstallProgressDlg(GetParent(), {"Editor Application", std::string(editorInstaller), fmt::format("{}-{}",inidata["Unity"]["version"], std::string(editorInstallerFilename))}, componentInstallers, fmt::format("https://download.unity3d.com/download_unity/{}",hashcode));
     installProgressDlg->Show();
     this->Close();
 }
