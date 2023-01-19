@@ -531,7 +531,7 @@ ConfigureEditorDlgBase::ConfigureEditorDlgBase( wxWindow* parent, wxWindowID id,
 	gbSizer5->Add( m_staticText17, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	installBtn = new wxButton( this, ID_INSTALL_BTN, wxT("Install"), wxDefaultPosition, wxDefaultSize, 0 );
-	gbSizer5->Add( installBtn, wxGBPosition( 2, 1 ), wxGBSpan( 1, 1 ), wxALL|wxALIGN_RIGHT, 5 );
+	gbSizer5->Add( installBtn, wxGBPosition( 4, 1 ), wxGBSpan( 1, 1 ), wxALL|wxALIGN_RIGHT, 5 );
 
 	totalInstallLabel = new wxStaticText( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	totalInstallLabel->Wrap( -1 );
@@ -543,6 +543,9 @@ ConfigureEditorDlgBase::ConfigureEditorDlgBase( wxWindow* parent, wxWindowID id,
 	moduleSelectTree->AppendColumn( wxT("Installed Size"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE );
 
 	gbSizer5->Add( moduleSelectTree, wxGBPosition( 1, 0 ), wxGBSpan( 1, 2 ), wxEXPAND | wxALL, 5 );
+
+	destinationPicker = new wxDirPickerCtrl( this, wxID_ANY, wxEmptyString, wxT("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_DEFAULT_STYLE );
+	gbSizer5->Add( destinationPicker, wxGBPosition( 3, 0 ), wxGBSpan( 1, 2 ), wxALL|wxEXPAND, 5 );
 
 
 	gbSizer5->AddGrowableCol( 0 );

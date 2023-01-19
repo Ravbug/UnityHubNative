@@ -149,6 +149,14 @@ ConfigureInstallDlg::ConfigureInstallDlg(wxWindow* parent, const installVersionD
     
     this->SetTitle(fmt::format("Install {}",inidata["Unity"]["title"]));
     
+    // set destination default location
+    {
+        auto defaultInstallLocation = defaultInstall.size() > 0 ? defaultInstall[0] : std::filesystem::path();
+        wxFileName defaultInstall(defaultInstallLocation.string());
+        destinationPicker->SetDirName(defaultInstall);
+    }
+   
+    
     // populate the data table
     for(const auto& component : inidata){
         if (component.first == "Unity" || component.first == "VisualStudio" || (component.second.contains("hidden") && component.second.at("hidden") == "true")){    // don't show Unity row

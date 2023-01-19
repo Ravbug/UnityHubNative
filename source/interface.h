@@ -34,6 +34,7 @@
 #include <wx/choice.h>
 #include <wx/dataview.h>
 #include <wx/treelist.h>
+#include <wx/filepicker.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -236,6 +237,7 @@ class ConfigureEditorDlgBase : public wxDialog
 		wxButton* installBtn;
 		wxStaticText* totalInstallLabel;
 		wxTreeListCtrl* moduleSelectTree;
+		wxDirPickerCtrl* destinationPicker;
 
 	public:
 
