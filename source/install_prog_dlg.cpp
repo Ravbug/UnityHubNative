@@ -21,6 +21,8 @@ wxEND_EVENT_TABLE()
 
 InstallProgressDlg::InstallProgressDlg(wxWindow* parent, const ComponentInstaller& editorInstaller, const std::vector<ComponentInstaller>& componentInstallers, const decltype(baseURL)& baseURL) : baseURL(baseURL), InstallProgressDlgBase(parent){
     
+    SetTitle(fmt::format("Installing {}", editorInstaller.outputFileName));
+    
     nameCol->SetWidth(wxCOL_WIDTH_AUTOSIZE);
     installThreads.reserve(componentInstallers.size() + 1);
     
@@ -53,11 +55,12 @@ InstallProgressDlg::InstallProgressDlg(wxWindow* parent, const ComponentInstalle
 
 void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, uint32_t row){
     auto fullurl = fmt::format("{}/{}",baseURL, installer.installerURL);
-    
-    FunctionCallback progressCallback{[this,row](long totaldownload, long currentDownload, long, long){
+    int lastProgress = 0;
+    FunctionCallback progressCallback{[this,row, &lastProgress](long totaldownload, long currentDownload, long, long){
         auto progress = currentDownload / static_cast<float>(totaldownload) * 100;
-        if (!isnan(progress)){
+        if (!isnan(progress) && (int)progress > lastProgress){
             PostProgressUpdate(progress, row);
+            PostStatusUpdate(fmt::format("Downloading - {}%", (int)progress), row);
         }
     }};
     
@@ -66,9 +69,9 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, u
     
     std::filesystem::create_directories(destpath.parent_path());
     
-    PostStatusUpdate("Downloading", row);
     stream_to_file(fullurl, destpath, progressCallback);
     
+    PostStatusUpdate("Installing", row);
     // TODO: perform install actions
     
     // TODO: clean up
@@ -79,8 +82,8 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, u
     
     // all done?
     if (Complete()){
-        wxCommandEvent evt;
-        evt.SetId(DONEEVT);
+        wxCommandEvent evt(complEvt);
+        //evt.SetId(DONEEVT);
         wxPostEvent(this, evt);
     }
 }
@@ -122,7 +125,7 @@ void InstallProgressDlg::OnStatusUpdate(wxCommandEvent& evt){
     auto str = evt.GetString();
     auto row = static_cast<int>(evt.GetExtraLong());
     
-    statusList->SetTextValue(str, row, 3);
+    statusList->SetTextValue(str, row, 2);
 }
 
 void InstallProgressDlg::PostProgressUpdate(int prog, uint32_t row){
@@ -134,7 +137,7 @@ void InstallProgressDlg::PostProgressUpdate(int prog, uint32_t row){
 }
 
 void InstallProgressDlg::PostStatusUpdate(const std::string &newStatus, uint32_t row){
-    wxCommandEvent event(progEvt);
+    wxCommandEvent event(statusEvt);
     event.SetId(STATUSEVT);
     event.SetString(newStatus);
     event.SetExtraLong(row);
