@@ -15,7 +15,11 @@ wxEND_EVENT_TABLE()
 
 constexpr static const char* const ini_platform =
 #if __APPLE__
-"osx";
+    #if __aarch64__
+    "osx-arm64";
+    #else
+    "osx";
+    #endif
 #elif _WIN32
 "win";
 #elif __linux__
@@ -147,7 +151,7 @@ ConfigureInstallDlg::ConfigureInstallDlg(wxWindow* parent, const installVersionD
     
     // populate the data table
     for(const auto& component : inidata){
-        if (component.first == "Unity"){    // don't show Unity row
+        if (component.first == "Unity" || component.first == "VisualStudio" || (component.second.contains("hidden") && component.second.at("hidden") == "true")){    // don't show Unity row
             continue;
         }
 
@@ -192,7 +196,7 @@ void ConfigureInstallDlg::RecalculateSize(){
     installedSize += sv_to_t<decltype(installedSize)>(inidata["Unity"]["installedsize"]);
     downloadSize += sv_to_t<decltype(downloadSize)>(inidata["Unity"]["size"]);
     
-    totalInstallLabel->SetLabelText(fmt::format("Installed: {} / Download: {}", sizeToString(installedSize), sizeToString(downloadSize)));
+    totalInstallLabel->SetLabelText(fmt::format("Install Size: {} / Download Size: {}", sizeToString(installedSize), sizeToString(downloadSize)));
 }
 
 void ConfigureInstallDlg::OnCheckedChanged(wxTreeListEvent& evt){
