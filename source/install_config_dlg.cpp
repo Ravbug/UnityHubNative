@@ -160,7 +160,11 @@ ConfigureInstallDlg::ConfigureInstallDlg(wxWindow* parent, const installVersionD
     
     // populate the data table
     for(const auto& component : inidata){
-        if (component.first == "Unity" || component.first == "VisualStudio" || (component.second.contains("hidden") && component.second.at("hidden") == "true")){    // don't show Unity row
+        // some of these we don't want to install, or don't know how to install (VisualStudio, Android)
+        if (component.first == "Unity"
+            || component.first == "VisualStudio"
+            || component.first == "Android"
+            || (component.second.contains("hidden") && component.second.at("hidden") == "true")){    // don't show Unity row
             continue;
         }
 

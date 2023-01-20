@@ -58,6 +58,7 @@ InstallProgressDlg::InstallProgressDlg(wxWindow* parent, const std::filesystem::
     
 #if __APPLE__
     // components are installed inside the .app
+    //TODO: the playbackengines subdirectory comes from modules.json -- where do we get this?
     auto componentInstallLocation = installLocation / "Unity.app/Contents/PlaybackEngines/MacStandaloneSupport";
 #endif
     
@@ -84,7 +85,7 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, c
             PostStatusUpdate(fmt::format("Downloading - {}%", (int)progress), row);
         }
     }};
-    
+    bool failed = false;
     // download to the temp folder
     auto destpath = std::filesystem::temp_directory_path() / "UnityHubNativeDownloads" / installer.outputFileName;
     
@@ -114,32 +115,31 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, c
     // do first extraction
     if (executeProcess("/usr/bin/tar",{"-xzmf", destpath, internalName}, extracttmp) != 0){
         PostStatusUpdate("Failed - Stage 1 Extraction", row);
+        failed = true;
         goto finish;
     }
     
-    if (!isBaseEditor){
-        // wait until the editor has completed
-        PostStatusUpdate("Waiting for Editor", row);
-        installedEditorSemaphore.acquire();
-    }
-    PostStatusUpdate("Installing", row);
-    
-#endif
-    if (isBaseEditor){
-        // allow the component installers to run
-        installedEditorSemaphore.release();
-    }
-#if __APPLE__
+
     {
         std::filesystem::create_directories(outtmpdir);
         auto result = executeProcess("/usr/bin/tar", {"-C", "extracted", "-xzmf", internalName}, extracttmp);
         if (result != 0){
             PostStatusUpdate("Failed - Stage 2 extraction", row);
+            failed = true;
             goto finish;
         }
+#endif
+        // if this thread is a component, wait for the Editor to finish first before executing
+        if (!isBaseEditor){
+            // wait until the editor has completed
+            PostStatusUpdate("Waiting for Editor", row);
+            installedEditorSemaphore.acquire();
+        }
+        PostStatusUpdate("Installing", row);
         
+#if __APPLE__
         // move results to the final install location
-        for(const auto& item : std::filesystem::directory_iterator(outtmpdir / "Unity")){
+        for(const auto& item : std::filesystem::directory_iterator(outtmpdir / (isBaseEditor ? "Unity" : ""))){
             try{
                 auto newpath = finalLocation / item.path().filename();
                 std::filesystem::rename(item, newpath);
@@ -149,10 +149,17 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, c
                 goto finish;
             }
         }
+        
+        if (isBaseEditor){
+            // allow the component installers to run
+            installedEditorSemaphore.release();
+        }
     }
 #endif
-    
-    PostStatusUpdate("Cleaning up", row);
+finish:
+    if (!failed){
+        PostStatusUpdate("Cleaning up", row);
+    }
 #if __APPLE__
     try{
         std::filesystem::remove(destpath);  // the pkg file
@@ -161,10 +168,10 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, c
     catch(std::exception&){}
     
 #endif
+    if (!failed){
+        PostStatusUpdate("Completed", row);
+    }
 
-    PostStatusUpdate("Completed", row);
-
-finish:
     // update completion
     ncomplete++;
 
