@@ -151,7 +151,8 @@ ConfigureInstallDlg::ConfigureInstallDlg(wxWindow* parent, const installVersionD
     
     // set destination default location
     {
-        auto defaultInstallLocation = defaultInstall.size() > 0 ? defaultInstall[0] : std::filesystem::path();
+        auto defaultInstallLocation = defaultInstall.size() > 0 ? defaultInstall.front() / "extra" : std::filesystem::path();
+        // the "extra" is required because wxdirectorypicker removes the last item for some reason
         wxFileName defaultInstall(defaultInstallLocation.string());
         destinationPicker->SetDirName(defaultInstall);
     }
@@ -232,7 +233,16 @@ void ConfigureInstallDlg::OnInstallClicked(wxCommandEvent &){
         auto outfilename = std::filesystem::path(url).filename();
         componentInstallers.emplace_back(std::string(name), std::string(url), std::string(outfilename));
     }
-    auto installProgressDlg = new InstallProgressDlg(GetParent(), {"Editor Application", std::string(editorInstaller), fmt::format("{}-{}",inidata["Unity"]["version"], std::string(editorInstallerFilename))}, componentInstallers, fmt::format("https://download.unity3d.com/download_unity/{}",hashcode));
+    
+    auto installDest = std::filesystem::path(destinationPicker->GetDirName().GetAbsolutePath()) / inidata["Unity"]["version"];
+    
+    auto installProgressDlg = new InstallProgressDlg(
+                                                     GetParent(),
+                                                     installDest,
+                                                     {"Editor Application", std::string(editorInstaller), fmt::format("{}-{}",inidata["Unity"]["version"], std::string(editorInstallerFilename))},
+                                                     componentInstallers,
+                                                     fmt::format("https://download.unity3d.com/download_unity/{}",hashcode)
+                                                     );
     installProgressDlg->Show();
     this->Close();
 }

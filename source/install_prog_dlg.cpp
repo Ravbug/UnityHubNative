@@ -23,7 +23,7 @@ EVT_COMMAND(STATUSEVT, statusEvt, InstallProgressDlg::OnStatusUpdate)
 EVT_COMMAND(DONEEVT, complEvt, InstallProgressDlg::OnAllCompleted)
 wxEND_EVENT_TABLE()
 
-InstallProgressDlg::InstallProgressDlg(wxWindow* parent, const ComponentInstaller& editorInstaller, const std::vector<ComponentInstaller>& componentInstallers, const decltype(baseURL)& baseURL) : baseURL(baseURL), InstallProgressDlgBase(parent){
+InstallProgressDlg::InstallProgressDlg(wxWindow* parent, const std::filesystem::path& installLocation, const ComponentInstaller& editorInstaller, const std::vector<ComponentInstaller>& componentInstallers, const decltype(baseURL)& baseURL) : baseURL(baseURL), InstallProgressDlgBase(parent){
     
     SetTitle(fmt::format("Installing {}", editorInstaller.outputFileName));
     
@@ -37,6 +37,17 @@ InstallProgressDlg::InstallProgressDlg(wxWindow* parent, const ComponentInstalle
     values.push_back("Queued");
     
     statusList->AppendItem(values);
+    
+    // attempt to create the install location
+    try{
+        std::filesystem::create_directories(installLocation);
+    }
+    catch(const std::exception& e){
+        wxMessageBox(fmt::format("Could not create install directory : {}", e.what()) , "Install Failed", wxOK | wxICON_ERROR);
+        PostStatusUpdate("Failed", 0);
+        PostCompletionEvent();
+        return;
+    }
     
     (installThreads.emplace_back([this, editorInstaller]{
         this->InstallComponent(editorInstaller, 0);
@@ -77,7 +88,7 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, u
     auto extracttmp = destpath.parent_path() / noext;
     std::filesystem::create_directories(extracttmp);
     
-    //stream_to_file(fullurl, destpath, progressCallback);
+    stream_to_file(fullurl, destpath, progressCallback);
     
     PostStatusUpdate("Installing", row);
     
@@ -93,7 +104,10 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, u
     }
     
     // do first extraction
-    executeProcess("/usr/bin/tar",{"-xzmf", destpath, internalName}, extracttmp);
+    if (executeProcess("/usr/bin/tar",{"-xzmf", destpath, internalName}, extracttmp) != 0){
+        PostStatusUpdate("Failed - Stage 1 Extraction", row);
+        goto finish;
+    }
     
     if (!isBaseEditor){
         // wait until the editor has completed
@@ -107,18 +121,33 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, u
         // allow the component installers to run
         installedEditorSemaphore.release();
     }
+#if __APPLE__
+    if (isBaseEditor){
+        auto outtmpdir = extracttmp / "extracted";
+        std::filesystem::create_directories(outtmpdir);
+        auto result = executeProcess("/usr/bin/tar", {"-C", "extracted", "-xzmf", internalName}, extracttmp);
+        if (result != 0){
+            PostStatusUpdate("Failed - Stage 2 extraction", row);
+            goto finish;
+        }
+        
+        // move results to the final install location
+    }
+    else{
+        
+    }
+#endif
     
     // TODO: clean up
-    
+    PostStatusUpdate("Completed", row);
+
+finish:
     // update completion
     ncomplete++;
-    PostStatusUpdate("Completed", row);
-    
+
     // all done?
     if (Complete()){
-        wxCommandEvent evt(complEvt);
-        evt.SetId(DONEEVT);
-        wxPostEvent(this, evt);
+        PostCompletionEvent();
     }
 }
 
@@ -179,7 +208,13 @@ void InstallProgressDlg::PostStatusUpdate(const std::string &newStatus, uint32_t
 }
 
 void InstallProgressDlg::OnAllCompleted(wxCommandEvent &){
-    cancelCloseBtn->SetLabel("close");
+    cancelCloseBtn->SetLabel("Close");
+}
+
+void InstallProgressDlg::PostCompletionEvent(){
+    wxCommandEvent evt(complEvt);
+    evt.SetId(DONEEVT);
+    wxPostEvent(this, evt);
 }
 
 InstallProgressDlg::~InstallProgressDlg(){

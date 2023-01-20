@@ -3,6 +3,7 @@
 #include <thread>
 #include <atomic>
 #include <semaphore>
+#include <filesystem>
 
 struct installVersionData;
 
@@ -41,7 +42,7 @@ struct InstallProgressDlg : public InstallProgressDlgBase{
     bool Complete() const{
         return ncomplete == installThreads.size();
     }
-    InstallProgressDlg(wxWindow* parent, const ComponentInstaller& editorInstaller, const std::vector<ComponentInstaller>& componentInstallers, const decltype(baseURL)& baseURL);
+    InstallProgressDlg(wxWindow* parent, const std::filesystem::path& installLocation, const ComponentInstaller& editorInstaller, const std::vector<ComponentInstaller>& componentInstallers, const decltype(baseURL)& baseURL);
     
     void OnCancelClicked(wxCommandEvent&);
     void CancelAll();
@@ -53,6 +54,7 @@ struct InstallProgressDlg : public InstallProgressDlgBase{
     
     void PostProgressUpdate(int prog, uint32_t row);
     void PostStatusUpdate(const std::string& newStatus, uint32_t row);
+    void PostCompletionEvent();
     
     wxDECLARE_EVENT_TABLE();
     virtual ~InstallProgressDlg();
