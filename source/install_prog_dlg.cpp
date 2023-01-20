@@ -146,6 +146,7 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, c
             }
             catch(const std::exception& e){
                 PostStatusUpdate(fmt::format("Failed - {}", e.what()), 0);
+                failed = true;
                 goto finish;
             }
         }
@@ -163,9 +164,11 @@ finish:
 #if __APPLE__
     try{
         std::filesystem::remove(destpath);  // the pkg file
-        std::filesystem::remove_all(outtmpdir); // the temporary directory
+        std::filesystem::remove_all(extracttmp); // the temporary directory
     }
-    catch(std::exception&){}
+    catch(const std::exception& e){
+        std::cerr << e.what() << std::endl;
+    }
     
 #endif
     if (!failed){
