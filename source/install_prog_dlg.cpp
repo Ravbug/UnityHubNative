@@ -4,6 +4,10 @@
 #include <fmt/format.h>
 #include "globals.h"
 
+#if __APPLE__
+#include "AppleUtilities.h"
+#endif
+
 #define PROGEVT 99999999
 #define STATUSEVT 89999
 #define DONEEVT 79999
@@ -69,10 +73,40 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, u
     
     std::filesystem::create_directories(destpath.parent_path());
     
-    stream_to_file(fullurl, destpath, progressCallback);
+    auto noext = destpath.filename().replace_extension("");
+    auto extracttmp = destpath.parent_path() / noext;
+    std::filesystem::create_directories(extracttmp);
+    
+    //stream_to_file(fullurl, destpath, progressCallback);
     
     PostStatusUpdate("Installing", row);
-    // TODO: perform install actions
+    
+#if __APPLE__
+    // tar -xzmf Unity.pkg Unity.pkg.tmp/Payload
+    const char* internalName = nullptr;
+    bool isBaseEditor = destpath.filename().string().find("Support-for-Editor") == std::string::npos;
+    if (!isBaseEditor){
+        internalName = "TargetSupport.pkg.tmp/Payload";
+    }
+    else{
+        internalName = "Unity.pkg.tmp/Payload";
+    }
+    
+    // do first extraction
+    executeProcess("/usr/bin/tar",{"-xzmf", destpath, internalName}, extracttmp);
+    
+    if (!isBaseEditor){
+        // wait until the editor has completed
+        PostStatusUpdate("Waiting for Editor", row);
+        installedEditorSemaphore.acquire();
+    }
+    PostStatusUpdate("Installing", row);
+    
+#endif
+    if (isBaseEditor){
+        // allow the component installers to run
+        installedEditorSemaphore.release();
+    }
     
     // TODO: clean up
     
@@ -83,7 +117,7 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, u
     // all done?
     if (Complete()){
         wxCommandEvent evt(complEvt);
-        //evt.SetId(DONEEVT);
+        evt.SetId(DONEEVT);
         wxPostEvent(this, evt);
     }
 }

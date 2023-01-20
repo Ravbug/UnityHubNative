@@ -1,5 +1,6 @@
 #include "AppleUtilities.h"
 #import <Cocoa/Cocoa.h>
+#include <vector>
 
 void getCFBundleVersionFromPlist(const char* path, char* outbuf, uint8_t outbuf_size){
     NSString* pstr = [NSString stringWithUTF8String:path];
@@ -28,4 +29,23 @@ int getArchitectureFromBundle(const char* path){
         } 
     }
     return archmask;
+}
+
+int executeProcess(const std::string& str, const std::vector<std::string>& arguments, const std::filesystem::path& pwd){
+    NSTask* task = [NSTask new];
+    NSMutableArray* args = [NSMutableArray new];
+    for(const auto& arg : arguments){
+        [args addObject:[NSString stringWithUTF8String:arg.c_str()]];
+    }
+    NSString* launchPath = [NSString stringWithUTF8String:str.c_str()];
+    
+    [task setCurrentDirectoryPath:[NSString stringWithUTF8String:pwd.c_str()]];
+    
+    [task setLaunchPath:launchPath];
+    [task setArguments:args];
+    
+    [task launch];
+    [task waitUntilExit];
+    
+    return [task terminationStatus];
 }

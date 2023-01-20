@@ -2,6 +2,7 @@
 #include "interface.h"
 #include <thread>
 #include <atomic>
+#include <semaphore>
 
 struct installVersionData;
 
@@ -36,6 +37,7 @@ struct InstallProgressDlg : public InstallProgressDlgBase{
     std::vector<std::thread> installThreads;
     std::atomic<uint32_t> ncomplete = 0;
     std::string baseURL;
+    std::binary_semaphore installedEditorSemaphore{0};  // start in non-signalled state
     bool Complete() const{
         return ncomplete == installThreads.size();
     }
