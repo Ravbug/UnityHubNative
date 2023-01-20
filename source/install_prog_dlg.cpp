@@ -49,26 +49,32 @@ InstallProgressDlg::InstallProgressDlg(wxWindow* parent, const std::filesystem::
         return;
     }
     
-    (installThreads.emplace_back([this, editorInstaller]{
-        this->InstallComponent(editorInstaller, 0);
+    (installThreads.emplace_back([this, editorInstaller, installLocation]{
+        this->InstallComponent(editorInstaller, installLocation, 0);
     })).detach();
 
     // add component installers into the next rows
     uint32_t row = 1;
+    
+#if __APPLE__
+    // components are installed inside the .app
+    auto componentInstallLocation = installLocation / "Unity.app/Contents/PlaybackEngines/MacStandaloneSupport";
+#endif
+    
     for(const auto& installer : componentInstallers){
         values[0] = wxVariant(installer.name);
         
         statusList->AppendItem(values);
         
         // dispatch download
-        (installThreads.emplace_back([this,row, installer]{
-            this->InstallComponent(installer, row);
+        (installThreads.emplace_back([this,row, installer, componentInstallLocation]{
+            this->InstallComponent(installer, componentInstallLocation, row);
         })).detach();
         row++;
     }
 }
 
-void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, uint32_t row){
+void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, const std::filesystem::path& finalLocation, uint32_t row){
     auto fullurl = fmt::format("{}/{}",baseURL, installer.installerURL);
     int lastProgress = 0;
     FunctionCallback progressCallback{[this,row, &lastProgress](long totaldownload, long currentDownload, long, long){
@@ -103,6 +109,8 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, u
         internalName = "Unity.pkg.tmp/Payload";
     }
     
+    auto outtmpdir = extracttmp / "extracted";
+
     // do first extraction
     if (executeProcess("/usr/bin/tar",{"-xzmf", destpath, internalName}, extracttmp) != 0){
         PostStatusUpdate("Failed - Stage 1 Extraction", row);
@@ -122,8 +130,7 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, u
         installedEditorSemaphore.release();
     }
 #if __APPLE__
-    if (isBaseEditor){
-        auto outtmpdir = extracttmp / "extracted";
+    {
         std::filesystem::create_directories(outtmpdir);
         auto result = executeProcess("/usr/bin/tar", {"-C", "extracted", "-xzmf", internalName}, extracttmp);
         if (result != 0){
@@ -132,13 +139,29 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, u
         }
         
         // move results to the final install location
-    }
-    else{
-        
+        for(const auto& item : std::filesystem::directory_iterator(outtmpdir / "Unity")){
+            try{
+                auto newpath = finalLocation / item.path().filename();
+                std::filesystem::rename(item, newpath);
+            }
+            catch(const std::exception& e){
+                PostStatusUpdate(fmt::format("Failed - {}", e.what()), 0);
+                goto finish;
+            }
+        }
     }
 #endif
     
-    // TODO: clean up
+    PostStatusUpdate("Cleaning up", row);
+#if __APPLE__
+    try{
+        std::filesystem::remove(destpath);  // the pkg file
+        std::filesystem::remove_all(outtmpdir); // the temporary directory
+    }
+    catch(std::exception&){}
+    
+#endif
+
     PostStatusUpdate("Completed", row);
 
 finish:

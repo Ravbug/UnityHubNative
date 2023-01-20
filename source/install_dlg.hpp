@@ -47,7 +47,7 @@ struct InstallProgressDlg : public InstallProgressDlgBase{
     void OnCancelClicked(wxCommandEvent&);
     void CancelAll();
     
-    void InstallComponent(const ComponentInstaller& installer, uint32_t row);
+    void InstallComponent(const ComponentInstaller& installer, const std::filesystem::path& finalLocation, uint32_t row);
     void OnNumericProgressUpdate(wxCommandEvent&);
     void OnStatusUpdate(wxCommandEvent&);
     void OnAllCompleted(wxCommandEvent&);
