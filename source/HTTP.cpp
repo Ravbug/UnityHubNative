@@ -70,7 +70,7 @@ long stream_to_file(const std::string& url, const std::filesystem::path& output,
         curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);        // probably shouldn't do this...
 
-        std::ofstream outstream(output);
+        std::ofstream outstream(output, std::ios::binary);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToFileFunction);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &outstream);
         

@@ -99,9 +99,11 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, c
 
     const bool isBaseEditor = destpath.filename().string().find("Support-for-Editor") == std::string::npos;
 
+#if __APPLE__
     auto noext = destpath.filename().replace_extension("");
     auto extracttmp = destpath.parent_path() / noext;
     std::filesystem::create_directories(extracttmp);
+#endif
    
 #define TESTING 0
 #if !TESTING
