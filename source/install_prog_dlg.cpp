@@ -146,9 +146,23 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, c
             goto finish;
         }
 #elif _WIN32
+        // if this thread is a component, wait for the Editor to finish first before executing
+        if (!isBaseEditor) {
+            // wait until the editor has completed
+            PostStatusUpdate("Waiting for Editor", row);
+            installedEditorSemaphore.acquire();
+        }
+        PostStatusUpdate("Installing", row);
         {
             auto deststr = destpath.string();
-            auto command = fmt::vformat(installer.command, fmt::make_format_args(fmt::arg("FILENAME", deststr), fmt::arg("INSTDIR", finalLocation.string())));
+
+            std::string command;
+            if (isBaseEditor) {
+                command = fmt::vformat(installer.command, fmt::make_format_args(fmt::arg("FILENAME", deststr), fmt::arg("INSTDIR", finalLocation.string())));
+            }
+            else {
+                command = fmt::vformat(installer.command, fmt::make_format_args(fmt::arg("FILENAME", deststr), fmt::arg("MODULEDIR", finalLocation.string())));
+            }
 
             auto args = fmt::format("/S {}", command.substr(command.find_first_of(deststr) + deststr.length() + 1));
 
@@ -191,15 +205,15 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, c
             }
         }
 #endif
+        
+#if __APPLE__
         // if this thread is a component, wait for the Editor to finish first before executing
-        if (!isBaseEditor){
+        if (!isBaseEditor) {
             // wait until the editor has completed
             PostStatusUpdate("Waiting for Editor", row);
             installedEditorSemaphore.acquire();
         }
         PostStatusUpdate("Installing", row);
-        
-#if __APPLE__
         // move results to the final install location
         for(const auto& item : std::filesystem::directory_iterator(outtmpdir / (isBaseEditor ? "Unity" : ""))){
             try{
@@ -212,13 +226,12 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, c
                 goto finish;
             }
         }
-        
-        if (isBaseEditor){
-            // allow the component installers to run
-            installedEditorSemaphore.release();
-        }
     }
 #endif
+    if (isBaseEditor) {
+        // allow the component installers to run
+        installedEditorSemaphore.release();
+    }
 finish:
     if (!failed){
         PostStatusUpdate("Cleaning up", row);
@@ -237,7 +250,7 @@ finish:
         std::filesystem::remove(destpath);  // the exe
     }
     catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
+        OutputDebugStringA(e.what());
     }
 #endif
 #endif
