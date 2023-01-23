@@ -147,12 +147,22 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, c
         }
 #elif _WIN32
         {
-            PROCESS_INFORMATION processInformation = { 0 };
-            STARTUPINFOA startupInfo = { 0 };
             auto deststr = destpath.string();
             auto command = fmt::vformat(installer.command, fmt::make_format_args(fmt::arg("FILENAME", deststr), fmt::arg("INSTDIR", finalLocation.string())));
 
-            bool result = CreateProcessA(NULL, command.data(), NULL, NULL, FALSE, NORMAL_PRIORITY_CLASS | CREATE_NO_WINDOW, NULL, NULL, &startupInfo, &processInformation);
+            auto args = fmt::format("/S {}", command.substr(command.find_first_of(deststr) + deststr.length() + 1));
+
+            SHELLEXECUTEINFOA ShExecInfo = { 0 };
+            ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+            ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+            ShExecInfo.hwnd = NULL;
+            ShExecInfo.lpVerb = "runas";
+            ShExecInfo.lpFile = deststr.c_str();
+            ShExecInfo.lpParameters = args.c_str();
+            ShExecInfo.lpDirectory = NULL;
+            ShExecInfo.nShow = SW_SHOW;
+            ShExecInfo.hInstApp = NULL;
+            bool result = ShellExecuteExA(&ShExecInfo);
 
             // if process could not launch
             if (!result) {
@@ -171,10 +181,14 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, c
 
             DWORD exitcode;
             // wait for complete 
-            WaitForSingleObject(processInformation.hProcess, INFINITE);
-            result = GetExitCodeProcess(processInformation.hProcess, &exitcode);
-            CloseHandle(processInformation.hProcess);
-            CloseHandle(processInformation.hThread);
+            WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
+            GetExitCodeProcess(ShExecInfo.hProcess, &exitcode);
+            CloseHandle(ShExecInfo.hProcess);
+            if (exitcode != 0) {
+                failed = true;
+                PostStatusUpdate("Failed",row);
+                goto finish;
+            }
         }
 #endif
         // if this thread is a component, wait for the Editor to finish first before executing
