@@ -103,7 +103,8 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, c
     auto extracttmp = destpath.parent_path() / noext;
     std::filesystem::create_directories(extracttmp);
    
-#if 0
+#define TESTING 0
+#if !TESTING
     if (stream_to_file(fullurl, destpath, progressCallback) != 200) {
         failed = true;
         PostStatusUpdate("Failed - the installer did not download",row);
@@ -214,7 +215,15 @@ finish:
     catch(const std::exception& e){
         std::cerr << e.what() << std::endl;
     }
-    
+#elif _WIN32
+#if !TESTING
+    try {
+        std::filesystem::remove(destpath);  // the exe
+    }
+    catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+    }
+#endif
 #endif
     if (!failed){
         PostStatusUpdate("Completed", row);
