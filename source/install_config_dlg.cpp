@@ -82,24 +82,32 @@ auto parseIni (std::string_view string, uint32_t index = 0){
         }
         return std::string_view(string.data() + startidx, index - startidx);
     };
+
+#if __APPLE__ || __linux__
+#define advIndex() index+=(sizeof("\n")-1)
+    constexpr char newlinesent = '\n';
+#elif _WIN32
+#define advIndex() index+=(sizeof("\r\n")-1)
+    constexpr char newlinesent = '\r';
+#endif
     
     auto parseSection = [&string](uint32_t& index){
         decltype(inidata)::value_type::second_type content;
         
         auto getUntilChar = [&string](uint32_t& index, const char sentinel){
             auto startidx = index;
-            while (string[index] != sentinel && index < string.size()){
+            while (index < string.size() && string[index] != sentinel){
                 index++;
             }
             return std::string_view(string.data() + startidx,index - startidx);
         };
         
-        while (string[index] != '[' && index < string.size()){
+        while (index < string.size() && string[index] != '['){
             auto name = getUntilChar(index,'=');
             index++;    // advance past the '='
-            auto data = getUntilChar(index,'\n');
+            auto data = getUntilChar(index,newlinesent);
             content[name] = data;
-            index++;    // advance past the newline
+            advIndex();    // advance past the newline
         }
         return content;
     };
@@ -114,7 +122,8 @@ auto parseIni (std::string_view string, uint32_t index = 0){
                 currentSectionName = getSectionName(index);
             }
             case ']':{
-                index+=2;    // advance past ']\n'
+                index++;    // advance past ']'
+                advIndex();    // advance past newline;
                 inidata[currentSectionName] = parseSection(index);
             }
                 break;
@@ -235,15 +244,23 @@ void ConfigureInstallDlg::OnInstallClicked(wxCommandEvent &){
         auto url = data->data->at("url");
         auto name = data->data->at("title");
         auto outfilename = std::filesystem::path(url).filename();
-        componentInstallers.emplace_back(std::string(name), std::string(url), std::string(outfilename));
+        auto& installer = componentInstallers.emplace_back(std::string(name), std::string(url), outfilename.string());
+#if _WIN32
+        installer.command = data->data->at("cmd");
+#endif
     }
     
-    auto installDest = std::filesystem::path(destinationPicker->GetDirName().GetAbsolutePath()) / inidata["Unity"]["version"];
+    auto installDest = std::filesystem::path(destinationPicker->GetDirName().GetAbsolutePath().ToStdString()) / inidata["Unity"]["version"];
+
+    ComponentInstaller editorInstallerDS{ "Editor Application", std::string(editorInstaller), fmt::format("{}-{}", inidata["Unity"]["version"], editorInstallerFilename.string()) };
+#if _WIN32
+    editorInstallerDS.command = inidata["Unity"]["cmd"];
+#endif
     
     auto installProgressDlg = new InstallProgressDlg(
                                                      GetParent(),
                                                      installDest,
-                                                     {"Editor Application", std::string(editorInstaller), fmt::format("{}-{}",inidata["Unity"]["version"], std::string(editorInstallerFilename))},
+                                                     editorInstallerDS,
                                                      componentInstallers,
                                                      fmt::format("https://download.unity3d.com/download_unity/{}",hashcode)
                                                      );

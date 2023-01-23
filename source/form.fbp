@@ -3438,10 +3438,10 @@
             <property name="hidden">0</property>
             <property name="id">wxID_ANY</property>
             <property name="maximum_size"></property>
-            <property name="minimum_size">250,200</property>
+            <property name="minimum_size">400,200</property>
             <property name="name">AddNewInstallDlgBase</property>
             <property name="pos"></property>
-            <property name="size">300,300</property>
+            <property name="size">400,600</property>
             <property name="style">wxCAPTION|wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER|wxSTAY_ON_TOP</property>
             <property name="subclass">; ; forward_declare</property>
             <property name="title">Install New Editor Version</property>
@@ -4395,7 +4395,7 @@
             <property name="name">ConfigureEditorDlgBase</property>
             <property name="pos"></property>
             <property name="size">480,320</property>
-            <property name="style">wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX</property>
+            <property name="style">wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX|wxRESIZE_BORDER</property>
             <property name="subclass">; ; forward_declare</property>
             <property name="title"></property>
             <property name="tooltip"></property>
@@ -4785,7 +4785,7 @@
             <property name="name">InstallProgressDlgBase</property>
             <property name="pos"></property>
             <property name="size">480,260</property>
-            <property name="style">wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX|wxMINIMIZE_BOX</property>
+            <property name="style">wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX|wxMINIMIZE_BOX|wxRESIZE_BORDER</property>
             <property name="subclass">; ; forward_declare</property>
             <property name="title"></property>
             <property name="tooltip"></property>

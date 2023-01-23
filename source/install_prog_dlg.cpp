@@ -2,10 +2,14 @@
 #include "HTTP.hpp"
 #include <wx/msgdlg.h>
 #include <fmt/format.h>
+#include <fmt/xchar.h>
 #include "globals.h"
 
 #if __APPLE__
 #include "AppleUtilities.h"
+#endif
+#if _WIN32
+#include <codecvt>
 #endif
 
 #define PROGEVT 99999999
@@ -60,6 +64,8 @@ InstallProgressDlg::InstallProgressDlg(wxWindow* parent, const std::filesystem::
     // components are installed inside the .app
     //TODO: the playbackengines subdirectory comes from modules.json -- where do we get this?
     auto componentInstallLocation = installLocation / "Unity.app/Contents/PlaybackEngines/MacStandaloneSupport";
+#elif _WIN32
+    auto componentInstallLocation = installLocation;
 #endif
     
     for(const auto& installer : componentInstallers){
@@ -78,8 +84,8 @@ InstallProgressDlg::InstallProgressDlg(wxWindow* parent, const std::filesystem::
 void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, const std::filesystem::path& finalLocation, uint32_t row){
     auto fullurl = fmt::format("{}/{}",baseURL, installer.installerURL);
     int lastProgress = 0;
-    FunctionCallback progressCallback{[this,row, &lastProgress](long totaldownload, long currentDownload, long, long){
-        auto progress = currentDownload / static_cast<float>(totaldownload) * 100;
+    FunctionCallback progressCallback{[this,row, &lastProgress](unsigned long totaldownload, unsigned long currentDownload, long, long){
+        auto progress = currentDownload / static_cast<double>(totaldownload) * 100;
         if (!isnan(progress) && (int)progress > lastProgress){
             PostProgressUpdate(progress, row);
             PostStatusUpdate(fmt::format("Downloading - {}%", (int)progress), row);
@@ -90,19 +96,27 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, c
     auto destpath = std::filesystem::temp_directory_path() / "UnityHubNativeDownloads" / installer.outputFileName;
     
     std::filesystem::create_directories(destpath.parent_path());
-    
+
+    const bool isBaseEditor = destpath.filename().string().find("Support-for-Editor") == std::string::npos;
+
     auto noext = destpath.filename().replace_extension("");
     auto extracttmp = destpath.parent_path() / noext;
     std::filesystem::create_directories(extracttmp);
-    
-    stream_to_file(fullurl, destpath, progressCallback);
+   
+#if 0
+    if (stream_to_file(fullurl, destpath, progressCallback) != 200) {
+        failed = true;
+        PostStatusUpdate("Failed - the installer did not download",row);
+        goto finish;
+    }
+#endif
     
     PostStatusUpdate("Installing", row);
+
     
 #if __APPLE__
     // tar -xzmf Unity.pkg Unity.pkg.tmp/Payload
     const char* internalName = nullptr;
-    bool isBaseEditor = destpath.filename().string().find("Support-for-Editor") == std::string::npos;
     if (!isBaseEditor){
         internalName = "TargetSupport.pkg.tmp/Payload";
     }
@@ -127,6 +141,37 @@ void InstallProgressDlg::InstallComponent(const ComponentInstaller &installer, c
             PostStatusUpdate("Failed - Stage 2 extraction", row);
             failed = true;
             goto finish;
+        }
+#elif _WIN32
+        {
+            PROCESS_INFORMATION processInformation = { 0 };
+            STARTUPINFOA startupInfo = { 0 };
+            auto deststr = destpath.string();
+            auto command = fmt::vformat(installer.command, fmt::make_format_args(fmt::arg("FILENAME", deststr), fmt::arg("INSTDIR", finalLocation.string())));
+
+            bool result = CreateProcessA(NULL, command.data(), NULL, NULL, FALSE, NORMAL_PRIORITY_CLASS | CREATE_NO_WINDOW, NULL, NULL, &startupInfo, &processInformation);
+
+            // if process could not launch
+            if (!result) {
+                LPTSTR lpMsgBuf;
+                DWORD dw = GetLastError();
+                FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                    NULL, dw, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
+                failed = true;
+                auto msg = fmt::format(L"Failed - {}", lpMsgBuf);
+                std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+                std::string narrow = converter.to_bytes(msg);
+                PostStatusUpdate(narrow,row);
+                LocalFree(lpMsgBuf);
+                goto finish;
+            }
+
+            DWORD exitcode;
+            // wait for complete 
+            WaitForSingleObject(processInformation.hProcess, INFINITE);
+            result = GetExitCodeProcess(processInformation.hProcess, &exitcode);
+            CloseHandle(processInformation.hProcess);
+            CloseHandle(processInformation.hThread);
         }
 #endif
         // if this thread is a component, wait for the Editor to finish first before executing

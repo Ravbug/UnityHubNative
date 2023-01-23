@@ -31,6 +31,9 @@ struct ComponentInstaller{
     std::string name;
     std::string installerURL;
     std::string outputFileName;
+#if _WIN32
+    std::string command;
+#endif
     ComponentInstaller(const decltype(name)& name, const decltype(installerURL)& installerURL, const decltype(outputFileName)& outputFileName): name(name), installerURL(installerURL), outputFileName(outputFileName){}
 };
 
