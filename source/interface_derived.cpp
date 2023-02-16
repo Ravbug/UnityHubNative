@@ -30,11 +30,11 @@ using namespace std::filesystem;
 
 #define LEARN_TAB 2
 #define WEBVIEW 2000
-#define CONFIG_NAME "com.nativeunityhub.config"
-#define SETTING_WIDTH "W_WIDTH"
-#define SETTING_HEIGHT "W_HEIGHT"
-#define SETTING_POSITION_X "POSITION_X"
-#define SETTING_POSITION_Y "POSITION_Y"
+constexpr static const char* const CONFIG_NAME = "com.ravbug.unityhubnative.config";
+constexpr static const char* const SETTING_WIDTH = "W_WIDTH";
+constexpr static const char* const SETTING_HEIGHT = "W_HEIGHT";
+constexpr static const char* const SETTING_POSITION_X = "W_POSITION_X";
+constexpr static const char* const SETTING_POSITION_Y = "W_POSITION_Y";
 //the web view unloads after 5 minutes of page hidden
 const int TIMER_LENGTH = 5 * 1000 * 60;
 
@@ -80,14 +80,14 @@ wxEND_EVENT_TABLE()
 
 //call superclass constructor
 MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
-    // set saved position and size
-    wxConfig *config = new wxConfig(CONFIG_NAME);
+    // load saved position and size
+    wxConfig config(CONFIG_NAME);
     int width, height, x, y;
-    if (config->Read(SETTING_WIDTH, &width) && config->Read(SETTING_HEIGHT, &height) &&
-        config->Read(SETTING_POSITION_X, &x) && config->Read(SETTING_POSITION_Y, &y)) {
+    if (config.Read(SETTING_WIDTH, &width) && config.Read(SETTING_HEIGHT, &height) &&
+        config.Read(SETTING_POSITION_X, &x) && config.Read(SETTING_POSITION_Y, &y)) {
         this->SetSize(x, y, width, height);
     }
-    delete config;
+    
 	//set up project list columns
 	{
 		string cols[] = {"Project Name","Unity Version","Last Modified","Path"};
@@ -125,15 +125,14 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 
 void MainFrameDerived::OnQuit(wxCommandEvent&){
     // save window size and position
-    wxConfig *config = new wxConfig(CONFIG_NAME);
+    wxConfig config(CONFIG_NAME);
     int width, height, x, y;
     this->GetSize(&width, &height);
     this->GetPosition(&x, &y);
-    config->Write(SETTING_WIDTH, width);
-    config->Write(SETTING_HEIGHT, height);
-    config->Write(SETTING_POSITION_X, x);
-    config->Write(SETTING_POSITION_Y, y);
-    delete config;
+    config.Write(SETTING_WIDTH, width);
+    config.Write(SETTING_HEIGHT, height);
+    config.Write(SETTING_POSITION_X, x);
+    config.Write(SETTING_POSITION_Y, y);
 
     Close();
 }
