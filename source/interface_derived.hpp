@@ -49,9 +49,7 @@ private:
     void OnSelectEditor(wxCommandEvent&);
     void OnSelectEditorPath(wxCommandEvent&);
 
-	void OnQuit(wxCommandEvent&) {
-		Close();
-	}
+	void OnQuit(wxCommandEvent&);
     
     wxWindow* const projectActionItems[3]{
         revealProjBtn,
