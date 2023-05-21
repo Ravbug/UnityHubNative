@@ -19,10 +19,10 @@ void launch_process(const std::string& command, int flags) {
 
 void reveal_in_explorer(const std::filesystem::path& path) {
 #if defined __APPLE__
-	std::string command = "open \"" + path + "\"";
+	std::string command = "open \"" + path.string() + "\"";
 
 #elif defined __linux__
-	std::string command = "xdg-open \"" + path + "\"";
+	std::string command = "xdg-open \"" + path.string() + "\"";
 
 #elif defined _WIN32
 	//do not surround the paths in quotes, it will not work
