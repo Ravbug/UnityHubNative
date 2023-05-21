@@ -49,7 +49,7 @@ void PersonalActivationDlg::OnCreateHit(wxCommandEvent& evt)
 		wxSetWorkingDirectory(root.string());
 		wxProcess proc(wxPROCESS_DEFAULT);
 		wxExecute(cmd, wxEXEC_SYNC);
-		reveal_in_explorer(wxGetCwd());
+		reveal_in_explorer(std::filesystem::path(wxGetCwd().ToStdString()));
 		wxSetWorkingDirectory(cwd);
 	}
 }

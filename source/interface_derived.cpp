@@ -203,27 +203,10 @@ void MainFrameDerived::LoadProjects(const std::string &filter){
         vector<string> erroredProjects;
         //load each project (each path is on its own line)
         while (getline(in, line)){
-            try{
-                project pr = LoadProject(line);
-                AddProject(pr,filter);
-            }
-            catch(runtime_error& e){
-                //remove project
-                erroredProjects.push_back(line);
-            }
-        }
-        //alert user if projects could not be loaded
-        if (erroredProjects.size() > 0){
-            //build string
-            string str;
-            for (const auto& s : erroredProjects){
-                str += s + "\n";
-            }
-            //message box
-            wxMessageBox("The following projects could not be loaded. They have been removed from the list.\n\n"+str, "Loading error", wxOK | wxICON_WARNING );
-            
-            //save to remove the broken projects
-            SaveProjects();
+
+            project pr = LoadProject(line);
+            AddProject(pr,filter);
+
         }
     }
 }
@@ -243,7 +226,7 @@ void MainFrameDerived::OnAbout(wxCommandEvent& event)
 {
 	wxAboutDialogInfo aboutInfo;
 	aboutInfo.SetName("Unity Hub Native");	
-	aboutInfo.SetCopyright("(C) Ravbug 2022");
+	aboutInfo.SetCopyright("(C) Ravbug 2023");
 	aboutInfo.SetDescription("Developed with wxWidgets in C++");
 #if defined __linux__
 	aboutInfo.SetWebSite("https://github.com/ravbug/UnityHubNative");
@@ -365,7 +348,7 @@ void MainFrameDerived::OnRevealProject(wxCommandEvent& event){
 	long selectedIndex = wxListCtrl_get_selected(projectsList);
 	if (selectedIndex > -1){
 		project& p = projects[selectedIndex];
-		reveal_in_explorer(p.path.string());
+		reveal_in_explorer(p.path);
 	}
 }
 
@@ -393,6 +376,11 @@ void MainFrameDerived::OnOpenWith(wxCommandEvent& event){
 void MainFrameDerived::OpenProject(const long& index){
 	//get the project
 	project p = projects[index];
+
+	if (!std::filesystem::exists(p.path)) {
+		wxMessageBox("Cannot open project at " + p.path.string() + " because it could not be found.", "Cannot Open Project", wxOK | wxICON_ERROR);
+		return;
+	}
 	
 	for (const auto& path : installPaths) {
 		auto editorPath = path / p.version / executable;
@@ -463,29 +451,27 @@ string MainFrameDerived::GetPathFromDialog(const string& message)
 project MainFrameDerived::LoadProject(const std::filesystem::path &p_as_fs){
 	//error if the file does not exist
 	if (!filesystem::exists(p_as_fs)){
-		throw runtime_error(p_as_fs.string() + " does not exist.");
+		//throw runtime_error(p_as_fs.string() + " does not exist.");
 	}
 	
 	//the name is the final part of the path
 	string name = p_as_fs.filename().string();
-	
+	string version = "??";
+
 	//Load ProjectSettings/ProjectVersion.txt to get the editor version, if it exists
 	std::filesystem::path projSettings = p_as_fs / "ProjectSettings" / "ProjectVersion.txt";
-	if (!filesystem::exists(projSettings)){
-		throw runtime_error("No ProjectVersion.txt found at " + p_as_fs.string() + "\n\nEnsure the folder you selected is the root folder of a complete Unity project.");
+	if (filesystem::exists(projSettings)){
+		//the first line of ProjectVersion.txt contains the editor verison as plain text
+		ifstream inFile;
+		inFile.open(projSettings);
+		getline(inFile, version);
+		version = version.substr(17);
 	}
 	
-	//the first line of ProjectVersion.txt contains the editor verison as plain text
-	string version;
-	ifstream inFile;
-	inFile.open(projSettings);
-	getline(inFile,version);
-	version = version.substr(17);
-	
 	//get the modification date
-	struct stat fileInfo;
+	struct stat fileInfo {};
 	if (stat(p_as_fs.string().c_str(), &fileInfo) != 0) {
-		throw runtime_error("Cannot get modification date. Ensure this program has access to "+p_as_fs.string());
+		//throw runtime_error("Cannot get modification date. Ensure this program has access to "+p_as_fs.string());
 	}
 	
 	project p = {name,version,ctime(&fileInfo.st_mtime),p_as_fs,};

@@ -1,6 +1,7 @@
 #include "globals.h"
 #include <fmt/format.h>
 #include <wx/listctrl.h>
+#include <wx/msgdlg.h>
 
 void launch_process(const std::string& command, int flags) {
 #if defined __APPLE__ || defined __linux__
@@ -16,7 +17,7 @@ void launch_process(const std::string& command, int flags) {
 #endif
 }
 
-void reveal_in_explorer(const std::string& path) {
+void reveal_in_explorer(const std::filesystem::path& path) {
 #if defined __APPLE__
 	std::string command = "open \"" + path + "\"";
 
@@ -25,9 +26,15 @@ void reveal_in_explorer(const std::string& path) {
 
 #elif defined _WIN32
 	//do not surround the paths in quotes, it will not work
-	std::string command = "\\Windows\\explorer.exe \"" + path + "\"";
+	std::string command = "\\Windows\\explorer.exe \"" + path.string() + "\"";
 #endif
-	launch_process(command);
+	if (std::filesystem::exists(path)) {
+		launch_process(command);
+	}
+	else {
+		wxMessageBox("The project at " + path.string() + " could not be found.", "Cannot Reveal Project", wxOK | wxICON_ERROR);
+	}
+
 }
 
 long wxListCtrl_get_selected(wxListCtrl* listCtrl) {
