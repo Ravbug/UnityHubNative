@@ -450,9 +450,7 @@ string MainFrameDerived::GetPathFromDialog(const string& message)
  */
 project MainFrameDerived::LoadProject(const std::filesystem::path &p_as_fs){
 	//error if the file does not exist
-	if (!filesystem::exists(p_as_fs)){
-		//throw runtime_error(p_as_fs.string() + " does not exist.");
-	}
+	
 	
 	//the name is the final part of the path
 	string name = p_as_fs.filename().string();
@@ -469,12 +467,16 @@ project MainFrameDerived::LoadProject(const std::filesystem::path &p_as_fs){
 	}
 	
 	//get the modification date
+	string modifyDate;
 	struct stat fileInfo {};
-	if (stat(p_as_fs.string().c_str(), &fileInfo) != 0) {
-		//throw runtime_error("Cannot get modification date. Ensure this program has access to "+p_as_fs.string());
+	if (filesystem::exists(p_as_fs)) {
+		if (stat(p_as_fs.string().c_str(), &fileInfo) == 0) {
+			modifyDate = ctime(&fileInfo.st_mtime);
+		}
 	}
 	
-	project p = {name,version,ctime(&fileInfo.st_mtime),p_as_fs,};
+	
+	project p = {name,version,modifyDate,p_as_fs,};
 	return p;
 }
 
