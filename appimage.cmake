@@ -1,6 +1,6 @@
 function(make_appimage)
 	set(optional)
-	set(args EXE NAME DIR_ICON ICON OUTPUT_NAME)
+	set(args EXE NAME ICON OUTPUT_NAME)
 	set(list_args ASSETS)
 	cmake_parse_arguments(
 		PARSE_ARGV 0
@@ -22,10 +22,13 @@ function(make_appimage)
         execute_process(COMMAND chmod +x ${AIT_PATH})
     endif()
 
-    # make the AppDir
+    # make the AppDir and icons directory
     set(APPDIR "${CMAKE_BINARY_DIR}/AppDir")
+    set(RICONDIR "usr/share/icons/hicolor/512x512/apps") # relative icon dir
+    set(ICONDIR "${APPDIR}/${RICONDIR}")
     file(REMOVE_RECURSE "${APPDIR}")       # remove if leftover
     file(MAKE_DIRECTORY "${APPDIR}")
+    file(MAKE_DIRECTORY "${ICONDIR}")
 
     # copy executable to appdir
     file(COPY "${ARGS_EXE}" DESTINATION "${APPDIR}" FOLLOW_SYMLINK_CHAIN)
@@ -42,16 +45,15 @@ cd \"$(dirname \"$0\")\";
     # copy assets to appdir
     file(COPY ${ARGS_ASSETS} DESTINATION "${APPDIR}")
 
-    # copy icon thumbnail
-    file(COPY ${ARGS_DIR_ICON} DESTINATION "${APPDIR}")
-    get_filename_component(THUMB_NAME "${ARGS_DIR_ICON}" NAME)
-    file(RENAME "${APPDIR}/${THUMB_NAME}" "${APPDIR}/.DirIcon")
-
-    # copy icon highres
-    file(COPY ${ARGS_ICON} DESTINATION "${APPDIR}")
+    # copy icon
+    file(COPY ${ARGS_ICON} DESTINATION "${ICONDIR}")
     get_filename_component(ICON_NAME "${ARGS_ICON}" NAME)
     get_filename_component(ICON_EXT "${ARGS_ICON}" EXT)
-    file(RENAME "${APPDIR}/${ICON_NAME}" "${APPDIR}/${ARGS_NAME}${ICON_EXT}")
+    file(RENAME "${ICONDIR}/${ICON_NAME}" "${ICONDIR}/${ARGS_NAME}${ICON_EXT}")
+
+    # create icon symlinks
+    file(CREATE_LINK "${RICONDIR}/${ARGS_NAME}${ICON_EXT}" "${APPDIR}/.DirIcon" SYMBOLIC)
+    file(CREATE_LINK "${RICONDIR}/${ARGS_NAME}${ICON_EXT}" "${APPDIR}/${ARGS_NAME}${ICON_EXT}" SYMBOLIC)
 
     # Create the .desktop file
     file(WRITE "${APPDIR}/${ARGS_NAME}.desktop" 
@@ -59,6 +61,7 @@ cd \"$(dirname \"$0\")\";
 Type=Application
 Name=${ARGS_NAME}
 Icon=${ARGS_NAME}
+Exec=AppRun
 Categories=X-None;"    
     )
 
