@@ -59,6 +59,7 @@ cd \"$(dirname \"$0\")\";
 Type=Application
 Name=${ARGS_NAME}
 Icon=${ARGS_NAME}
+Exec=AppRun
 Categories=X-None;"    
     )
 
