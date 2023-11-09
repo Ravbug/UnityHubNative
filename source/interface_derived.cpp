@@ -381,10 +381,12 @@ void MainFrameDerived::OpenProject(const long& index){
 		wxMessageBox("Cannot open project at " + p.path.string() + " because it could not be found.", "Cannot Open Project", wxOK | wxICON_ERROR);
 		return;
 	}
-	
-	for (const auto& path : installPaths) {
-		auto editorPath = path / p.version / executable;
 
+	for (const auto& editor : editors) {
+		if (editor.name.find(p.version) == std::string::npos)
+			continue;
+
+		auto editorPath = editor.executablePath();
 		//check that the unity editor exists at that location
 		if (filesystem::exists(editorPath)) {
 
@@ -410,6 +412,7 @@ void MainFrameDerived::OpenProject(const long& index){
 		}
 #endif 
 	}
+
     // prompt the user to choose a new editor because we couldn't locate one
     wxCommandEvent evt;
     MainFrameDerived::OnOpenWith(evt);
