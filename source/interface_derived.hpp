@@ -139,10 +139,10 @@ private:
 			editor& e = editors[id];
 			std::filesystem::path path = e.path / e.name;
             if (!std::filesystem::exists(path)){
-                reveal_in_explorer(e.path.string());
+                reveal_in_explorer(e.path);
             }
             else{
-                reveal_in_explorer(path.string());
+                reveal_in_explorer(path);
             }
 		}
 	}
@@ -153,7 +153,7 @@ private:
 	void OnRevealInstallLocation(wxCommandEvent& event){
 		int id = installsPathsList->GetSelection();
 		if (id != wxNOT_FOUND){
-			reveal_in_explorer(installPaths[id].string());
+			reveal_in_explorer(installPaths[id]);
 		}
 	}
     void OnOpenHub(wxCommandEvent& event);
