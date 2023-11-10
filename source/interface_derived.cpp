@@ -391,37 +391,47 @@ void MainFrameDerived::OnOpenWith(wxCommandEvent& event){
  @param index the integer representing which project in the projects Vector to load
  */
 void MainFrameDerived::OpenProject(const long& index){
-	//get the project
-	project p = projects[index];
-	
-	for (const auto& path : installPaths) {
-		auto editorPath = path / p.version / executable;
+    //get the project
+    project p = projects[index];
 
-		//check that the unity editor exists at that location
-		if (filesystem::exists(editorPath)) {
+    if (!std::filesystem::exists(p.path)) {
+        wxMessageBox("Cannot open project at " + p.path.string() + " because it could not be found.", "Cannot Open Project", wxOK | wxICON_ERROR);
+        return;
+    }
 
-			string cmd = "\"" + editorPath.string() + "\" -projectpath \"" + p.path.string() + "\"";
-
-			//start the process
-			launch_process(cmd);
-
-			return;
-		}
+    for (const auto& editor : editors) {
+        if (editor.name.find(p.version) == std::string::npos)
+            continue;
+        
+        auto editorPath = editor.executablePath();
+        //check that the unity editor exists at that location
+        if (filesystem::exists(editorPath)) {
+            
+            string cmd = "\"" + editorPath.string() + "\" -projectpath \"" + p.path.string() + "\"";
+            
+            //start the process
+            launch_process(cmd);
+            
+            return;
+        }
+    }
 #if __APPLE__
-		else if (filesystem::exists(path / executable)) {
-			// mac unlabeled version
-			auto unlabeledPath = path / executable;
-			char buffer[16];
-			auto unlabeledPathInfo = path / "Unity.app" / "Contents" / "Info.plist";
-			getCFBundleVersionFromPlist(unlabeledPathInfo.string().c_str(), buffer, sizeof(buffer));
-			if (p.version == buffer) {
-				string cmd = "\"" + unlabeledPath.string() + "\" -projectpath \"" + p.path.string() + "\"";
-				launch_process(cmd);
-				return;
-			}
-		}
-#endif 
-	}
+    for (const auto& path : installPaths) {
+         if (filesystem::exists(path / executable)) {
+            // mac unlabeled version
+            auto unlabeledPath = path / executable;
+            char buffer[16];
+            auto unlabeledPathInfo = path / "Unity.app" / "Contents" / "Info.plist";
+            getCFBundleVersionFromPlist(unlabeledPathInfo.string().c_str(), buffer, sizeof(buffer));
+            if (p.version == buffer) {
+                string cmd = "\"" + unlabeledPath.string() + "\" -projectpath \"" + p.path.string() + "\"";
+                launch_process(cmd);
+                return;
+            }
+        }
+#endif
+    }
+
     // prompt the user to choose a new editor because we couldn't locate one
     wxCommandEvent evt;
     MainFrameDerived::OnOpenWith(evt);

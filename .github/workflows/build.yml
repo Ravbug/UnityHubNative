@@ -1,5 +1,5 @@
 name: Build-Release
-on: push
+on: [push, pull_request]
 jobs:
   build-linux:
     name: Build App for Linux x64
