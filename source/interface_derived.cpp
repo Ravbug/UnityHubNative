@@ -400,7 +400,7 @@ void MainFrameDerived::OpenProject(const long& index){
     }
 #if __APPLE__
     for (const auto& path : installPaths) {
-         if (filesystem::exists(path / executable)) {
+        if (filesystem::exists(path / executable)) {
             // mac unlabeled version
             auto unlabeledPath = path / executable;
             char buffer[16];
@@ -412,8 +412,9 @@ void MainFrameDerived::OpenProject(const long& index){
                 return;
             }
         }
-#endif
     }
+#endif
+    
 
     // prompt the user to choose a new editor because we couldn't locate one
     wxCommandEvent evt;
