@@ -14,7 +14,7 @@
 static constexpr std::string_view projectsFile = "projects.txt";
 static constexpr std::string_view editorPathsFile = "editorPaths.txt";
 static constexpr std::string_view templatePrefix = "com.unity.template";
-static constexpr std::string_view AppVersion = "v1.52";
+static constexpr std::string_view AppVersion = "v1.53";
 
 struct wxListCtrl;
 struct wxWindow;
@@ -96,7 +96,7 @@ void launch_process(const std::string& command, int flags = 0);
 * Open system file explorer to path
 * @param path the item to show
 */
-void reveal_in_explorer(const std::string& path);
+void reveal_in_explorer(const std::filesystem::path& path);
 
 /**
  Gets the first selected item in a wxListCtrl. If the wxListCtrl is set to single selection, this method will retrive the only selected item.
