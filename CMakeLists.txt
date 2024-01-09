@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)   
 
-project("UnityHubNative")
+project("UnityHubNative" LANGUAGES C CXX OBJCXX)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIGURATION>)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIGURATION>)
@@ -26,6 +26,17 @@ message("module path = ${CMAKE_MODULE_PATH}")
 file(GLOB source "source/*.cpp" "source/*.hpp" "source/*.h")
 if (APPLE)
 	set(OBJCPP "source/AppleUtilities.h" "source/AppleUtilities.mm")
+    # Detect whether we are on an Intel or ARM Mac
+    execute_process(COMMAND uname -m RESULT_VARIABLE result OUTPUT_VARIABLE OSX_ARCHITECTURE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(OSX_ARCHITECTURE STREQUAL "x86_64")
+        # Intel architecture
+        set(CMAKE_OSX_ARCHITECTURES "x86_64" CACHE INTERNAL "")
+    elseif(OSX_ARCHITECTURE STREQUAL "arm64")
+        # Apple Silicon architecture
+        set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE INTERNAL "")
+    else()
+        message(FATAL_ERROR "Unknown architecture: ${OSX_ARCHITECTURE}")
+    endif()
 endif()
 add_executable("${PROJECT_NAME}" WIN32 ${source} "source/wxmac.icns" "source/windows.rc" ${OBJCPP})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
