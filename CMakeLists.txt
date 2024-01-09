@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)   
 
-project("UnityHubNative" LANGUAGES C CXX OBJCXX)
+project("UnityHubNative")
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIGURATION>)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/$<CONFIGURATION>)
@@ -24,6 +24,7 @@ message("module path = ${CMAKE_MODULE_PATH}")
 
 file(GLOB source "source/*.cpp" "source/*.hpp" "source/*.h")
 if (APPLE)
+	enable_language(C CXX OBJCXX)
 	set(OBJCPP "source/AppleUtilities.h" "source/AppleUtilities.mm")
     # Detect whether we are on an Intel or ARM Mac
     execute_process(COMMAND uname -m RESULT_VARIABLE result OUTPUT_VARIABLE OSX_ARCHITECTURE OUTPUT_STRIP_TRAILING_WHITESPACE)
