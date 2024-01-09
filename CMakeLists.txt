@@ -12,7 +12,6 @@ if(MSVC)
   add_compile_options(/MP)
 endif()
 
-set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD)" CACHE INTERNAL "")
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE INTERNAL "")
 
 # linux detection
