@@ -97,13 +97,21 @@ int psa_is_key_present_in_storage( const mbedtls_svc_key_id_t key );
  * \param data_length       The number of bytes that make up the key data.
  *
  * \retval #PSA_SUCCESS
+ *         The key was successfully saved.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
+ *         The key data buffer is NULL or zero-length.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was insufficient memory to save the key.
  * \retval #PSA_ERROR_INSUFFICIENT_STORAGE
+ *         There was insufficient storage space to save the key.
  * \retval #PSA_ERROR_STORAGE_FAILURE
+ *         There was a failure in the underlying storage system.
  * \retval #PSA_ERROR_ALREADY_EXISTS
+ *         There is already a key in the given slot.
  * \retval #PSA_ERROR_DATA_INVALID
+ *         The key data was corrupted.
  * \retval #PSA_ERROR_DATA_CORRUPT
+ *         The key data was invalid.
  */
 psa_status_t psa_save_persistent_key( const psa_core_key_attributes_t *attr,
                                       const uint8_t *data,
@@ -130,10 +138,15 @@ psa_status_t psa_save_persistent_key( const psa_core_key_attributes_t *attr,
  * \param[out] data_length  The number of bytes that make up the key data.
  *
  * \retval #PSA_SUCCESS
+ *         The key was successfully loaded.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was insufficient memory to load the key.
  * \retval #PSA_ERROR_DATA_INVALID
+ *         The key data was corrupted.
  * \retval #PSA_ERROR_DATA_CORRUPT
+ *         The key data was invalid.
  * \retval #PSA_ERROR_DOES_NOT_EXIST
+ *         There is no key in the given slot.
  */
 psa_status_t psa_load_persistent_key( psa_core_key_attributes_t *attr,
                                       uint8_t **data,
@@ -149,6 +162,7 @@ psa_status_t psa_load_persistent_key( psa_core_key_attributes_t *attr,
  *         The key was successfully removed,
  *         or the key did not exist.
  * \retval #PSA_ERROR_DATA_INVALID
+ *         The key data was corrupted.
  */
 psa_status_t psa_destroy_persistent_key( const mbedtls_svc_key_id_t key );
 
@@ -191,8 +205,11 @@ void psa_format_key_data_for_storage( const uint8_t *data,
  *                             with the loaded key metadata.
  *
  * \retval #PSA_SUCCESS
+ *         The key was successfully loaded.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was insufficient memory to load the key.
  * \retval #PSA_ERROR_DATA_INVALID
+ *         The key data was corrupted.
  */
 psa_status_t psa_parse_key_data_from_storage( const uint8_t *storage_data,
                                               size_t storage_data_length,
@@ -326,9 +343,13 @@ static inline void psa_crypto_prepare_transaction(
  * atomically update the transaction state.
  *
  * \retval #PSA_SUCCESS
+ *         The transaction data has been saved to storage.
  * \retval #PSA_ERROR_DATA_CORRUPT
+ *         The transaction data in memory is invalid.
  * \retval #PSA_ERROR_INSUFFICIENT_STORAGE
+ *         There is not enough space in storage to save the transaction data.
  * \retval #PSA_ERROR_STORAGE_FAILURE
+ *         There was a failure in the underlying storage system.
  */
 psa_status_t psa_crypto_save_transaction( void );
 
@@ -343,8 +364,11 @@ psa_status_t psa_crypto_save_transaction( void );
  * \retval #PSA_ERROR_DOES_NOT_EXIST
  *         There is no ongoing transaction.
  * \retval #PSA_ERROR_STORAGE_FAILURE
+ *         There was a failure in the underlying storage system.
  * \retval #PSA_ERROR_DATA_INVALID
+ *         The transaction data in storage is invalid.
  * \retval #PSA_ERROR_DATA_CORRUPT
+ *         The transaction data in storage is invalid.
  */
 psa_status_t psa_crypto_load_transaction( void );
 
@@ -384,7 +408,9 @@ psa_status_t psa_crypto_stop_transaction( void );
  * \retval #PSA_SUCCESS
  *         Success
  * \retval #PSA_ERROR_STORAGE_FAILURE
+ *         There was a failure in the underlying storage system.
  * \retval #PSA_ERROR_INSUFFICIENT_STORAGE
+ *         There was insufficient storage space to save the entropy.
  * \retval #PSA_ERROR_NOT_PERMITTED
  *         The entropy seed file already exists.
  */

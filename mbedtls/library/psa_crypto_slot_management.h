@@ -89,8 +89,14 @@ static inline int psa_key_id_is_volatile( psa_key_id_t key_id )
  * \retval #PSA_ERROR_DOES_NOT_EXIST
  *         There is no key with key identifier \p key.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         The key slot lock counter reached its maximum value and was not
+ *         increased.
  * \retval #PSA_ERROR_STORAGE_FAILURE
+ *         \p key is a persistent key identifier. The key exists in storage
+ *         but could not be loaded.
  * \retval #PSA_ERROR_DATA_CORRUPT
+ *         \p key is a persistent key identifier. The key exists in storage
+ *         but its data is corrupted.
  */
 psa_status_t psa_get_and_lock_key_slot( mbedtls_svc_key_id_t key,
                                         psa_key_slot_t **p_slot );
@@ -119,8 +125,12 @@ void psa_wipe_all_key_slots( void );
  * \param[out] p_slot            On success, a pointer to the slot.
  *
  * \retval #PSA_SUCCESS
+ *         \p *p_slot contains a pointer to a key slot that is available for
+ *         use and is in its ground state.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There is no available key slot.
  * \retval #PSA_ERROR_BAD_STATE
+ *         The library has not been initialized.
  */
 psa_status_t psa_get_empty_key_slot( psa_key_id_t *volatile_key_id,
                                      psa_key_slot_t **p_slot );
@@ -195,7 +205,9 @@ static inline int psa_key_lifetime_is_external( psa_key_lifetime_t lifetime )
  *                          associated with the key's storage location.
  *
  * \retval #PSA_SUCCESS
+ *         The key's location is valid.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
+ *         The key's location is invalid.
  */
 psa_status_t psa_validate_key_location( psa_key_lifetime_t lifetime,
                                         psa_se_drv_table_entry_t **p_drv );
@@ -205,8 +217,9 @@ psa_status_t psa_validate_key_location( psa_key_lifetime_t lifetime,
  * \param[in] lifetime  The key lifetime attribute.
  *
  * \retval #PSA_SUCCESS
- * \retval #PSA_ERROR_NOT_SUPPORTED The key is persistent but persistent keys
- *             are not supported.
+ *         The key is not persistent or persistent keys are supported.
+ * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         The key is persistent but persistent keys are not supported.
  */
 psa_status_t psa_validate_key_persistence( psa_key_lifetime_t lifetime );
 

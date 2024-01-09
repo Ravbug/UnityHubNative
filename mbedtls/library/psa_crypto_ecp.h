@@ -67,12 +67,16 @@ psa_status_t mbedtls_psa_ecp_load_representation( psa_key_type_t type,
  *                                key_buffer in bytes.
  * \param[out] bits             The key size in number of bits.
  *
- * \retval #PSA_SUCCESS  The ECP key was imported successfully.
+ * \retval #PSA_SUCCESS
+ *         The ECP key was imported successfully.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
  *         The key data is not correctly formatted.
  * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         The specified key type is not supported.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was insufficient memory to perform the operation.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         There was an internal error.
  */
 psa_status_t mbedtls_psa_ecp_import_key(
     const psa_key_attributes_t *attributes,
@@ -110,13 +114,21 @@ psa_status_t mbedtls_psa_ecp_export_key( psa_key_type_t type,
  * \param[out] data_length      On success, the number of bytes written in
  *                              \p data
  *
- * \retval #PSA_SUCCESS  The ECP public key was exported successfully.
+ * \retval #PSA_SUCCESS
+ *         The ECP public key was exported successfully.
  * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         The specified key type is not supported.
  * \retval #PSA_ERROR_COMMUNICATION_FAILURE
+ *         There was a communication failure inside the implementation.
  * \retval #PSA_ERROR_HARDWARE_FAILURE
+ *         There was a failure in the underlying hardware.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         There was a corruption failure inside the implementation.
  * \retval #PSA_ERROR_STORAGE_FAILURE
+ *         There was a storage failure that prevented the implementation from
+ *         accessing the key.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was insufficient memory to perform the operation.
  */
 psa_status_t mbedtls_psa_ecp_export_public_key(
     const psa_key_attributes_t *attributes,
@@ -167,16 +179,23 @@ psa_status_t mbedtls_psa_ecp_generate_key(
  *                              that make up the returned signature value.
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  * \retval #PSA_ERROR_BUFFER_TOO_SMALL
  *         The size of the \p signature buffer is too small. You can
  *         determine a sufficient buffer size by calling
  *         #PSA_SIGN_OUTPUT_SIZE(\c PSA_KEY_TYPE_ECC_KEY_PAIR, \c key_bits,
  *         \p alg) where \c key_bits is the bit-size of the ECC key.
  * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         The specified algorithm is not supported.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
+ *         The key type is not an ECDSA key pair.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was insufficient memory to perform the operation.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         There was a corruption failure inside the implementation.
  * \retval #PSA_ERROR_INSUFFICIENT_ENTROPY
+ *         There is insufficient entropy to generate random data needed for
+ *         the requested operation.
  */
 psa_status_t mbedtls_psa_ecdsa_sign_hash(
     const psa_key_attributes_t *attributes,
@@ -210,8 +229,11 @@ psa_status_t mbedtls_psa_ecdsa_sign_hash(
  *         The calculation was performed successfully, but the passed
  *         signature is not a valid signature.
  * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         The specified algorithm is not supported.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
+ *         The key type is not an ECDSA key pair.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was insufficient memory to perform the operation.
  */
 psa_status_t mbedtls_psa_ecdsa_verify_hash(
     const psa_key_attributes_t *attributes,

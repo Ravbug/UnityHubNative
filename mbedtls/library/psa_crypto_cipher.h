@@ -60,9 +60,13 @@ const mbedtls_cipher_info_t *mbedtls_cipher_info_from_psa(
  *                              #PSA_ALG_IS_CIPHER(\p alg) is true).
  *
  * \retval #PSA_SUCCESS
+ *         The operation has been initialized successfully.
  * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         The specified algorithm is not supported or is not a cipher.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was not enough memory to perform the operation.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         There was an internal error in the implementation.
  */
 psa_status_t mbedtls_psa_cipher_encrypt_setup(
     mbedtls_psa_cipher_operation_t *operation,
@@ -90,9 +94,13 @@ psa_status_t mbedtls_psa_cipher_encrypt_setup(
  *                              #PSA_ALG_IS_CIPHER(\p alg) is true).
  *
  * \retval #PSA_SUCCESS
+ *         The operation has been initialized successfully.
  * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         The specified algorithm is not supported or is not a cipher.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was not enough memory to perform the operation.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         There was an internal error in the implementation.
  */
 psa_status_t mbedtls_psa_cipher_decrypt_setup(
     mbedtls_psa_cipher_operation_t *operation,
@@ -117,10 +125,12 @@ psa_status_t mbedtls_psa_cipher_decrypt_setup(
  *                              PSA_CIPHER_IV_MAX_SIZE.
  *
  * \retval #PSA_SUCCESS
+ *         The IV has been successfully set.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
  *         The size of \p iv is not acceptable for the chosen algorithm,
  *         or the chosen algorithm does not use an IV.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was not enough memory to perform the operation.
  */
 psa_status_t mbedtls_psa_cipher_set_iv(
     mbedtls_psa_cipher_operation_t *operation,
@@ -143,9 +153,11 @@ psa_status_t mbedtls_psa_cipher_set_iv(
  *                              that make up the returned output.
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  * \retval #PSA_ERROR_BUFFER_TOO_SMALL
  *         The size of the \p output buffer is too small.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was not enough memory to perform the operation.
  */
 psa_status_t mbedtls_psa_cipher_update(
     mbedtls_psa_cipher_operation_t *operation,
@@ -166,6 +178,7 @@ psa_status_t mbedtls_psa_cipher_update(
  *                              that make up the returned output.
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
  *         The total input size passed to this operation is not valid for
  *         this particular algorithm. For example, the algorithm is a based
@@ -177,6 +190,7 @@ psa_status_t mbedtls_psa_cipher_update(
  * \retval #PSA_ERROR_BUFFER_TOO_SMALL
  *         The size of the \p output buffer is too small.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was not enough memory to perform the operation.
  */
 psa_status_t mbedtls_psa_cipher_finish(
     mbedtls_psa_cipher_operation_t *operation,
@@ -195,7 +209,7 @@ psa_status_t mbedtls_psa_cipher_finish(
  *
  * \param[in,out] operation     Initialized cipher operation.
  *
- * \retval #PSA_SUCCESS
+ * \retval #PSA_SUCCESS         Success.
  */
 psa_status_t mbedtls_psa_cipher_abort( mbedtls_psa_cipher_operation_t *operation );
 
@@ -225,9 +239,13 @@ psa_status_t mbedtls_psa_cipher_abort( mbedtls_psa_cipher_operation_t *operation
  *                              by the core.
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         The specified algorithm is not supported or is not a cipher.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was not enough memory to perform the operation.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         There was an internal error in the implementation.
  * \retval #PSA_ERROR_BUFFER_TOO_SMALL
  *         The size of the \p output buffer is too small.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
@@ -276,9 +294,13 @@ psa_status_t mbedtls_psa_cipher_encrypt( const psa_key_attributes_t *attributes,
  *                              by the core.
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         The specified algorithm is not supported or is not a cipher.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was not enough memory to perform the operation.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         There was an internal error in the implementation.
  * \retval #PSA_ERROR_BUFFER_TOO_SMALL
  *         The size of the \p output buffer is too small.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
