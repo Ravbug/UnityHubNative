@@ -30,7 +30,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>1.53</string>
 	<key>CFBundleSignature</key>
-	<string>????</string>
+	<string>UNHn</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSApplicationCategoryType</key>
