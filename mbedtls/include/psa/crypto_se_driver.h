@@ -386,7 +386,9 @@ typedef struct {
  *                              or decrypt
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         The requested algorithm is not supported.
  */
 typedef psa_status_t (*psa_drv_se_cipher_setup_t)(psa_drv_se_context_t *drv_context,
                                                   void *op_context,
@@ -408,6 +410,7 @@ typedef psa_status_t (*psa_drv_se_cipher_setup_t)(psa_drv_se_context_t *drv_cont
  * \param[in] iv_length         The size (in bytes) of the `p_iv` buffer
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  */
 typedef psa_status_t (*psa_drv_se_cipher_set_iv_t)(void *op_context,
                                                    const uint8_t *p_iv,
@@ -430,6 +433,7 @@ typedef psa_status_t (*psa_drv_se_cipher_set_iv_t)(void *op_context,
  *                                  of bytes placed in the `p_output` buffer
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  */
 typedef psa_status_t (*psa_drv_se_cipher_update_t)(void *op_context,
                                                    const uint8_t *p_input,
@@ -451,6 +455,7 @@ typedef psa_status_t (*psa_drv_se_cipher_update_t)(void *op_context,
  *                              bytes placed in the `p_output` buffer
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  */
 typedef psa_status_t (*psa_drv_se_cipher_finish_t)(void *op_context,
                                                    uint8_t *p_output,
@@ -486,7 +491,9 @@ typedef psa_status_t (*psa_drv_se_cipher_abort_t)(void *op_context);
  *                              buffer
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         The requested algorithm is not supported.
  */
 typedef psa_status_t (*psa_drv_se_cipher_ecb_t)(psa_drv_se_context_t *drv_context,
                                                 psa_key_slot_number_t key_slot,
@@ -555,6 +562,7 @@ typedef struct {
  *                                  that make up the returned signature value
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  */
 typedef psa_status_t (*psa_drv_se_asymmetric_sign_t)(psa_drv_se_context_t *drv_context,
                                                      psa_key_slot_number_t key_slot,
@@ -619,6 +627,7 @@ typedef psa_status_t (*psa_drv_se_asymmetric_verify_t)(psa_drv_se_context_t *drv
  *                              the returned output
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  */
 typedef psa_status_t (*psa_drv_se_asymmetric_encrypt_t)(psa_drv_se_context_t *drv_context,
                                                         psa_key_slot_number_t key_slot,
@@ -659,6 +668,7 @@ typedef psa_status_t (*psa_drv_se_asymmetric_encrypt_t)(psa_drv_se_context_t *dr
  *                              that make up the returned output
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  */
 typedef psa_status_t (*psa_drv_se_asymmetric_decrypt_t)(psa_drv_se_context_t *drv_context,
                                                         psa_key_slot_number_t key_slot,
@@ -906,7 +916,9 @@ typedef enum
  *         The core will record \c *key_slot as the key slot where the key
  *         is stored and will update the persistent data in storage.
  * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         The requested key type is not supported.
  * \retval #PSA_ERROR_INSUFFICIENT_STORAGE
+ *         There is not enough storage space for this key.
  */
 typedef psa_status_t (*psa_drv_se_allocate_key_t)(
     psa_drv_se_context_t *drv_context,
@@ -1045,12 +1057,19 @@ typedef psa_status_t (*psa_drv_se_destroy_key_t)(
  *                              that make up the key data.
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  * \retval #PSA_ERROR_DOES_NOT_EXIST
+ *         The specified slot is not currently in use.
  * \retval #PSA_ERROR_NOT_PERMITTED
+ *         The specified slot is not an external key slot.
  * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         The specified key type is not supported.
  * \retval #PSA_ERROR_COMMUNICATION_FAILURE
+ *         There was a communication failure with the secure element.
  * \retval #PSA_ERROR_HARDWARE_FAILURE
+ *         There was a failure in the secure element.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         There was a corruption failure in the secure element.
  */
 typedef psa_status_t (*psa_drv_se_export_key_t)(psa_drv_se_context_t *drv_context,
                                                 psa_key_slot_number_t key,
@@ -1198,6 +1217,7 @@ typedef struct {
  *                              the key derivation
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  */
 typedef psa_status_t (*psa_drv_se_key_derivation_setup_t)(psa_drv_se_context_t *drv_context,
                                                           void *op_context,
@@ -1218,6 +1238,7 @@ typedef psa_status_t (*psa_drv_se_key_derivation_setup_t)(psa_drv_se_context_t *
  * \param[in] collateral_size   The size in bytes of the collateral
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  */
 typedef psa_status_t (*psa_drv_se_key_derivation_collateral_t)(void *op_context,
                                                                uint32_t collateral_id,
@@ -1232,7 +1253,7 @@ typedef psa_status_t (*psa_drv_se_key_derivation_collateral_t)(void *op_context,
  * \param[in] dest_key          The slot where the generated key material
  *                              should be placed
  *
- * \retval #PSA_SUCCESS
+ * \retval #PSA_SUCCESS         Success.
  */
 typedef psa_status_t (*psa_drv_se_key_derivation_derive_t)(void *op_context,
                                                           psa_key_slot_number_t dest_key);
@@ -1247,6 +1268,7 @@ typedef psa_status_t (*psa_drv_se_key_derivation_derive_t)(void *op_context,
  *                              key material placed in `p_output`
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  */
 typedef psa_status_t (*psa_drv_se_key_derivation_export_t)(void *op_context,
                                                            uint8_t *p_output,

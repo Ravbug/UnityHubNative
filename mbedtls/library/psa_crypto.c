@@ -1684,11 +1684,18 @@ static psa_status_t psa_start_key_creation(
  * \retval #PSA_SUCCESS
  *         The key was successfully created.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was not enough storage space to create the key.
  * \retval #PSA_ERROR_INSUFFICIENT_STORAGE
+ *         There was not enough storage space to create the key.
  * \retval #PSA_ERROR_ALREADY_EXISTS
+ *         There is already a key with this identifier.
  * \retval #PSA_ERROR_DATA_INVALID
+ *         The key data is not valid.
  * \retval #PSA_ERROR_DATA_CORRUPT
+ *         There was an inconsistency between volatile and non-volatile
+ *         storage.
  * \retval #PSA_ERROR_STORAGE_FAILURE
+ *         There was a failure in persistent storage.
  *
  * \return If this function fails, the key slot is an invalid state.
  *         You must call psa_fail_key_creation() to wipe and free the slot.

@@ -192,11 +192,17 @@ static inline void psa_clear_key_slot_number(
  * \retval #PSA_ERROR_NOT_PERMITTED
  *         The caller is not authorized to register the specified key slot.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There is not enough memory to register the key.
  * \retval #PSA_ERROR_INSUFFICIENT_STORAGE
+ *         There is not enough storage to register the key.
  * \retval #PSA_ERROR_COMMUNICATION_FAILURE
+ *         There was a failure in communication with the secure element.
  * \retval #PSA_ERROR_DATA_INVALID
+ *         The key data is not valid.
  * \retval #PSA_ERROR_DATA_CORRUPT
+ *         The key data is corrupted.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         The key data has been corrupted.
  * \retval #PSA_ERROR_BAD_STATE
  *         The library has not been previously initialized by psa_crypto_init().
  *         It is implementation-dependent whether a failure to initialize
@@ -495,9 +501,15 @@ psa_status_t mbedtls_psa_inject_entropy(const uint8_t *seed,
  * \param data_length           Size of the \p data buffer in bytes.
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
+ *         \p type is not a supported key type, or the key type does not
+ *         support domain parameters, or the domain parameters are not
+ *         valid for the key type.
  * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         The key type does not support domain parameters.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was insufficient memory to store the domain parameters.
  */
 psa_status_t psa_set_key_domain_parameters(psa_key_attributes_t *attributes,
                                            psa_key_type_t type,
@@ -525,7 +537,10 @@ psa_status_t psa_set_key_domain_parameters(psa_key_attributes_t *attributes,
  *                              that make up the key domain parameters data.
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  * \retval #PSA_ERROR_BUFFER_TOO_SMALL
+ *         \p data_size is too small. You can determine a sufficient buffer
+ *         size by calling PSA_KEY_DOMAIN_PARAMETERS_SIZE().
  */
 psa_status_t psa_get_key_domain_parameters(
     const psa_key_attributes_t *attributes,
@@ -1354,8 +1369,12 @@ static psa_pake_operation_t psa_pake_operation_init(void);
  * \retval #PSA_ERROR_NOT_SUPPORTED
  *         The \p cipher_suite is not supported or is not valid.
  * \retval #PSA_ERROR_COMMUNICATION_FAILURE
+ *         Communication with the peer failed.
  * \retval #PSA_ERROR_HARDWARE_FAILURE
+ *         A failure of the random generator hardware.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         The implementation detected a potential corruption of its internal
+ *         data structures.
  * \retval #PSA_ERROR_BAD_STATE
  *         The library has not been previously initialized by psa_crypto_init().
  *         It is implementation-dependent whether a failure to initialize
@@ -1389,11 +1408,18 @@ psa_status_t psa_pake_setup(psa_pake_operation_t *operation,
  * \retval #PSA_ERROR_BAD_STATE
  *         The operation state is not valid (it must have been set up.)
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         The implementation detected a potential corruption of its internal
+ *         data structures.
  * \retval #PSA_ERROR_INVALID_HANDLE
+ *         \p password is not a valid key identifier.
  * \retval #PSA_ERROR_COMMUNICATION_FAILURE
+ *         Communication with the key store failed.
  * \retval #PSA_ERROR_HARDWARE_FAILURE
+ *         A failure of the key store hardware.
  * \retval #PSA_ERROR_STORAGE_FAILURE
+ *         Storage failure preventing the key from being retrieved.
  * \retval #PSA_ERROR_NOT_PERMITTED
+ *         The key policy does not allow the requested operation.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
  *         \p key is not compatible with the algorithm or the cipher suite.
  * \retval #PSA_ERROR_BAD_STATE
@@ -1430,9 +1456,14 @@ psa_status_t psa_pake_set_password_key(psa_pake_operation_t *operation,
  * \retval #PSA_ERROR_BAD_STATE
  *         The operation state is not valid.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was insufficient memory to perform the operation.
  * \retval #PSA_ERROR_COMMUNICATION_FAILURE
+ *         Communication with the peer failed.
  * \retval #PSA_ERROR_HARDWARE_FAILURE
+ *         A failure of the random generator hardware.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         The implementation detected a potential corruption of its internal
+ *         data structures.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
  *         \p user_id is NULL.
  * \retval #PSA_ERROR_BAD_STATE
@@ -1472,9 +1503,14 @@ psa_status_t psa_pake_set_user(psa_pake_operation_t *operation,
  * \retval #PSA_ERROR_NOT_SUPPORTED
  *         The algorithm doesn't associate a second identity with the session.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was insufficient memory to perform the operation.
  * \retval #PSA_ERROR_COMMUNICATION_FAILURE
+ *         Communication with the peer failed.
  * \retval #PSA_ERROR_HARDWARE_FAILURE
+ *         A failure of the random generator hardware.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         The implementation detected a potential corruption of its internal
+ *         data structures.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
  *         \p user_id is NULL.
  * \retval #PSA_ERROR_BAD_STATE
@@ -1515,8 +1551,12 @@ psa_status_t psa_pake_set_peer(psa_pake_operation_t *operation,
  * \retval #PSA_ERROR_NOT_SUPPORTED
  *         The \p side for this algorithm is not supported or is not valid.
  * \retval #PSA_ERROR_COMMUNICATION_FAILURE
+ *         Communication with the peer failed.
  * \retval #PSA_ERROR_HARDWARE_FAILURE
+ *         A failure of the random generator hardware.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         The implementation detected a potential corruption of its internal
+ *         data structures.
  * \retval #PSA_ERROR_BAD_STATE
  *         The library has not been previously initialized by psa_crypto_init().
  *         It is implementation-dependent whether a failure to initialize
@@ -1562,10 +1602,16 @@ psa_status_t psa_pake_set_side(psa_pake_operation_t *operation,
  * \retval #PSA_ERROR_BUFFER_TOO_SMALL
  *         The size of the \p output buffer is too small.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was insufficient memory to perform the operation.
  * \retval #PSA_ERROR_COMMUNICATION_FAILURE
+ *         Communication with the peer failed.
  * \retval #PSA_ERROR_HARDWARE_FAILURE
+ *         A failure of the random generator hardware.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         The implementation detected a potential corruption of its internal
+ *         data structures.
  * \retval #PSA_ERROR_STORAGE_FAILURE
+ *         Storage failure preventing the key from being retrieved.
  * \retval #PSA_ERROR_BAD_STATE
  *         The library has not been previously initialized by psa_crypto_init().
  *         It is implementation-dependent whether a failure to initialize
@@ -1606,10 +1652,16 @@ psa_status_t psa_pake_output(psa_pake_operation_t *operation,
  *         The operation state is not valid (it must be active, but beyond that
  *         validity is specific to the algorithm).
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was insufficient memory to perform the operation.
  * \retval #PSA_ERROR_COMMUNICATION_FAILURE
+ *         Communication with the peer failed.
  * \retval #PSA_ERROR_HARDWARE_FAILURE
+ *         A failure of the random generator hardware.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         The implementation detected a potential corruption of its internal
+ *         data structures.
  * \retval #PSA_ERROR_STORAGE_FAILURE
+ *         Storage failure preventing the key from being retrieved.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
  *         The input is not valid for the algorithm, ciphersuite or \p step.
  * \retval #PSA_ERROR_BAD_STATE
@@ -1669,10 +1721,16 @@ psa_status_t psa_pake_input(psa_pake_operation_t *operation,
  *         #PSA_KEY_DERIVATION_INPUT_SECRET is not compatible with the output’s
  *         algorithm.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was insufficient memory to perform the operation.
  * \retval #PSA_ERROR_COMMUNICATION_FAILURE
+ *         Communication with the peer failed.
  * \retval #PSA_ERROR_HARDWARE_FAILURE
+ *         A failure of the random generator hardware.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         The implementation detected a potential corruption of its internal
+ *         data structures.
  * \retval #PSA_ERROR_STORAGE_FAILURE
+ *         Storage failure preventing the key from being retrieved.
  * \retval #PSA_ERROR_BAD_STATE
  *         The library has not been previously initialized by psa_crypto_init().
  *         It is implementation-dependent whether a failure to initialize

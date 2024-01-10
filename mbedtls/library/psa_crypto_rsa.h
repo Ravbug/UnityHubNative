@@ -58,12 +58,16 @@ psa_status_t mbedtls_psa_rsa_load_representation( psa_key_type_t type,
  *                                key_buffer in bytes.
  * \param[out] bits             The key size in number of bits.
  *
- * \retval #PSA_SUCCESS  The RSA key was imported successfully.
+ * \retval #PSA_SUCCESS
+ *         The RSA key was imported successfully.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
  *         The key data is not correctly formatted.
  * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         The key type is not supported.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was insufficient memory to perform the operation.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         The key data is not correctly formatted.
  */
 psa_status_t mbedtls_psa_rsa_import_key(
     const psa_key_attributes_t *attributes,
@@ -101,13 +105,21 @@ psa_status_t mbedtls_psa_rsa_export_key( psa_key_type_t type,
  * \param[out] data_length      On success, the number of bytes written in
  *                              \p data.
  *
- * \retval #PSA_SUCCESS  The RSA public key was exported successfully.
+ * \retval #PSA_SUCCESS
+ *         The RSA public key was exported successfully.
  * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         The key type is not supported.
  * \retval #PSA_ERROR_COMMUNICATION_FAILURE
+ *         There was a communication failure inside the implementation.
  * \retval #PSA_ERROR_HARDWARE_FAILURE
+ *         There was a failure in the underlying hardware.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         The key data is not correctly formatted.
  * \retval #PSA_ERROR_STORAGE_FAILURE
+ *         There was a storage failure that prevented the implementation from
+ *         accessing the key.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was insufficient memory to perform the operation.
  */
 psa_status_t mbedtls_psa_rsa_export_public_key(
     const psa_key_attributes_t *attributes,
@@ -159,16 +171,23 @@ psa_status_t mbedtls_psa_rsa_generate_key(
  *                              that make up the returned signature value.
  *
  * \retval #PSA_SUCCESS
+ *         Success.
  * \retval #PSA_ERROR_BUFFER_TOO_SMALL
  *         The size of the \p signature buffer is too small. You can
  *         determine a sufficient buffer size by calling
  *         #PSA_SIGN_OUTPUT_SIZE(\c PSA_KEY_TYPE_RSA_KEY_PAIR, \c key_bits,
  *         \p alg) where \c key_bits is the bit-size of the RSA key.
  * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         \p alg is not supported or is not compatible with the key type.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
+ *         The specified hash algorithm is not supported or is not compatible
+ *         with the specified key type.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was insufficient memory to perform the operation.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         There was a failure in the underlying hardware.
  * \retval #PSA_ERROR_INSUFFICIENT_ENTROPY
+ *         There is insufficient entropy to generate the key material.
  */
 psa_status_t mbedtls_psa_rsa_sign_hash(
     const psa_key_attributes_t *attributes,
@@ -203,8 +222,12 @@ psa_status_t mbedtls_psa_rsa_sign_hash(
  *         The calculation was performed successfully, but the passed
  *         signature is not a valid signature.
  * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         \p alg is not supported or is not compatible with the key type.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
+ *         The specified hash algorithm is not supported or is not compatible
+ *         with the specified key type.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
+ *         There was insufficient memory to perform the operation.
  */
 psa_status_t mbedtls_psa_rsa_verify_hash(
     const psa_key_attributes_t *attributes,

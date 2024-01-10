@@ -427,8 +427,13 @@ psa_status_t psa_driver_wrapper_verify_hash(
  * \param[out] key_buffer_size  Minimum buffer size to contain the key material.
  *
  * \retval #PSA_SUCCESS
+ *         The minimum size for a buffer to contain the key material has been
+ *         returned successfully.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
+ *         The key is declared with a lifetime not known to us.
  * \retval #PSA_ERROR_NOT_SUPPORTED
+ *         The type and/or the size in bits of the key or the combination of
+ *         the two is not supported.
  */
 psa_status_t psa_driver_wrapper_get_key_buffer_size_from_key_data(
     const psa_key_attributes_t *attributes,

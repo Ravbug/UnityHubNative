@@ -12,7 +12,6 @@ if(MSVC)
   add_compile_options(/MP)
 endif()
 
-set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD)" CACHE INTERNAL "")
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE INTERNAL "")
 
 # linux detection
@@ -25,7 +24,9 @@ message("module path = ${CMAKE_MODULE_PATH}")
 
 file(GLOB source "source/*.cpp" "source/*.hpp" "source/*.h")
 if (APPLE)
+	enable_language(C CXX OBJCXX)
 	set(OBJCPP "source/AppleUtilities.h" "source/AppleUtilities.mm")
+    set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE INTERNAL "")
 endif()
 add_executable("${PROJECT_NAME}" WIN32 ${source} "source/wxmac.icns" "source/windows.rc" ${OBJCPP})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)

@@ -106,10 +106,16 @@ static inline int psa_key_handle_is_null( psa_key_handle_t handle )
  *         define any way to create such a key, but it may be possible
  *         through implementation-specific means.
  * \retval #PSA_ERROR_COMMUNICATION_FAILURE
+ *         There was a communication failure inside the implementation.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         There was a corruption failure inside the implementation.
  * \retval #PSA_ERROR_STORAGE_FAILURE
+ *         There was a storage failure that prevented the implementation from
+ *         accessing the key.
  * \retval #PSA_ERROR_DATA_INVALID
+ *         The key data was corrupted.
  * \retval #PSA_ERROR_DATA_CORRUPT
+ *         The key data was invalid.
  * \retval #PSA_ERROR_BAD_STATE
  *         The library has not been previously initialized by psa_crypto_init().
  *         It is implementation-dependent whether a failure to initialize
@@ -150,7 +156,9 @@ psa_status_t psa_open_key( mbedtls_svc_key_id_t key,
  * \retval #PSA_ERROR_INVALID_HANDLE
  *         \p handle is not a valid handle nor \c 0.
  * \retval #PSA_ERROR_COMMUNICATION_FAILURE
+ *         There was a communication failure inside the implementation.
  * \retval #PSA_ERROR_CORRUPTION_DETECTED
+ *         There was a corruption failure inside the implementation.
  * \retval #PSA_ERROR_BAD_STATE
  *         The library has not been previously initialized by psa_crypto_init().
  *         It is implementation-dependent whether a failure to initialize
