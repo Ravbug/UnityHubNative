@@ -12,6 +12,7 @@
 #endif
 #include <wx/msgdlg.h>
 #include <fmt/format.h>
+#include <wx/choicdlg.h>
 
 using namespace std;
 
@@ -69,6 +70,8 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 	//validate form
 	string message = validateForm();
 	if (message == ""){
+        
+        
 		//assemble the command that will create the project described by the dialog
         
 		editor& e = editors[GetSelectedEditorIndex()];
@@ -76,6 +79,19 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 		auto executableTemplatesPath = e.path / e.name / templatesDir;
 		string projName = projNameTxt->GetValue().ToStdString();
 		string projPath = projLocTxt->GetValue().ToStdString();
+        
+        auto outPath = filesystem::path(projPath) / projName;
+        
+        // extra check: ensure that the location to write the project doesn't already have a project
+        {
+            auto projectversionpath = outPath / "ProjectSettings" / "ProjectVersion.txt";
+            if (std::filesystem::exists(projectversionpath)){
+                auto answer = wxMessageBox(fmt::format("A Unity project already exists at {}. Overwrite it?", outPath.string()),"Project Already Exists",  wxYES_NO);
+                if (answer != wxYES){
+                    return;
+                }
+            }
+        }
 		
 		//get the selected template
 		long itemIndex = wxListCtrl_get_selected(templateCtrl);
@@ -88,7 +104,7 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 		#if defined __APPLE__
         string command = fmt::format("\"{}\" -createProject \"{}\" -cloneFromTemplate \"{}{}.{}\"",
                                      executablePath.string(),
-                                     (filesystem::path(projPath) / projName).string(),
+                                     outPath.string(),
                                      executableTemplatesPath.string(),
                                      templatePrefix,
                                      templateName
