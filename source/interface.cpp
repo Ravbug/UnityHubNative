@@ -70,7 +70,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	projects_pane->SetSizer( projectManSizer );
 	projects_pane->Layout();
 	projectManSizer->Fit( projects_pane );
-	notebook->AddPage( projects_pane, wxT("Projects"), false );
+	notebook->AddPage( projects_pane, wxT("Projects"), true );
 	wxPanel* installs_pane;
 	installs_pane = new wxPanel( notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxGridBagSizer* MainSizer;
@@ -149,7 +149,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	installs_pane->SetSizer( MainSizer );
 	installs_pane->Layout();
 	MainSizer->Fit( installs_pane );
-	notebook->AddPage( installs_pane, wxT("Editor Versions"), true );
+	notebook->AddPage( installs_pane, wxT("Editor Versions"), false );
 
 	main_sizer->Add( notebook, 1, wxEXPAND | wxALL, 5 );
 
@@ -371,6 +371,12 @@ OpenWithEditorDlgBase::OpenWithEditorDlgBase( wxWindow* parent, wxWindowID id, c
 	editorsListBox = new wxListBox( this, VERSIONS_LIST, wxDefaultPosition, wxDefaultSize, 0, NULL, wxLB_NEEDED_SB|wxLB_SINGLE );
 	openWithSizer->Add( editorsListBox, wxGBPosition( 1, 0 ), wxGBSpan( 1, 3 ), wxALL|wxEXPAND, 5 );
 
+	wxString platformChooserChoices[] = { wxT("Current Platform"), wxT("Windows"), wxT("macOS"), wxT("Linux"), wxT("iOS"), wxT("Android"), wxT("WebGL"), wxT("UWP") };
+	int platformChooserNChoices = sizeof( platformChooserChoices ) / sizeof( wxString );
+	platformChooser = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, platformChooserNChoices, platformChooserChoices, 0 );
+	platformChooser->SetSelection( 0 );
+	openWithSizer->Add( platformChooser, wxGBPosition( 2, 2 ), wxGBSpan( 1, 1 ), wxALL|wxALIGN_RIGHT, 5 );
+
 	wxBoxSizer* dialogSizer;
 	dialogSizer = new wxBoxSizer( wxHORIZONTAL );
 
@@ -384,7 +390,7 @@ OpenWithEditorDlgBase::OpenWithEditorDlgBase( wxWindow* parent, wxWindowID id, c
 	dialogSizer->Add( openBtn, 0, wxALL, 5 );
 
 
-	openWithSizer->Add( dialogSizer, wxGBPosition( 2, 2 ), wxGBSpan( 1, 1 ), wxEXPAND, 5 );
+	openWithSizer->Add( dialogSizer, wxGBPosition( 3, 2 ), wxGBSpan( 1, 1 ), wxEXPAND, 5 );
 
 
 	openWithSizer->AddGrowableCol( 0 );

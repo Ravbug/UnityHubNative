@@ -39,10 +39,13 @@ OpenWithDlg::OpenWithDlg(wxWindow* parent, const project& project, const vector<
  Called when the Open button in the dialog is pressed
  */
 void OpenWithDlg::OnOpen(wxCommandEvent& event){
+	// get the target platform
+	const auto plat = TargetPlatform(platformChooser->GetSelection());
+
 	long selectedIndex = editorsListBox->GetSelection();
 	if (selectedIndex != wxNOT_FOUND){
 		editor e = editors[selectedIndex];
-		callback(p,e);
+		callback(p,e, plat);
 		//close and dispose self
 		this->EndModal(0);
 		this->Destroy();

@@ -21,6 +21,17 @@
 #include "wxlin.xpm"
 #endif
 
+enum class TargetPlatform : uint8_t {
+	CurrentPlatform,
+	Windows,
+	macOS,
+	Linux,
+	iOS,
+	Android,
+	WebGL,
+	UWP
+};
+
 class MainFrameDerived : public MainFrame{
 public:
 	//constructor (takes no args)
@@ -33,7 +44,7 @@ private:
 	project LoadProject(const std::filesystem::path& path);
 	void SaveProjects();
 	void OpenProject(const long& index);
-	void OpenProject(const project& p, const editor& e);
+	void OpenProject(const project& p, const editor& e, TargetPlatform plat = TargetPlatform::CurrentPlatform);
 	void SaveEditorVersions();
 	void LoadEditorPath(const std::filesystem::path& path);
 	void LoadEditorVersions();
@@ -194,7 +205,7 @@ private:
 	wxDECLARE_EVENT_TABLE();
 };
 
-typedef std::function<void(const project&, const editor&)> OpenWithCallback;
+typedef std::function<void(const project&, const editor&, TargetPlatform platform)> OpenWithCallback;
 class OpenWithDlg : public OpenWithEditorDlgBase{
 public:
 	OpenWithDlg(wxWindow* parent, const project& project, const std::vector<editor>& versions,  const OpenWithCallback& callback);

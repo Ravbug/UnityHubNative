@@ -359,9 +359,9 @@ void MainFrameDerived::OnOpenWith(wxCommandEvent& event){
 	long selectedIndex = wxListCtrl_get_selected(projectsList);
 	if (selectedIndex > -1){
 		project& p = projects[selectedIndex];
-		OpenWithCallback c = [&](project p, editor e){
+		OpenWithCallback c = [&](project p, editor e, TargetPlatform plat){
 			//open the project
-			OpenProject(p,e);
+			OpenProject(p,e, plat);
 		};
 				
 		OpenWithDlg* dlg = new OpenWithDlg(this,p,editors,c);
@@ -421,13 +421,38 @@ void MainFrameDerived::OpenProject(const long& index){
     MainFrameDerived::OnOpenWith(evt);
 }
 
+const char* const PlatToStr(TargetPlatform plat) {
+    switch (plat) {
+    case TargetPlatform::CurrentPlatform:
+        return "";
+    case TargetPlatform::Windows:
+        return "win64";
+    case TargetPlatform::macOS:
+        return "osxuniversal";
+    case TargetPlatform::Linux:
+        return "linux64";
+    case TargetPlatform::iOS:
+        return "ios";
+    case TargetPlatform::Android:
+        return "android";
+    case TargetPlatform::WebGL:
+        return "webgl";
+    case TargetPlatform::UWP:
+        return "windowsstoreapps";
+    }
+}
+
 /**
  Open a specific project with a specific editor
  @param p the project to open
  @param e the editor version to use when opening the project
  */
-void MainFrameDerived::OpenProject(const project& p, const editor& e){
+void MainFrameDerived::OpenProject(const project& p, const editor& e, TargetPlatform plat){
 	string cmd = "\"" + (e.path / e.name / executable).string() + "\" -projectpath \"" + p.path.string() + "\"";
+    if (plat != TargetPlatform::CurrentPlatform) {
+        auto str = PlatToStr(plat);
+        cmd += std::format(" -buildTarget {}", str);
+    }
 	launch_process(cmd);
 }
 

@@ -143,6 +143,7 @@ class OpenWithEditorDlgBase : public wxDialog
 	protected:
 		wxStaticText* openWithLabel;
 		wxListBox* editorsListBox;
+		wxChoice* platformChooser;
 		wxButton* openBtn;
 
 	public:
