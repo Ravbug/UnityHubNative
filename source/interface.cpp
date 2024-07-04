@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version 3.10.1-0-g8feb16b)
+// C++ code generated with wxFormBuilder (version 3.10.1-0-g8feb16b3)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO *NOT* EDIT THIS FILE!
@@ -70,7 +70,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	projects_pane->SetSizer( projectManSizer );
 	projects_pane->Layout();
 	projectManSizer->Fit( projects_pane );
-	notebook->AddPage( projects_pane, wxT("Projects"), true );
+	notebook->AddPage( projects_pane, wxT("Projects"), false );
 	wxPanel* installs_pane;
 	installs_pane = new wxPanel( notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxGridBagSizer* MainSizer;
@@ -124,12 +124,12 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 
 	bSizer5->Add( removeInstallBtn, 0, wxALL|wxEXPAND, 5 );
 
-	activateProPlusBtn = new wxButton( installs_pane, ACTIV_PROPLUS, wxT("Activate (Plus/Pro)"), wxDefaultPosition, wxDefaultSize, 0 );
+	activateProPlusBtn = new wxButton( installs_pane, ACTIV_PROPLUS, wxT("Activate (Serial #)"), wxDefaultPosition, wxDefaultSize, 0 );
 	activateProPlusBtn->Enable( false );
 
 	bSizer5->Add( activateProPlusBtn, 0, wxALL|wxEXPAND, 5 );
 
-	activatePersonalBtn = new wxButton( installs_pane, ACTIV_PERSONAL, wxT("Activate (Personal)"), wxDefaultPosition, wxDefaultSize, 0 );
+	activatePersonalBtn = new wxButton( installs_pane, ACTIV_PERSONAL, wxT("Activate (Web)"), wxDefaultPosition, wxDefaultSize, 0 );
 	activatePersonalBtn->Enable( false );
 
 	bSizer5->Add( activatePersonalBtn, 0, wxALL|wxEXPAND, 5 );
@@ -149,7 +149,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	installs_pane->SetSizer( MainSizer );
 	installs_pane->Layout();
 	MainSizer->Fit( installs_pane );
-	notebook->AddPage( installs_pane, wxT("Editor Versions"), false );
+	notebook->AddPage( installs_pane, wxT("Editor Versions"), true );
 
 	main_sizer->Add( notebook, 1, wxEXPAND | wxALL, 5 );
 
