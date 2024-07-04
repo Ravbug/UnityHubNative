@@ -221,12 +221,14 @@ void MainFrameDerived::Filter(wxKeyEvent &){
     LoadProjects(filter);
 }
 
+#define BUILD_YEAR  (__DATE__ + 7)
+
 //definitions for the events
 void MainFrameDerived::OnAbout(wxCommandEvent& event)
 {
 	wxAboutDialogInfo aboutInfo;
 	aboutInfo.SetName("Unity Hub Native");	
-	aboutInfo.SetCopyright("(C) Ravbug 2023");
+	aboutInfo.SetCopyright(fmt::format("(C) Ravbug {}",BUILD_YEAR));
 	aboutInfo.SetDescription("Developed with wxWidgets in C++");
 #if defined __linux__
 	aboutInfo.SetWebSite("https://github.com/ravbug/UnityHubNative");
