@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Install Dependencies
@@ -23,7 +23,7 @@ jobs:
             cd build
             cmake --build . --config release --target install
       - name: Archive and upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name:  UnityHubNative-Linux64
           path:  build/Release/UnityHubNative.AppImage
@@ -33,7 +33,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Configure
@@ -50,7 +50,7 @@ jobs:
             cd build/release
             zip -r -9 UnityHubNative.zip UnityHubNative.app/
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: UnityHubNative-macOS
           path: build/release/UnityHubNative.zip
@@ -58,22 +58,26 @@ jobs:
   build-windows:
     name: Build App for Windows
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix: 
+        arch: [x64, ARM64]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Configure
         run: |
             mkdir build
             cd build
-            cmake -DCMAKE_BUILD_TYPE=Release .. ;
+            cmake -A${{ matrix.arch }} -DCMAKE_BUILD_TYPE=Release .. ;
       - name: Build
         run: |
             cd build
             cmake --build . --config release --target install
       - name: Archive and upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: UnityHubNative-win64
+          name: UnityHubNative-win${{ matrix.arch }}
           path: build\release\UnityHubNative.exe
