@@ -453,7 +453,7 @@ void MainFrameDerived::OpenProject(const project& p, const editor& e, TargetPlat
 	string cmd = "\"" + (e.path / e.name / executable).string() + "\" -projectpath \"" + p.path.string() + "\"";
     if (plat != TargetPlatform::CurrentPlatform) {
         auto str = PlatToStr(plat);
-        cmd += std::format(" -buildTarget {}", str);
+        cmd += fmt::format(" -buildTarget {}", str);
     }
 	launch_process(cmd);
 }
