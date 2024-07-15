@@ -1764,7 +1764,7 @@
             <property name="size"></property>
             <property name="style">wxDEFAULT_DIALOG_STYLE</property>
             <property name="subclass">; ; forward_declare</property>
-            <property name="title">Personal License Manual Activation</property>
+            <property name="title">Activate License via Webpage</property>
             <property name="tooltip"></property>
             <property name="two_step_creation">0</property>
             <property name="window_extra_style"></property>
@@ -3816,7 +3816,7 @@
             <property name="size"></property>
             <property name="style">wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER</property>
             <property name="subclass">; ; forward_declare</property>
-            <property name="title">Activate Plus/Pro License</property>
+            <property name="title">Activate License with Serial #</property>
             <property name="tooltip"></property>
             <property name="two_step_creation">0</property>
             <property name="window_extra_style"></property>

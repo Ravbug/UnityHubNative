@@ -106,7 +106,7 @@ class PersonalActivationDlgBase : public wxDialog
 
 	public:
 
-		PersonalActivationDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Personal License Manual Activation"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE );
+		PersonalActivationDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Activate License via Webpage"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE );
 
 		~PersonalActivationDlgBase();
 
@@ -197,7 +197,7 @@ class PlusProActivationDlgBase : public wxDialog
 
 	public:
 
-		PlusProActivationDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Activate Plus/Pro License"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
+		PlusProActivationDlgBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Activate License with Serial #"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 
 		~PlusProActivationDlgBase();
 
