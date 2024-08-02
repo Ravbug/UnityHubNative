@@ -23,7 +23,7 @@ UnityHubNative does not have every feature that the official hub has, but it has
 ## Installation
 This application is self-contained.
 1. Open the [Releases](https://github.com/Ravbug/UnityHubNative/releases) section, and download the version for your platform.
-2. Place the executable anywhere. (Recommended `/Applications` on Mac, `C:\Program Files` on Windows, and `/usr/bin` on Linux)
+2. Place the executable anywhere. (Recommended `/Applications` on Mac, `C:\Program Files` on Windows, and `/opt` on Linux)
 3. Double click to run
 
 ## Application data files
