@@ -14,7 +14,7 @@
 static constexpr std::string_view projectsFile = "projects.txt";
 static constexpr std::string_view editorPathsFile = "editorPaths.txt";
 static constexpr std::string_view templatePrefix = "com.unity.template";
-static constexpr std::string_view AppVersion = "v1.54";
+static constexpr std::string_view AppVersion = "v1.55";
 
 struct wxListCtrl;
 struct wxWindow;

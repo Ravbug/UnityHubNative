@@ -52,6 +52,8 @@ void AddNewInstallDlg::PopulateTable(wxCommandEvent&){
     installSearchSizer->Layout();
 }
 
+#define TRYCATCH 1
+
 
 void AddNewInstallDlg::GetAllVersions(){
 #ifndef __linux__
@@ -59,7 +61,10 @@ void AddNewInstallDlg::GetAllVersions(){
     // version date info
     unordered_map<string,string> versionDates;
     {
-		try{
+#if TRYCATCH
+		try
+#endif
+        {
 			auto r = fetch("https://symbolserver.unity3d.com/000Admin/history.txt");
 			if (r.code != 200){
 				wxMessageBox("Unable to access Unity version metadata", "Download error", wxOK | wxICON_ERROR);
@@ -107,6 +112,9 @@ void AddNewInstallDlg::GetAllVersions(){
 								
 								// get the version and hashcode
 								auto slashpos = versiondata.find_first_of("/");
+                                if (slashpos == versiondata.npos){
+                                    continue;
+                                }
 								
 								auto version = string(string_view(versiondata.data(),slashpos));
 								if (versionDates.find(version) != versionDates.end()){
@@ -122,9 +130,11 @@ void AddNewInstallDlg::GetAllVersions(){
 				}
 			}
 		}
+#if TRYCATCH
 		catch(std::exception& e){
 			wxMessageBox(fmt::format("Network error: {}", e.what()), "Error", wxOK | wxICON_ERROR);
 		}
+#endif
     }
 #endif
 }
