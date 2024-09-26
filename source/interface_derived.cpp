@@ -395,23 +395,6 @@ void MainFrameDerived::OpenProject(const long& index){
             return;
         }
     }
-#if __APPLE__
-    for (const auto& path : installPaths) {
-        if (filesystem::exists(path / executable)) {
-            // mac unlabeled version
-            auto unlabeledPath = path / executable;
-            char buffer[16];
-            auto unlabeledPathInfo = path / "Unity.app" / "Contents" / "Info.plist";
-            getCFBundleVersionFromPlist(unlabeledPathInfo.string().c_str(), buffer, sizeof(buffer));
-            if (p.version == buffer) {
-                string cmd = "\"" + unlabeledPath.string() + "\" -projectpath \"" + p.path.string() + "\"";
-                launch_process(cmd);
-                return;
-            }
-        }
-    }
-#endif
-    
 
     // prompt the user to choose a new editor because we couldn't locate one
     wxCommandEvent evt;
@@ -445,7 +428,7 @@ const char* const PlatToStr(TargetPlatform plat) {
  @param e the editor version to use when opening the project
  */
 void MainFrameDerived::OpenProject(const project& p, const editor& e, TargetPlatform plat){
-	string cmd = "\"" + (e.path / e.name / executable).string() + "\" -projectpath \"" + p.path.string() + "\"";
+	string cmd = "\"" + e.executablePath().string() + "\" -projectpath \"" + p.path.string() + "\"";
     if (plat != TargetPlatform::CurrentPlatform) {
         auto str = PlatToStr(plat);
         cmd += fmt::format(" -buildTarget {}", str);
@@ -595,8 +578,6 @@ void MainFrameDerived::LoadEditorVersions(){
     wxCommandEvent e;
     OnSelectEditor(e);
 	editors.clear();
-    
-
 	
 	//iterate over the search paths
 	for (auto& path : installPaths){
@@ -630,38 +611,35 @@ void MainFrameDerived::LoadEditorVersions(){
             //is this a folder?
             if (dir_entry.is_directory()){
                 //does this folder have a valid executable inside?
-                auto p = path / entry.filename() / executable;
-                if (filesystem::exists(p)){
-                    //add it to the list
+                
+                //add it to the list
 #if __APPLE__
-                    // the Unity Download Assistant on Mac does not allow multiple
-                    // unity versions at once, which sucks. To get the version,
-                    // we need to parse the info.plist inside of Unity.app
-                    auto pathstr = entry.filename().string();
-                    if (pathstr == "."){
-                        auto infopath = path / entry.filename() / "Unity.app" / "Contents" / "Info.plist";
-                        if (filesystem::exists(infopath)){
-                            // read the file and look for CFBundleVersion
-                            char buffer[16]{0};
-                            getCFBundleVersionFromPlist(infopath.string().c_str(), buffer, sizeof(buffer));
-                            
-                            //add it to the backing datastructure
-                            editor e = {buffer, path};
-                            addInstall(e);
-                        }
-                    }
-                    else
-#endif
-                    {
-                        //add it to the backing datastructure
-                        editor e = {entry.filename(), path};
-                        addInstall(e);
-                    }
+                // the Unity Download Assistant on Mac does not allow multiple
+                // unity versions at once, which sucks. To get the version,
+                // we need to parse the info.plist inside of Unity.app
+                auto infopath = entry / "Unity.app" / "Contents" / "Info.plist";
+                if (filesystem::exists(infopath)){
+                    // read the file and look for CFBundleVersion
+                    char buffer[16]{0};
+                    getCFBundleVersionFromPlist(infopath.string().c_str(), buffer, sizeof(buffer));
+                    
+                    //add it to the backing datastructure
+                    editor e = {buffer, entry};
+                    addInstall(e);
                 }
+#else
+                auto p = entry / executable;
+                if (filesystem::exists(p)){
+                    //add it to the backing datastructure
+                    editor e = {entry.filename(), p};
+                    addInstall(e);
+                }
+#endif
             }
             
             installsList->Append(a);
         }
+        
 	}
 }
 

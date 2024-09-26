@@ -107,7 +107,7 @@ void AddNewInstallDlg::GetAllVersions(){
 							if (strncmp(r.text.data() + i, match.data(), match.size()) == 0){
 								// we have found a version, extract its data
 								auto begin = i + match.size();
-								auto end = r.text.find_first_of("\"", i + match.size());
+								auto end = std::min(r.text.find_first_of("\"", i + match.size()), r.text.find_first_of("\\", i + match.size()));
 								std::string_view versiondata(r.text.data() + begin,end-begin);
 								
 								// get the version and hashcode
@@ -118,7 +118,8 @@ void AddNewInstallDlg::GetAllVersions(){
 								
 								auto version = string(string_view(versiondata.data(),slashpos));
 								if (versionDates.find(version) != versionDates.end()){
-									versions.emplace_back(version,string(string_view(versiondata.data() + slashpos + 1, versiondata.size() - slashpos - 1)), versionDates.at(version));
+                                    auto hashcode = string(string_view(versiondata.data() + slashpos + 1, versiondata.size() - slashpos - 1));
+									versions.emplace_back(version,hashcode, versionDates.at(version));
 								}
 							}
 						}

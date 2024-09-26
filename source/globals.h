@@ -14,7 +14,7 @@
 static constexpr std::string_view projectsFile = "projects.txt";
 static constexpr std::string_view editorPathsFile = "editorPaths.txt";
 static constexpr std::string_view templatePrefix = "com.unity.template";
-static constexpr std::string_view AppVersion = "v1.55";
+static constexpr std::string_view AppVersion = "v1.56";
 
 struct wxListCtrl;
 struct wxWindow;
@@ -117,7 +117,11 @@ struct editor {
 	std::string name;
 	std::filesystem::path path;
 	decltype(path) executablePath() const {
+#if __APPLE__
+        return path / executable;
+#else
 		return path / name / executable;
+#endif
 	}
 
 	bool operator==(const editor& other) {

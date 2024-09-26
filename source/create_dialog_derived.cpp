@@ -168,7 +168,12 @@ void CreateProjectDialogD::loadTemplates(const editor& e){
 	templateCtrl->ClearAll();
 	
 	//open the folder
+#if __APPLE__
+    auto templatesFolder = e.path / templatesDir;
+
+#else
 	auto templatesFolder = e.path /e.name / templatesDir;
+#endif
     
     for(const auto& entry : std::filesystem::directory_iterator{templatesFolder}){
         //does the file start with the correct prefix?
