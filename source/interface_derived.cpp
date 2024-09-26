@@ -11,11 +11,6 @@
 #include <fstream>
 #include <wx/dirdlg.h>
 #include <wx/aboutdlg.h>
-#if defined _WIN32
-#include "dirent.h" 
-#else
-#include <dirent.h>
-#endif
 
 #include <fmt/format.h>
 
@@ -605,12 +600,10 @@ void MainFrameDerived::LoadEditorVersions(){
 	
 	//iterate over the search paths
 	for (auto& path : installPaths){
-		//open the folder
-		DIR* dir = opendir(path.string().c_str());
-		if(dir != nullptr){
-			struct dirent *entry = readdir(dir);
-			//loop over the contents
-			wxArrayString a;
+        //loop over the contents
+        for(const auto& dir_entry : std::filesystem::directory_iterator{path}){
+            auto entry = dir_entry.path();
+            wxArrayString a;
             auto addInstall = [this,&a,entry](const editor& e){
                 if (std::find(editors.begin(), editors.end(), e) == editors.end()){
                     //get the target architecture
@@ -633,46 +626,42 @@ void MainFrameDerived::LoadEditorVersions(){
                     editors.push_back(e);
                 }
             };
-			while (entry != nullptr)
-			{
-				//is this a folder?
-				if (entry->d_type == DT_DIR){
-					//does this folder have a valid executable inside?
-					auto p = path / entry->d_name / executable;
-					if (filesystem::exists(p)){
-						//add it to the list
+            
+            //is this a folder?
+            if (dir_entry.is_directory()){
+                //does this folder have a valid executable inside?
+                auto p = path / entry.filename() / executable;
+                if (filesystem::exists(p)){
+                    //add it to the list
 #if __APPLE__
-                        // the Unity Download Assistant on Mac does not allow multiple
-                        // unity versions at once, which sucks. To get the version,
-                        // we need to parse the info.plist inside of Unity.app
-                        if (strcmp(entry->d_name, ".") == 0){
-                            auto infopath = path / entry->d_name / "Unity.app" / "Contents" / "Info.plist";
-                            if (filesystem::exists(infopath)){
-                                // read the file and look for CFBundleVersion
-                                char buffer[16];
-                                getCFBundleVersionFromPlist(infopath.string().c_str(), buffer, sizeof(buffer));
-                                
-                                //add it to the backing datastructure
-                                editor e = {buffer, path};
-                                addInstall(e);
-                            }
-                        }
-                        else
-#endif
-                        {
+                    // the Unity Download Assistant on Mac does not allow multiple
+                    // unity versions at once, which sucks. To get the version,
+                    // we need to parse the info.plist inside of Unity.app
+                    auto pathstr = entry.filename().string();
+                    if (pathstr == "."){
+                        auto infopath = path / entry.filename() / "Unity.app" / "Contents" / "Info.plist";
+                        if (filesystem::exists(infopath)){
+                            // read the file and look for CFBundleVersion
+                            char buffer[16]{0};
+                            getCFBundleVersionFromPlist(infopath.string().c_str(), buffer, sizeof(buffer));
+                            
                             //add it to the backing datastructure
-                            editor e = {entry->d_name, path};
+                            editor e = {buffer, path};
                             addInstall(e);
                         }
-					}
-				}
-				entry = readdir(dir);
-			}
-			installsList->Append(a);
-			//free resources when finished
-			closedir(dir);
-			free(entry);
-		}
+                    }
+                    else
+#endif
+                    {
+                        //add it to the backing datastructure
+                        editor e = {entry.filename(), path};
+                        addInstall(e);
+                    }
+                }
+            }
+            
+            installsList->Append(a);
+        }
 	}
 }
 

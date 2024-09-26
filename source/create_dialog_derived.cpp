@@ -5,11 +5,7 @@
 //
 
 #include "interface_derived.hpp"
-#if defined _WIN32 
-#include "dirent.h" 
-#else
-#include <dirent.h>
-#endif
+#include <filesystem>
 #include <wx/msgdlg.h>
 #include <fmt/format.h>
 #include <wx/choicdlg.h>
@@ -173,27 +169,20 @@ void CreateProjectDialogD::loadTemplates(const editor& e){
 	
 	//open the folder
 	auto templatesFolder = e.path /e.name / templatesDir;
-	DIR* dir = opendir(templatesFolder.string().c_str());
-	struct dirent *entry = readdir(dir);
-	//loop over the contents
-	while (entry != NULL)
-	{
-		//does the file start with the correct prefix?
-		if (string(entry->d_name).rfind(templatePrefix,0)==0){
-			//add it to the UI
-			wxListItem i;
-			i.SetId(0);
-			string label = entry->d_name;
-			i.SetText(label.substr(templatePrefix.length()+1));
-			
-			templateCtrl->InsertItem(i);
-		}
-		//advance to next item in folder
-		entry = readdir(dir);
-	}
-	//free resources
-	closedir(dir);
-	free(entry);
+    
+    for(const auto& entry : std::filesystem::directory_iterator{templatesFolder}){
+        //does the file start with the correct prefix?
+        auto path = entry.path();
+        if (path.filename().string().rfind(templatePrefix,0)==0){
+            //add it to the UI
+            wxListItem i;
+            i.SetId(0);
+            string label = path.filename();
+            i.SetText(label.substr(templatePrefix.length()+1));
+            
+            templateCtrl->InsertItem(i);
+        }
+    }
 }
 
 void CreateProjectDialogD::OnChoiceChanged(wxCommandEvent& event){
