@@ -71,8 +71,8 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 		//assemble the command that will create the project described by the dialog
         
 		editor& e = editors[GetSelectedEditorIndex()];
-		auto executablePath = e.path / e.name / executable;
-		auto executableTemplatesPath = e.path / e.name / templatesDir;
+        auto executablePath = e.executablePath();
+        auto executableTemplatesPath = e.templatePath();
 		string projName = projNameTxt->GetValue().ToStdString();
 		string projPath = projLocTxt->GetValue().ToStdString();
         

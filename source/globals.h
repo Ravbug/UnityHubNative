@@ -29,11 +29,11 @@ struct wxWindow;
 	static constexpr std::string_view installerExt = "dmg";
 
 	//where to find various Unity things on macOS
-	static const std::filesystem::path executable = "Unity.app/Contents/MacOS/Unity";
+	static const std::filesystem::path executable = "Contents/MacOS/Unity";
     static const std::vector<std::filesystem::path> defaultInstall = {"/Applications/Unity/Hub/Editor","/Applications/Unity/"};
 	//TODO: make this a preference?
 	static const std::filesystem::path hubDefault = "/Applications/Unity Hub.app";
-	static const std::filesystem::path templatesDir = "Unity.app/Contents/Resources/PackageManager/ProjectTemplates/";
+	static const std::filesystem::path templatesDir = "Contents/Resources/PackageManager/ProjectTemplates/";
 
 	//for stream redirecting to dev/null
 	static constexpr std::string_view null_device = ">/dev/null 2>&1";
@@ -123,6 +123,10 @@ struct editor {
 		return path / name / executable;
 #endif
 	}
+    
+    auto templatePath() const{
+        return path / templatesDir;
+    }
 
 	bool operator==(const editor& other) {
 		return this->name == other.name;    // many editors can share a root path

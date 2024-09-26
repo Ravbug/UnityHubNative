@@ -618,13 +618,19 @@ void MainFrameDerived::LoadEditorVersions(){
                 // unity versions at once, which sucks. To get the version,
                 // we need to parse the info.plist inside of Unity.app
                 auto infopath = entry / "Unity.app" / "Contents" / "Info.plist";
-                if (filesystem::exists(infopath)){
+                auto basedir = entry / "Unity.app";
+                if (!filesystem::exists(infopath)){
+                    // maybe this was a direct install
+                    infopath = entry / "Contents" / "Info.plist";
+                    basedir = entry;
+                }
+                if (filesystem::exists(infopath) && infopath.string().find("Unity.app") != std::string::npos){
                     // read the file and look for CFBundleVersion
                     char buffer[16]{0};
                     getCFBundleVersionFromPlist(infopath.string().c_str(), buffer, sizeof(buffer));
                     
                     //add it to the backing datastructure
-                    editor e = {buffer, entry};
+                    editor e = {buffer, basedir};
                     addInstall(e);
                 }
 #else
