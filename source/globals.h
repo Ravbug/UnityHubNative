@@ -117,11 +117,7 @@ struct editor {
 	std::string name;
 	std::filesystem::path path;
 	decltype(path) executablePath() const {
-#if __APPLE__
-        return path / executable;
-#else
-		return path / name / executable;
-#endif
+		return path / executable;
 	}
     
     auto templatePath() const{

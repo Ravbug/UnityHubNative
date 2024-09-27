@@ -168,12 +168,7 @@ void CreateProjectDialogD::loadTemplates(const editor& e){
 	templateCtrl->ClearAll();
 	
 	//open the folder
-#if __APPLE__
-    auto templatesFolder = e.path / templatesDir;
-
-#else
-	auto templatesFolder = e.path /e.name / templatesDir;
-#endif
+	auto templatesFolder = e.templatePath();
     
     for(const auto& entry : std::filesystem::directory_iterator{templatesFolder}){
         //does the file start with the correct prefix?
@@ -182,7 +177,7 @@ void CreateProjectDialogD::loadTemplates(const editor& e){
             //add it to the UI
             wxListItem i;
             i.SetId(0);
-            string label = path.filename();
+            string label = path.filename().string();
             i.SetText(label.substr(templatePrefix.length()+1));
             
             templateCtrl->InsertItem(i);

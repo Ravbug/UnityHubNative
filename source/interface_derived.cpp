@@ -637,7 +637,7 @@ void MainFrameDerived::LoadEditorVersions(){
                 auto p = entry / executable;
                 if (filesystem::exists(p)){
                     //add it to the backing datastructure
-                    editor e = {entry.filename(), p};
+                    editor e = {entry.filename().string(), entry};
                     addInstall(e);
                 }
 #endif
