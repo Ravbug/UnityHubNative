@@ -108,7 +108,7 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 		#elif defined _WIN32
 			auto fullProj = filesystem::path(projPath) / projName;
 			auto fullTemplate = executableTemplatesPath / fmt::format("{}.{}",templatePrefix,templateName);
-			string command = fmt::format("\"{}\" -createproject \"{}\" - cloneFromTemplate \"{}\"",
+			string command = fmt::format("\"{}\" -createproject \"{}\" -cloneFromTemplate \"{}\"",
 				executablePath.string(),
 				fullProj.string(),
 				fullTemplate.string());
