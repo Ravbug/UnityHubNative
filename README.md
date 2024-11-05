@@ -2,7 +2,7 @@
 
 UnityHubNative is a lightweight C++ / wxWidgets alternative to the unnecessarily heavy official Unity Hub, built using [wxWidgets](https://wxwidgets.org/). This means that, instead of using heavy web components like the official Electron hub, it uses native GUI components on all platforms.
 
-It launches many times faster, uses far less memory and CPU, and is a fraction of the total size of the offical Unity Hub.
+It launches many times faster, uses far less memory and CPU, and is a fraction of the total size of the official Unity Hub.
 
 <img width="912" alt="image" src="https://user-images.githubusercontent.com/22283943/193929653-a4aad2b6-229b-4438-afee-c30a7ae39949.png">
 
