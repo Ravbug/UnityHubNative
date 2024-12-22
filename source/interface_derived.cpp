@@ -666,7 +666,7 @@ void MainFrameDerived::OnUninstall(wxCommandEvent &){
 		reveal_in_explorer(editor.path);
 #elif defined _WIN32
 		// execute the uninstaller
-		auto uninstaller_path = std::filesystem::path(editor.path) / editor.name / "Editor\\Uninstall.exe";
+		auto uninstaller_path = std::filesystem::path(editor.path) / "Editor\\Uninstall.exe";
 		ShellExecute(0, 0, uninstaller_path.c_str(), NULL, 0, SW_SHOW);
 #endif
     }

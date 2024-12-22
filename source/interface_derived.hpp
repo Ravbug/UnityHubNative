@@ -148,7 +148,7 @@ private:
 		int id = installsList->GetSelection();
 		if (id != wxNOT_FOUND){
 			editor& e = editors[id];
-			std::filesystem::path path = e.path / e.name;
+			std::filesystem::path path = e.path;
             if (!std::filesystem::exists(path)){
                 reveal_in_explorer(e.path);
             }
