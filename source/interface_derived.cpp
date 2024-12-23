@@ -651,8 +651,9 @@ void MainFrameDerived::LoadEditorVersions(){
 
 void MainFrameDerived::OnOpenHub(wxCommandEvent &event){
     //
-    AddNewInstallDlg dlg(this);
-    dlg.Show();
+    //AddNewInstallDlg dlg(this);
+    //dlg.Show();
+    wxLaunchDefaultBrowser("https://unity.com/releases/editor/archive");
 }
 
 void MainFrameDerived::OnUninstall(wxCommandEvent &){
