@@ -29,3 +29,9 @@ int getArchitectureFromBundle(const char* path){
     }
     return archmask;
 }
+
+void RevealFile(const std::filesystem::path& p){
+    const auto str = p.string();
+    auto urlstr = [NSString stringWithUTF8String:str.c_str()];
+    [[NSWorkspace sharedWorkspace] selectFile:urlstr inFileViewerRootedAtPath:@""];
+}

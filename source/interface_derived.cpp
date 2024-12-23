@@ -622,7 +622,6 @@ void MainFrameDerived::LoadEditorVersions(){
                 if (!filesystem::exists(infopath)){
                     // maybe this was a direct install
                     infopath = entry / "Contents" / "Info.plist";
-                    basedir = entry;
                 }
                 if (filesystem::exists(infopath) && infopath.string().find("Unity.app") != std::string::npos){
                     // read the file and look for CFBundleVersion

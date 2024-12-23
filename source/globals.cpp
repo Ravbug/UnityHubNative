@@ -2,6 +2,9 @@
 #include <fmt/format.h>
 #include <wx/listctrl.h>
 #include <wx/msgdlg.h>
+#if __APPLE__
+#include "AppleUtilities.h"
+#endif
 
 void launch_process(const std::string& command, int flags) {
 #if defined __APPLE__ || defined __linux__
@@ -19,9 +22,9 @@ void launch_process(const std::string& command, int flags) {
 
 void reveal_in_explorer(const std::filesystem::path& path) {
 #if defined __APPLE__
-	std::string command = "open \"" + path.string() + "\"";
-
-#elif defined __linux__
+    RevealFile(path);
+#else
+#if defined __linux__
 	std::string command = "xdg-open \"" + path.string() + "\"";
 
 #elif defined _WIN32
@@ -34,7 +37,7 @@ void reveal_in_explorer(const std::filesystem::path& path) {
 	else {
 		wxMessageBox("The project at " + path.string() + " could not be found.", "Cannot Reveal Project", wxOK | wxICON_ERROR);
 	}
-
+#endif
 }
 
 long wxListCtrl_get_selected(wxListCtrl* listCtrl) {
