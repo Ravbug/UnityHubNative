@@ -4,6 +4,8 @@
 #include <wx/msgdlg.h>
 #if __APPLE__
 #include "AppleUtilities.h"
+#elif _WIN32
+#include <ShlObj_core.h>
 #endif
 
 void launch_process(const std::string& command, int flags) {
@@ -26,13 +28,26 @@ void reveal_in_explorer(const std::filesystem::path& path) {
 #else
 #if defined __linux__
 	std::string command = "xdg-open \"" + path.string() + "\"";
+	launch_process(command);
 
 #elif defined _WIN32
 	//do not surround the paths in quotes, it will not work
-	std::string command = "\\Windows\\explorer.exe \"" + path.string() + "\"";
 #endif
 	if (std::filesystem::exists(path)) {
-		launch_process(command);
+
+		PIDLIST_ABSOLUTE pidl; 
+		SFGAOF attributes; 
+		HRESULT hr = SHParseDisplayName(path.c_str(), nullptr, &pidl, 0, &attributes);
+		if (SUCCEEDED(hr)) {
+			if (pidl) {
+				LPITEMIDLIST pidlItem = ILFindLastID(pidl);
+				HRESULT hr2 = SHOpenFolderAndSelectItems(pidl, 1, const_cast<LPCITEMIDLIST*>(&pidlItem), 0);
+				ILFree(pidl);
+				if (FAILED(hr2)) {
+						
+				}
+			}
+		}
 	}
 	else {
 		wxMessageBox("The project at " + path.string() + " could not be found.", "Cannot Reveal Project", wxOK | wxICON_ERROR);
