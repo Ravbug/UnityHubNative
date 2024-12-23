@@ -28,8 +28,8 @@ void reveal_in_explorer(const std::filesystem::path& path) {
 #else
 	if (std::filesystem::exists(path)) {
 #if defined __linux__
-	std::string command = "xdg-open \"" + path.string() + "\"";
-	launch_process(command);
+		std::string command = "xdg-open \"" + path.string() + "\"";
+		launch_process(command);
 #elif defined _WIN32
 
 		PIDLIST_ABSOLUTE pidl; 
@@ -45,11 +45,11 @@ void reveal_in_explorer(const std::filesystem::path& path) {
 				}
 			}
 		}
+#endif
 	}
 	else {
 		wxMessageBox("The item at " + path.string() + " could not be found.", "Cannot Reveal Item", wxOK | wxICON_ERROR);
 	}
-#endif
 #endif
 }
 
