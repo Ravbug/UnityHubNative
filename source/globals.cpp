@@ -26,14 +26,11 @@ void reveal_in_explorer(const std::filesystem::path& path) {
 #if defined __APPLE__
     RevealFile(path);
 #else
+	if (std::filesystem::exists(path)) {
 #if defined __linux__
 	std::string command = "xdg-open \"" + path.string() + "\"";
 	launch_process(command);
-
 #elif defined _WIN32
-	//do not surround the paths in quotes, it will not work
-#endif
-	if (std::filesystem::exists(path)) {
 
 		PIDLIST_ABSOLUTE pidl; 
 		SFGAOF attributes; 
@@ -50,8 +47,9 @@ void reveal_in_explorer(const std::filesystem::path& path) {
 		}
 	}
 	else {
-		wxMessageBox("The project at " + path.string() + " could not be found.", "Cannot Reveal Project", wxOK | wxICON_ERROR);
+		wxMessageBox("The item at " + path.string() + " could not be found.", "Cannot Reveal Item", wxOK | wxICON_ERROR);
 	}
+#endif
 #endif
 }
 
