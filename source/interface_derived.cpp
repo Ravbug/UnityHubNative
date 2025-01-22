@@ -226,9 +226,7 @@ void MainFrameDerived::Filter(wxKeyEvent &event){
             projectsList->SetItemState(0, wxLIST_STATE_FOCUSED | wxLIST_STATE_SELECTED, wxLIST_STATE_FOCUSED | wxLIST_STATE_SELECTED);
 
             //open first item
-            wxListEvent listEvent;
-            listEvent.m_itemIndex = 0;
-            OnOpenProject(listEvent);
+            OpenProject(0);
             return;
         }
     }
@@ -552,7 +550,7 @@ void MainFrameDerived::AddProject(const project& p, const std::string& filter, b
         return;
     }
 	
-	//add (painfully) to the UI
+	//add to the UI
     auto name = p.name;
     transform(name.begin(), name.end(), name.begin(), ::tolower);
     if (name.find(filter) != std::string::npos){
