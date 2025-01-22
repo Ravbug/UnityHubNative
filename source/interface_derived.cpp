@@ -550,7 +550,6 @@ void MainFrameDerived::AddProject(const project& p, const std::string& filter, b
         return;
     }
 	
-	//add to the UI
     auto name = p.name;
     transform(name.begin(), name.end(), name.begin(), ::tolower);
     if (name.find(filter) != std::string::npos){
@@ -561,6 +560,7 @@ void MainFrameDerived::AddProject(const project& p, const std::string& filter, b
             SaveProjects();
         }
         
+        //add to the UI
         wxListItem i;
         i.SetId(projectsList->GetItemCount());
         i.SetText(p.name);
