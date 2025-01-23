@@ -206,7 +206,30 @@ void MainFrameDerived::LoadProjects(const std::string &filter){
     }
 }
 
-void MainFrameDerived::Filter(wxKeyEvent &){
+void MainFrameDerived::Filter(wxKeyEvent &event){
+    //focus on the table
+    if (projectsList->GetItemCount() > 0){
+        if (event.GetKeyCode() == wxKeyCode::WXK_DOWN){
+            projectsList->SetFocus();
+            projectsList->SetItemState(0, wxLIST_STATE_FOCUSED | wxLIST_STATE_SELECTED, wxLIST_STATE_FOCUSED | wxLIST_STATE_SELECTED);
+            return;
+        }
+        if (event.GetKeyCode() == wxKeyCode::WXK_UP){
+            projectsList->SetFocus();
+            projectsList->SetItemState(projectsList->GetItemCount() - 1, wxLIST_STATE_FOCUSED | wxLIST_STATE_SELECTED, wxLIST_STATE_FOCUSED | wxLIST_STATE_SELECTED);
+            return;
+        }
+        //straight up select the open the first project on ENTER
+        if (event.GetKeyCode() == wxKeyCode::WXK_RETURN){
+            //select first item first
+            projectsList->SetFocus();
+            projectsList->SetItemState(0, wxLIST_STATE_FOCUSED | wxLIST_STATE_SELECTED, wxLIST_STATE_FOCUSED | wxLIST_STATE_SELECTED);
+
+            //open first item
+            OpenProject(0);
+            return;
+        }
+    }
     projectsList->DeleteAllItems();
     wxListEvent e;
     OnDeselectProject(e);
@@ -262,7 +285,7 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
             //add it to the projects list
             try{
                 project p = LoadProject(path);
-                AddProject(p,"",true);
+                AddProject(p,"",true,true);
             }
             catch(runtime_error& e){
                 wxMessageBox(e.what(),"Unable to add project",wxOK | wxICON_ERROR);
@@ -325,7 +348,7 @@ void MainFrameDerived::OnCreateProject(wxCommandEvent& event){
 	if (editors.size() > 0){
 		DialogCallback d = [&](string str, project p){
 			//add the project
-			this->AddProject(p,"",true);
+			this->AddProject(p,"",true, true);
 			
 			//launch the process
 			launch_process(str);
@@ -519,51 +542,41 @@ void MainFrameDerived::SaveEditorVersions(){
  @param p the project struct to add
  @note Ensure all the fields on the struct are initialized
  */
-void MainFrameDerived::AddProject(const project& p, const std::string& filter, bool select){
+void MainFrameDerived::AddProject(const project& p, const std::string& filter, bool select, bool save){
 	//add to the vector backing the UI
     if (std::find_if(projects.begin(),projects.end(),[&](const auto& item){
         return p == item;
     }) != projects.end()){
         return;
     }
-	projects.insert(projects.begin(),p);
 	
-	//save to file
-    if (filter == ""){
-        SaveProjects();
-    }
-	
-	//add (painfully) to the UI
     auto name = p.name;
     transform(name.begin(), name.end(), name.begin(), ::tolower);
     if (name.find(filter) != std::string::npos){
+        projects.push_back(p);
+        
+        //save to file
+        if (save){
+            SaveProjects();
+        }
+        
+        //add to the UI
         wxListItem i;
-        i.SetId(0);
+        i.SetId(projectsList->GetItemCount());
         i.SetText(p.name);
-        
         projectsList->InsertItem(i);
-        
-        i.SetText(p.version);
-        i.SetColumn(1);
-        projectsList->SetItem(i);
-        
-        i.SetText(p.modifiedDate);
-        
-        i.SetColumn(2);
-        projectsList->SetItem(i);
-        
-        i.SetColumn(3);
-        i.SetText(p.path.string());
-        projectsList->SetItem(i);
+        projectsList->SetItem(i, 1, p.version);
+        projectsList->SetItem(i, 2, p.modifiedDate);
+        projectsList->SetItem(i, 3, p.path.string());
         
         //resize columns
         int cols = projectsList->GetColumnCount();
         for (int i = 0; i < cols; i++){
-            projectsList->SetColumnWidth(i, wxLIST_AUTOSIZE);
+            projectsList->SetColumnWidth(i, wxLIST_AUTOSIZE_USEHEADER);
         }
         
         if(select){
-            projectsList->SetItemState(i, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
+            projectsList->SetItemState(i, wxLIST_STATE_SELECTED | wxLIST_STATE_FOCUSED, wxLIST_STATE_SELECTED | wxLIST_STATE_FOCUSED);
         }
     }
 	

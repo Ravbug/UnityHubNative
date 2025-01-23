@@ -40,7 +40,7 @@ public:
 	static std::string GetPathFromDialog(const std::string& message);
 	
 private:
-	void AddProject(const project& p, const std::string& filter, bool select=false);
+	void AddProject(const project& p, const std::string& filter, bool select=false, bool save=false);
 	project LoadProject(const std::filesystem::path& path);
 	void SaveProjects();
 	void OpenProject(const long& index);
