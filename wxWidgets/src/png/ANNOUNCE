@@ -1,5 +1,5 @@
-libpng 1.6.37 - April 14, 2019
-==============================
+libpng 1.6.47 - February 18, 2025
+=================================
 
 This is a public release of libpng, intended for use in production code.
 
@@ -9,13 +9,13 @@ Files available for download
 
 Source files with LF line endings (for Unix/Linux):
 
- * libpng-1.6.37.tar.xz (LZMA-compressed, recommended)
- * libpng-1.6.37.tar.gz
+ * libpng-1.6.47.tar.xz (LZMA-compressed, recommended)
+ * libpng-1.6.47.tar.gz (deflate-compressed)
 
 Source files with CRLF line endings (for Windows):
 
- * lp1637.7z (LZMA-compressed, recommended)
- * lp1637.zip
+ * lpng1647.7z (LZMA-compressed, recommended)
+ * lpng1647.zip (deflate-compressed)
 
 Other information:
 
@@ -25,20 +25,19 @@ Other information:
  * TRADEMARK.md
 
 
-Changes since the previous public release (version 1.6.36)
-----------------------------------------------------------
+Changes from version 1.6.46 to version 1.6.47
+---------------------------------------------
 
- * Fixed a use-after-free vulnerability (CVE-2019-7317) in png_image_free.
- * Fixed a memory leak in the ARM NEON implementation of png_do_expand_palette.
- * Fixed a memory leak in pngtest.c.
- * Fixed two vulnerabilities (CVE-2018-14048, CVE-2018-14550) in
-   contrib/pngminus; refactor.
- * Changed the license of contrib/pngminus to MIT; refresh makefile and docs.
-   (Contributed by Willem van Schaik)
- * Fixed a typo in the libpng license v2.
-   (Contributed by Miguel Ojeda)
- * Added makefiles for AddressSanitizer-enabled builds.
- * Cleaned up various makefiles.
+ * Modified the behaviour of colorspace chunks in order to adhere
+   to the new precedence rules formulated in the latest draft of
+   the PNG Specification.
+   (Contributed by John Bowler)
+ * Fixed a latent bug in `png_write_iCCP`.
+   This would have been a read-beyond-end-of-malloc vulnerability,
+   introduced early in the libpng-1.6.0 development, yet (fortunately!)
+   it was inaccessible before the above-mentioned modification of the
+   colorspace precedence rules, due to pre-existing colorspace checks.
+   (Reported by Bob Friesenhahn; fixed by John Bowler)
 
 
 Send comments/corrections/commendations to png-mng-implement at lists.sf.net.

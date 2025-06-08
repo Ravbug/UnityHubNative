@@ -8,13 +8,12 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
+#if wxUSE_CHECKLISTBOX
+
 #include "wx/checklst.h"
+#include "wx/qt/private/winevent.h"
 
 #include <QtWidgets/QListWidgetItem>
-
-wxCheckListBox::wxCheckListBox()
-{
-}
 
 wxCheckListBox::wxCheckListBox(wxWindow *parent, wxWindowID id,
         const wxPoint& pos,
@@ -63,25 +62,26 @@ bool wxCheckListBox::Create(wxWindow *parent, wxWindowID id,
               const wxValidator& validator,
               const wxString& name )
 {
-    return wxCheckListBoxBase::Create( parent, id, pos, size, choices, style, validator, name );
-}
-
-void wxCheckListBox::Init()
-{
     m_hasCheckBoxes = true;
+
+    return wxCheckListBoxBase::Create( parent, id, pos, size, choices, style, validator, name );
 }
 
 bool wxCheckListBox::IsChecked(unsigned int n) const
 {
-    QListWidgetItem* item = m_qtListWidget->item(n);
-    wxCHECK_MSG(item != NULL, false, wxT("wrong listbox index") );
+    QListWidgetItem* item = GetQListWidget()->item(n);
+    wxCHECK_MSG(item != nullptr, false, wxT("wrong listbox index") );
     return item->checkState() == Qt::Checked;
 }
 
 void wxCheckListBox::Check(unsigned int n, bool check )
 {
-    QListWidgetItem* item = m_qtListWidget->item(n);
-    wxCHECK_RET(item != NULL, wxT("wrong listbox index") );
-    return item->setCheckState(check ? Qt::Checked : Qt::Unchecked);
+    // Prevent the emission of wxEVT_CHECKLISTBOX event by temporarily blocking all
+    // signals on GetQListWidget() object.
+    wxQtEnsureSignalsBlocked blocker(GetQListWidget());
+    QListWidgetItem* item = GetQListWidget()->item(n);
+    wxCHECK_RET(item != nullptr, wxT("wrong listbox index") );
+    item->setCheckState(check ? Qt::Checked : Qt::Unchecked);
 }
 
+#endif // wxUSE_CHECKLISTBOX

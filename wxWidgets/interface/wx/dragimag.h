@@ -15,6 +15,9 @@
     platforms, wxGenericDragImage is used. Applications may also prefer to use
     wxGenericDragImage on Windows, too.
 
+    @note wxGenericDragImage implementation uses wxScreenDC and so doesn't work
+    on the platforms where wxScreenDC doesn't work, e.g. modern macOS versions.
+
     To use this class, when you wish to start dragging an image, create a
     wxDragImage object and store it somewhere you can access it as the drag
     progresses. Call BeginDrag() to start, and EndDrag() to stop the drag. To
@@ -109,14 +112,14 @@ public:
             screen, or over as much of the screen as is specified by rect. Note
             that the mouse will still be captured in window.
         @param rect
-            If non-@NULL, specifies the rectangle (in screen coordinates) that
+            If non-null, specifies the rectangle (in screen coordinates) that
             bounds the dragging operation. Specifying this can make the
             operation more efficient by cutting down on the area under
             consideration, and it can also make a visual difference since the
             drag is clipped to this area.
     */
     bool BeginDrag(const wxPoint& hotspot, wxWindow* window,
-                   bool fullScreen = false, wxRect* rect = NULL);
+                   bool fullScreen = false, wxRect* rect = nullptr);
     /**
         Start dragging the image, using the first window to capture the mouse
         and the second to specify the bounding area. This form is equivalent to

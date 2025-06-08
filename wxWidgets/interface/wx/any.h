@@ -86,7 +86,7 @@ public:
                  wxVariant does.
 
                  Note that objects constructed from list-valued variants
-                 require the list to be explicitly cleared using `WX_CLEAR_LIST`
+                 require the list to be explicitly cleared using wxClearList()
                  to avoid leaking memory. This unfortunate behaviour will not
                  be changed to prevent breaking the existing code relying on it.
 
@@ -101,7 +101,7 @@ public:
 
                  // Clear the list to avoid the memory leak.
                  wxAnyList anyList = any.As<wxAnyList>();
-                 WX_CLEAR_LIST(wxAnyList, anyList);
+                 wxClearList(anyList);
                  @endcode
     */
     wxAny(const wxVariant& variant);
@@ -284,7 +284,7 @@ union wxAnyValueBuffer
         public:
             wxAnyValueTypeImpl() :
                 wxAnyValueTypeImplBase<MyClass>() { }
-            virtual ~wxAnyValueTypeImpl() { }
+            virtual ~wxAnyValueTypeImpl() = default;
 
             virtual bool ConvertValue(const wxAnyValueBuffer& src,
                                       wxAnyValueType* dstType,
@@ -333,7 +333,7 @@ union wxAnyValueBuffer
                 // TODO: Free the data in buffer
                 // It is important to clear the buffer like this
                 // at the end of DeleteValue().
-                buf.m_ptr = NULL;
+                buf.m_ptr = nullptr;
             }
 
             virtual void CopyBuffer(const wxAnyValueBuffer& src,

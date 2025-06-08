@@ -21,7 +21,7 @@ wxDFB_DECLARE_INTERFACE(IDirectFBFont);
 class WXDLLIMPEXP_CORE wxFont : public wxFontBase
 {
 public:
-    wxFont() {}
+    wxFont() = default;
 
     wxFont(const wxFontInfo& info)
     {
@@ -111,7 +111,7 @@ public:
 
 protected:
     virtual wxGDIRefData *CreateGDIRefData() const;
-    virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const;
+    wxNODISCARD virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const;
 
     virtual wxFontFamily DoGetFamily() const;
 

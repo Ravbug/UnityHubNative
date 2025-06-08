@@ -23,19 +23,19 @@ class WXDLLIMPEXP_ADV wxDateTimePickerCtrl : public wxDateTimePickerCtrlBase
 {
 public:
     // set/get the date
-    virtual void SetValue(const wxDateTime& dt) wxOVERRIDE;
-    virtual wxDateTime GetValue() const wxOVERRIDE;
+    virtual void SetValue(const wxDateTime& dt) override;
+    virtual wxDateTime GetValue() const override;
 
-    virtual void SetNullText(const wxString& text) wxOVERRIDE;
+    virtual void SetNullText(const wxString& text) override;
 
     // returns true if the platform should explicitly apply a theme border
-    virtual bool CanApplyThemeBorder() const wxOVERRIDE { return false; }
+    virtual bool CanApplyThemeBorder() const override { return false; }
 
-    virtual bool MSWOnNotify(int idCtrl, WXLPARAM lParam, WXLPARAM *result) wxOVERRIDE;
+    virtual bool MSWOnNotify(int idCtrl, WXLPARAM lParam, WXLPARAM *result) override;
 
 protected:
-    virtual wxBorder GetDefaultBorder() const wxOVERRIDE { return wxBORDER_NONE; }
-    virtual wxSize DoGetBestSize() const wxOVERRIDE;
+    virtual wxBorder GetDefaultBorder() const override { return wxBORDER_NONE; }
+    virtual wxSize DoGetBestSize() const override;
 
     // Helper for the derived classes Create(): creates a native control with
     // the specified attributes.
@@ -51,6 +51,9 @@ protected:
 #if wxUSE_INTL
     // Override to return the date/time format used by this control.
     virtual wxLocaleInfo MSWGetFormat() const = 0;
+
+    // Set the format used by the native control.
+    void MSWSetTimeFormat(wxLocaleInfo index);
 #endif // wxUSE_INTL
 
     // Override to indicate whether we can have no date at all.

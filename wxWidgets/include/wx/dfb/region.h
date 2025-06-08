@@ -41,7 +41,7 @@ public:
 
 protected:
     virtual wxGDIRefData *CreateGDIRefData() const;
-    virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const;
+    wxNODISCARD virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const;
 
     // wxRegionBase pure virtuals
     virtual bool DoIsEqual(const wxRegion& region) const;
@@ -66,7 +66,7 @@ protected:
 class WXDLLIMPEXP_CORE wxRegionIterator : public wxObject
 {
 public:
-    wxRegionIterator() {}
+    wxRegionIterator() = default;
     wxRegionIterator(const wxRegion& region) { Reset(region); }
 
     void Reset() { m_rect = wxRect(); }

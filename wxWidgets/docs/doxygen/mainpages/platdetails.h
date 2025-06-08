@@ -79,22 +79,12 @@ In order to configure wxWidgets to compile wxX11 you will need to type:
 
 
 
-@section page_port_wxmotif wxMotif
-
-wxMotif is a port of wxWidgets for X11 systems using Motif libraries.
-It is no longer actively maintained and by now rather obsolete.
-
-@subpage plat_motif_install "Build Instructions"
-
-
-
-
 @section page_port_wxmsw wxMSW
 
-wxMSW is a port of wxWidgets for the Windows platforms (Windows XP and later
-are supported). wxMSW provides native look and feel for each Windows version.
+wxMSW is a port of wxWidgets for the Windows platforms (current version
+requires Windows 7 or later). wxMSW provides native look and feel for each Windows version.
 This port can be compiled with several compilers including Microsoft
-VC++ 2005 or later, MinGW, Cygwin as well as cross-compilation with a
+VC++ 2015 or later, MinGW, Cygwin as well as cross-compilation with a
 Linux-hosted MinGW tool chain.
 
 @subpage plat_msw_install "Build and Install Instructions"
@@ -142,12 +132,7 @@ In such case (or when you want to e.g. write a port-specific patch) it can be
 necessary to use the underlying toolkit API directly:
 
 - wxMSW port uses Win32 API: see MSDN docs at https://docs.microsoft.com/en-us/windows/win32/controls/window-controls
-- wxGTK port uses GTK and other lower-level libraries; see
-  - GTK docs at https://developer.gnome.org/gtk/
-  - GDK docs at https://library.gnome.org/devel/gdk/
-  - GLib docs at https://library.gnome.org/devel/glib/
-  - GObject docs at https://library.gnome.org/devel/gobject/
-  - Pango docs at https://library.gnome.org/devel/pango/
-- wxOSX port uses the Cocoa API: see Cocoa docs at https://developer.apple.com/cocoa
+- wxGTK port uses GTK and other lower-level libraries; see https://docs.gtk.org/
+- wxOSX port uses the Cocoa API: see Cocoa docs at https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CocoaFundamentals/WhatIsCocoa/WhatIsCocoa.html
 
 */

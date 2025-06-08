@@ -2,7 +2,6 @@
 // Name:        src/common/dcgraph.cpp
 // Purpose:     graphics context methods common to all platforms
 // Author:      Stefan Csomor
-// Modified by:
 // Created:
 // Copyright:   (c) Stefan Csomor
 // Licence:     wxWindows licence
@@ -119,7 +118,7 @@ wxGCDC::~wxGCDC()
 WXHDC wxGCDC::AcquireHDC()
 {
     wxGraphicsContext* const gc = GetGraphicsContext();
-    wxCHECK_MSG(gc, NULL, "can't acquire HDC because there is no wxGraphicsContext");
+    wxCHECK_MSG(gc, nullptr, "can't acquire HDC because there is no wxGraphicsContext");
     return gc->GetNativeHDC();
 }
 
@@ -208,14 +207,11 @@ wxGCDCImpl::wxGCDCImpl(wxDC* owner, int)
    : wxDCImpl(owner)
 {
     // derived class will set a context
-    Init(NULL);
+    Init(nullptr);
 }
 
 void wxGCDCImpl::CommonInit()
 {
-    m_mm_to_pix_x = mm2pt;
-    m_mm_to_pix_y = mm2pt;
-
     m_isClipBoxValid = false;
 
     m_logicalFunctionSupported = true;
@@ -231,7 +227,7 @@ void wxGCDCImpl::Init(wxGraphicsContext* ctx)
     m_font = *wxNORMAL_FONT;
     m_brush = *wxWHITE_BRUSH;
 
-    m_graphicContext = NULL;
+    m_graphicContext = nullptr;
     if (ctx)
         SetGraphicsContext(ctx);
 }
@@ -239,7 +235,7 @@ void wxGCDCImpl::Init(wxGraphicsContext* ctx)
 bool wxGCDCImpl::DoInitContext(wxGraphicsContext* ctx)
 {
     m_graphicContext = ctx;
-    m_ok = m_graphicContext != NULL;
+    m_ok = m_graphicContext != nullptr;
 
     if ( m_ok )
     {
@@ -262,8 +258,8 @@ void wxGCDCImpl::DoDrawBitmap( const wxBitmap &bmp, wxCoord x, wxCoord y,
     wxCHECK_RET( IsOk(), wxT("wxGCDC(cg)::DoDrawBitmap - invalid DC") );
     wxCHECK_RET( bmp.IsOk(), wxT("wxGCDC(cg)::DoDrawBitmap - invalid bitmap") );
 
-    int w = bmp.GetLogicalWidth();
-    int h = bmp.GetLogicalHeight();
+    const double w = bmp.GetLogicalWidth();
+    const double h = bmp.GetLogicalHeight();
     if ( bmp.GetDepth() == 1 )
     {
         m_graphicContext->SetPen(*wxTRANSPARENT_PEN);
@@ -280,12 +276,12 @@ void wxGCDCImpl::DoDrawBitmap( const wxBitmap &bmp, wxCoord x, wxCoord y,
         // it the copy is cheap as bitmaps are reference-counted
         wxBitmap bmpCopy(bmp);
         if ( !useMask && bmp.GetMask() )
-            bmpCopy.SetMask(NULL);
+            bmpCopy.SetMask(nullptr);
 
         m_graphicContext->DrawBitmap( bmpCopy, x, y, w, h );
     }
 
-    CalcBoundingBox(wxPoint(x, y), wxSize(w, h));
+    CalcBoundingBox(wxPoint(x, y), bmp.GetLogicalSize());
 }
 
 void wxGCDCImpl::DoDrawIcon( const wxIcon &icon, wxCoord x, wxCoord y )
@@ -431,17 +427,6 @@ void wxGCDCImpl::DoSetDeviceClippingRegion( const wxRegion &region )
 void wxGCDCImpl::DestroyClippingRegion()
 {
     m_graphicContext->ResetClip();
-    // currently the clip eg of a window extends to the area between the scrollbars
-    // so we must explicitly make sure it only covers the area we want it to draw
-    int width, height ;
-    GetOwner()->GetSize( &width , &height ) ;
-    wxPoint origin;
-#ifdef __WXOSX__
-    origin = OSXGetOrigin();
-#endif
-    wxPoint clipOrig = DeviceToLogical(origin.x, origin.y);
-    wxSize clipDim = DeviceToLogicalRel(width, height);
-    m_graphicContext->Clip(clipOrig.x, clipOrig.y, clipDim.x, clipDim.y);
 
     m_graphicContext->SetPen( m_pen );
     m_graphicContext->SetBrush( m_brush );
@@ -530,7 +515,7 @@ void wxGCDCImpl::ComputeScaleAndOrigin()
 
 void* wxGCDCImpl::GetHandle() const
 {
-    void* cgctx = NULL;
+    void* cgctx = nullptr;
     wxGraphicsContext* gc = GetGraphicsContext();
     if (gc) {
         cgctx = gc->GetNativeContext();
@@ -859,7 +844,7 @@ void wxGCDCImpl::DoDrawLines(int n, const wxPoint points[],
 void wxGCDCImpl::DoDrawSpline(const wxPointList *points)
 {
     wxCHECK_RET( IsOk(), wxT("wxGCDC(cg)::DoDrawSpline - invalid DC") );
-    wxCHECK_RET(points, "NULL pointer to spline points?");
+    wxCHECK_RET(points, "null pointer to spline points?");
     wxCHECK_RET(points->size() >= 2, "incomplete list of spline points?");
 
     if ( !m_logicalFunctionSupported )
@@ -982,13 +967,14 @@ void wxGCDCImpl::DoDrawRectangle(wxCoord x, wxCoord y, wxCoord w, wxCoord h)
 
     CalcBoundingBox(wxPoint(x, y), wxSize(w, h));
 
-    if (m_pen.IsOk() && m_pen.GetStyle() != wxPENSTYLE_TRANSPARENT && m_pen.GetWidth() > 0)
+    if (m_pen.IsNonTransparent())
     {
-        // outline is one pixel larger than what raster-based wxDC implementations draw
-        w -= 1;
-        h -= 1;
+        if (w < 0) { w = -w; x -= w; }
+        if (h < 0) { h = -h; y -= h; }
+        w--;
+        h--;
     }
-    m_graphicContext->DrawRectangle(x,y,w,h);
+    m_graphicContext->DrawRectangle(x, y, w, h);
 }
 
 void wxGCDCImpl::DoDrawRoundedRectangle(wxCoord x, wxCoord y,
@@ -1009,13 +995,14 @@ void wxGCDCImpl::DoDrawRoundedRectangle(wxCoord x, wxCoord y,
 
     CalcBoundingBox(wxPoint(x, y), wxSize(w, h));
 
-    if (m_pen.IsOk() && m_pen.GetStyle() != wxPENSTYLE_TRANSPARENT && m_pen.GetWidth() > 0)
+    if (m_pen.IsNonTransparent())
     {
-        // outline is one pixel larger than what raster-based wxDC implementations draw
-        w -= 1;
-        h -= 1;
+        if (w < 0) { w = -w; x -= w; }
+        if (h < 0) { h = -h; y -= h; }
+        w--;
+        h--;
     }
-    m_graphicContext->DrawRoundedRectangle( x,y,w,h,radius);
+    m_graphicContext->DrawRoundedRectangle(x, y, w, h, radius);
 }
 
 void wxGCDCImpl::DoDrawEllipse(wxCoord x, wxCoord y, wxCoord w, wxCoord h)
@@ -1061,7 +1048,7 @@ bool wxGCDCImpl::DoStretchBlit(
     wxCompositionMode mode = TranslateRasterOp(logical_func);
     if ( mode == wxCOMPOSITION_INVALID )
     {
-        // Do *not* assert here, this function is often call from wxEVT_PAINT
+        // Do *not* assert here, this function is often called from wxEVT_PAINT
         // handler and asserting will just result in a reentrant call to the
         // same handler and a crash.
         return false;
@@ -1101,7 +1088,7 @@ bool wxGCDCImpl::DoStretchBlit(
         if ( blit.IsOk() )
         {
             if ( !useMask && blit.GetMask() )
-                blit.SetMask(NULL);
+                blit.SetMask(nullptr);
 
             double x = xdest;
             double y = ydest;
@@ -1251,15 +1238,15 @@ void wxGCDCImpl::DoGetTextExtent( const wxString &str, wxCoord *width, wxCoord *
              d wxDUMMY_INITIALIZE(0),
              e wxDUMMY_INITIALIZE(0);
 
-    // Don't pass non-NULL pointers for the parts we don't need, this could
+    // Don't pass non-null pointers for the parts we don't need, this could
     // result in doing extra unnecessary work inside GetTextExtent().
     m_graphicContext->GetTextExtent
                       (
                         str,
-                        width ? &w : NULL,
-                        height ? &h : NULL,
-                        descent ? &d : NULL,
-                        externalLeading ? &e : NULL
+                        width ? &w : nullptr,
+                        height ? &h : nullptr,
+                        descent ? &d : nullptr,
+                        externalLeading ? &e : nullptr
                       );
 
     if ( height )
@@ -1281,7 +1268,7 @@ bool wxGCDCImpl::DoGetPartialTextExtents(const wxString& text, wxArrayInt& width
 {
     wxCHECK_MSG( m_graphicContext, false, wxT("wxGCDC(cg)::DoGetPartialTextExtents - invalid DC") );
     widths.Clear();
-    widths.Add(0,text.Length());
+    widths.Add(0,text.length());
     if ( text.IsEmpty() )
         return true;
 
@@ -1297,7 +1284,7 @@ bool wxGCDCImpl::DoGetPartialTextExtents(const wxString& text, wxArrayInt& width
 wxCoord wxGCDCImpl::GetCharWidth() const
 {
     wxCoord width = 0;
-    DoGetTextExtent( wxT("g") , &width , NULL , NULL , NULL , NULL );
+    DoGetTextExtent( wxT("g") , &width , nullptr , nullptr , nullptr , nullptr );
 
     return width;
 }
@@ -1305,7 +1292,7 @@ wxCoord wxGCDCImpl::GetCharWidth() const
 wxCoord wxGCDCImpl::GetCharHeight() const
 {
     wxCoord height = 0;
-    DoGetTextExtent( wxT("g") , NULL , &height , NULL , NULL , NULL );
+    DoGetTextExtent( wxT("g") , nullptr , &height , nullptr , nullptr , nullptr );
 
     return height;
 }

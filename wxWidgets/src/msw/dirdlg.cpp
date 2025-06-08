@@ -2,7 +2,6 @@
 // Name:        src/msw/dirdlg.cpp
 // Purpose:     wxDirDialog
 // Author:      Julian Smart
-// Modified by:
 // Created:     01/02/97
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
@@ -36,6 +35,8 @@
 #include <initguid.h>
 
 #include "wx/msw/private/cotaskmemptr.h"
+#include "wx/msw/private/gethwnd.h"
+
 #include "wx/dynlib.h"
 
 // IFileDialog related declarations missing from some compilers headers.
@@ -142,7 +143,7 @@ int wxDirDialog::ShowModal()
     WX_HOOK_MODAL_DIALOG();
 
     wxWindow* const parent = GetParentForModalDialog();
-    WXHWND hWndParent = parent ? GetHwndOf(parent) : NULL;
+    const WXHWND hWndParent = wxGetHWND(parent);
 
     wxWindowDisabler disableOthers(this, parent);
 
@@ -151,19 +152,12 @@ int wxDirDialog::ShowModal()
     // Use IFileDialog under new enough Windows, it's more user-friendly.
     int rc;
 #if wxUSE_IFILEOPENDIALOG
-    // While the new dialog is available under Vista, it may return a wrong
-    // path there (see http://support.microsoft.com/kb/969885/en-us), so we
-    // don't use it there by default. We could improve the version test to
-    // allow its use if the comdlg32.dll version is greater than 6.0.6002.22125
-    // as this means that the hotfix correcting this bug is installed.
-    if ( wxGetWinVersion() > wxWinVersion_Vista )
-    {
-        rc = ShowIFileOpenDialog(hWndParent);
-    }
-    else
-    {
-        rc = wxID_NONE;
-    }
+    // It is crucial for this variable to be static, CanBeUsedWithAnOwner()
+    // only detects COM apartment type change once, so we shouldn't call it
+    // again if it returned false the first time.
+    static bool
+        s_canUseIFileDialog = wxMSWImpl::wxIFileDialog::CanBeUsedWithAnOwner();
+    rc = s_canUseIFileDialog ? ShowIFileOpenDialog(hWndParent) : wxID_NONE;
 
     if ( rc == wxID_NONE )
 #endif // wxUSE_IFILEOPENDIALOG
@@ -182,14 +176,19 @@ int wxDirDialog::ShowSHBrowseForFolder(WXHWND owner)
 {
     BROWSEINFO bi;
     bi.hwndOwner      = owner;
-    bi.pidlRoot       = NULL;
-    bi.pszDisplayName = NULL;
+    bi.pidlRoot       = nullptr;
+    bi.pszDisplayName = nullptr;
     bi.lpszTitle      = m_message.c_str();
     bi.ulFlags        = BIF_RETURNONLYFSDIRS | BIF_STATUSTEXT;
     bi.lpfn           = BrowseCallbackProc;
     bi.lParam         = wxMSW_CONV_LPARAM(m_path); // param for the callback
 
+    // When this file is compiled as part of wxQt, GetComCtl32Version() is not
+    // available, but this doesn't matter because wxQt is not going to be used
+    // with ancient Windows versions anyhow.
+#ifdef __WXMSW__
     static const int verComCtl32 = wxApp::GetComCtl32Version();
+#endif // __WXMSW__
 
     // we always add the edit box (it doesn't hurt anybody, does it?)
     bi.ulFlags |= BIF_EDITBOX;
@@ -206,11 +205,13 @@ int wxDirDialog::ShowSHBrowseForFolder(WXHWND owner)
         }
         else
         {
+#ifdef __WXMSW__
             // Versions < 600 doesn't support BIF_NONEWFOLDERBUTTON
             // The only way to get rid of the Make New Folder button is use
             // the old dialog style which doesn't have the button thus we
             // simply don't set the New Dialog Style for such comctl versions.
             if (verComCtl32 >= 600)
+#endif // __WXMSW__
             {
                 bi.ulFlags |= BIF_NEWDIALOGSTYLE;
                 bi.ulFlags |= BIF_NONEWFOLDERBUTTON;
@@ -234,7 +235,7 @@ int wxDirDialog::ShowSHBrowseForFolder(WXHWND owner)
     return m_path.empty() ? wxID_CANCEL : wxID_OK;
 }
 
-// Function for obtaining folder name on Vista and newer.
+// Function for obtaining folder name using IFileDialog.
 //
 // Returns wxID_OK on success, wxID_CANCEL if cancelled by user or wxID_NONE if
 // an error occurred and we should fall back onto the old dialog.
@@ -274,12 +275,42 @@ int wxDirDialog::ShowIFileOpenDialog(WXHWND owner)
 namespace wxMSWImpl
 {
 
+/* static */
+bool wxIFileDialog::CanBeUsedWithAnOwner()
+{
+    // Calling IFileDialog::Show() with a non-null owner simply hangs inside a
+    // multi-thread COM apartment, so we can't use it in this case, see #23578.
+
+    // Call this function just to check in which apartment we are: it will
+    // return S_OK if COINIT_APARTMENTTHREADED had been used for the first
+    // COM initialization and an error if not.
+    const HRESULT hr = ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+
+    // This just undoes the call above, COM remains initialized.
+    ::CoUninitialize();
+
+    switch ( hr )
+    {
+        case RPC_E_CHANGED_MODE:
+            return false;
+
+        case S_OK:
+        case S_FALSE:
+            return true;
+
+        default:
+            // This is not supposed to happen at all.
+            wxLogDebug("Unexpected CoInitialize() return value: %08x", hr);
+            return false;
+    }
+}
+
 wxIFileDialog::wxIFileDialog(const CLSID& clsid)
 {
     HRESULT hr = ::CoCreateInstance
                  (
                     clsid,
-                    NULL, // no outer IUnknown
+                    nullptr, // no outer IUnknown
                     CLSCTX_INPROC_SERVER,
                     wxIID_PPV_ARGS(IFileDialog, &m_fileDialog)
                  );
@@ -356,36 +387,6 @@ HRESULT InitShellItemFromPath(wxCOMPtr<IShellItem>& item, const wxString& path)
 {
     HRESULT hr;
 
-    // We need to link SHCreateItemFromParsingName() dynamically as it's
-    // not available on pre-Vista systems.
-    typedef HRESULT
-    (WINAPI *SHCreateItemFromParsingName_t)(PCWSTR,
-                                            IBindCtx*,
-                                            REFIID,
-                                            void**);
-
-    static SHCreateItemFromParsingName_t
-        s_pfnSHCreateItemFromParsingName = (SHCreateItemFromParsingName_t)-1;
-    if ( s_pfnSHCreateItemFromParsingName == (SHCreateItemFromParsingName_t)-1 )
-    {
-        wxDynamicLibrary dllShell32;
-        if ( dllShell32.Load(wxS("shell32.dll"), wxDL_VERBATIM | wxDL_QUIET) )
-        {
-            wxDL_INIT_FUNC(s_pfn, SHCreateItemFromParsingName, dllShell32);
-        }
-
-        if ( !s_pfnSHCreateItemFromParsingName )
-        {
-            wxLogLastError(wxS("SHCreateItemFromParsingName() not found"));
-        }
-    }
-
-    if ( !s_pfnSHCreateItemFromParsingName )
-    {
-        // There is nothing we can do and the error was already reported.
-        return E_FAIL;
-    }
-
     // SHCreateItemFromParsingName() doesn't support slashes, so if the path
     // uses them, replace them with the backslashes.
     wxString pathBS;
@@ -402,10 +403,10 @@ HRESULT InitShellItemFromPath(wxCOMPtr<IShellItem>& item, const wxString& path)
         pathWithoutSlashes = &path;
     }
 
-    hr = s_pfnSHCreateItemFromParsingName
+    hr = ::SHCreateItemFromParsingName
          (
             pathWithoutSlashes->wc_str(),
-            NULL,
+            nullptr,
             wxIID_PPV_ARGS(IShellItem, &item)
          );
     if ( FAILED(hr) )

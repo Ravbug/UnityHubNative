@@ -2,7 +2,6 @@
 // Name:        src/ribbon/art_internal.cpp
 // Purpose:     Helper functions & classes used by ribbon art providers
 // Author:      Peter Cawley
-// Modified by:
 // Created:     2009-08-04
 // Copyright:   (C) Peter Cawley
 // Licence:     wxWindows licence
@@ -105,6 +104,8 @@ wxRibbonHSLColour wxRibbonShiftLuminance(wxRibbonHSLColour colour,
 {
     if(amount <= 1.0f)
         return colour.Darker(colour.luminance * (1.0f - amount));
+    else if (wxSystemSettings::GetAppearance().IsDark())
+        return colour.Darker(colour.luminance * (amount - 1.0f));
     else
         return colour.Lighter((1.0f - colour.luminance) * (amount - 1.0f));
 }
@@ -216,20 +217,14 @@ wxColour wxRibbonHSLColour::ToRGB() const
             blue = tmp1;
     }
     return wxColour(
-        (unsigned char)(red * 255.0f),
-        (unsigned char)(green * 255.0f),
-        (unsigned char)(blue * 255.0f));
+        static_cast<unsigned char>(red * 255.0f),
+        static_cast<unsigned char>(green * 255.0f),
+        static_cast<unsigned char>(blue * 255.0f));
 }
 
 wxRibbonHSLColour wxRibbonHSLColour::Darker(float delta) const
 {
     return Lighter(-delta);
-}
-
-wxRibbonHSLColour& wxRibbonHSLColour::MakeDarker(float delta)
-{
-    luminance -= delta;
-    return *this;
 }
 
 wxRibbonHSLColour wxRibbonHSLColour::Lighter(float delta) const

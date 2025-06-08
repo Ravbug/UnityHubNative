@@ -2,7 +2,6 @@
 // Name:        src/richtext/richtextbulletspage.cpp
 // Purpose:     Implements the rich text formatting dialog bullets page.
 // Author:      Julian Smart
-// Modified by:
 // Created:     10/4/2006 10:32:31 AM
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
@@ -88,16 +87,16 @@ void wxRichTextBulletsPage::Init()
     m_dontUpdate = false;
 
 ////@begin wxRichTextBulletsPage member initialisation
-    m_styleListBox = NULL;
-    m_periodCtrl = NULL;
-    m_parenthesesCtrl = NULL;
-    m_rightParenthesisCtrl = NULL;
-    m_bulletAlignmentCtrl = NULL;
-    m_symbolCtrl = NULL;
-    m_symbolFontCtrl = NULL;
-    m_bulletNameCtrl = NULL;
-    m_numberCtrl = NULL;
-    m_previewCtrl = NULL;
+    m_styleListBox = nullptr;
+    m_periodCtrl = nullptr;
+    m_parenthesesCtrl = nullptr;
+    m_rightParenthesisCtrl = nullptr;
+    m_bulletAlignmentCtrl = nullptr;
+    m_symbolCtrl = nullptr;
+    m_symbolFontCtrl = nullptr;
+    m_bulletNameCtrl = nullptr;
+    m_numberCtrl = nullptr;
+    m_previewCtrl = nullptr;
 ////@end wxRichTextBulletsPage member initialisation
 }
 
@@ -163,14 +162,18 @@ void wxRichTextBulletsPage::CreateControls()
         m_periodCtrl->SetToolTip(_("Check to add a period after the bullet."));
     itemBoxSizer8->Add(m_periodCtrl, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5);
 
-    m_parenthesesCtrl = new wxCheckBox( itemRichTextDialogPage1, ID_RICHTEXTBULLETSPAGE_PARENTHESESCTRL, _("(*)"), wxDefaultPosition, wxDefaultSize, 0 );
+    m_parenthesesCtrl = new wxCheckBox( itemRichTextDialogPage1, ID_RICHTEXTBULLETSPAGE_PARENTHESESCTRL,
+        // TRANSLATORS: Bullet point in parentheses option
+        _("(*)"), wxDefaultPosition, wxDefaultSize, 0 );
     m_parenthesesCtrl->SetValue(false);
     m_parenthesesCtrl->SetHelpText(_("Check to enclose the bullet in parentheses."));
     if (wxRichTextBulletsPage::ShowToolTips())
         m_parenthesesCtrl->SetToolTip(_("Check to enclose the bullet in parentheses."));
     itemBoxSizer8->Add(m_parenthesesCtrl, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5);
 
-    m_rightParenthesisCtrl = new wxCheckBox( itemRichTextDialogPage1, ID_RICHTEXTBULLETSPAGE_RIGHTPARENTHESISCTRL, _("*)"), wxDefaultPosition, wxDefaultSize, 0 );
+    m_rightParenthesisCtrl = new wxCheckBox( itemRichTextDialogPage1, ID_RICHTEXTBULLETSPAGE_RIGHTPARENTHESISCTRL,
+        // TRANSLATORS: Right parenthesis bullet point option
+        _("*)"), wxDefaultPosition, wxDefaultSize, 0 );
     m_rightParenthesisCtrl->SetValue(false);
     m_rightParenthesisCtrl->SetHelpText(_("Check to add a right parenthesis."));
     if (wxRichTextBulletsPage::ShowToolTips())
@@ -251,7 +254,7 @@ void wxRichTextBulletsPage::CreateControls()
     wxStaticText* itemStaticText30 = new wxStaticText( itemRichTextDialogPage1, ID_RICHTEXTBULLETSPAGE_NUMBERSTATIC, _("&Number:"), wxDefaultPosition, wxDefaultSize, 0 );
     itemBoxSizer18->Add(itemStaticText30, 0, wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP, 5);
 
-    m_numberCtrl = new wxSpinCtrl( itemRichTextDialogPage1, ID_RICHTEXTBULLETSPAGE_NUMBERCTRL, wxT("0"), wxDefaultPosition, wxSize(50, -1), wxSP_ARROW_KEYS, 0, 100000, 0 );
+    m_numberCtrl = new wxSpinCtrl( itemRichTextDialogPage1, ID_RICHTEXTBULLETSPAGE_NUMBERCTRL, wxT("0"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 100000, 0 );
     m_numberCtrl->SetHelpText(_("The list item number."));
     if (wxRichTextBulletsPage::ShowToolTips())
         m_numberCtrl->SetToolTip(_("The list item number."));

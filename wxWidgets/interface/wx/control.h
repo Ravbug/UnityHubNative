@@ -13,6 +13,15 @@
     A control is generally a small window which processes user input and/or
     displays one or more item of data.
 
+    wxControl is mainly intended to function as a base class for the implementation
+    of native widget classes. It provides some common support for control labels and
+    dealing with mnemonics in labels as well as some platform support.
+
+    Developers of classes for generic or custom controls (which often have no need for
+    label support and/or platform specifics) might be better of deriving directly from
+    wxWindow. There are however no known technical restrictions for using wxControl as
+    a base class for generic widget classes.
+
     @beginEventEmissionTable{wxClipboardTextEvent}
     @event{EVT_TEXT_COPY(id, func)}
            Some or all of the controls content was copied to the clipboard.
@@ -342,10 +351,9 @@ public:
             remains unchanged.
 
 
-        Currently wxButton supports markup in all major ports (wxMSW, wxGTK and
-        wxOSX/Cocoa) while wxStaticText supports it in wxGTK and wxOSX and its
-        generic version (which can be used under MSW if markup support is
-        required). Extending support to more controls is planned in the future.
+        Currently wxButton and wxStaticText support markup in all major ports
+        (wxMSW, wxGTK and wxOSX/Cocoa). Extending support to more controls is
+        planned in the future.
 
         @since 2.9.2
     */

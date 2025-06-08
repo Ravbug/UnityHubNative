@@ -44,7 +44,10 @@
            is clicked.
     @event{EVT_NOTIFICATION_MESSAGE_DISMISSED(id, func)}
            Process a @c wxEVT_NOTIFICATION_MESSAGE_DISMISSED event, when a notification
-           is dismissed by the user or times out.
+           is dismissed by the user or times out. Since wxWidgets 3.3.0, on platforms
+           supporting it, the reason for dismissal can be obtained from
+           wxCommandEvent::GetInt(), with values corresponding to those of
+           wxNotificationMessage::DismissalReason.
     @event{EVT_NOTIFICATION_MESSAGE_ACTION(id, func)}
            Process a @c wxEVT_NOTIFICATION_MESSAGE_ACTION event, when the user
            selects on of the actions added by AddAction()
@@ -65,6 +68,19 @@ public:
     };
 
     /**
+      Reasons for dismissal, posted with wxEVT_NOTIFICATION_MESSAGE_DISMISSED events.
+
+      @since 3.3.0
+    */
+    enum class DismissalReason
+    {
+        Unknown,            ///< Reason unknown, possibly unsupported on this platform.
+        ByUser,             ///< The user dismissed the notification.
+        ByApp,              ///< The application itself closed the notification.
+        TimedOut            ///< The notification expired after reaching its timeout.
+    };
+
+    /**
         Default constructor, use SetParent(), SetTitle() and SetMessage() to
         initialize the object before showing it.
     */
@@ -77,7 +93,7 @@ public:
         description of the corresponding parameters.
     */
     wxNotificationMessage(const wxString& title, const wxString& message = wxEmptyString,
-                          wxWindow* parent = NULL, int flags = wxICON_INFORMATION);
+                          wxWindow* parent = nullptr, int flags = wxICON_INFORMATION);
 
     /**
         Destructor does not hide the notification.
@@ -174,7 +190,7 @@ public:
         to notifications by using this method. This has no effect if toast
         notifications are used.
 
-        @return the task bar icon which was used previously (may be @c NULL)
+        @return the task bar icon which was used previously (may be @NULL)
 
         @onlyfor{wxmsw}
     */

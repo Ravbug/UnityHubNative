@@ -12,61 +12,45 @@
 #include "wx/qt/private/winevent.h"
 #include "wx/glcanvas.h"
 
-#include <QtOpenGL/QGLWidget>
+#include <QOpenGLWidget>
+#include <QSurfaceFormat>
 #include <QtWidgets/QGestureRecognizer>
 #include <QtWidgets/QGestureEvent>
 
-#if defined(__VISUALC__)
-    #pragma message("OpenGL support is not implemented in wxQt")
-#else
-    #warning "OpenGL support is not implemented in wxQt"
-#endif
 wxGCC_WARNING_SUPPRESS(unused-parameter)
 
-class wxQtGLWidget : public wxQtEventSignalHandler< QGLWidget, wxGLCanvas >
+class wxQtGLWidget : public wxQtEventSignalHandler< QOpenGLWidget, wxGLCanvas >
 {
 public:
-    wxQtGLWidget(wxWindow *parent, wxGLCanvas *handler, QGLFormat format)
-        : wxQtEventSignalHandler<QGLWidget,wxGLCanvas>(parent, handler)
-        {
-            setFormat(format);
-            setAutoBufferSwap( false );
-        }
+    wxQtGLWidget(wxWindow *parent, wxGLCanvas *handler, QSurfaceFormat format)
+        : wxQtEventSignalHandler<QOpenGLWidget, wxGLCanvas>(parent, handler)
+    {
+        setFormat(format);
+        setFocusPolicy(Qt::StrongFocus);
+    }
 
 protected:
-    virtual void showEvent ( QShowEvent * event ) wxOVERRIDE;
-    virtual void hideEvent ( QHideEvent * event ) wxOVERRIDE;
-    virtual void resizeEvent ( QResizeEvent * event ) wxOVERRIDE;
-    virtual void paintEvent ( QPaintEvent * event ) wxOVERRIDE;
+    virtual void resizeEvent ( QResizeEvent * event ) override;
+    virtual void paintEvent ( QPaintEvent * event ) override;
 
-    virtual void resizeGL(int w, int h) wxOVERRIDE;
-    virtual void paintGL() wxOVERRIDE;
+    virtual void resizeGL(int w, int h) override;
+    virtual void paintGL() override;
 };
-
-void wxQtGLWidget::showEvent ( QShowEvent * event )
-{
-    QGLWidget::showEvent( event );
-}
-
-void wxQtGLWidget::hideEvent ( QHideEvent * event )
-{
-    QGLWidget::hideEvent( event );
-}
 
 void wxQtGLWidget::resizeEvent ( QResizeEvent * event )
 {
-    QGLWidget::resizeEvent(event);
+    QOpenGLWidget::resizeEvent(event);
 }
 
 void wxQtGLWidget::paintEvent ( QPaintEvent * event )
 {
-    QGLWidget::paintEvent(event);
+    QOpenGLWidget::paintEvent(event);
 }
 
 void wxQtGLWidget::resizeGL(int w, int h)
 {
-    wxSizeEvent event( wxSize(w, h) );
-    EmitEvent(event);
+    QResizeEvent qevt(QSize(w, h), QSize(w, h));
+    GetHandler()->QtHandleResizeEvent(this, &qevt);
 }
 
 void wxQtGLWidget::paintGL()
@@ -84,6 +68,7 @@ wxGLContextAttrs& wxGLContextAttrs::CoreProfile()
 {
 //    AddAttribBits(GLX_CONTEXT_PROFILE_MASK_ARB,
 //                  GLX_CONTEXT_CORE_PROFILE_BIT_ARB);
+    AddAttribute(WX_GL_COMPAT_PROFILE);
     SetNeedsARB();
     return *this;
 }
@@ -92,6 +77,9 @@ wxGLContextAttrs& wxGLContextAttrs::MajorVersion(int val)
 {
     if ( val > 0 )
     {
+        AddAttribute(WX_GL_MAJOR_VERSION);
+        AddAttribute(val);
+
         if ( val >= 3 )
             SetNeedsARB();
     }
@@ -102,12 +90,15 @@ wxGLContextAttrs& wxGLContextAttrs::MinorVersion(int val)
 {
     if ( val >= 0 )
     {
+        AddAttribute(WX_GL_MINOR_VERSION);
+        AddAttribute(val);
     }
     return *this;
 }
 
 wxGLContextAttrs& wxGLContextAttrs::CompatibilityProfile()
 {
+    AddAttribute(WX_GL_COMPAT_PROFILE);
     SetNeedsARB();
     return *this;
 }
@@ -168,7 +159,7 @@ wxGLContextAttrs& wxGLContextAttrs::PlatformDefaults()
 
 void wxGLContextAttrs::EndList()
 {
-//    AddAttribute(None);
+    AddAttribute(0);
 }
 
 // ----------------------------------------------------------------------------
@@ -190,6 +181,7 @@ void wxGLContextAttrs::EndList()
 
 wxGLAttributes& wxGLAttributes::RGBA()
 {
+    AddAttribute(WX_GL_RGBA);
     return *this;
 }
 
@@ -197,24 +189,28 @@ wxGLAttributes& wxGLAttributes::BufferSize(int val)
 {
     if ( val >= 0 )
     {
+        AddAttribute(WX_GL_BUFFER_SIZE);
+        AddAttribute(val);
     }
     return *this;
 }
 
 wxGLAttributes& wxGLAttributes::Level(int val)
 {
-//    AddAttribute(GLX_LEVEL);
+    AddAttribute(WX_GL_LEVEL);
     AddAttribute(val);
     return *this;
 }
 
 wxGLAttributes& wxGLAttributes::DoubleBuffer()
 {
+    AddAttribute(WX_GL_DOUBLEBUFFER);
     return *this;
 }
 
 wxGLAttributes& wxGLAttributes::Stereo()
 {
+    AddAttribute(WX_GL_STEREO);
     return *this;
 }
 
@@ -222,6 +218,8 @@ wxGLAttributes& wxGLAttributes::AuxBuffers(int val)
 {
     if ( val >= 0 )
     {
+        AddAttribute(WX_GL_AUX_BUFFERS);
+        AddAttribute(val);
     }
     return *this;
 }
@@ -230,15 +228,23 @@ wxGLAttributes& wxGLAttributes::MinRGBA(int mRed, int mGreen, int mBlue, int mAl
 {
     if ( mRed >= 0)
     {
+        AddAttribute(WX_GL_MIN_RED);
+        AddAttribute(mRed);
     }
     if ( mGreen >= 0)
     {
+        AddAttribute(WX_GL_MIN_GREEN);
+        AddAttribute(mGreen);
     }
     if ( mBlue >= 0)
     {
+        AddAttribute(WX_GL_MIN_BLUE);
+        AddAttribute(mBlue);
     }
     if ( mAlpha >= 0)
     {
+        AddAttribute(WX_GL_MIN_ALPHA);
+        AddAttribute(mAlpha);
     }
     return *this;
 }
@@ -247,6 +253,8 @@ wxGLAttributes& wxGLAttributes::Depth(int val)
 {
     if ( val >= 0 )
     {
+        AddAttribute(WX_GL_DEPTH_SIZE);
+        AddAttribute(val);
     }
     return *this;
 }
@@ -255,6 +263,8 @@ wxGLAttributes& wxGLAttributes::Stencil(int val)
 {
     if ( val >= 0 )
     {
+        AddAttribute(WX_GL_DEPTH_SIZE);
+        AddAttribute(val);
     }
     return *this;
 }
@@ -263,40 +273,44 @@ wxGLAttributes& wxGLAttributes::MinAcumRGBA(int mRed, int mGreen, int mBlue, int
 {
     if ( mRed >= 0)
     {
+        AddAttribute(WX_GL_MIN_ACCUM_RED);
+        AddAttribute(mRed);
     }
     if ( mGreen >= 0)
     {
+        AddAttribute(WX_GL_MIN_ACCUM_GREEN);
+        AddAttribute(mGreen);
     }
     if ( mBlue >= 0)
     {
+        AddAttribute(WX_GL_MIN_ACCUM_BLUE);
+        AddAttribute(mBlue);
     }
     if ( mAlpha >= 0)
     {
+        AddAttribute(WX_GL_MIN_ACCUM_ALPHA);
+        AddAttribute(mAlpha);
     }
     return *this;
 }
 
 wxGLAttributes& wxGLAttributes::SampleBuffers(int val)
 {
-#ifdef GLX_SAMPLE_BUFFERS_ARB
-    if ( val >= 0 && wxGLCanvasX11::IsGLXMultiSampleAvailable() )
+    if ( val >= 0 )
     {
-        AddAttribute(GLX_SAMPLE_BUFFERS_ARB);
+        AddAttribute(WX_GL_SAMPLE_BUFFERS);
         AddAttribute(val);
     }
-#endif
     return *this;
 }
 
 wxGLAttributes& wxGLAttributes::Samplers(int val)
 {
-#ifdef GLX_SAMPLES_ARB
-    if ( val >= 0 && wxGLCanvasX11::IsGLXMultiSampleAvailable() )
+    if ( val >= 0 )
     {
-        AddAttribute(GLX_SAMPLES_ARB);
+        AddAttribute(WX_GL_SAMPLES);
         AddAttribute(val);
     }
-#endif
     return *this;
 }
 
@@ -309,28 +323,15 @@ wxGLAttributes& wxGLAttributes::FrameBuffersRGB()
 
 void wxGLAttributes::EndList()
 {
+    AddAttribute(0);
 }
 
 wxGLAttributes& wxGLAttributes::PlatformDefaults()
 {
-    // No GLX specific values
+    // No Qt specific values
     return *this;
 }
 
-wxGLAttributes& wxGLAttributes::Defaults()
-{
-    RGBA().DoubleBuffer();
-//    if ( wxGLCanvasX11::GetGLXVersion() < 13 )
-//        Depth(1).MinRGBA(1, 1, 1, 0);
-//    else
-        Depth(16).SampleBuffers(1).Samplers(4);
-    return *this;
-}
-
-void wxGLAttributes::AddDefaultsForWXBefore31()
-{
-    Defaults();
-}
 
 //---------------------------------------------------------------------------
 // wxGlContext
@@ -338,15 +339,30 @@ void wxGLAttributes::AddDefaultsForWXBefore31()
 
 wxIMPLEMENT_CLASS(wxGLContext, wxWindow);
 
-wxGLContext::wxGLContext(wxGLCanvas *WXUNUSED(win), const wxGLContext* WXUNUSED(other), const wxGLContextAttrs *WXUNUSED(ctxAttrs))
+wxGLContext::wxGLContext(wxGLCanvas *win,
+                         const wxGLContext *other,
+                         const wxGLContextAttrs *ctxAttrs)
 {
+    m_isOk = true;
 }
 
-bool wxGLContext::SetCurrent(const wxGLCanvas&) const
+bool wxGLContext::SetCurrent(const wxGLCanvas& win) const
 {
-// I think I must destroy and recreate the QGLWidget to change the context?
-//    win->GetHandle()->makeCurrent();
-    return false;
+    QOpenGLWidget *qglWidget = static_cast<QOpenGLWidget *>(win.GetHandle());
+    QOpenGLContext *context = qglWidget->context();
+
+    if (!m_glContext)
+        const_cast<wxGLContext *>(this)->m_glContext = context;
+
+    if (context != m_glContext)
+    {
+        // I think I must destroy and recreate the QOpenGLWidget to change the context?
+        wxLogDebug("Calling wxGLContext::SetCurrent with a different canvas is not supported in wxQt");
+        return false;
+    }
+
+    qglWidget->makeCurrent();
+    return true;
 }
 
 //---------------------------------------------------------------------------
@@ -360,13 +376,13 @@ private:
 
     typedef QGestureRecognizer parent;
 
-    bool IsValidMove(int dx, int dy);
+    bool IsValidMove(double dx, double dy);
 
-    virtual QGesture* create(QObject* pTarget);
+    virtual QGesture* create(QObject* pTarget) override;
 
-    virtual QGestureRecognizer::Result recognize(QGesture* pGesture, QObject *pWatched, QEvent *pEvent);
+    virtual QGestureRecognizer::Result recognize(QGesture* pGesture, QObject* pWatched, QEvent* pEvent) override;
 
-    void reset (QGesture *pGesture);
+    virtual void reset(QGesture* pGesture) override;
 
     QPointF m_startPoint;
     QPointF m_lastPoint;
@@ -417,8 +433,11 @@ bool wxGLCanvas::Create(wxWindow *parent,
                         const wxString& name,
                         const wxPalette& palette)
 {
-    wxLogError("Missing implementation of " + wxString(__FUNCTION__));
-    return false;
+    const int* attrsList = dispAttrs.GetGLAttrs();
+
+    wxCHECK_MSG(attrsList, false, "wxGLAttributes object is empty.");
+
+    return Create(parent, id, pos, size, style, name, attrsList, palette);
 }
 
 bool wxGLCanvas::Create(wxWindow *parent,
@@ -435,9 +454,22 @@ bool wxGLCanvas::Create(wxWindow *parent,
 #endif // wxUSE_PALETTE
     wxUnusedVar(palette); // Unused when wxDEBUG_LEVEL==0
 
-    QGLFormat format;
-    if (!wxGLCanvas::ConvertWXAttrsToQtGL(attribList, format))
+    // Separate display/context attributes, set defaults.
+    wxGLAttributes dispAttrs;
+    wxGLContextAttrs ctxAttrs;
+    if (!ParseAttribList(attribList, dispAttrs, &ctxAttrs))
         return false;
+
+    QSurfaceFormat format = QSurfaceFormat::defaultFormat();
+    if (!wxGLCanvas::ConvertWXAttrsToQtGL(dispAttrs, ctxAttrs, format))
+        return false;
+
+    // Return false if any attribute is unsupported
+    if ( !IsDisplaySupported(attribList) )
+    {
+        wxFAIL_MSG("Can't find a pixel format for the requested attributes");
+        return false;
+    }
 
     m_qtWindow = new wxQtGLWidget(parent, this, format);
 
@@ -445,51 +477,63 @@ bool wxGLCanvas::Create(wxWindow *parent,
     QGestureRecognizer* pPanRecognizer = new PanGestureRecognizer();
     QGestureRecognizer::registerRecognizer(pPanRecognizer);
 
-    return wxWindow::Create( parent, id, pos, size, style, name );
+    if ( !wxWindow::Create( parent, id, pos, size, style, name ) )
+        return false;
+
+    SetBackgroundStyle(wxBG_STYLE_PAINT);
+
+    return true;
 }
 
 bool wxGLCanvas::SwapBuffers()
 {
-    static_cast<QGLWidget *>(m_qtWindow)->swapBuffers();
+    // Not possible
+    return true;
+}
+
+bool wxGLCanvas::QtCanPaintWithoutActivePainter() const
+{
     return true;
 }
 
 /* static */
-bool wxGLCanvas::ConvertWXAttrsToQtGL(const int *wxattrs, QGLFormat &format)
+bool wxGLCanvas::ConvertWXAttrsToQtGL(const wxGLAttributes &wxGLAttrs, const wxGLContextAttrs wxCtxAttrs, QSurfaceFormat &format)
 {
-    if (!wxattrs)
-        return true;
+    const int *glattrs = wxGLAttrs.GetGLAttrs();
+    const int *ctxattrs = wxCtxAttrs.GetGLAttrs();
 
     // set default parameters to false
-    format.setDoubleBuffer(false);
-    format.setDepth(false);
-    format.setAlpha(false);
-    format.setStencil(false);
+    format.setDepthBufferSize(0);
+    format.setAlphaBufferSize(0);
+    format.setStencilBufferSize(0);
 
-    for ( int arg = 0; wxattrs[arg] != 0; arg++ )
+    for (int arg = 0; glattrs && glattrs[arg] != 0; arg++)
     {
         // indicates whether we have a boolean attribute
         bool isBoolAttr = false;
 
-        int v = wxattrs[arg+1];
-        switch ( wxattrs[arg] )
+        int v = glattrs[arg+1];
+        switch ( glattrs[arg] )
         {
+            // Pixel format attributes
+
             case WX_GL_BUFFER_SIZE:
-                format.setRgba(false);
-                // I do not know how to set the buffer size, so fail
+                // Not supported
                 return false;
 
             case WX_GL_LEVEL:
-                format.setPlane(v);
-                break;
+                // Not supported
+                return false;
 
             case WX_GL_RGBA:
-                format.setRgba(true);
+                // Non-RGBA is not supported
                 isBoolAttr = true;
                 break;
 
             case WX_GL_DOUBLEBUFFER:
-                format.setDoubleBuffer(true);
+                // Since QOpenGLWidget copies the framebuffer data to a
+                // texture, we already have tear-free behaviour.
+                // Using SwapBehavior::DoubleBuffer just increases latency.
                 isBoolAttr = true;
                 break;
 
@@ -503,7 +547,7 @@ bool wxGLCanvas::ConvertWXAttrsToQtGL(const int *wxattrs, QGLFormat &format)
                 return false;
 
             case WX_GL_MIN_RED:
-                format.setRedBufferSize(v*8);
+                format.setRedBufferSize(v);
                 break;
 
             case WX_GL_MIN_GREEN:
@@ -515,17 +559,14 @@ bool wxGLCanvas::ConvertWXAttrsToQtGL(const int *wxattrs, QGLFormat &format)
                 break;
 
             case WX_GL_MIN_ALPHA:
-                format.setAlpha(true);
                 format.setAlphaBufferSize(v);
                 break;
 
             case WX_GL_DEPTH_SIZE:
-                format.setDepth(true);
                 format.setDepthBufferSize(v);
                 break;
 
             case WX_GL_STENCIL_SIZE:
-                format.setStencil(true);
                 format.setStencilBufferSize(v);
                 break;
 
@@ -533,11 +574,11 @@ bool wxGLCanvas::ConvertWXAttrsToQtGL(const int *wxattrs, QGLFormat &format)
             case WX_GL_MIN_ACCUM_GREEN:
             case WX_GL_MIN_ACCUM_BLUE:
             case WX_GL_MIN_ACCUM_ALPHA:
-                format.setAccumBufferSize(v);
-                break;
+                // Not supported
+                return false;
 
             case WX_GL_SAMPLE_BUFFERS:
-                format.setSampleBuffers(v);
+                format.setSamples(v > 0 ? std::max(4, format.samples()) : -1);
                 // can we somehow indicate if it's not supported?
                 break;
 
@@ -546,17 +587,54 @@ bool wxGLCanvas::ConvertWXAttrsToQtGL(const int *wxattrs, QGLFormat &format)
                 // can we somehow indicate if it's not supported?
                 break;
 
-            case WX_GL_MAJOR_VERSION:
-                 format.setVersion ( v,0 );
-                 break;
-
             default:
                 wxLogDebug(wxT("Unsupported OpenGL attribute %d"),
-                           wxattrs[arg]);
+                           glattrs[arg]);
                 continue;
         }
 
-        if ( !isBoolAttr ) {
+        if ( !isBoolAttr )
+        {
+            if ( !v )
+                return false; // zero parameter
+            arg++;
+        }
+    }
+
+    for (int arg = 0; ctxattrs && ctxattrs[arg] != 0; arg++)
+    {
+        // indicates whether we have a boolean attribute
+        bool isBoolAttr = false;
+
+        int v = ctxattrs[arg+1];
+        switch ( ctxattrs[arg] )
+        {
+            // Context attributes
+
+            case WX_GL_MAJOR_VERSION:
+                format.setVersion ( v, format.minorVersion() );
+                break;
+
+            case WX_GL_MINOR_VERSION:
+                format.setVersion ( format.majorVersion(), v );
+                break;
+
+            case WX_GL_CORE_PROFILE:
+                format.setProfile(QSurfaceFormat::CoreProfile);
+                break;
+
+            case WX_GL_COMPAT_PROFILE:
+                format.setProfile(QSurfaceFormat::CompatibilityProfile);
+                break;
+
+            default:
+                wxLogDebug(wxT("Unsupported OpenGL attribute %d"),
+                           ctxattrs[arg]);
+                continue;
+        }
+
+        if ( !isBoolAttr )
+        {
             if ( !v )
                 return false; // zero parameter
             arg++;
@@ -567,23 +645,29 @@ bool wxGLCanvas::ConvertWXAttrsToQtGL(const int *wxattrs, QGLFormat &format)
 }
 
 /* static */
-bool
-wxGLCanvasBase::IsDisplaySupported(const int *attribList)
+bool wxGLCanvasBase::IsDisplaySupported(const wxGLAttributes& dispAttrs)
 {
-    QGLFormat format;
+    const int* attrsList = dispAttrs.GetGLAttrs();
 
-    if (!wxGLCanvas::ConvertWXAttrsToQtGL(attribList, format))
-        return false;
+    wxCHECK_MSG(attrsList, false, "wxGLAttributes object is empty.");
 
-    return QGLWidget(format).isValid();
+    return IsDisplaySupported(attrsList);
 }
 
 /* static */
-bool
-wxGLCanvasBase::IsDisplaySupported(const wxGLAttributes& dispAttrs)
+bool wxGLCanvasBase::IsDisplaySupported(const int *attribList)
 {
-    wxLogError("Missing implementation of " + wxString(__FUNCTION__));
-    return false;
+    // Separate display/context attributes, set defaults.
+    wxGLAttributes dispAttrs;
+    wxGLContextAttrs ctxAttrs;
+    if (!ParseAttribList(attribList, dispAttrs, &ctxAttrs))
+        return false;
+
+    QSurfaceFormat format = QSurfaceFormat::defaultFormat();
+    if (!wxGLCanvas::ConvertWXAttrsToQtGL(dispAttrs, ctxAttrs, format))
+        return false;
+
+    return true;
 }
 
 // ----------------------------------------------------------------------------
@@ -592,7 +676,7 @@ wxGLCanvasBase::IsDisplaySupported(const wxGLAttributes& dispAttrs)
 
 bool wxGLApp::InitGLVisual(const int *attribList)
 {
-    wxLogError("Missing implementation of " + wxString(__FUNCTION__));
+    wxLogError("Missing implementation of " + wxString(__func__));
     return false;
 }
 
@@ -602,7 +686,7 @@ bool wxGLApp::InitGLVisual(const int *attribList)
 // -----------------------------------------------------------------------------------------
 
 bool
-PanGestureRecognizer::IsValidMove(int dx, int dy)
+PanGestureRecognizer::IsValidMove(double dx, double dy)
 {
    // The moved distance is to small to count as not just a glitch.
    if ((qAbs(dx) < MINIMUM_DISTANCE) && (qAbs(dy) < MINIMUM_DISTANCE))
@@ -657,8 +741,8 @@ PanGestureRecognizer::recognize(QGesture* pGesture, QObject *pWatched, QEvent *p
                 pPan->setHotSpot(p1.startScreenPos());
 
                 // process distance and direction
-                int dx = endPoint.x() - m_startPoint.x();
-                int dy = endPoint.y() - m_startPoint.y();
+                const double dx = endPoint.x() - m_startPoint.x();
+                const double dy = endPoint.y() - m_startPoint.y();
 
                 if (!IsValidMove(dx, dy))
                 {
@@ -684,8 +768,8 @@ PanGestureRecognizer::recognize(QGesture* pGesture, QObject *pWatched, QEvent *p
 
                 pPan->setHotSpot(p1.startScreenPos());
 
-                int dx = upPoint.x() - m_lastPoint.x();
-                int dy = upPoint.y() - m_lastPoint.y();
+                const double dx = upPoint.x() - m_lastPoint.x();
+                const double dy = upPoint.y() - m_lastPoint.y();
 
                 if( (dx > 2) || (dx < -2) || (dy > 2) || (dy < -2))
                 {

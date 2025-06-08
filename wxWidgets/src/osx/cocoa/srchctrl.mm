@@ -36,21 +36,6 @@
     }
 }
 
-- (void) setFieldEditor:(wxNSTextFieldEditor*) editor
-{
-    if ( editor != fieldEditor )
-    {
-        [editor retain];
-        [fieldEditor release];
-        fieldEditor = editor;
-    }
-}
-
-- (wxNSTextFieldEditor*) fieldEditor
-{
-    return fieldEditor;
-}
-
 - (id)initWithFrame:(NSRect)frame
 {
     if ( self = [super initWithFrame:frame] )
@@ -90,10 +75,9 @@
     wxUnusedVar(words);
     wxUnusedVar(index);
 
-    NSMutableArray* matches = NULL;
-    NSString*       partialString;
-    
-    partialString = [[textView string] substringWithRange:charRange];
+    NSMutableArray* matches = nullptr;
+    // NSString*       partialString;
+    // partialString = [[textView string] substringWithRange:charRange];
     matches       = [NSMutableArray array];
     
     // wxTextWidgetImpl* impl = (wxTextWidgetImpl* ) wxWidgetImpl::FindFromWXWidget( self );
@@ -133,7 +117,7 @@ public :
     ~wxNSSearchFieldControl();
 
     // search field options
-    virtual void ShowSearchButton( bool show ) wxOVERRIDE
+    virtual void ShowSearchButton( bool show ) override
     {
         if ( show )
             [m_searchFieldCell resetSearchButtonCell];
@@ -142,12 +126,12 @@ public :
         [m_searchField setNeedsDisplay:YES];
     }
 
-    virtual bool IsSearchButtonVisible() const wxOVERRIDE
+    virtual bool IsSearchButtonVisible() const override
     {
         return [m_searchFieldCell searchButtonCell] != nil;
     }
 
-    virtual void ShowCancelButton( bool show ) wxOVERRIDE
+    virtual void ShowCancelButton( bool show ) override
     {
         if ( show )
             [m_searchFieldCell resetCancelButtonCell];
@@ -156,12 +140,12 @@ public :
         [m_searchField setNeedsDisplay:YES];
     }
 
-    virtual bool IsCancelButtonVisible() const wxOVERRIDE
+    virtual bool IsCancelButtonVisible() const override
     {
         return [m_searchFieldCell cancelButtonCell] != nil;
     }
 
-    virtual void SetSearchMenu( wxMenu* menu ) wxOVERRIDE
+    virtual void SetSearchMenu( wxMenu* menu ) override
     {
         if ( menu )
             [m_searchFieldCell setSearchMenuTemplate:menu->GetHMenu()];
@@ -170,18 +154,18 @@ public :
         [m_searchField setNeedsDisplay:YES];
     }
 
-    virtual void SetDescriptiveText(const wxString& text) wxOVERRIDE
+    virtual void SetDescriptiveText(const wxString& text) override
     {
         [m_searchFieldCell setPlaceholderString:
-            wxCFStringRef( text , m_wxPeer->GetFont().GetEncoding() ).AsNSString()];
+            wxCFStringRef( text ).AsNSString()];
     }
 
-    virtual bool SetFocus() wxOVERRIDE
+    virtual bool SetFocus() override
     {
        return  wxNSTextFieldControl::SetFocus();
     }
 
-    void controlAction( WXWidget WXUNUSED(slf), void *WXUNUSED(_cmd), void *WXUNUSED(sender)) wxOVERRIDE
+    void controlAction( WXWidget WXUNUSED(slf), void *WXUNUSED(_cmd), void *WXUNUSED(sender)) override
     {
         wxSearchCtrl* wxpeer = (wxSearchCtrl*) GetWXPeer();
         if ( wxpeer )

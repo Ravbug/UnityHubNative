@@ -26,7 +26,6 @@
 #if wxUSE_THREADS
 
 #include "wx/thread.h"
-#include "wx/except.h"
 
 #ifndef WX_PRECOMP
     #include "wx/app.h"
@@ -38,6 +37,8 @@
     #include "wx/stopwatch.h"
     #include "wx/module.h"
 #endif
+
+#include "wx/private/safecall.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -78,14 +79,8 @@
     #endif
 #endif
 
-// We don't provide wxAtomicLong and it doesn't seem really useful to add it
-// now when C++11 is widely available, so just use the standard C++11 type if
-// possible and live without it otherwise.
-#if __cplusplus >= 201103L
-    #include <atomic>
-
-    #define HAS_ATOMIC_ULONG
-#endif // C++11
+#include <atomic>
+#include <exception>
 
 #define THR_ID_CAST(id)  (reinterpret_cast<void*>(id))
 #define THR_ID(thr)      THR_ID_CAST((thr)->GetId())
@@ -138,7 +133,7 @@ WX_DEFINE_ARRAY_PTR(wxThread *, wxArrayThread);
 static wxArrayThread gs_allThreads;
 
 // a mutex to protect gs_allThreads
-static wxMutex *gs_mutexAllThreads = NULL;
+static wxMutex *gs_mutexAllThreads = nullptr;
 
 // the id of the main thread
 //
@@ -155,17 +150,17 @@ static pthread_key_t gs_keySelf;
 static size_t gs_nThreadsBeingDeleted = 0;
 
 // a mutex to protect gs_nThreadsBeingDeleted
-static wxMutex *gs_mutexDeleteThread = NULL;
+static wxMutex *gs_mutexDeleteThread = nullptr;
 
 // and a condition variable which will be signaled when all
 // gs_nThreadsBeingDeleted will have been deleted
-static wxCondition *gs_condAllDeleted = NULL;
+static wxCondition *gs_condAllDeleted = nullptr;
 
 #ifndef __DARWIN__
 // this mutex must be acquired before any call to a GUI function
 // (it's not inside #if wxUSE_GUI because this file is compiled as part
 // of wxBase)
-static wxMutex *gs_mutexGui = NULL;
+static wxMutex *gs_mutexGui = nullptr;
 #endif
 
 // when we wait for a thread to exit, we're blocking on a condition which the
@@ -212,9 +207,7 @@ private:
     // This member must be atomic as it's written and read from different
     // threads. If atomic operations are not available, we won't detect mutex
     // deadlocks at wx level.
-#ifdef HAS_ATOMIC_ULONG
     std::atomic_ulong m_owningThread;
-#endif
 
     // wxConditionInternal uses our m_mutex
     friend class wxConditionInternal;
@@ -230,9 +223,7 @@ extern "C" int pthread_mutexattr_settype(pthread_mutexattr_t *, int);
 wxMutexInternal::wxMutexInternal(wxMutexType mutexType)
 {
     m_type = mutexType;
-#ifdef HAS_ATOMIC_ULONG
     m_owningThread = 0;
-#endif
 
     int err;
     switch ( mutexType )
@@ -269,7 +260,7 @@ wxMutexInternal::wxMutexInternal(wxMutexType mutexType)
             wxFALLTHROUGH;
 
         case wxMUTEX_DEFAULT:
-            err = pthread_mutex_init(&m_mutex, NULL);
+            err = pthread_mutex_init(&m_mutex, nullptr);
             break;
     }
 
@@ -294,10 +285,8 @@ wxMutexInternal::~wxMutexInternal()
 
 wxMutexError wxMutexInternal::Lock()
 {
-#ifdef HAS_ATOMIC_ULONG
     if ( m_type == wxMUTEX_DEFAULT && m_owningThread == wxThread::GetCurrentId() )
            return wxMUTEX_DEAD_LOCK;
-#endif // HAS_ATOMIC_ULONG
 
     return HandleLockResult(pthread_mutex_lock(&m_mutex));
 }
@@ -333,7 +322,7 @@ wxMutexError wxMutexInternal::Lock(unsigned long ms)
 #endif
     else // fall back on system timer
     {
-        ts.tv_sec = time(NULL);
+        ts.tv_sec = time(nullptr);
     }
 
     ts.tv_sec += seconds;
@@ -372,10 +361,8 @@ wxMutexError wxMutexInternal::HandleLockResult(int err)
             return wxMUTEX_TIMEOUT;
 
         case 0:
-#ifdef HAS_ATOMIC_ULONG
             if (m_type == wxMUTEX_DEFAULT)
                 m_owningThread = wxThread::GetCurrentId();
-#endif // HAS_ATOMIC_ULONG
             return wxMUTEX_NO_ERROR;
 
         default:
@@ -401,10 +388,8 @@ wxMutexError wxMutexInternal::TryLock()
             break;
 
         case 0:
-#ifdef HAS_ATOMIC_ULONG
             if (m_type == wxMUTEX_DEFAULT)
                 m_owningThread = wxThread::GetCurrentId();
-#endif // HAS_ATOMIC_ULONG
             return wxMUTEX_NO_ERROR;
 
         default:
@@ -416,9 +401,7 @@ wxMutexError wxMutexInternal::TryLock()
 
 wxMutexError wxMutexInternal::Unlock()
 {
-#ifdef HAS_ATOMIC_ULONG
     m_owningThread = 0;
-#endif // HAS_ATOMIC_ULONG
 
     int err = pthread_mutex_unlock(&m_mutex);
     switch ( err )
@@ -478,7 +461,7 @@ private:
 wxConditionInternal::wxConditionInternal(wxMutex& mutex)
                    : m_mutex(mutex)
 {
-    int err = pthread_cond_init(&m_cond, NULL /* default attributes */);
+    int err = pthread_cond_init(&m_cond, nullptr /* default attributes */);
 
     m_isOk = err == 0;
 
@@ -898,32 +881,42 @@ void *wxThreadInternal::PthreadStart(wxThread *thread)
                    wxT("Thread %p about to enter its Entry()."),
                    THR_ID(pthread));
 
-        wxTRY
-        {
-            pthread->m_exitcode = thread->CallEntry();
-
-            wxLogTrace(TRACE_THREADS,
-                       wxT("Thread %p Entry() returned %lu."),
-                       THR_ID(pthread), wxPtrToUInt(pthread->m_exitcode));
-        }
-#ifndef wxNO_EXCEPTIONS
-#ifdef HAVE_ABI_FORCEDUNWIND
         // When using common C++ ABI under Linux we must always rethrow this
         // special exception used to unwind the stack when the thread was
         // cancelled, otherwise the thread library would simply terminate the
         // program, see http://udrepper.livejournal.com/21541.html
-        catch ( abi::__forced_unwind& )
+#if defined(HAVE_ABI_FORCEDUNWIND) && wxUSE_EXCEPTIONS
+        #define CATCH_AND_RETHROW_FORCED_UNWIND
+
+        std::exception_ptr threadException;
+#endif
+
+        wxSafeCall([&]()
         {
-            wxCriticalSectionLocker lock(thread->m_critsect);
-            pthread->SetState(STATE_EXITED);
-            throw;
-        }
-#endif // HAVE_ABI_FORCEDUNWIND
-        catch ( ... )
-        {
-            wxTheApp->OnUnhandledException();
-        }
-#endif // !wxNO_EXCEPTIONS
+#ifdef CATCH_AND_RETHROW_FORCED_UNWIND
+            try
+            {
+#endif // CATCH_AND_RETHROW_FORCED_UNWIND
+                pthread->m_exitcode = thread->Entry();
+
+                wxLogTrace(TRACE_THREADS,
+                           wxT("Thread %p Entry() returned %lu."),
+                           THR_ID(pthread), wxPtrToUInt(pthread->m_exitcode));
+#ifdef CATCH_AND_RETHROW_FORCED_UNWIND
+            }
+            catch ( abi::__forced_unwind& )
+            {
+                wxCriticalSectionLocker lock(thread->m_critsect);
+                pthread->SetState(STATE_EXITED);
+                threadException = std::current_exception();
+            }
+#endif // CATCH_AND_RETHROW_FORCED_UNWIND
+        });
+
+#ifdef CATCH_AND_RETHROW_FORCED_UNWIND
+        if ( threadException )
+            std::rethrow_exception(threadException);
+#endif // CATCH_AND_RETHROW_FORCED_UNWIND
 
         {
             wxCriticalSectionLocker lock(thread->m_critsect);
@@ -966,7 +959,7 @@ void *wxThreadInternal::PthreadStart(wxThread *thread)
 
         wxFAIL_MSG(wxT("wxThread::Exit() can't return."));
 
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -980,7 +973,7 @@ extern "C" void wxPthreadCleanup(void *ptr)
 
 void wxThreadInternal::Cleanup(wxThread *thread)
 {
-    if (pthread_getspecific(gs_keySelf) == 0)
+    if (pthread_getspecific(gs_keySelf) == nullptr)
         return;
 
     {
@@ -1003,13 +996,13 @@ void wxThreadInternal::Cleanup(wxThread *thread)
 // ----------------------------------------------------------------------------
 
 wxThreadInternal::wxThreadInternal()
+    : m_threadId()
 {
     m_state = STATE_NEW;
     m_created = false;
     m_cancelled = false;
     m_prio = wxPRIORITY_DEFAULT;
-    m_threadId = 0;
-    m_exitcode = 0;
+    m_exitcode = nullptr;
 
     // set to true only when the thread starts waiting on m_semSuspend
     m_isPaused = false;
@@ -1411,7 +1404,10 @@ wxThreadError wxThread::Run()
 
 void wxThread::SetPriority(unsigned int prio)
 {
-    wxCHECK_RET( wxPRIORITY_MIN <= prio && prio <= wxPRIORITY_MAX,
+    // Don't compare with wxPRIORITY_MIN as long as it is 0, as the comparison
+    // would be always true.
+    static_assert( wxPRIORITY_MIN == 0, "update the check below" );
+    wxCHECK_RET( /* wxPRIORITY_MIN <= prio && */ prio <= wxPRIORITY_MAX,
                  wxT("invalid thread priority") );
 
     wxCriticalSectionLocker lock(m_critsect);
@@ -1438,7 +1434,7 @@ void wxThread::SetPriority(unsigned int prio)
                 // For the last two, we can also use the additional priority
                 // parameter which must be in 1..99 range under Linux (TODO:
                 // what should be used for the other systems?).
-                struct sched_param sparam = { 0 };
+                struct sched_param sparam = { };
 
                 // The only scheduling policy guaranteed to be supported
                 // everywhere is this one.
@@ -1592,9 +1588,19 @@ wxThreadError wxThread::Delete(ExitCode *rc, wxThreadWait WXUNUSED(waitMode))
     // ask the thread to stop
     m_internal->SetCancelFlag();
 
-    m_critsect.Leave();
-
+    // Normally we should never call out while holding the lock (on m_critsect
+    // in this case), but we can't do it later because as soon as we unlock it,
+    // this object may be destroyed as the thread executing its Entry() may
+    // call TestDestroy() and decide to exit at any moment, so we have to do it
+    // now and hope that OnDelete() doesn't do anything stupid (or, preferably,
+    // anything at all).
     OnDelete();
+
+    // If it's currently paused, we need to resume it first.
+    if ( state == STATE_PAUSED )
+        m_internal->Resume();
+
+    m_critsect.Leave();
 
     switch ( state )
     {
@@ -1609,12 +1615,6 @@ wxThreadError wxThread::Delete(ExitCode *rc, wxThreadWait WXUNUSED(waitMode))
         case STATE_EXITED:
             // nothing to do
             break;
-
-        case STATE_PAUSED:
-            // resume the thread first
-            m_internal->Resume();
-
-            wxFALLTHROUGH;
 
         default:
             if ( !isDetached )
@@ -1746,11 +1746,10 @@ void wxThread::Exit(ExitCode status)
     // might deadlock if, for example, it signals a condition in OnExit() (a
     // common case) while the main thread calls any of functions entering
     // m_critsect on us (almost all of them do)
-    wxTRY
+    wxSafeCall([this]()
     {
         OnExit();
-    }
-    wxCATCH_ALL( wxTheApp->OnUnhandledException(); )
+    });
 
     // delete C++ thread object if this is a detached thread - user is
     // responsible for doing this for joinable ones
@@ -1763,7 +1762,7 @@ void wxThread::Exit(ExitCode status)
         //       we make it a global object, but this would mean that we can
         //       only call one thread function at a time :-(
         DeleteThread(this);
-        pthread_setspecific(gs_keySelf, 0);
+        pthread_setspecific(gs_keySelf, nullptr);
     }
     else
     {
@@ -1786,6 +1785,8 @@ bool wxThread::TestDestroy()
 
     m_critsect.Enter();
 
+    const bool wasCancelled = m_internal->WasCancelled();
+
     if ( m_internal->GetState() == STATE_PAUSED )
     {
         m_internal->SetReallyPaused(true);
@@ -1803,7 +1804,7 @@ bool wxThread::TestDestroy()
         m_critsect.Leave();
     }
 
-    return m_internal->WasCancelled();
+    return wasCancelled;
 }
 
 wxThread::~wxThread()
@@ -1875,8 +1876,8 @@ void wxOSXThreadModuleOnExit();
 class wxThreadModule : public wxModule
 {
 public:
-    virtual bool OnInit() wxOVERRIDE;
-    virtual void OnExit() wxOVERRIDE;
+    virtual bool OnInit() override;
+    virtual void OnExit() override;
 
 private:
     wxDECLARE_DYNAMIC_CLASS(wxThreadModule);
@@ -1886,7 +1887,7 @@ wxIMPLEMENT_DYNAMIC_CLASS(wxThreadModule, wxModule);
 
 bool wxThreadModule::OnInit()
 {
-    int rc = pthread_key_create(&gs_keySelf, NULL /* dtor function */);
+    int rc = pthread_key_create(&gs_keySelf, nullptr /* dtor function */);
     if ( rc != 0 )
     {
         wxLogSysError(rc, _("Thread module initialization failed: failed to create thread key"));

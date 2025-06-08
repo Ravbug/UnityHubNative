@@ -288,7 +288,7 @@ public:
         (if any). It is valid to call this function whether the splitter has two
         windows or only one.
 
-        Both parameters should be non-@NULL and @a winOld must specify one of the
+        Both parameters should be non-null and @a winOld must specify one of the
         windows managed by the splitter. If the parameters are incorrect or the window
         couldn't be replaced, @false is returned. Otherwise the function will return
         @true, but please notice that it will not delete the replaced window and you
@@ -352,7 +352,10 @@ public:
         Sets the sash position.
 
         @param position
-            The sash position in pixels.
+            The sash position in pixels.\n
+            Note that a position of @c 0 will set the sash to the middle of the window.\n
+            A negative value will "wrap around" the sash's position. For example, @c -10
+            will place the sash at @c 10 units from right of the splitter window.
         @param redraw
             If @true, resizes the panes and redraws the sash and border.
 
@@ -460,7 +463,7 @@ public:
 
         @see SplitHorizontally(), SplitVertically(), IsSplit(), OnUnsplit()
     */
-    bool Unsplit(wxWindow* toRemove = NULL);
+    bool Unsplit(wxWindow* toRemove = nullptr);
 
     /**
         Causes any pending sizing of the sash and child panes to take place
@@ -474,6 +477,36 @@ public:
         before showing the top-level window.
     */
     void UpdateSize();
+
+    /**
+        Get the last sash position before the splitter was unsplit.
+
+        The last sash position gets updated each time the window is unsplit. It
+        is kept internally to allow restoring the sash in its previous position
+        when if it is split again.
+
+        @return Point whose x/y component corresponds to the position of the
+            vertical/horizontal sash before the last unsplit or 0 if the
+            splitter was never split in the corresponding direction.
+
+        @since 3.3.0
+    */
+    wxPoint GetLastSplitPosition() const;
+
+    /**
+        Sets the last sash position.
+
+        This does not affect the actual sash position while the window is split
+        but determines the initial position of the sash when the window gets
+        split in the future.
+
+        @param pos
+            Point containing the default positions for wxSPLIT_VERTICAL and
+            wxSPLIT_HORIZONTAL modes respectively in its x and y components.
+
+        @since 3.3.0
+    */
+    void SetLastSplitPosition(const wxPoint& pos);
 };
 
 
@@ -519,7 +552,7 @@ public:
         Constructor. Used internally by wxWidgets only.
     */
     wxSplitterEvent(wxEventType eventType = wxEVT_NULL,
-                    wxSplitterWindow* splitter = NULL);
+                    wxSplitterWindow* splitter = nullptr);
 
     /**
         Returns the new sash position.

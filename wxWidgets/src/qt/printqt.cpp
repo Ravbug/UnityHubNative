@@ -8,6 +8,8 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
+#if wxUSE_PRINTING_ARCHITECTURE
+
 #include "wx/print.h"
 
 wxQtPrinter::wxQtPrinter( wxPrintDialogData *WXUNUSED(data))
@@ -26,7 +28,7 @@ bool wxQtPrinter::Print(wxWindow *WXUNUSED(parent), wxPrintout *WXUNUSED(printou
 
 wxDC* wxQtPrinter::PrintDialog(wxWindow *WXUNUSED(parent))
 {
-    return NULL;
+    return nullptr;
 }
 
 //##############################################################################
@@ -54,3 +56,4 @@ void wxQtPrintPreview::DetermineScaling()
 {
 }
 
+#endif // wxUSE_PRINTING_ARCHITECTURE

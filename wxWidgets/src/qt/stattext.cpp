@@ -8,6 +8,8 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
+#if wxUSE_STATTEXT
+
 #include "wx/stattext.h"
 #include "wx/qt/private/converter.h"
 #include "wx/qt/private/winevent.h"
@@ -22,11 +24,6 @@ public:
 };
 
 
-wxStaticText::wxStaticText() :
-    m_qtLabel(NULL)
-{
-}
-
 wxStaticText::wxStaticText(wxWindow *parent,
              wxWindowID id,
              const wxString &label,
@@ -38,6 +35,24 @@ wxStaticText::wxStaticText(wxWindow *parent,
     Create( parent, id, label, pos, size, style, name );
 }
 
+wxStaticText::~wxStaticText()
+{
+    // Dissociate the buddy before QLabel get destroyed to avoid this assertion:
+    //
+    // ASSERT failure in QLabel: "Called object is not of the correct type (class
+    // destructor may have already run)", file...
+    //
+    // Explanation:
+    // ------------
+    // When setBuddy() is called to set the buddy (see Create() below), Qt (internally)
+    // connects the QLabel to the QObject::destroyed() signal to be notified of the
+    // buddy's destruction and to dissociate it. Since the QLabel and its buddy are
+    // the same object, setBuddy() will be called on an already destroyed object, producing
+    // the aforementioned assertion message.
+
+    GetQLabel()->setBuddy( nullptr );
+}
+
 bool wxStaticText::Create(wxWindow *parent,
             wxWindowID id,
             const wxString &label,
@@ -46,29 +61,31 @@ bool wxStaticText::Create(wxWindow *parent,
             long style,
             const wxString &name)
 {
-    m_qtLabel = new wxQtStaticText( parent, this );
+    m_qtWindow = new wxQtStaticText( parent, this );
 
     // Set the buddy to itself to get the mnemonic key but ensure that we don't have
     // any unwanted side effects, so disable the interaction:
 
-    m_qtLabel->setBuddy( m_qtLabel );
-    m_qtLabel->setTextInteractionFlags( Qt::NoTextInteraction );
+    GetQLabel()->setBuddy( GetQLabel() );
+    GetQLabel()->setTextInteractionFlags( Qt::NoTextInteraction );
 
     // Translate the WX horizontal alignment flags to Qt alignment flags
     // (notice that wxALIGN_LEFT is default and has the value of 0).
     if ( style & wxALIGN_CENTER_HORIZONTAL )
-        m_qtLabel->setAlignment(Qt::AlignHCenter);
+        GetQLabel()->setAlignment(Qt::AlignHCenter);
     else if ((style & wxALIGN_MASK) == wxALIGN_RIGHT)
-        m_qtLabel->setAlignment(Qt::AlignRight);
+        GetQLabel()->setAlignment(Qt::AlignRight);
     else
-        m_qtLabel->setAlignment(Qt::AlignLeft);
-
-    if ( !QtCreateControl(parent, id, pos, size, style, wxDefaultValidator, name) )
-        return false;
+        GetQLabel()->setAlignment(Qt::AlignLeft);
 
     SetLabel(label);
 
-    return true;
+    return wxStaticTextBase::Create(parent, id, pos, size, style, wxDefaultValidator, name);
+}
+
+QLabel* wxStaticText::GetQLabel() const
+{
+    return static_cast<QLabel*>(m_qtWindow);
 }
 
 void wxStaticText::SetLabel(const wxString& label)
@@ -88,15 +105,12 @@ void wxStaticText::SetLabel(const wxString& label)
 
 void wxStaticText::WXSetVisibleLabel(const wxString& label)
 {
-    m_qtLabel->setText( wxQtConvertString( label ) );
+    GetQLabel()->setText( wxQtConvertString( label ) );
 }
 
 wxString wxStaticText::WXGetVisibleLabel() const
 {
-    return wxQtConvertString( m_qtLabel->text() );
+    return wxQtConvertString( GetQLabel()->text() );
 }
 
-QWidget *wxStaticText::GetHandle() const
-{
-    return m_qtLabel;
-}
+#endif // wxUSE_STATTEXT

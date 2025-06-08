@@ -2,7 +2,6 @@
 // Name:        src/msw/radiobut.cpp
 // Purpose:     wxRadioButton
 // Author:      Julian Smart
-// Modified by:
 // Created:     04/01/98
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
@@ -71,6 +70,19 @@ bool wxRadioButton::Create(wxWindow *parent,
     // do it)
     if ( HasFlag(wxRB_GROUP) )
         SetValue(true);
+
+    return true;
+}
+
+bool wxRadioButton::MSWGetDarkModeSupport(MSWDarkModeSupport& support) const
+{
+    // Weirdly enough, even though radio buttons support dark theme (they
+    // notably change the way they draw the focus rectangle if we set it), they
+    // still use the default black foreground colour in it, making their text
+    // unreadable, so we need to change it manually.
+    wxRadioButtonBase::MSWGetDarkModeSupport(support);
+
+    support.setForeground = true;
 
     return true;
 }
@@ -257,7 +269,7 @@ wxSize wxRadioButton::DoGetBestSize() const
 
     if ( s_radioSize.HasChanged(this) )
     {
-        wxClientDC dc(const_cast<wxRadioButton*>(this));
+        wxInfoDC dc(const_cast<wxRadioButton*>(this));
         dc.SetFont(wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT));
 
         s_radioSize.SetAtNewDPI(dc.GetCharHeight());

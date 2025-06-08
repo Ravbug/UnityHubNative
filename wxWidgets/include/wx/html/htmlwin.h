@@ -59,8 +59,8 @@ class WXDLLIMPEXP_HTML wxHtmlWindowInterface
 {
 public:
     /// Ctor
-    wxHtmlWindowInterface() {}
-    virtual ~wxHtmlWindowInterface() {}
+    wxHtmlWindowInterface() = default;
+    virtual ~wxHtmlWindowInterface() = default;
 
     /**
         Called by the parser to set window's title to given text.
@@ -81,7 +81,7 @@ public:
         @param url      URL the parser wants to open
         @param redirect If the return value is wxHTML_REDIRECT, then the
                         URL to redirect to will be stored in this variable
-                        (the pointer must never be NULL)
+                        (the pointer must never be null)
 
         @return indicator of how to treat the request
      */
@@ -96,7 +96,7 @@ public:
     virtual wxPoint HTMLCoordsToWindow(wxHtmlCell *cell,
                                        const wxPoint& pos) const = 0;
 
-    /// Returns the window used for rendering (may be NULL).
+    /// Returns the window used for rendering (may be null).
     virtual wxWindow* GetHTMLWindow() = 0;
 
     /// Returns background colour to use by default.
@@ -149,7 +149,7 @@ protected:
         It is not really needed in this case, but at least it prevents gcc from
         complaining about its absence.
      */
-    virtual ~wxHtmlWindowMouseHelper() { }
+    virtual ~wxHtmlWindowMouseHelper() = default;
 
     /// Returns true if the mouse moved since the last call to HandleIdle
     bool DidMouseMove() const { return m_tmpMouseMoved; }
@@ -302,7 +302,7 @@ public:
 
     // Sets fonts to be used when displaying HTML page.
     void SetFonts(const wxString& normal_face, const wxString& fixed_face,
-                  const int *sizes = NULL);
+                  const int *sizes = nullptr);
 
     // Sets font sizes to be relative to the given size or the system
     // default size; use either specified or default font
@@ -383,11 +383,12 @@ public:
     wxString ToText();
 #endif // wxUSE_CLIPBOARD
 
-    virtual void OnInternalIdle() wxOVERRIDE;
+    virtual void OnInternalIdle() override;
 
     /// Returns standard HTML cursor as used by wxHtmlWindow
-    static wxCursor GetDefaultHTMLCursor(HTMLCursor type);
-    static void SetDefaultHTMLCursor(HTMLCursor type, const wxCursor& cursor);
+    static wxCursor GetDefaultHTMLCursor(HTMLCursor type,
+                                         const wxWindow* window = nullptr);
+    static void SetDefaultHTMLCursor(HTMLCursor type, const wxCursorBundle& cursor);
 
 protected:
     void Init();
@@ -450,19 +451,19 @@ protected:
 
 public:
     // wxHtmlWindowInterface methods:
-    virtual void SetHTMLWindowTitle(const wxString& title) wxOVERRIDE;
-    virtual void OnHTMLLinkClicked(const wxHtmlLinkInfo& link) wxOVERRIDE;
+    virtual void SetHTMLWindowTitle(const wxString& title) override;
+    virtual void OnHTMLLinkClicked(const wxHtmlLinkInfo& link) override;
     virtual wxHtmlOpeningStatus OnHTMLOpeningURL(wxHtmlURLType type,
                                                  const wxString& url,
-                                                 wxString *redirect) const wxOVERRIDE;
+                                                 wxString *redirect) const override;
     virtual wxPoint HTMLCoordsToWindow(wxHtmlCell *cell,
-                                       const wxPoint& pos) const wxOVERRIDE;
-    virtual wxWindow* GetHTMLWindow() wxOVERRIDE;
-    virtual wxColour GetHTMLBackgroundColour() const wxOVERRIDE;
-    virtual void SetHTMLBackgroundColour(const wxColour& clr) wxOVERRIDE;
-    virtual void SetHTMLBackgroundImage(const wxBitmapBundle& bmpBg) wxOVERRIDE;
-    virtual void SetHTMLStatusText(const wxString& text) wxOVERRIDE;
-    virtual wxCursor GetHTMLCursor(HTMLCursor type) const wxOVERRIDE;
+                                       const wxPoint& pos) const override;
+    virtual wxWindow* GetHTMLWindow() override;
+    virtual wxColour GetHTMLBackgroundColour() const override;
+    virtual void SetHTMLBackgroundColour(const wxColour& clr) override;
+    virtual void SetHTMLBackgroundImage(const wxBitmapBundle& bmpBg) override;
+    virtual void SetHTMLStatusText(const wxString& text) override;
+    virtual wxCursor GetHTMLCursor(HTMLCursor type) const override;
 
     // implementation of SetPage()
     bool DoSetPage(const wxString& source);
@@ -497,7 +498,7 @@ protected:
     // defaults to 10 pixels.
     int m_Borders;
 
-    // current text selection or NULL
+    // current text selection or nullptr
     wxHtmlSelection *m_selection;
 
     // true if the user is dragging mouse to select text
@@ -552,11 +553,6 @@ private:
     // the comments near its use.
     bool m_isBgReallyErased;
 
-    // standard mouse cursors
-    static wxCursor *ms_cursorLink;
-    static wxCursor *ms_cursorText;
-    static wxCursor *ms_cursorDefault;
-
     wxDECLARE_EVENT_TABLE();
     wxDECLARE_NO_COPY_CLASS(wxHtmlWindow);
 };
@@ -575,7 +571,7 @@ wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_HTML, wxEVT_HTML_LINK_CLICKED, wxHtmlLinkE
 class WXDLLIMPEXP_HTML wxHtmlCellEvent : public wxCommandEvent
 {
 public:
-    wxHtmlCellEvent() {}
+    wxHtmlCellEvent() = default;
     wxHtmlCellEvent(wxEventType commandType, int id,
                     wxHtmlCell *cell, const wxPoint &pt,
                     const wxMouseEvent &ev)
@@ -595,7 +591,7 @@ public:
     bool GetLinkClicked() const { return m_bLinkWasClicked; }
 
     // default copy ctor, assignment operator and dtor are ok
-    virtual wxEvent *Clone() const wxOVERRIDE { return new wxHtmlCellEvent(*this); }
+    wxNODISCARD virtual wxEvent *Clone() const override { return new wxHtmlCellEvent(*this); }
 
 private:
     wxHtmlCell *m_cell;
@@ -616,7 +612,7 @@ private:
 class WXDLLIMPEXP_HTML wxHtmlLinkEvent : public wxCommandEvent
 {
 public:
-    wxHtmlLinkEvent() {}
+    wxHtmlLinkEvent() = default;
     wxHtmlLinkEvent(int id, const wxHtmlLinkInfo &linkinfo)
         : wxCommandEvent(wxEVT_HTML_LINK_CLICKED, id)
         , m_linkInfo(linkinfo)
@@ -626,7 +622,7 @@ public:
     const wxHtmlLinkInfo &GetLinkInfo() const { return m_linkInfo; }
 
     // default copy ctor, assignment operator and dtor are ok
-    virtual wxEvent *Clone() const wxOVERRIDE { return new wxHtmlLinkEvent(*this); }
+    wxNODISCARD virtual wxEvent *Clone() const override { return new wxHtmlLinkEvent(*this); }
 
 private:
     wxHtmlLinkInfo m_linkInfo;

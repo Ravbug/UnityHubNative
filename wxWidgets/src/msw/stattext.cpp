@@ -2,7 +2,6 @@
 // Name:        src/msw/stattext.cpp
 // Purpose:     wxStaticText
 // Author:      Julian Smart
-// Modified by:
 // Created:     04/01/98
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
@@ -23,8 +22,14 @@
     #include "wx/settings.h"
 #endif
 
+#include "wx/msw/darkmode.h"
 #include "wx/msw/private.h"
+#include "wx/msw/private/darkmode.h"
 #include "wx/msw/private/winstyle.h"
+
+#if wxUSE_MARKUP
+    #include "wx/generic/private/markuptext.h"
+#endif // wxUSE_MARKUP
 
 bool wxStaticText::Create(wxWindow *parent,
                           wxWindowID id,
@@ -54,6 +59,13 @@ bool wxStaticText::Create(wxWindow *parent,
     //       focusing by TAB traversal (e.g. wxPanel).
 
     return true;
+}
+
+wxStaticText::~wxStaticText()
+{
+#if wxUSE_MARKUP
+    delete m_markupText;
+#endif // wxUSE_MARKUP
 }
 
 WXDWORD wxStaticText::MSWGetStyle(long style, WXDWORD *exstyle) const
@@ -87,12 +99,12 @@ WXDWORD wxStaticText::MSWGetStyle(long style, WXDWORD *exstyle) const
 
 wxSize wxStaticText::DoGetBestClientSize() const
 {
-    wxClientDC dc(const_cast<wxStaticText *>(this));
-    wxFont font(GetFont());
-    if (!font.IsOk())
-        font = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
+    wxInfoDC dc(const_cast<wxStaticText *>(this));
 
-    dc.SetFont(font);
+#if wxUSE_MARKUP
+    if ( m_markupText )
+        return m_markupText->Measure(dc);
+#endif // wxUSE_MARKUP
 
     wxCoord widthTextMax, heightTextTotal;
     dc.GetMultiLineTextExtent(GetLabelText(), &widthTextMax, &heightTextTotal);
@@ -111,6 +123,16 @@ wxSize wxStaticText::DoGetBestClientSize() const
     // always on the same line, e.g. even with this hack wxComboBox text is
     // still not aligned to the same position.
     heightTextTotal += 1;
+
+    // And this extra pixel is an even worse hack which is somehow needed to
+    // avoid the problem with the native control now showing any text at all
+    // for some particular width values: e.g. without this, using " AJ" as a
+    // label doesn't show anything at all on the screen, even though the
+    // control text is properly set and it has rougly the correct (definitely
+    // not empty) size. This looks like a bug in the native control because it
+    // really should show at least the first characters, but it's not clear
+    // what else can we do about it than just add this extra pixel.
+    widthTextMax++;
 
     return wxSize(widthTextMax, heightTextTotal);
 }
@@ -145,11 +167,68 @@ void wxStaticText::DoSetSize(int x, int y, int w, int h, int sizeFlags)
     Refresh();
 }
 
+bool
+wxStaticText::MSWHandleMessage(WXLRESULT *result,
+                               WXUINT message,
+                               WXWPARAM wParam,
+                               WXLPARAM lParam)
+{
+    if ( wxStaticTextBase::MSWHandleMessage(result, message, wParam, lParam) )
+        return true;
+
+    switch ( message )
+    {
+        case WM_PAINT:
+            // We only customize drawing of disabled plain labels in dark mode.
+            if ( ::IsWindowEnabled(GetHwnd()) ||
+#if wxUSE_MARKUP
+                    m_markupText ||
+#endif // wxUSE_MARKUP
+                        !wxMSWDarkMode::IsActive() )
+                break;
+
+            // For them, the default "greying out" of the text for the disabled
+            // controls looks ugly and unreadable in dark mode, so we draw it
+            // as normal text but use a different colour for it.
+            //
+            // We could alternatively make the control owner-drawn, which would
+            // be slightly cleaner, but would require more effort.
+            wxMSWWinStyleUpdater updateStyle(GetHwnd());
+            updateStyle.TurnOff(WS_DISABLED).Apply();
+
+            // Don't use Get/SetForegroundColour() here as they do more than we
+            // need, we just want to change m_foregroundColour temporarily
+            // without any side effects.
+            const auto colFgOrig = m_foregroundColour;
+            wxDarkModeSettings darkModeSettings;
+            m_foregroundColour = darkModeSettings.GetMenuColour(wxMenuColour::DisabledFg);
+
+            *result = MSWDefWindowProc(WM_PAINT, wParam, lParam);
+
+            updateStyle.TurnOn(WS_DISABLED).Apply();
+            m_foregroundColour = colFgOrig;
+
+            return true;
+    }
+
+    return false;
+}
+
 void wxStaticText::SetLabel(const wxString& label)
 {
     // If the label doesn't really change, avoid flicker by not doing anything.
     if ( label == m_labelOrig )
         return;
+
+#if wxUSE_MARKUP
+    if ( m_markupText )
+    {
+        Unbind(wxEVT_PAINT, &wxStaticText::WXOnPaint, this);
+
+        delete m_markupText;
+        m_markupText = nullptr;
+    }
+#endif // wxUSE_MARKUP
 
 #ifdef SS_ENDELLIPSIS
     wxMSWWinStyleUpdater updateStyle(GetHwnd());
@@ -207,5 +286,88 @@ void wxStaticText::WXSetVisibleLabel(const wxString& str)
     wxWindow::SetLabel(str);
 }
 
+#if wxUSE_MARKUP
+
+bool wxStaticText::DoSetLabelMarkup(const wxString& markup)
+{
+    // Remove the non-markup label, we don't want the native control to show it
+    // in addition to the one we draw ourselves.
+    ::SetWindowText(GetHwnd(), wxT(""));
+
+    const wxString label = RemoveMarkup(markup);
+    if ( label.empty() && !markup.empty() )
+        return false;
+
+    m_labelOrig = label;
+
+    // Don't do anything if the label didn't change.
+    if ( m_markupText && !m_markupText->SetMarkup(markup) )
+        return true;
+
+    if ( !m_markupText )
+    {
+        Bind(wxEVT_PAINT, &wxStaticText::WXOnPaint, this);
+
+        m_markupText = new wxMarkupText(markup);
+    }
+
+    AutoResizeIfNecessary();
+
+    Refresh();
+
+    return true;
+}
+
+void wxStaticText::WXOnPaint(wxPaintEvent& event)
+{
+    // We shouldn't normally be called in this case, but ensure we don't do
+    // anything if we are, somehow.
+    if ( !m_markupText )
+    {
+        event.Skip();
+        return;
+    }
+
+    wxPaintDC dc(this);
+
+    // Erase the background in the same way the native control does it, in
+    // particular this lets the parent background show through.
+    ::SendMessage(GetHwnd(), WM_PRINTCLIENT,
+                  (WPARAM)dc.GetHDC(),
+                  PRF_ERASEBKGND);
+
+    const wxRect rect = GetClientRect();
+    if ( !IsThisEnabled() )
+    {
+        if ( wxMSWDarkMode::IsActive() )
+        {
+            wxDarkModeSettings darkModeSettings;
+            dc.SetTextForeground(
+                darkModeSettings.GetMenuColour(wxMenuColour::DisabledFg)
+            );
+        }
+        else // Emulate traditional greyed out disabled look.
+        {
+            dc.SetTextForeground(
+                wxSystemSettings::GetColour(wxSYS_COLOUR_BTNHIGHLIGHT)
+            );
+
+            wxRect rectShadow = rect;
+            rectShadow.Offset(1, 1);
+
+            m_markupText->Render(dc, rectShadow, wxMarkupText::Render_ShowAccels,
+                                 GetAlignment());
+
+            dc.SetTextForeground(
+                wxSystemSettings::GetColour(wxSYS_COLOUR_BTNSHADOW)
+            );
+        }
+    }
+
+    m_markupText->Render(dc, rect, wxMarkupText::Render_ShowAccels,
+                         GetAlignment());
+}
+
+#endif // wxUSE_MARKUP
 
 #endif // wxUSE_STATTEXT

@@ -28,9 +28,6 @@
     #include "wx/control.h"
     #include "wx/frame.h"
     #include "wx/settings.h"
-    #if WXWIN_COMPATIBILITY_2_8
-        #include "wx/image.h"
-    #endif // WXWIN_COMPATIBILITY_2_8
     #include "wx/menu.h"
     #include "wx/vector.h"
 #endif
@@ -180,7 +177,7 @@ wxToolBarToolBase *wxToolBarBase::InsertTool(size_t pos,
                                              const wxString& longHelp,
                                              wxObject *clientData)
 {
-    wxCHECK_MSG( pos <= GetToolsCount(), NULL,
+    wxCHECK_MSG( pos <= GetToolsCount(), nullptr,
                  wxT("invalid position in wxToolBar::InsertTool()") );
 
     return DoInsertNewTool(pos, CreateTool(toolid, label, bitmap, bmpDisabled, kind,
@@ -195,12 +192,12 @@ wxToolBarToolBase *wxToolBarBase::AddTool(wxToolBarToolBase *tool)
 wxToolBarToolBase *
 wxToolBarBase::InsertTool(size_t pos, wxToolBarToolBase *tool)
 {
-    wxCHECK_MSG( pos <= GetToolsCount(), NULL,
+    wxCHECK_MSG( pos <= GetToolsCount(), nullptr,
                  wxT("invalid position in wxToolBar::InsertTool()") );
 
     if ( !tool || !DoInsertTool(pos, tool) )
     {
-        return NULL;
+        return nullptr;
     }
 
     m_tools.Insert(pos, tool);
@@ -220,10 +217,10 @@ wxToolBarBase::InsertControl(size_t pos,
                              wxControl *control,
                              const wxString& label)
 {
-    wxCHECK_MSG( control, NULL,
-                 wxT("toolbar: can't insert NULL control") );
+    wxCHECK_MSG( control, nullptr,
+                 wxT("toolbar: can't insert null control") );
 
-    wxCHECK_MSG( control->GetParent() == this, NULL,
+    wxCHECK_MSG( control->GetParent() == this, nullptr,
                  wxT("control must have toolbar as parent") );
 
     return DoInsertNewTool(pos, CreateTool(control, label));
@@ -242,7 +239,7 @@ wxControl *wxToolBarBase::FindControl( int toolid )
 
             if ( !control )
             {
-                wxFAIL_MSG( wxT("NULL control in toolbar?") );
+                wxFAIL_MSG( wxT("null control in toolbar?") );
             }
             else if ( control->GetId() == toolid )
             {
@@ -252,7 +249,7 @@ wxControl *wxToolBarBase::FindControl( int toolid )
         }
     }
 
-   return NULL;
+   return nullptr;
 }
 
 wxToolBarToolBase *wxToolBarBase::AddSeparator()
@@ -303,14 +300,14 @@ wxToolBarToolBase *wxToolBarBase::RemoveTool(int toolid)
     {
         // don't give any error messages - sometimes we might call RemoveTool()
         // without knowing whether the tool is or not in the toolbar
-        return NULL;
+        return nullptr;
     }
 
     wxToolBarToolBase *tool = node->GetData();
-    wxCHECK_MSG( tool, NULL, "NULL tool in the tools list?" );
+    wxCHECK_MSG( tool, nullptr, "null tool in the tools list?" );
 
     if ( !DoDeleteTool(pos, tool) )
-        return NULL;
+        return nullptr;
 
     m_tools.Erase(node);
 
@@ -362,7 +359,7 @@ bool wxToolBarBase::DeleteTool(int toolid)
 
 wxToolBarToolBase *wxToolBarBase::FindById(int toolid) const
 {
-    wxToolBarToolBase *tool = NULL;
+    wxToolBarToolBase *tool = nullptr;
 
     for ( wxToolBarToolsList::compatibility_iterator node = m_tools.GetFirst();
           node;
@@ -375,7 +372,7 @@ wxToolBarToolBase *wxToolBarBase::FindById(int toolid) const
             break;
         }
 
-        tool = NULL;
+        tool = nullptr;
     }
 
     return tool;
@@ -383,7 +380,7 @@ wxToolBarToolBase *wxToolBarBase::FindById(int toolid) const
 
 void wxToolBarBase::UnToggleRadioGroup(wxToolBarToolBase *tool)
 {
-    wxCHECK_RET( tool, wxT("NULL tool in wxToolBarTool::UnToggleRadioGroup") );
+    wxCHECK_RET( tool, wxT("null tool in wxToolBarTool::UnToggleRadioGroup") );
 
     if ( !tool->IsButton() || tool->GetKind() != wxITEM_RADIO )
         return;
@@ -489,7 +486,7 @@ void wxToolBarBase::AdjustToolBitmapSize()
         // We want to round 1.5 down to 1, but 1.75 up to 2.
         int scaleFactorRoundedDown =
             static_cast<int>(ceil(2*GetDPIScaleFactor())) / 2;
-        sizeNeeded = m_requestedBitmapSize*scaleFactorRoundedDown;
+        sizeNeeded = FromPhys(m_requestedBitmapSize*scaleFactorRoundedDown);
     }
     else // Determine the best size to use from the bitmaps we have.
     {
@@ -532,15 +529,7 @@ bool wxToolBarBase::Realize()
 
 wxToolBarBase::~wxToolBarBase()
 {
-    WX_CLEAR_LIST(wxToolBarToolsList, m_tools);
-
-    // notify the frame that it doesn't have a tool bar any longer to avoid
-    // dangling pointers
-    wxFrame *frame = wxDynamicCast(GetParent(), wxFrame);
-    if ( frame && frame->GetToolBar() == this )
-    {
-        frame->SetToolBar(NULL);
-    }
+    wxClearList(m_tools);
 }
 
 // ----------------------------------------------------------------------------
@@ -606,7 +595,7 @@ wxObject *wxToolBarBase::GetToolClientData(int toolid) const
 {
     wxToolBarToolBase *tool = FindById(toolid);
 
-    return tool ? tool->GetClientData() : NULL;
+    return tool ? tool->GetClientData() : nullptr;
 }
 
 void wxToolBarBase::SetToolClientData(int toolid, wxObject *clientData)
@@ -792,24 +781,31 @@ void wxToolBarBase::UpdateWindowUI(long flags)
         if ( tool->IsSeparator() )
             continue;
 
-        int toolid = tool->GetId();
-
-        wxUpdateUIEvent event(toolid);
-        event.SetEventObject(this);
-
-        if ( !tool->CanBeToggled() )
-            event.DisallowCheck();
-
-        if ( evtHandler->ProcessEvent(event) )
+        if ( !tool->IsControl() )
         {
-            if ( event.GetSetEnabled() )
-                EnableTool(toolid, event.GetEnabled());
-            if ( event.GetSetChecked() )
-                ToggleTool(toolid, event.GetChecked());
+            int toolid = tool->GetId();
+
+            wxUpdateUIEvent event(toolid);
+            event.SetEventObject(this);
+
+            if ( !tool->CanBeToggled() )
+                event.DisallowCheck();
+
+            if ( evtHandler->ProcessEvent(event) )
+            {
+                if ( event.GetSetEnabled() )
+                    EnableTool(toolid, event.GetEnabled());
+                if ( event.GetSetChecked() )
+                    ToggleTool(toolid, event.GetChecked());
 #if 0
-            if ( event.GetSetText() )
-                // Set tooltip?
+                if ( event.GetSetText() )
+                    // Set tooltip?
 #endif // 0
+            }
+        }
+        else
+        {
+            tool->GetControl()->UpdateWindowUI(flags);
         }
     }
 }
@@ -828,19 +824,5 @@ bool wxToolBarBase::SetDropdownMenu(int toolid, wxMenu* menu)
     return true;
 }
 #endif
-
-#if WXWIN_COMPATIBILITY_2_8
-
-bool wxCreateGreyedImage(const wxImage& in, wxImage& out)
-{
-#if wxUSE_IMAGE
-    out = in.ConvertToGreyscale();
-    if ( out.IsOk() )
-        return true;
-#endif // wxUSE_IMAGE
-    return false;
-}
-
-#endif // WXWIN_COMPATIBILITY_2_8
 
 #endif // wxUSE_TOOLBAR

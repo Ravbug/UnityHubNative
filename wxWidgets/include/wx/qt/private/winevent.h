@@ -1,8 +1,7 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        include/wx/qt/winevent_qt.h
+// Name:        include/wx/qt/private/winevent.h
 // Purpose:     QWidget to wxWindow event handler
 // Author:      Javier Torres, Peter Most
-// Modified by:
 // Created:     21.06.10
 // Copyright:   (c) Javier Torres
 // Licence:     wxWindows licence
@@ -22,64 +21,87 @@
 #include <QtWidgets/QGestureEvent>
 #include <QtGui/QCursor>
 
+// redeclare wxEVT_TEXT_ENTER here instead of including "wx/textctrl.h"
+wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_CORE, wxEVT_TEXT_ENTER, wxCommandEvent);
+
+// The parameter of QWidget::enterEvent() is changed to QEnterEvent in Qt6
+#if QT_VERSION_MAJOR >= 6
+using wxQtEnterEvent = QEnterEvent;
+#else
+using wxQtEnterEvent = QEvent;
+#endif
+
 class QPaintEvent;
 
-template< typename Handler >
+
 class wxQtSignalHandler
 {
 protected:
-    wxQtSignalHandler( Handler *handler )
+    explicit wxQtSignalHandler( wxWindow *handler ) : m_handler(handler)
     {
-        m_handler = handler;
     }
 
-    void EmitEvent( wxEvent &event ) const
+    bool EmitEvent( wxEvent &event ) const
     {
-        wxWindow *handler = GetHandler();
-        event.SetEventObject( handler );
-        handler->HandleWindowEvent( event );
+        event.SetEventObject( m_handler );
+        return m_handler->HandleWindowEvent( event );
     }
 
-    virtual Handler *GetHandler() const
+    virtual wxWindow *GetHandler() const
     {
         return m_handler;
     }
 
+    // A hack for wxQtEventSignalHandler<>::keyPressEvent() handler for the
+    // convenience of wxTextCtrl-like controls to emit the wxEVT_TEXT_ENTER
+    // event if the control has wxTE_PROCESS_ENTER flag.
+    bool HandleKeyPressEvent(QWidget* widget, QKeyEvent* e)
+    {
+        if ( m_handler->HasFlag(wxTE_PROCESS_ENTER) )
+        {
+            if ( e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter )
+            {
+                wxCommandEvent event( wxEVT_TEXT_ENTER, m_handler->GetId() );
+                event.SetString( GetValueForProcessEnter() );
+                event.SetEventObject( m_handler );
+                return m_handler->HandleWindowEvent( event );
+            }
+        }
+
+        return m_handler->QtHandleKeyEvent(widget, e);
+    }
+
+    // Controls supporting wxTE_PROCESS_ENTER flag (e.g. wxTextCtrl, wxComboBox and wxSpinCtrl)
+    // should override this to return the control value as string when enter is pressed.
+    virtual wxString GetValueForProcessEnter() { return wxString(); }
+
 private:
-    Handler *m_handler;
+    wxWindow* const m_handler;
 };
 
 template < typename Widget, typename Handler >
-class wxQtEventSignalHandler : public Widget, public wxQtSignalHandler< Handler >
+class wxQtEventSignalHandler : public Widget, public wxQtSignalHandler
 {
 public:
     wxQtEventSignalHandler( wxWindow *parent, Handler *handler )
-        : Widget( parent != NULL ? parent->GetHandle() : NULL )
-        , wxQtSignalHandler< Handler >( handler )
+        : Widget( parent != nullptr ? parent->GetHandle() : nullptr )
+        , wxQtSignalHandler( handler )
     {
         // Set immediately as it is used to check if wxWindow is alive
         wxWindow::QtStoreWindowPointer( this, handler );
 
-        // Handle QWidget destruction signal AFTER it gets deleted
-        QObject::connect( this, &QObject::destroyed, this,
-                          &wxQtEventSignalHandler::HandleDestroyedSignal );
-
         Widget::setMouseTracking(true);
     }
 
-    void HandleDestroyedSignal()
-    {
-    }
-
-    virtual Handler *GetHandler() const wxOVERRIDE
+    virtual Handler *GetHandler() const override
     {
         // Only process the signal / event if the wxWindow is not destroyed
         if ( !wxWindow::QtRetrieveWindowPointer( this ) )
         {
-            return NULL;
+            return nullptr;
         }
         else
-            return wxQtSignalHandler< Handler >::GetHandler();
+            return static_cast<Handler*>(wxQtSignalHandler::GetHandler());
     }
 
 protected:
@@ -88,7 +110,7 @@ protected:
      * wxPowerEvent, wxScrollWinEvent, wxSysColourChangedEvent */
 
     //wxActivateEvent
-    virtual void changeEvent ( QEvent * event ) wxOVERRIDE
+    virtual void changeEvent ( QEvent * event ) override
     {
         if ( !this->GetHandler() )
             return;
@@ -100,7 +122,7 @@ protected:
     }
 
     //wxCloseEvent
-    virtual void closeEvent ( QCloseEvent * event ) wxOVERRIDE
+    virtual void closeEvent ( QCloseEvent * event ) override
     {
         if ( !this->GetHandler() )
             return;
@@ -112,34 +134,32 @@ protected:
     }
 
     //wxContextMenuEvent
-    virtual void contextMenuEvent ( QContextMenuEvent * event ) wxOVERRIDE
+    virtual void contextMenuEvent ( QContextMenuEvent * event ) override
     {
         if ( !this->GetHandler() )
             return;
 
-        if ( !this->GetHandler()->QtHandleContextMenuEvent(this, event) )
-            Widget::contextMenuEvent(event);
-        else
-            event->accept();
+        this->GetHandler()->QtHandleContextMenuEvent(this, event);
+
+        // Notice that we are simply accepting the event and deliberately not
+        // calling Widget::contextMenuEvent(event); here because the context menu
+        // is supposed to be shown from a wxEVT_CONTEXT_MENU handler and not from
+        // QWidget::contextMenuEvent() overrides (and we are already in one of
+        // these overrides to perform QContextMenuEvent --> wxContextMenuEvent
+        // translation).
+        // More importantly, the default implementation of contextMenuEvent() simply
+        // ignores the context event, which means that the event will be propagated
+        // to the parent widget again which is undesirable here because the event may
+        // have already been propagated at the wxWidgets level.
+
+        event->accept();
     }
 
     //wxDropFilesEvent
     //virtual void dropEvent ( QDropEvent * event ) { }
 
-    //wxMouseEvent
-    virtual void enterEvent ( QEvent * event ) wxOVERRIDE
-    {
-        if ( !this->GetHandler() )
-            return;
-
-        if ( !this->GetHandler()->QtHandleEnterEvent(this, event) )
-            Widget::enterEvent(event);
-        else
-            event->accept();
-    }
-
     //wxFocusEvent.
-    virtual void focusInEvent ( QFocusEvent * event ) wxOVERRIDE
+    virtual void focusInEvent ( QFocusEvent * event ) override
     {
         if ( !this->GetHandler() )
             return;
@@ -151,7 +171,7 @@ protected:
     }
 
     //wxFocusEvent.
-    virtual void focusOutEvent ( QFocusEvent * event ) wxOVERRIDE
+    virtual void focusOutEvent ( QFocusEvent * event ) override
     {
         if ( !this->GetHandler() )
             return;
@@ -163,7 +183,7 @@ protected:
     }
 
     //wxShowEvent
-    virtual void hideEvent ( QHideEvent * event ) wxOVERRIDE
+    virtual void hideEvent ( QHideEvent * event ) override
     {
         if ( !this->GetHandler() )
             return;
@@ -175,19 +195,19 @@ protected:
     }
 
     //wxKeyEvent
-    virtual void keyPressEvent ( QKeyEvent * event ) wxOVERRIDE
+    virtual void keyPressEvent ( QKeyEvent * event ) override
     {
         if ( !this->GetHandler() )
             return;
 
-        if ( !this->GetHandler()->QtHandleKeyEvent(this, event) )
+        if ( !this->HandleKeyPressEvent(this, event) )
             Widget::keyPressEvent(event);
         else
             event->accept();
     }
 
     //wxKeyEvent
-    virtual void keyReleaseEvent ( QKeyEvent * event ) wxOVERRIDE
+    virtual void keyReleaseEvent ( QKeyEvent * event ) override
     {
         if ( !this->GetHandler() )
             return;
@@ -199,7 +219,19 @@ protected:
     }
 
     //wxMouseEvent
-    virtual void leaveEvent ( QEvent * event ) wxOVERRIDE
+    virtual void enterEvent ( wxQtEnterEvent * event ) override
+    {
+        if ( !this->GetHandler() )
+            return;
+
+        if ( !this->GetHandler()->QtHandleEnterEvent(this, event) )
+            Widget::enterEvent(event);
+        else
+            event->accept();
+    }
+
+    //wxMouseEvent
+    virtual void leaveEvent ( QEvent * event ) override
     {
         if ( !this->GetHandler() )
             return;
@@ -211,7 +243,7 @@ protected:
     }
 
     //wxMouseEvent
-    virtual void mouseDoubleClickEvent ( QMouseEvent * event ) wxOVERRIDE
+    virtual void mouseDoubleClickEvent ( QMouseEvent * event ) override
     {
         if ( !this->GetHandler() )
             return;
@@ -223,7 +255,7 @@ protected:
     }
 
     //wxMouseEvent
-    virtual void mouseMoveEvent ( QMouseEvent * event ) wxOVERRIDE
+    virtual void mouseMoveEvent ( QMouseEvent * event ) override
     {
         if ( !this->GetHandler() )
             return;
@@ -235,7 +267,7 @@ protected:
     }
 
     //wxMouseEvent
-    virtual void mousePressEvent ( QMouseEvent * event ) wxOVERRIDE
+    virtual void mousePressEvent ( QMouseEvent * event ) override
     {
         if ( !this->GetHandler() )
             return;
@@ -247,7 +279,7 @@ protected:
     }
 
     //wxMouseEvent
-    virtual void mouseReleaseEvent ( QMouseEvent * event ) wxOVERRIDE
+    virtual void mouseReleaseEvent ( QMouseEvent * event ) override
     {
         if ( !this->GetHandler() )
             return;
@@ -259,7 +291,7 @@ protected:
     }
 
     //wxMoveEvent
-    virtual void moveEvent ( QMoveEvent * event ) wxOVERRIDE
+    virtual void moveEvent ( QMoveEvent * event ) override
     {
         if ( !this->GetHandler() )
             return;
@@ -271,7 +303,7 @@ protected:
     }
 
     //wxEraseEvent then wxPaintEvent
-    virtual void paintEvent ( QPaintEvent * event ) wxOVERRIDE
+    virtual void paintEvent ( QPaintEvent * event ) override
     {
         if ( !this->GetHandler() )
             return;
@@ -283,7 +315,7 @@ protected:
     }
 
     //wxSizeEvent
-    virtual void resizeEvent ( QResizeEvent * event ) wxOVERRIDE
+    virtual void resizeEvent ( QResizeEvent * event ) override
     {
         if ( !this->GetHandler() )
             return;
@@ -295,7 +327,7 @@ protected:
     }
 
     //wxShowEvent
-    virtual void showEvent ( QShowEvent * event ) wxOVERRIDE
+    virtual void showEvent ( QShowEvent * event ) override
     {
         if ( !this->GetHandler() )
             return;
@@ -307,7 +339,7 @@ protected:
     }
 
     //wxMouseEvent
-    virtual void wheelEvent ( QWheelEvent * event ) wxOVERRIDE
+    virtual void wheelEvent ( QWheelEvent * event ) override
     {
         if ( !this->GetHandler() )
             return;
@@ -330,14 +362,76 @@ protected:
     virtual bool winEvent ( MSG * message, long * result ) { }
     virtual bool x11Event ( XEvent * event ) { } */
 
-    virtual bool event(QEvent *event)
+    virtual bool event(QEvent *event) override
     {
-        if (event->type() == QEvent::Gesture)
+        switch (event->type())
         {
-            return gestureEvent(static_cast<QGestureEvent*>(event), event);
+            case QEvent::Gesture:
+                return gestureEvent(static_cast<QGestureEvent*>(event), event);
+
+            case QEvent::TouchBegin:
+            case QEvent::TouchUpdate:
+            case QEvent::TouchCancel:
+            case QEvent::TouchEnd:
+                return touchEvent(static_cast<QTouchEvent*>(event));
+            default:;
         }
 
         return Widget::event(event);
+    }
+
+    bool touchEvent(QTouchEvent *touch)
+    {
+        bool handled = false;
+
+        if ( wxWindow *win = wxWindow::QtRetrieveWindowPointer(this) )
+        {
+#if QT_VERSION_MAJOR >= 6
+            for (const auto& tp : touch->points())
+#else
+            for (const auto& tp : touch->touchPoints())
+#endif
+            {
+                wxEventType evtype = wxEVT_NULL;
+
+                switch (tp.state())
+                {
+                    case Qt::TouchPointPressed:
+                        evtype = wxEVT_TOUCH_BEGIN;
+                        break;
+
+                    case Qt::TouchPointMoved:
+                        evtype = wxEVT_TOUCH_MOVE;
+                        break;
+                    case Qt::TouchPointReleased:
+                        evtype = wxEVT_TOUCH_END;
+                        break;
+
+                    default:
+                        continue;
+                }
+
+                wxMultiTouchEvent evt(win->GetId(), evtype);
+
+                // Use screen position as the event might originate from a different
+                // Qt window than this one.
+#if QT_VERSION_MAJOR >= 6
+                const auto screenPos = tp.globalPosition();
+#else
+                const auto screenPos = tp.screenPos();
+#endif
+                wxPoint2DDouble pt = wxQtConvertPointF(screenPos.toPoint());
+                wxPoint ref = pt.GetFloor();
+
+                evt.SetPosition(win->ScreenToClient(ref) + (pt - ref));
+                evt.SetSequenceId(wxTouchSequenceId(wxUIntToPtr((unsigned)tp.id())));
+                // Qt doesn't provide the primary point flag
+
+                handled |= win->ProcessWindowEvent(evt);
+            }
+        }
+
+        return handled;
     }
 
     bool gestureEvent(QGestureEvent *gesture, QEvent *event)
@@ -364,27 +458,16 @@ protected:
 
     void tapandholdTriggered(QTapAndHoldGesture *gesture, QEvent *event)
     {
-        wxWindow *win = wxWindow::QtRetrieveWindowPointer( this );
-
-        if (gesture->state() == Qt::GestureFinished)
+        if ( wxWindow *win = wxWindow::QtRetrieveWindowPointer( this ) )
         {
-            if ( win )
+            if (gesture->state() == Qt::GestureFinished)
             {
                 wxLongPressEvent ev(win->GetId());
                 ev.SetPosition( wxQtConvertPoint( gesture->position().toPoint() ) );
 
                 ev.SetGestureEnd();
                 win->ProcessWindowEvent( ev );
-                event->accept();
             }
-
-        }
-        else if (gesture->state() == Qt::GestureStarted)
-        {
-            event->accept();
-        }
-        else
-        {
             event->accept();
         }
     }
@@ -398,12 +481,7 @@ protected:
             wxPanGestureEvent evp(win->GetId());
             QPoint pos = QCursor::pos();
             evp.SetPosition( wxQtConvertPoint( pos ) );
-
-            QPoint offset = gesture->offset().toPoint();
-            QPoint offset_last = gesture->lastOffset().toPoint();
-            QPoint delta(offset.x() - offset_last.x(), offset.y() - offset_last.y());
-
-            evp.SetDelta( wxQtConvertPoint( delta ) );
+            evp.SetDelta( wxQtConvertPoint( gesture->delta().toPoint() ) );
 
             switch(gesture->state())
             {
@@ -429,16 +507,14 @@ protected:
         wxWindow *win = wxWindow::QtRetrieveWindowPointer( this );
         if (win)
         {
-
-            qreal this_sf = gesture->scaleFactor();
-            QPoint center_point = gesture->centerPoint().toPoint();
-
-            wxZoomGestureEvent evp(win->GetId());
-            evp.SetPosition( wxQtConvertPoint( center_point ) );
-            evp.SetZoomFactor( this_sf);
-
-            switch(gesture->state())
+            if (gesture->changeFlags() & QPinchGesture::ScaleFactorChanged)
             {
+                wxZoomGestureEvent evp(win->GetId());
+                evp.SetPosition(wxQtConvertPoint(gesture->centerPoint().toPoint()));
+                evp.SetZoomFactor(gesture->totalScaleFactor());
+
+                switch (gesture->state())
+                {
                 case Qt::GestureStarted:
                     evp.SetGestureStart();
                     break;
@@ -448,14 +524,60 @@ protected:
                     break;
                 default:
                     break;
+                }
+
+                win->ProcessWindowEvent(evp);
             }
 
-            win->ProcessWindowEvent( evp );
+            if (gesture->changeFlags() & QPinchGesture::RotationAngleChanged)
+            {
+                wxRotateGestureEvent evp(win->GetId());
+                evp.SetPosition(wxQtConvertPoint(gesture->centerPoint().toPoint()));
+                evp.SetRotationAngle(wxDegToRad(gesture->totalRotationAngle()));
+
+                switch (gesture->state())
+                {
+                case Qt::GestureStarted:
+                    evp.SetGestureStart();
+                    break;
+                case Qt::GestureFinished:
+                case Qt::GestureCanceled:
+                    evp.SetGestureEnd();
+                    break;
+                default:
+                    break;
+                }
+
+                win->ProcessWindowEvent(evp);
+            }
 
             event->accept();
-
         }
     }
+};
+
+// RAII wrapper for blockSignals(). It blocks signals in its constructor and in
+// the destructor it restores the state to what it was before the constructor ran.
+class wxQtEnsureSignalsBlocked
+{
+public:
+    // Use QObject instead of QWidget to avoid including <QWidget> from here.
+    wxQtEnsureSignalsBlocked(QObject *widget) :
+        m_widget(widget)
+    {
+        m_restore = m_widget->blockSignals(true);
+    }
+
+    ~wxQtEnsureSignalsBlocked()
+    {
+        m_widget->blockSignals(m_restore);
+    }
+
+private:
+    QObject* const m_widget;
+    bool m_restore;
+
+    wxDECLARE_NO_COPY_CLASS(wxQtEnsureSignalsBlocked);
 };
 
 #endif

@@ -30,36 +30,36 @@ public:
     virtual ~wxClipboard();
 
     // open the clipboard before SetData() and GetData()
-    virtual bool Open() wxOVERRIDE;
+    virtual bool Open() override;
 
     // close the clipboard after SetData() and GetData()
-    virtual void Close() wxOVERRIDE;
+    virtual void Close() override;
 
     // query whether the clipboard is opened
-    virtual bool IsOpened() const wxOVERRIDE;
+    virtual bool IsOpened() const override;
 
     // set the clipboard data. all other formats will be deleted.
-    virtual bool SetData( wxDataObject *data ) wxOVERRIDE;
+    virtual bool SetData( wxDataObject *data ) override;
 
     // add to the clipboard data.
-    virtual bool AddData( wxDataObject *data ) wxOVERRIDE;
+    virtual bool AddData( wxDataObject *data ) override;
 
     // ask if data in correct format is available
-    virtual bool IsSupported( const wxDataFormat& format ) wxOVERRIDE;
+    virtual bool IsSupported( const wxDataFormat& format ) override;
 
     // ask if data in correct format is available
-    virtual bool IsSupportedAsync( wxEvtHandler *sink ) wxOVERRIDE;
+    virtual bool IsSupportedAsync( wxEvtHandler *sink ) override;
 
     // fill data with data on the clipboard (if available)
-    virtual bool GetData( wxDataObject& data ) wxOVERRIDE;
+    virtual bool GetData( wxDataObject& data ) override;
 
     // flushes the clipboard; that means that the data which is currently on
     // clipboard will stay available even after the application exits (possibly
     // eating memory), otherwise the clipboard will be emptied on exit
-    virtual bool Flush() wxOVERRIDE;
+    virtual bool Flush() override;
 
     // clears wxTheClipboard and the system's clipboard if possible
-    virtual void Clear() wxOVERRIDE;
+    virtual void Clear() override;
 
 
 
@@ -98,14 +98,14 @@ private:
     // set or unset selection ownership
     bool SetSelectionOwner(bool set = true);
 
-    // add atom to the list of supported targets
-    void AddSupportedTarget(GdkAtom atom);
+    // get the atom corresponding to the given format if it's supported
+    GdkAtom DoGetTarget(const wxDataFormat& format);
 
-    // check if the given format is supported
+    // just check if the given format is supported
     bool DoIsSupported(const wxDataFormat& format);
 
 
-    // both of these pointers can be non-NULL simultaneously but we only use
+    // both of these pointers can be non-null simultaneously but we only use
     // one of them at any moment depending on m_usePrimary value, use Data()
     // (from inside) or GTKGetDataObject() (from outside) accessors
     wxDataObject *m_dataPrimary,
@@ -116,7 +116,7 @@ private:
     wxDataObject *m_receivedData;
 
     // used to pass information about the format we need from DoIsSupported()
-    // to GTKOnTargetReceived()
+    // to GTKOnTargetReceived() and return the supported format from the latter
     GdkAtom m_targetRequested;
 
     GtkWidget *m_clipboardWidget;  // for getting and offering data

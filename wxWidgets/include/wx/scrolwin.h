@@ -2,7 +2,6 @@
 // Name:        wx/scrolwin.h
 // Purpose:     wxScrolledWindow, wxScrolledControl and wxScrollHelper
 // Author:      Vadim Zeitlin
-// Modified by:
 // Created:     30.08.00
 // Copyright:   (c) 2000 Vadim Zeitlin <zeitlin@dptmaths.ens-cachan.fr>
 // Licence:     wxWindows licence
@@ -70,7 +69,7 @@ class WXDLLIMPEXP_CORE wxAnyScrollHelperBase
 {
 public:
     explicit wxAnyScrollHelperBase(wxWindow* win);
-    virtual ~wxAnyScrollHelperBase() {}
+    virtual ~wxAnyScrollHelperBase() = default;
 
     // Disable use of keyboard keys for scrolling. By default cursor movement
     // keys (including Home, End, Page Up and Down) are used to scroll the
@@ -86,8 +85,24 @@ public:
     // Override this function to draw the graphic (or just process EVT_PAINT)
     virtual void OnDraw(wxDC& WXUNUSED(dc)) { }
 
-    // change the DC origin according to the scroll position.
-    virtual void DoPrepareDC(wxDC& dc) = 0;
+    // Set up the DC according to the scroll position.
+    //
+    // For historical reasons, we have DoPrepareDC() but new code should
+    // implement DoPrepareReadOnlyDC() instead, which ought to be pure virtual
+    // if it hasn't been added later.
+    virtual void DoPrepareReadOnlyDC(wxReadOnlyDC& WXUNUSED(dc))
+    {
+        // If DoPrepareDC() is overridden in the derived class, this function
+        // won't be called at all unless PrepareReadOnlyDC() is explicitly
+        // called.
+        //
+        // But if DoPrepareDC() is not overridden, this one must be.
+        wxFAIL_MSG("Must be overridden if DoPrepareDC() is not.");
+    }
+
+    // This function continues to exist for compatibility but delegates to
+    // DoPrepareReadOnlyDC() now.
+    virtual void DoPrepareDC(wxDC& dc);
 
     // Simple accessor for the window that is really being scrolled.
     wxWindow *GetTargetWindow() const { return m_targetWindow; }
@@ -219,10 +234,10 @@ public:
     void SetTargetRect(const wxRect& rect) { m_rectToScroll = rect; }
     wxRect GetTargetRect() const { return m_rectToScroll; }
 
-    virtual void DoPrepareDC(wxDC& dc) wxOVERRIDE;
+    virtual void DoPrepareReadOnlyDC(wxReadOnlyDC& dc) override;
 
     // are we generating the autoscroll events?
-    bool IsAutoScrolling() const { return m_timerAutoScroll != NULL; }
+    bool IsAutoScrolling() const { return m_timerAutoScroll != nullptr; }
 
     // stop generating the scroll events when mouse is held outside the window
     void StopAutoScrolling();
@@ -245,17 +260,11 @@ public:
 #endif // wxUSE_MOUSEWHEEL
     void HandleOnChildFocus(wxChildFocusEvent& event);
 
-#if WXWIN_COMPATIBILITY_2_8
-    wxDEPRECATED(
-        void OnScroll(wxScrollWinEvent& event) { HandleOnScroll(event); }
-    )
-#endif // WXWIN_COMPATIBILITY_2_8
-
 protected:
-    // get pointer to our scroll rect if we use it or NULL
+    // get pointer to our scroll rect if we use it or nullptr
     const wxRect *GetScrollRect() const
     {
-        return m_rectToScroll.width != 0 ? &m_rectToScroll : NULL;
+        return m_rectToScroll.width != 0 ? &m_rectToScroll : nullptr;
     }
 
     // get the size of the target window
@@ -361,20 +370,20 @@ protected:
 // methods to corresponding wxScrollHelper methods
 #define WX_FORWARD_TO_SCROLL_HELPER()                                         \
 public:                                                                       \
-    virtual void PrepareDC(wxDC& dc) wxOVERRIDE { DoPrepareDC(dc); }          \
-    virtual bool Layout() wxOVERRIDE { return ScrollLayout(); }               \
-    virtual bool CanScroll(int orient) const wxOVERRIDE                       \
+    virtual void PrepareReadOnlyDC(wxReadOnlyDC& dc) override { DoPrepareReadOnlyDC(dc); }          \
+    virtual void PrepareDC(wxDC& dc) override { DoPrepareDC(dc); }          \
+    void PrepareDC(wxReadOnlyDC& dc) { DoPrepareReadOnlyDC(dc); }           \
+    virtual bool Layout() override { return ScrollLayout(); }               \
+    virtual bool CanScroll(int orient) const override                       \
         { return IsScrollbarShown(orient); }                                  \
-    virtual void DoSetVirtualSize(int x, int y) wxOVERRIDE                    \
+    virtual void DoSetVirtualSize(int x, int y) override                    \
         { ScrollDoSetVirtualSize(x, y); }                                     \
-    virtual wxSize GetBestVirtualSize() const wxOVERRIDE                      \
+    virtual wxSize GetBestVirtualSize() const override                      \
         { return ScrollGetBestVirtualSize(); }
 
 // include the declaration of the real wxScrollHelper
-#if defined(__WXGTK20__) && !defined(__WXUNIVERSAL__)
+#if defined(__WXGTK__) && !defined(__WXUNIVERSAL__)
     #include "wx/gtk/scrolwin.h"
-#elif defined(__WXGTK__) && !defined(__WXUNIVERSAL__)
-    #include "wx/gtk1/scrolwin.h"
 #else
     #define wxHAS_GENERIC_SCROLLWIN
     #include "wx/generic/scrolwin.h"
@@ -448,7 +457,7 @@ public:
         m_targetWindow = this;
 
 #ifdef __WXMAC__
-        this->MacSetClipChildren(true);
+        this->MacSetClipChildren();
 #endif
 
         // by default, we're scrollable in both directions (but if one of the
@@ -463,13 +472,13 @@ public:
 #ifdef __WXMSW__
     // we need to return a special WM_GETDLGCODE value to process just the
     // arrows but let the other navigation characters through
-    virtual WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam) wxOVERRIDE
+    virtual WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam) override
     {
         return FilterMSWWindowProc(nMsg, T::MSWWindowProc(nMsg, wParam, lParam));
     }
 
     // Take into account the scroll origin.
-    virtual void MSWAdjustBrushOrg(int* xOrg, int* yOrg) const wxOVERRIDE
+    virtual void MSWAdjustBrushOrg(int* xOrg, int* yOrg) const override
     {
         CalcUnscrolledPosition(*xOrg, *yOrg, xOrg, yOrg);
     }
@@ -478,7 +487,7 @@ public:
     WX_FORWARD_TO_SCROLL_HELPER()
 
 protected:
-    virtual wxSize DoGetBestSize() const wxOVERRIDE
+    virtual wxSize DoGetBestSize() const override
     {
         return FilterBestSize(this, this, T::DoGetBestSize());
     }
@@ -507,5 +516,18 @@ public:
 };
 
 typedef wxScrolled<wxWindow> wxScrolledCanvas;
+
+namespace wxPrivate
+{
+
+// This class is specifically DLL-exported, even though it's trivial, in order
+// to ensure that there is only a single copy of wxScrolledCanvas in the wx DLL.
+class WXDLLIMPEXP_CORE wxScrolledCanvasDummySubclass : public wxScrolledCanvas
+{
+public:
+    wxScrolledCanvasDummySubclass();
+};
+
+} // namespace wxPrivate
 
 #endif // _WX_SCROLWIN_H_BASE_

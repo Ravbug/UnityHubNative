@@ -201,7 +201,7 @@ wxTextCtrl::wxTextCtrl( wxWindow *parent,
 
 wxTextCtrl::~wxTextCtrl()
 {
-    WX_CLEAR_LIST(wxList, m_undos);
+    wxClearList(m_undos);
 }
 
 bool wxTextCtrl::Create( wxWindow *parent,
@@ -233,7 +233,7 @@ bool wxTextCtrl::Create( wxWindow *parent,
     else
         m_sourceFont = GetFont();
 
-    wxClientDC dc(this);
+    wxInfoDC dc(this);
     dc.SetFont( m_sourceFont );
     m_lineHeight = dc.GetCharHeight();
     m_charWidth = dc.GetCharWidth();
@@ -305,7 +305,7 @@ void wxTextCtrl::DoSetValue(const wxString& value, int flags)
                 // if (sl->m_text.Len() > m_longestLine)
                 //    m_longestLine = sl->m_text.Len();
                 int ww = 0;
-                GetTextExtent( sl->m_text, &ww, NULL, NULL, NULL );
+                GetTextExtent( sl->m_text, &ww, nullptr, nullptr, nullptr );
                 ww /= m_charWidth;
                 if (ww > m_longestLine)
                     m_longestLine = ww;
@@ -320,7 +320,7 @@ void wxTextCtrl::DoSetValue(const wxString& value, int flags)
                 // if (sl->m_text.Len() > m_longestLine)
                 //      m_longestLine = sl->m_text.Len();
                 int ww = 0;
-                GetTextExtent( sl->m_text, &ww, NULL, NULL, NULL );
+                GetTextExtent( sl->m_text, &ww, nullptr, nullptr, nullptr );
                 ww /= m_charWidth;
                 if (ww > m_longestLine)
                     m_longestLine = ww;
@@ -403,7 +403,7 @@ void wxTextCtrl::Clear()
 
     SetScrollbars( m_charWidth, m_lineHeight, 0, 0, 0, 0 );
     Refresh();
-    WX_CLEAR_LIST(wxList, m_undos);
+    wxClearList(m_undos);
 }
 
 void wxTextCtrl::Replace(long from, long to, const wxString& value)
@@ -440,7 +440,7 @@ int wxTextCtrl::PosToPixel( int line, int pos )
 
     int w = 0;
 
-    GetTextExtent( text, &w, NULL, NULL, NULL );
+    GetTextExtent( text, &w, nullptr, nullptr, nullptr );
 
     return w;
 }
@@ -457,7 +457,7 @@ int wxTextCtrl::PixelToPos( int line, int pixel )
     int res = text.Len();
     while (res > 0)
     {
-        GetTextExtent( text, &w, NULL, NULL, NULL );
+        GetTextExtent( text, &w, nullptr, nullptr, nullptr );
 
         if (w < pixel)
             return res;
@@ -859,7 +859,7 @@ bool wxTextCtrl::SetFont(const wxFont& font)
 
     m_sourceFont = font;
 
-    wxClientDC dc(this);
+    wxInfoDC dc(this);
     dc.SetFont( m_sourceFont );
     m_lineHeight = dc.GetCharHeight();
     m_charWidth = dc.GetCharWidth();
@@ -1168,7 +1168,7 @@ void wxTextCtrl::DoChar( char c )
 //    }
 
     int ww = 0;
-    GetTextExtent( tmp, &ww, NULL, NULL, NULL );
+    GetTextExtent( tmp, &ww, nullptr, nullptr, nullptr );
     ww /= m_charWidth;
     if (ww > m_longestLine)
     {
@@ -1499,7 +1499,7 @@ void wxTextCtrl::DrawLinePart( wxDC &dc, int x, int y, const wxString &toDraw, c
 
         int xx = 0;
         wxString tmp = origin.Left( start );
-        GetTextExtent( tmp, &xx, NULL, NULL, NULL );
+        GetTextExtent( tmp, &xx, nullptr, nullptr, nullptr );
         xx += x;
         int yy = y;
         dc.DrawText( current, xx, yy );
@@ -1699,7 +1699,7 @@ void wxTextCtrl::OnPaint( wxPaintEvent &event )
     dc.SetFont( m_sourceFont );
 
     int scroll_y = 0;
-    GetViewStart( NULL, &scroll_y );
+    GetViewStart( nullptr, &scroll_y );
 
     // We have a inner border of two pixels
     // around the text, so scroll units do
@@ -2285,7 +2285,7 @@ void wxTextCtrl::MyAdjustScrollbars()
     int y_range = m_lines.GetCount();
 
     int height = 0;
-    GetClientSize( NULL, &height );
+    GetClientSize( nullptr, &height );
     height -= 4;
     if (height >= (int)m_lines.GetCount() *m_lineHeight)
         y_range = 0;

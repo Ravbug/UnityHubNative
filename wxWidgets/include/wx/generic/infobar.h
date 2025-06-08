@@ -13,10 +13,16 @@
 class WXDLLIMPEXP_FWD_CORE wxBitmapButton;
 class WXDLLIMPEXP_FWD_CORE wxStaticBitmap;
 class WXDLLIMPEXP_FWD_CORE wxStaticText;
+class WXDLLIMPEXP_FWD_CORE wxCheckBox;
 
 // ----------------------------------------------------------------------------
 // wxInfoBar
 // ----------------------------------------------------------------------------
+
+enum
+{
+    wxINFOBAR_CHECKBOX = 0x0010
+};
 
 class WXDLLIMPEXP_CORE wxInfoBarGeneric : public wxInfoBarBase
 {
@@ -25,30 +31,30 @@ public:
     // hidden
     wxInfoBarGeneric() { Init(); }
 
-    wxInfoBarGeneric(wxWindow *parent, wxWindowID winid = wxID_ANY)
+    wxInfoBarGeneric(wxWindow *parent, wxWindowID winid = wxID_ANY, long style = 0)
     {
         Init();
-        Create(parent, winid);
+        Create(parent, winid, style);
     }
 
-    bool Create(wxWindow *parent, wxWindowID winid = wxID_ANY);
+    bool Create(wxWindow *parent, wxWindowID winid = wxID_ANY, long style = 0);
 
 
     // implement base class methods
     // ----------------------------
 
     virtual void ShowMessage(const wxString& msg,
-                             int flags = wxICON_INFORMATION) wxOVERRIDE;
+                             int flags = wxICON_INFORMATION) override;
 
-    virtual void Dismiss() wxOVERRIDE;
+    virtual void Dismiss() override;
 
-    virtual void AddButton(wxWindowID btnid, const wxString& label = wxString()) wxOVERRIDE;
+    virtual void AddButton(wxWindowID btnid, const wxString& label = wxString()) override;
 
-    virtual void RemoveButton(wxWindowID btnid) wxOVERRIDE;
+    virtual void RemoveButton(wxWindowID btnid) override;
 
-    virtual size_t GetButtonCount() const wxOVERRIDE;
-    virtual wxWindowID GetButtonId(size_t idx) const wxOVERRIDE;
-    virtual bool HasButtonId(wxWindowID btnid) const wxOVERRIDE;
+    virtual size_t GetButtonCount() const override;
+    virtual wxWindowID GetButtonId(size_t idx) const override;
+    virtual bool HasButtonId(wxWindowID btnid) const override;
 
     // methods specific to this version
     // --------------------------------
@@ -75,21 +81,29 @@ public:
     // get the currently used effect animation duration
     int GetEffectDuration() const { return m_effectDuration; }
 
+    // Whether the checkbox was checked at the time of the window
+    // being closed.
+    // This should be called in a client's handler for the
+    // wxID_CLOSE button being clicked.
+    bool IsCheckBoxChecked() const { return m_checked; }
+
+    // Sets whether the checkbox should be shown.
+    void ShowCheckBox(const wxString& checkBoxText, bool checked);
 
     // overridden base class methods
     // -----------------------------
 
     // setting the font of this window sets it for the text control inside it
     // (default font is a larger and bold version of the normal one)
-    virtual bool SetFont(const wxFont& font) wxOVERRIDE;
+    virtual bool SetFont(const wxFont& font) override;
 
     // same thing with the colour: this affects the text colour
-    virtual bool SetForegroundColour(const wxColor& colour) wxOVERRIDE;
+    virtual bool SetForegroundColour(const wxColor& colour) override;
 
 protected:
     // info bar shouldn't have any border by default, the colour difference
     // between it and the main window separates it well enough
-    virtual wxBorder GetDefaultBorder() const wxOVERRIDE { return wxBORDER_NONE; }
+    virtual wxBorder GetDefaultBorder() const override { return wxBORDER_NONE; }
 
 
     // update the parent to take our new or changed size into account (notably
@@ -99,6 +113,8 @@ protected:
 private:
     // common part of all ctors
     void Init();
+
+    virtual bool UseNative() const { return false; }
 
     // handler for the close button
     void OnButton(wxCommandEvent& event);
@@ -120,9 +136,10 @@ private:
 
 
     // different controls making up the bar
-    wxStaticBitmap *m_icon;
-    wxStaticText *m_text;
-    wxBitmapButton *m_button;
+    wxStaticBitmap *m_icon = nullptr;
+    wxStaticText *m_text = nullptr;
+    wxBitmapButton *m_button = nullptr;
+    wxCheckBox *m_checkbox = nullptr;
 
     // the effects to use when showing/hiding and duration for them: by default
     // the effect is determined by the info bar automatically depending on its
@@ -130,6 +147,8 @@ private:
     wxShowEffect m_showEffect,
                  m_hideEffect;
     int m_effectDuration;
+
+    bool m_checked = false;
 
     wxDECLARE_EVENT_TABLE();
     wxDECLARE_NO_COPY_CLASS(wxInfoBarGeneric);

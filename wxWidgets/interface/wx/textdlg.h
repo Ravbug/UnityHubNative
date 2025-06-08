@@ -96,7 +96,8 @@ public:
                       const wxString& caption = wxGetTextFromUserPromptStr,
                       const wxString& value = wxEmptyString,
                       long style = wxTextEntryDialogStyle,
-                      const wxPoint& pos = wxDefaultPosition);
+                      const wxPoint& pos = wxDefaultPosition,
+                      const wxSize sz = wxDefaultSize);
 
     /**
         @param parent
@@ -115,6 +116,8 @@ public:
             make sense for this dialog, used for text input.
         @param pos
             Dialog position.
+        @param sz
+            The size of the dialog (this parameter is only available since wxWidgets 3.3.0).
 
         @since 2.9.5
     */
@@ -122,7 +125,8 @@ public:
                       const wxString& caption = wxGetTextFromUserPromptStr,
                       const wxString& value = wxEmptyString,
                       long style = wxTextEntryDialogStyle,
-                      const wxPoint& pos = wxDefaultPosition);
+                      const wxPoint& pos = wxDefaultPosition,
+                      const wxSize sz = wxDefaultSize);
 
     /**
         Destructor.
@@ -226,7 +230,7 @@ public:
 wxString wxGetTextFromUser(const wxString& message,
                            const wxString& caption = wxGetTextFromUserPromptStr,
                            const wxString& default_value = wxEmptyString,
-                           wxWindow* parent = NULL,
+                           wxWindow* parent = nullptr,
                            int x = wxDefaultCoord,
                            int y = wxDefaultCoord,
                            bool centre = true);
@@ -241,7 +245,7 @@ wxString wxGetTextFromUser(const wxString& message,
 wxString wxGetPasswordFromUser(const wxString& message,
                                const wxString& caption = wxGetPasswordFromUserPromptStr,
                                const wxString& default_value = wxEmptyString,
-                               wxWindow* parent = NULL,
+                               wxWindow* parent = nullptr,
                                int x = wxDefaultCoord,
                                int y = wxDefaultCoord,
                                bool centre = true);

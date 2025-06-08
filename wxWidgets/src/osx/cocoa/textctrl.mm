@@ -33,10 +33,6 @@
     #include <stat.h>
 #endif
 
-#if wxUSE_STD_IOSTREAM
-    #include <fstream>
-#endif
-
 #include "wx/filefn.h"
 #include "wx/sysopt.h"
 #include "wx/thread.h"
@@ -51,6 +47,20 @@
 - (BOOL)isSelectable;
 - (void)setSelectable:(BOOL)flag;
 @end
+
+
+static BOOL HandleClipboardEvent(NSView *view, wxEventType type)
+{
+    wxWidgetImpl *impl = wxWidgetImpl::FindFromWXWidget(view);
+    wxWindow* wxpeer = impl ? impl->GetWXPeer() : nullptr;
+    if ( wxpeer )
+    {
+        wxClipboardTextEvent evt(type, wxpeer->GetId());
+        evt.SetEventObject(wxpeer);
+        return wxpeer->HandleWindowEvent(evt);
+    }
+    return false;
+}
 
 // An object of this class is created before the text is modified
 // programmatically and destroyed as soon as this is done. It does several
@@ -255,8 +265,8 @@ NSView* wxMacEditHelper::ms_viewCurrentlyEdited = nil;
                 {
                     wxCommandEvent event(wxEVT_TEXT_ENTER, wxpeer->GetId());
                     event.SetEventObject( wxpeer );
-                    wxTextWidgetImpl* impl = (wxNSTextFieldControl * ) wxWidgetImpl::FindFromWXWidget( self );
-                    wxTextEntry * const entry = impl->GetTextEntry();
+                    wxTextWidgetImpl* twimpl = (wxNSTextFieldControl*)wxWidgetImpl::FindFromWXWidget(self);
+                    wxTextEntry* const entry = twimpl->GetTextEntry();
                     event.SetString( entry->GetValue() );
                     handled = wxpeer->HandleWindowEvent( event );
                 }
@@ -289,8 +299,8 @@ NSView* wxMacEditHelper::ms_viewCurrentlyEdited = nil;
                         [cevent keyCode] == 9 /* V */ &&
                             ([cevent modifierFlags] & NSCommandKeyMask) == NSCommandKeyMask )
                 {
-                    wxTextWidgetImpl* impl = (wxNSTextFieldControl * ) wxWidgetImpl::FindFromWXWidget( self );
-                    wxTextEntry * const entry = impl->GetTextEntry();
+                    wxTextWidgetImpl* twimpl = (wxNSTextFieldControl*)wxWidgetImpl::FindFromWXWidget(self);
+                    wxTextEntry* const entry = twimpl->GetTextEntry();
                     entry->Paste();
                     handled = YES;
                 }
@@ -367,7 +377,7 @@ NSView* wxMacEditHelper::ms_viewCurrentlyEdited = nil;
 {
     wxWidgetCocoaImpl* impl = (wxWidgetCocoaImpl* ) wxWidgetImpl::FindFromWXWidget( (WXWidget) [self delegate] );
     lastKeyDownEvent = event;
-    if ( impl == NULL || !impl->DoHandleKeyEvent(event) )
+    if ( impl == nullptr || !impl->DoHandleKeyEvent(event) )
         [super keyDown:event];
     lastKeyDownEvent = nil;
 }
@@ -375,28 +385,28 @@ NSView* wxMacEditHelper::ms_viewCurrentlyEdited = nil;
 - (void) keyUp:(NSEvent*) event
 {
     wxWidgetCocoaImpl* impl = (wxWidgetCocoaImpl* ) wxWidgetImpl::FindFromWXWidget( (WXWidget) [self delegate] );
-    if ( impl == NULL || !impl->DoHandleKeyEvent(event) )
+    if ( impl == nullptr || !impl->DoHandleKeyEvent(event) )
         [super keyUp:event];
 }
 
 - (void) flagsChanged:(NSEvent*) event
 {
     wxWidgetCocoaImpl* impl = (wxWidgetCocoaImpl* ) wxWidgetImpl::FindFromWXWidget( (WXWidget) [self delegate] );
-    if ( impl == NULL || !impl->DoHandleKeyEvent(event) )
+    if ( impl == nullptr || !impl->DoHandleKeyEvent(event) )
         [super flagsChanged:event];
 }
 
 - (void) rightMouseDown:(NSEvent*) event
 {
     wxWidgetCocoaImpl* impl = (wxWidgetCocoaImpl* ) wxWidgetImpl::FindFromWXWidget( (WXWidget) [self delegate] );
-    if ( impl == NULL || !impl->DoHandleMouseEvent( event ) )
+    if ( impl == nullptr || !impl->DoHandleMouseEvent( event ) )
         [super rightMouseDown:event];
 }
 
 - (void) rightMouseUp:(NSEvent*) event
 {
     wxWidgetCocoaImpl* impl = (wxWidgetCocoaImpl* ) wxWidgetImpl::FindFromWXWidget( (WXWidget) [self delegate] );
-    if ( impl == NULL || !impl->DoHandleMouseEvent( event ) )
+    if ( impl == nullptr || !impl->DoHandleMouseEvent( event ) )
         [super rightMouseUp:event];
 }
 
@@ -426,7 +436,7 @@ NSView* wxMacEditHelper::ms_viewCurrentlyEdited = nil;
     wxWidgetCocoaImpl* impl = (wxWidgetCocoaImpl* ) wxWidgetImpl::FindFromWXWidget( (WXWidget) textField );
 
     BOOL r = [super becomeFirstResponder];
-    if ( impl != NULL && r )
+    if ( impl != nullptr && r )
         impl->DoNotifyFocusSet();
 
     return r;
@@ -437,6 +447,23 @@ NSView* wxMacEditHelper::ms_viewCurrentlyEdited = nil;
     textField = field;
 }
 
+- (void)copy:(id)sender
+{
+    if ( !HandleClipboardEvent(textField, wxEVT_TEXT_COPY) )
+        [super copy:sender];
+}
+
+- (void)cut:(id)sender
+{
+    if ( !HandleClipboardEvent(textField, wxEVT_TEXT_CUT) )
+        [super cut:sender];
+}
+
+- (void)paste:(id)sender
+{
+    if ( !HandleClipboardEvent(textField, wxEVT_TEXT_PASTE) )
+        [super paste:sender];
+}
 
 @end
 
@@ -539,34 +566,21 @@ NSView* wxMacEditHelper::ms_viewCurrentlyEdited = nil;
     return NO;
 }
 
-- (BOOL)_handleClipboardEvent:(wxEventType)type
-{
-    wxWidgetImpl *impl = wxWidgetImpl::FindFromWXWidget(self);
-    wxWindow* wxpeer = impl ? impl->GetWXPeer() : NULL;
-    if ( wxpeer )
-    {
-        wxClipboardTextEvent evt(type, wxpeer->GetId());
-        evt.SetEventObject(wxpeer);
-        return wxpeer->HandleWindowEvent(evt);
-    }
-    return false;
-}
-
 - (void)copy:(id)sender
 {
-    if ( ![self _handleClipboardEvent:wxEVT_TEXT_COPY] )
+    if ( !HandleClipboardEvent(self, wxEVT_TEXT_COPY) )
         [super copy:sender];
 }
 
 - (void)cut:(id)sender
 {
-    if ( ![self _handleClipboardEvent:wxEVT_TEXT_CUT] )
+    if ( !HandleClipboardEvent(self, wxEVT_TEXT_CUT) )
         [super cut:sender];
 }
 
 - (void)paste:(id)sender
 {
-    if ( ![self _handleClipboardEvent:wxEVT_TEXT_PASTE] )
+    if ( !HandleClipboardEvent(self, wxEVT_TEXT_PASTE) )
         [super paste:sender];
 }
 
@@ -582,36 +596,6 @@ NSView* wxMacEditHelper::ms_viewCurrentlyEdited = nil;
         initialized = YES;
         wxOSXCocoaClassAddWXMethods( self );
     }
-}
-
-- (id) initWithFrame:(NSRect) frame
-{
-    if ( self = [super initWithFrame:frame] )
-    {
-        fieldEditor = nil;
-    }
-    return self;
-}
-
-- (void) dealloc
-{
-    [fieldEditor release];
-    [super dealloc];
-}
-
-- (void) setFieldEditor:(wxNSTextFieldEditor*) editor
-{
-    if ( editor != fieldEditor )
-    {
-        [editor retain];
-        [fieldEditor release];
-        fieldEditor = editor;
-    }
-}
-
-- (wxNSTextFieldEditor*) fieldEditor
-{
-    return fieldEditor;
 }
 
 - (void) setEnabled:(BOOL) flag
@@ -736,7 +720,7 @@ NSView* wxMacEditHelper::ms_viewCurrentlyEdited = nil;
     {
         wxNSTextFieldControl* timpl = dynamic_cast<wxNSTextFieldControl*>(impl);
         if ( timpl )
-            timpl->UpdateInternalSelectionFromEditor(fieldEditor);
+            timpl->UpdateInternalSelectionFromEditor(self.WXFieldEditor);
         impl->DoNotifyFocusLost();
     }
 }
@@ -851,7 +835,7 @@ wxString wxNSTextViewControl::GetStringValue() const
     if (m_textView)
     {
         result = wxMacConvertNewlines13To10(
-            wxCFStringRef::AsString([m_textView string], m_wxPeer->GetFont().GetEncoding()));
+            wxCFStringRef::AsString([m_textView string]));
     }
     return result;
 }
@@ -863,7 +847,7 @@ void wxNSTextViewControl::SetStringValue( const wxString &str)
     if (m_textView)
     {
         wxString st(wxMacConvertNewlines10To13(str));
-        [m_textView setString: wxCFStringRef( st , m_wxPeer->GetFont().GetEncoding() ).AsNSString()];
+        [m_textView setString: wxCFStringRef( st ).AsNSString()];
         if ( m_wxPeer->HasFlag(wxTE_AUTO_URL) )
         {
             // Make sure that any URLs in the new text are highlighted.
@@ -872,6 +856,130 @@ void wxNSTextViewControl::SetStringValue( const wxString &str)
         // Some text styles have to be updated manually.
         DoUpdateTextStyle();
     }
+}
+
+wxString wxNSTextViewControl::GetRTFValue() const
+{
+    if (m_textView)
+    {
+        NSData* rtfData = [m_textView RTFFromRange:NSMakeRange(0, [[m_textView textStorage] length])];
+        NSMutableString* rtfString = [[NSMutableString alloc] initWithData:rtfData encoding:NSASCIIStringEncoding];
+        wxString result = wxMacConvertNewlines13To10(wxCFStringRef::AsString(rtfString));
+        [rtfString release];
+        return result;
+    }
+    return wxEmptyString;
+}
+
+void wxNSTextViewControl::SetRTFValue(const wxString &str)
+{
+    wxString st = wxMacConvertNewlines10To13(str);
+    wxMacEditHelper helper(m_textView);
+
+    if (m_textView)
+    {
+        [m_textView setString: wxCFStringRef( wxEmptyString ).AsNSString()];
+        NSData* rtfData=[wxCFStringRef( st ).AsNSString() dataUsingEncoding:NSASCIIStringEncoding];
+        [m_textView replaceCharactersInRange:NSMakeRange(0, 0) withRTF:rtfData];
+    }
+    // Some text styles have to be updated manually.
+    DoUpdateTextStyle();
+}
+
+wxTextSearchResult wxNSTextViewControl::SearchText(const wxTextSearch &search) const
+{
+    if (!m_textView)
+        return wxTextSearchResult{};
+
+    int searchFlags = 0;
+    switch ( search.m_direction )
+    {
+        case wxTextSearch::Direction::Down:
+            // the deault
+            break;
+
+        case wxTextSearch::Direction::Up:
+            searchFlags |= NSBackwardsSearch;
+            break;
+    }
+
+    if ( !search.m_matchCase )
+    {
+        searchFlags |= NSCaseInsensitiveSearch;
+    }
+
+    NSString *viewString = [[m_textView textStorage] string];
+
+    // return if passed an invalid starting point
+    if ( search.m_startingPosition != -1 &&
+            (NSUInteger)search.m_startingPosition >= [viewString length] )
+        return wxTextSearchResult{};
+
+    NSRange searchRange = NSMakeRange(0, [viewString length]);
+    if ( search.m_startingPosition != -1 )
+    {
+        if ( search.m_direction == wxTextSearch::Direction::Down )
+        {
+            // if going down, range is user-provided start to the end
+            searchRange.location = search.m_startingPosition;
+            searchRange.length = [viewString length] - search.m_startingPosition;
+        }
+        else
+        {
+            // if going up, then the range will be from 0 to starting point
+            searchRange.length = search.m_startingPosition;
+        }
+    }
+    NSString* textContent = [[[NSString alloc] initWithString:
+        wxCFStringRef( search.m_searchValue ).AsNSString()]
+        autorelease];
+
+    NSRange found;
+    for ( ;; )
+    {
+        found = [viewString rangeOfString:textContent
+                                  options:searchFlags
+                                    range:searchRange];
+
+        if ( found.location == NSNotFound )
+        {
+            // If we haven't found anything at all, we're done.
+            return wxTextSearchResult{};
+        }
+
+        // But if we did find something, we may need to check whether it was
+        // a whole word.
+        if ( !search.m_wholeWord )
+            break;
+
+        const auto posAfter = found.location + found.length;
+
+        // see if preceding and following characters are alphanumeric
+        if ((found.location > 0 &&
+             [[NSCharacterSet alphanumericCharacterSet] characterIsMember:[viewString characterAtIndex:found.location - 1]]) ||
+            (posAfter < [viewString length] &&
+             [[NSCharacterSet alphanumericCharacterSet] characterIsMember:[viewString characterAtIndex:posAfter]]) )
+        {
+            // this match is inside a word, skip it
+            if ( search.m_direction == wxTextSearch::Direction::Down )
+            {
+                searchRange.location = posAfter;
+                searchRange.length = [viewString length] - searchRange.location;
+            }
+            else
+            {
+                if ( found.location == 0 )
+                    return wxTextSearchResult{};
+                searchRange.length = found.location;
+            }
+            continue;
+        }
+
+        // otherwise, a whole word matched
+        break;
+    }
+
+    return wxTextSearchResult(found.location, found.location + found.length);
 }
 
 void wxNSTextViewControl::Copy()
@@ -1052,7 +1160,7 @@ void wxNSTextViewControl::WriteText(const wxString& str)
     wxString st(wxMacConvertNewlines10To13(str));
     wxMacEditHelper helper(m_textView);
     wxWidgetCocoaNativeKeyDownSuspender suspend(this);
-    [m_textView insertText:wxCFStringRef( st , m_wxPeer->GetFont().GetEncoding() ).AsNSString()];
+    [m_textView insertText:wxCFStringRef( st ).AsNSString()];
     // Some text styles have to be updated manually.
     DoUpdateTextStyle();
 }
@@ -1128,22 +1236,22 @@ bool wxNSTextViewControl::GetStyle(long position, wxTextAttr& style)
 {
     if (m_textView && position >=0)
     {
-        NSFont* font = NULL;
-        NSColor* bgcolor = NULL;
-        NSColor* fgcolor = NULL;
-        NSNumber* ultype = NULL;
-        NSColor* ulcolor = NULL;
+        NSFont* font = nullptr;
+        NSColor* bgcolor = nullptr;
+        NSColor* fgcolor = nullptr;
+        NSNumber* ultype = nullptr;
+        NSColor* ulcolor = nullptr;
         // NOTE: It appears that other platforms accept GetStyle with the position == length
         // but that NSTextStorage does not accept length as a valid position.
         // Therefore we return the default control style in that case.
         if (position < (long) [[m_textView string] length])
         {
             NSTextStorage* storage = [m_textView textStorage];
-            font = [storage attribute:NSFontAttributeName atIndex:position effectiveRange:NULL];
-            bgcolor = [storage attribute:NSBackgroundColorAttributeName atIndex:position effectiveRange:NULL];
-            fgcolor = [storage attribute:NSForegroundColorAttributeName atIndex:position effectiveRange:NULL];
-            ultype = [storage attribute:NSUnderlineStyleAttributeName atIndex:position effectiveRange:NULL];
-            ulcolor = [storage attribute:NSUnderlineColorAttributeName atIndex:position effectiveRange:NULL];
+            font = [storage attribute:NSFontAttributeName atIndex:position effectiveRange:nullptr];
+            bgcolor = [storage attribute:NSBackgroundColorAttributeName atIndex:position effectiveRange:nullptr];
+            fgcolor = [storage attribute:NSForegroundColorAttributeName atIndex:position effectiveRange:nullptr];
+            ultype = [storage attribute:NSUnderlineStyleAttributeName atIndex:position effectiveRange:nullptr];
+            ulcolor = [storage attribute:NSUnderlineColorAttributeName atIndex:position effectiveRange:nullptr];
         }
         else
         {
@@ -1296,6 +1404,9 @@ void wxNSTextViewControl::SetStyle(long start,
             case wxTEXT_ALIGNMENT_CENTER:
                 [m_textView setAlignment:NSCenterTextAlignment];
                 break;
+            case wxTEXT_ALIGNMENT_JUSTIFIED:
+                [m_textView setAlignment:NSJustifiedTextAlignment];
+                break;
             default:
                 [m_textView setAlignment:NSLeftTextAlignment];
                 break;
@@ -1434,13 +1545,13 @@ wxNSTextFieldControl::~wxNSTextFieldControl()
 
 wxString wxNSTextFieldControl::GetStringValue() const
 {
-    return wxCFStringRef::AsString([m_textField stringValue], m_wxPeer->GetFont().GetEncoding());
+    return wxCFStringRef::AsString([m_textField stringValue]);
 }
 
 void wxNSTextFieldControl::SetStringValue( const wxString &str)
 {
     wxMacEditHelper helper(m_textField);
-    [m_textField setStringValue: wxCFStringRef( str , m_wxPeer->GetFont().GetEncoding() ).AsNSString()];
+    [m_textField setStringValue: wxCFStringRef( str ).AsNSString()];
 }
 
 wxTextEntryFormatter* wxNSTextFieldControl::GetFormatter()
@@ -1617,7 +1728,7 @@ void wxNSTextFieldControl::WriteText(const wxString& str)
         BOOL hasUndo = [editor respondsToSelector:@selector(setAllowsUndo:)];
         if ( hasUndo )
             [(NSTextView*)editor setAllowsUndo:NO];
-        [editor insertText:wxCFStringRef( str , m_wxPeer->GetFont().GetEncoding() ).AsNSString()];
+        [editor insertText:wxCFStringRef( str ).AsNSString()];
         if ( hasUndo )
             [(NSTextView*)editor setAllowsUndo:YES];
     }
@@ -1751,7 +1862,7 @@ wxWidgetImplType* wxWidgetImpl::CreateTextControl( wxTextCtrl* wxpeer,
                                     long WXUNUSED(extraStyle))
 {
     NSRect r = wxOSXGetFrameForControl( wxpeer, pos , size ) ;
-    wxWidgetCocoaImpl* c = NULL;
+    wxWidgetCocoaImpl* c = nullptr;
 
     if ( style & wxTE_MULTILINE )
     {

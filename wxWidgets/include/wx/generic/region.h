@@ -2,7 +2,6 @@
 // Name:        wx/generic/region.h
 // Purpose:     generic wxRegion class
 // Author:      David Elliott
-// Modified by:
 // Created:     2004/04/12
 // Copyright:   (c) 2004 David Elliott
 // Licence:     wxWindows licence
@@ -29,7 +28,7 @@ public:
 
 protected:
     virtual wxGDIRefData *CreateGDIRefData() const;
-    virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const;
+    wxNODISCARD virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const;
 
     // wxRegionBase pure virtuals
     virtual bool DoIsEqual(const wxRegion& region) const;

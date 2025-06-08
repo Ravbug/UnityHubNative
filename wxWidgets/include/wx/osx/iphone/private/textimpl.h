@@ -2,7 +2,6 @@
 // Name:        wx/osx/iphone/private/textimpl.h
 // Purpose:     textcontrol implementation classes that have to be exposed
 // Author:      Stefan Csomor
-// Modified by:
 // Created:     03/02/99
 // Copyright:   (c) Stefan Csomor
 // Licence:     wxWindows licence
@@ -22,8 +21,12 @@ public :
     wxUITextFieldControl( wxTextCtrl *wxPeer, UITextField* w );
     virtual ~wxUITextFieldControl();
 
+    virtual wxTextSearchResult SearchText(const wxTextSearch &search) const;
+
     virtual wxString GetStringValue() const ;
     virtual void SetStringValue( const wxString &str) ;
+    virtual wxString GetRTFValue() const;
+    virtual void SetRTFValue(const wxString& WXUNUSED(str));
     virtual void Copy() ;
     virtual void Cut() ;
     virtual void Paste() ;
@@ -52,8 +55,12 @@ public:
     wxUITextViewControl( wxTextCtrl *wxPeer, UITextView* w );
     virtual ~wxUITextViewControl();
 
+    virtual wxTextSearchResult SearchText(const wxTextSearch &search) const;
+
     virtual wxString GetStringValue() const ;
     virtual void SetStringValue( const wxString &str) ;
+    virtual wxString GetRTFValue() const;
+    virtual void SetRTFValue(const wxString& WXUNUSED(str));
     virtual void Copy() ;
     virtual void Cut() ;
     virtual void Paste() ;

@@ -10,8 +10,6 @@
 
 #include "wx/msgdlg.h"
 
-class QMessageBox;
-
 class WXDLLIMPEXP_CORE wxMessageDialog : public wxMessageDialogBase
 {
 public:
@@ -22,7 +20,7 @@ public:
     virtual ~wxMessageDialog();
 
     // Reimplemented to translate return codes from Qt to wx
-    virtual int ShowModal() wxOVERRIDE;
+    virtual int ShowModal() override;
 
 private:
     wxDECLARE_DYNAMIC_CLASS_NO_COPY(wxMessageDialog);

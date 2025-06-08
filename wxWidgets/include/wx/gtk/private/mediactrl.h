@@ -10,12 +10,7 @@
 #ifndef _WX_GTK_PRIVATE_MEDIACTRL_H_
 #define _WX_GTK_PRIVATE_MEDIACTRL_H_
 
-#ifdef GDK_WINDOWING_X11
-    #include <gdk/gdkx.h>
-#endif
-#ifdef GDK_WINDOWING_WAYLAND
-    #include <gdk/gdkwayland.h>
-#endif
+#include "wx/gtk/private/wrapgdk.h"
 #include "wx/gtk/private/backend.h"
 
 //-----------------------------------------------------------------------------
@@ -28,7 +23,8 @@
 extern "C" {
 inline gpointer wxGtkGetIdFromWidget(GtkWidget* widget)
 {
-    gdk_flush();
+    GdkDisplay* display = gtk_widget_get_display(widget);
+    gdk_display_flush(display);
 
     GdkWindow* window = gtk_widget_get_window(widget);
     wxASSERT(window);
@@ -48,7 +44,7 @@ inline gpointer wxGtkGetIdFromWidget(GtkWidget* widget)
     }
 #endif
 
-    return (gpointer)NULL;
+    return (gpointer)nullptr;
 }
 }
 

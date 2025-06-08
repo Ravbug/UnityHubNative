@@ -8,6 +8,13 @@
 /**
     @class wxScreenDC
 
+    Deprecated class for drawing on the screen.
+
+    Please don't use this class in the new code, as it doesn't work on modern
+    systems any longer and using it is not guaranteed to have any effect at all.
+    Use wxDisplay for getting information about the screen and wxOverlay for
+    temporarily drawing over a window.
+
     A wxScreenDC can be used to paint on the screen. This should normally be
     constructed as a temporary stack object; don't store a wxScreenDC object.
 
@@ -80,6 +87,6 @@ public:
                  that this function allows the screen to be refreshed
                  afterwards, may be useful to some applications.
     */
-    static bool StartDrawingOnTop(wxRect* rect = NULL);
+    static bool StartDrawingOnTop(wxRect* rect = nullptr);
 };
 

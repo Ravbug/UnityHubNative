@@ -16,38 +16,12 @@
 // headers
 // ----------------------------------------------------------------------------
 
-#include "wx/memory.h"
-
-#define wxDECLARE_CLASS_INFO_ITERATORS()                                     \
-class WXDLLIMPEXP_BASE const_iterator                                    \
-    {                                                                        \
-    typedef wxHashTable_Node Node;                                       \
-    public:                                                                  \
-    typedef const wxClassInfo* value_type;                               \
-    typedef const value_type& const_reference;                           \
-    typedef const_iterator itor;                                         \
-    typedef value_type* ptr_type;                                        \
-    \
-    Node* m_node;                                                        \
-    wxHashTable* m_table;                                                \
-    public:                                                                  \
-    typedef const_reference reference_type;                              \
-    typedef ptr_type pointer_type;                                       \
-    \
-    const_iterator(Node* node, wxHashTable* table)                       \
-    : m_node(node), m_table(table) { }                               \
-    const_iterator() : m_node(NULL), m_table(NULL) { }                   \
-    value_type operator*() const;                                        \
-    itor& operator++();                                                  \
-    const itor operator++(int);                                          \
-    bool operator!=(const itor& it) const                                \
-            { return it.m_node != m_node; }                                  \
-            bool operator==(const itor& it) const                                \
-            { return it.m_node == m_node; }                                  \
-    };                                                                       \
-    \
-    static const_iterator begin_classinfo();                                 \
-    static const_iterator end_classinfo()
+// This really shouldn't be done here, but keep including this header for
+// compatibility as it used to be included from here in the previous versions
+// of wx and a lot of code would be broken by removing it.
+#ifndef WXBUILDING
+    #include "wx/string.h"
+#endif
 
 // based on the value of wxUSE_EXTENDED_RTTI symbol,
 // only one of the RTTI system will be compiled:
@@ -142,15 +116,14 @@ name##PluginSentinel  m_pluginsentinel
 // note that it still has different semantics from dynamic_cast<> and so can't
 // be replaced by it as long as there are any compilers not supporting it
 #define wxDynamicCast(obj, className) \
-    ((className *) wxCheckDynamicCast( \
-        const_cast<wxObject *>(static_cast<const wxObject *>(\
-          const_cast<className *>(static_cast<const className *>(obj)))), \
-        &className::ms_classInfo))
+    (static_cast<className*>(wxCheckDynamicCast( \
+        const_cast<wxObject *>(static_cast<const wxObject *>(obj)), \
+        &className::ms_classInfo)))
 
 // The 'this' pointer is always true, so use this version
 // to cast the this pointer and avoid compiler warnings.
 #define wxDynamicCastThis(className) \
-     (IsKindOf(&className::ms_classInfo) ? (className*)this : NULL)
+     (IsKindOf(&className::ms_classInfo) ? (className*)this : nullptr)
 
 template <class T>
 inline T *wxCheckCast(const void *ptr)
@@ -162,54 +135,12 @@ inline T *wxCheckCast(const void *ptr)
 #define wxStaticCast(obj, className) wxCheckCast<className>(obj)
 
 // ----------------------------------------------------------------------------
-// set up memory debugging macros
-// ----------------------------------------------------------------------------
-
-/*
-    Which new/delete operator variants do we want?
-
-    _WX_WANT_NEW_SIZET_WXCHAR_INT             = void *operator new (size_t size, wxChar *fileName = 0, int lineNum = 0)
-    _WX_WANT_DELETE_VOID                      = void operator delete (void * buf)
-    _WX_WANT_DELETE_VOID_WXCHAR_INT           = void operator delete(void *buf, wxChar*, int)
-    _WX_WANT_ARRAY_NEW_SIZET_WXCHAR_INT       = void *operator new[] (size_t size, wxChar *fileName , int lineNum = 0)
-    _WX_WANT_ARRAY_DELETE_VOID                = void operator delete[] (void *buf)
-    _WX_WANT_ARRAY_DELETE_VOID_WXCHAR_INT     = void operator delete[] (void* buf, wxChar*, int )
-*/
-
-#if wxUSE_MEMORY_TRACING
-
-// All compilers get these ones
-#define _WX_WANT_NEW_SIZET_WXCHAR_INT
-#define _WX_WANT_DELETE_VOID
-
-#if defined(__VISUALC__)
-    #define _WX_WANT_DELETE_VOID_WXCHAR_INT
-#endif
-
-// Now see who (if anyone) gets the array memory operators
-#if wxUSE_ARRAY_MEMORY_OPERATORS
-
-    // Everyone except Visual C++ (cause problems for VC++ - crashes)
-    #if !defined(__VISUALC__)
-        #define _WX_WANT_ARRAY_NEW_SIZET_WXCHAR_INT
-    #endif
-
-    // Everyone except Visual C++ (cause problems for VC++ - crashes)
-    #if !defined(__VISUALC__)
-        #define _WX_WANT_ARRAY_DELETE_VOID
-    #endif
-#endif // wxUSE_ARRAY_MEMORY_OPERATORS
-
-#endif // wxUSE_MEMORY_TRACING
-
-// ----------------------------------------------------------------------------
 // Compatibility macro aliases DECLARE group
 // ----------------------------------------------------------------------------
 // deprecated variants _not_ requiring a semicolon after them and without wx prefix.
 // (note that also some wx-prefixed macro do _not_ require a semicolon because
 // it's not always possible to force the compiler to require it)
 
-#define DECLARE_CLASS_INFO_ITERATORS()                              wxDECLARE_CLASS_INFO_ITERATORS();
 #define DECLARE_ABSTRACT_CLASS(n)                                   wxDECLARE_ABSTRACT_CLASS(n);
 #define DECLARE_DYNAMIC_CLASS_NO_ASSIGN(n)                          wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(n);
 #define DECLARE_DYNAMIC_CLASS_NO_COPY(n)                            wxDECLARE_DYNAMIC_CLASS_NO_COPY(n);
@@ -238,7 +169,7 @@ public:
 protected:
     // this object should never be destroyed directly but only as a
     // result of a DecRef() call:
-    virtual ~wxRefCounter() { }
+    virtual ~wxRefCounter() = default;
 
 private:
     // our refcount:
@@ -268,7 +199,7 @@ class wxObjectDataPtr
 public:
     typedef T element_type;
 
-    explicit wxObjectDataPtr(T *ptr = NULL) : m_ptr(ptr) {}
+    explicit wxObjectDataPtr(T *ptr = nullptr) : m_ptr(ptr) {}
 
     // copy ctor
     wxObjectDataPtr(const wxObjectDataPtr<T> &tocopy)
@@ -295,23 +226,33 @@ public:
 
     T *get() const { return m_ptr; }
 
+    bool operator==(const wxObjectDataPtr<T>& other) const
+    {
+        return m_ptr == other.m_ptr;
+    }
+
+    bool operator!=(const wxObjectDataPtr<T>& other) const
+    {
+        return !(*this == other);
+    }
+
     // test for pointer validity: defining conversion to unspecified_bool_type
     // and not more obvious bool to avoid implicit conversions to integer types
     typedef T *(wxObjectDataPtr<T>::*unspecified_bool_type)() const;
     operator unspecified_bool_type() const
     {
-        return m_ptr ? &wxObjectDataPtr<T>::get : NULL;
+        return m_ptr ? &wxObjectDataPtr<T>::get : nullptr;
     }
 
     T& operator*() const
     {
-        wxASSERT(m_ptr != NULL);
+        wxASSERT(m_ptr != nullptr);
         return *(m_ptr);
     }
 
     T *operator->() const
     {
-        wxASSERT(m_ptr != NULL);
+        wxASSERT(m_ptr != nullptr);
         return get();
     }
 
@@ -325,7 +266,7 @@ public:
     T* release()
     {
         T* const ptr = m_ptr;
-        m_ptr = NULL;
+        m_ptr = nullptr;
         return ptr;
     }
 
@@ -377,7 +318,7 @@ class WXDLLIMPEXP_BASE wxObject
 #endif
 
 public:
-    wxObject() { m_refData = NULL; }
+    wxObject() { m_refData = nullptr; }
     virtual ~wxObject() { UnRef(); }
 
     wxObject(const wxObject& other)
@@ -401,7 +342,7 @@ public:
     // Turn on the correct set of new and delete operators
 
 #ifdef _WX_WANT_NEW_SIZET_WXCHAR_INT
-    void *operator new ( size_t size, const wxChar *fileName = NULL, int lineNum = 0 );
+    void *operator new ( size_t size, const wxChar *fileName = nullptr, int lineNum = 0 );
 #endif
 
 #ifdef _WX_WANT_DELETE_VOID
@@ -413,7 +354,7 @@ public:
 #endif
 
 #ifdef _WX_WANT_ARRAY_NEW_SIZET_WXCHAR_INT
-    void *operator new[] ( size_t size, const wxChar *fileName = NULL, int lineNum = 0 );
+    void *operator new[] ( size_t size, const wxChar *fileName = nullptr, int lineNum = 0 );
 #endif
 
 #ifdef _WX_WANT_ARRAY_DELETE_VOID
@@ -464,33 +405,17 @@ protected:
     virtual wxObjectRefData *CreateRefData() const;
 
     // create a new m_refData initialized with the given one
-    virtual wxObjectRefData *CloneRefData(const wxObjectRefData *data) const;
+    wxNODISCARD virtual wxObjectRefData *CloneRefData(const wxObjectRefData *data) const;
 
     wxObjectRefData *m_refData;
 };
 
 inline wxObject *wxCheckDynamicCast(wxObject *obj, wxClassInfo *classInfo)
 {
-    return obj && obj->GetClassInfo()->IsKindOf(classInfo) ? obj : NULL;
+    return obj && obj->GetClassInfo()->IsKindOf(classInfo) ? obj : nullptr;
 }
 
 #include "wx/xti2.h"
-
-// ----------------------------------------------------------------------------
-// more debugging macros
-// ----------------------------------------------------------------------------
-
-#if wxUSE_DEBUG_NEW_ALWAYS
-    #define WXDEBUG_NEW new(__TFILE__,__LINE__)
-
-    #if wxUSE_GLOBAL_MEMORY_OPERATORS
-        #define new WXDEBUG_NEW
-    #elif defined(__VISUALC__)
-        // Including this file redefines new and allows leak reports to
-        // contain line numbers
-        #include "wx/msw/msvcrt.h"
-    #endif
-#endif // wxUSE_DEBUG_NEW_ALWAYS
 
 // ----------------------------------------------------------------------------
 // Compatibility macro aliases IMPLEMENT group

@@ -15,22 +15,24 @@
     #include "wx/intl.h"
     #include "wx/log.h"
     #include "wx/utils.h"
-    #include "wx/memory.h"
     #include "wx/font.h"
 #endif
 
 #include "wx/thread.h"
 
-#ifdef __WXGPE__
-    #include <gpe/init.h>
-#endif
-
 #include "wx/apptrait.h"
 #include "wx/fontmap.h"
 #include "wx/msgout.h"
 
+#include "wx/private/init.h"
+
 #include "wx/gtk/private.h"
 #include "wx/gtk/private/log.h"
+#include "wx/gtk/private/threads.h"
+
+#ifdef __WXGTK3__
+    #include "wx/gtk/private/appearance.h"
+#endif
 
 #include "wx/gtk/mimetype.h"
 //-----------------------------------------------------------------------------
@@ -52,7 +54,7 @@ static gboolean
 wx_emission_hook(GSignalInvocationHint*, guint, const GValue*, gpointer data)
 {
     wxApp* app = wxTheApp;
-    if (app != NULL)
+    if (app != nullptr)
         app->WakeUpIdle();
     bool* hook_installed = (bool*)data;
     // record that hook is not installed
@@ -75,7 +77,7 @@ static void wx_add_idle_hooks()
                 sig_id = g_signal_lookup("event", GTK_TYPE_WIDGET);
             hook_installed = true;
             g_signal_add_emission_hook(
-                sig_id, 0, wx_emission_hook, &hook_installed, NULL);
+                sig_id, 0, wx_emission_hook, &hook_installed, nullptr);
         }
     }
     // "size_allocate" hook
@@ -90,7 +92,7 @@ static void wx_add_idle_hooks()
                 sig_id = g_signal_lookup("size_allocate", GTK_TYPE_WIDGET);
             hook_installed = true;
             g_signal_add_emission_hook(
-                sig_id, 0, wx_emission_hook, &hook_installed, NULL);
+                sig_id, 0, wx_emission_hook, &hook_installed, nullptr);
         }
     }
 }
@@ -142,16 +144,13 @@ bool wxApp::DoIdle()
     gdk_threads_enter();
 
     if (gs_focusChange) {
-        SetActive(gs_focusChange == 1, NULL);
+        SetActive(gs_focusChange == 1, nullptr);
         gs_focusChange = 0;
     }
 
-    bool needMore;
-    do {
-        ProcessPendingEvents();
+    ProcessPendingEvents();
+    const bool needMore = ProcessIdle();
 
-        needMore = ProcessIdle();
-    } while (needMore && gtk_events_pending() == 0);
     gdk_threads_leave();
 
 #if wxUSE_THREADS
@@ -186,7 +185,7 @@ namespace wxGTKImpl
 
 bool LogFilter::ms_allowed = false;
 bool LogFilter::ms_installed = false;
-LogFilter* LogFilter::ms_first = NULL;
+LogFilter* LogFilter::ms_first = nullptr;
 
 /* static */
 GLogWriterOutput
@@ -201,7 +200,7 @@ LogFilter::wx_log_writer(GLogLevelFlags   log_level,
             return G_LOG_WRITER_HANDLED;
     }
 
-    return g_log_writer_default(log_level, fields, n_fields, NULL);
+    return g_log_writer_default(log_level, fields, n_fields, nullptr);
 }
 
 bool LogFilter::Install()
@@ -211,13 +210,13 @@ bool LogFilter::Install()
 
     if ( !ms_installed )
     {
-        if ( glib_check_version(2, 50, 0) != 0 )
+        if ( glib_check_version(2, 50, 0) != nullptr )
         {
             // No runtime support for log callback, we can't do anything.
             return false;
         }
 
-        g_log_set_writer_func(LogFilter::wx_log_writer, NULL, NULL);
+        g_log_set_writer_func(LogFilter::wx_log_writer, nullptr, nullptr);
         ms_installed = true;
     }
 
@@ -278,6 +277,9 @@ LogFilterByMessage::~LogFilterByMessage()
 /* static */
 void wxApp::GTKSuppressDiagnostics(int flags)
 {
+    // Allow Install() to actually do something.
+    GTKAllowDiagnosticsControl();
+
     static wxGTKImpl::LogFilterByLevel s_logFilter;
     s_logFilter.SetLevelToIgnore(flags);
     s_logFilter.Install();
@@ -312,6 +314,8 @@ wxApp::wxApp()
 {
     m_isInAssert = false;
     m_idleSourceId = 0;
+
+    WXAppConstructed();
 }
 
 wxApp::~wxApp()
@@ -344,6 +348,34 @@ bool wxApp::SetNativeTheme(const wxString& theme)
     gtk_rc_reparse_all_for_settings(gtk_settings_get_default(), TRUE);
 
     return true;
+#endif
+}
+
+wxApp::AppearanceResult wxApp::SetAppearance(Appearance appearance)
+{
+#ifdef __WXGTK3__
+    wxGTKImpl::ColorScheme colorScheme = wxGTKImpl::ColorScheme::NoPreference;
+    switch ( appearance )
+    {
+        case Appearance::System:
+            // Already set above.
+            break;
+
+        case Appearance::Light:
+            colorScheme = wxGTKImpl::ColorScheme::PreferLight;
+            break;
+
+        case Appearance::Dark:
+            colorScheme = wxGTKImpl::ColorScheme::PreferDark;
+            break;
+    }
+
+    return wxGTKImpl::UpdateColorScheme(colorScheme) ? AppearanceResult::Ok
+                                                     : AppearanceResult::Failure;
+#else
+    wxUnusedVar(appearance);
+
+    return AppearanceResult::Failure;
 #endif
 }
 
@@ -392,6 +424,19 @@ bool wxApp::OnInitGui()
     }
 #endif
 
+    // Suppress GTK diagnostics if requested: this is convenient if the program
+    // doesn't use GTKAllowDiagnosticsControl() itself.
+    wxString suppress;
+    if ( wxGetEnv("WXSUPPRESS_GTK_DIAGNOSTICS", &suppress) )
+    {
+        long flags;
+        if ( !suppress.ToLong(&flags) )
+            flags = -1; // Suppress everything by default.
+
+        if ( flags != 0 )
+            GTKSuppressDiagnostics(flags);
+    }
+
     return true;
 }
 
@@ -410,7 +455,7 @@ bool wxApp::Initialize(int& argc_, wxChar **argv_)
         // might still be needed in the older versions, which are the only ones
         // for which this code is going to be executed (as g_thread_supported()
         // is always TRUE in these recent glib versions anyhow).
-        g_thread_init(NULL);
+        g_thread_init(nullptr);
         gdk_threads_init();
     }
 #endif // wxUSE_THREADS
@@ -477,20 +522,6 @@ bool wxApp::Initialize(int& argc_, wxChar **argv_)
 
     bool init_result;
 
-#if wxUSE_UNICODE
-    int i;
-
-    // gtk_init() wants UTF-8, not wchar_t, so convert
-    char **argvGTK = new char *[argc_ + 1];
-    for ( i = 0; i < argc_; i++ )
-    {
-        argvGTK[i] = wxStrdupA(wxConvUTF8.cWX2MB(argv_[i]));
-    }
-
-    argvGTK[argc_] = NULL;
-
-    int argcGTK = argc_;
-
     // Prevent gtk_init_check() from changing the locale automatically for
     // consistency with the other ports that don't do it. If necessary,
     // wxApp::SetCLocale() may be explicitly called.
@@ -504,50 +535,33 @@ bool wxApp::Initialize(int& argc_, wxChar **argv_)
         gtk_disable_setlocale();
     }
 
-#ifdef __WXGPE__
-    init_result = true;  // is there a _check() version of this?
-    gpe_application_init( &argcGTK, &argvGTK );
-#elif defined(__WXGTK4__)
+#if defined(__WXGTK4__)
     init_result = gtk_init_check() != 0;
 #else
-    init_result = gtk_init_check( &argcGTK, &argvGTK ) != 0;
-#endif
+    auto argvA = wxInitData::Get().argvA;
+
+    int argcGTK = argc_;
+    init_result = gtk_init_check( &argcGTK, &argvA ) != 0;
 
     if ( argcGTK != argc_ )
     {
         // we have to drop the parameters which were consumed by GTK+
-        for ( i = 0; i < argcGTK; i++ )
+        for ( int i = 0; i < argcGTK; i++ )
         {
-            while ( strcmp(wxConvUTF8.cWX2MB(argv_[i]), argvGTK[i]) != 0 )
+            while ( strcmp(wxConvUTF8.cWX2MB(argv_[i]), argvA[i]) != 0 )
             {
+                free(argv_[i]);
                 memmove(argv_ + i, argv_ + i + 1, (argc_ - i)*sizeof(*argv_));
             }
         }
 
         argc_ = argcGTK;
-        argv_[argc_] = NULL;
+        argv_[argc_] = nullptr;
+
+        this->argc = argc_;
+        this->argv.Init(argc_, argv_);
     }
     //else: gtk_init() didn't modify our parameters
-
-    // free our copy
-    for ( i = 0; i < argcGTK; i++ )
-    {
-        free(argvGTK[i]);
-    }
-
-    delete [] argvGTK;
-#else // !wxUSE_UNICODE
-    // gtk_init() shouldn't actually change argv_ itself (just its contents) so
-    // it's ok to pass pointer to it
-    init_result = gtk_init_check( &argc_, &argv_ );
-#endif // wxUSE_UNICODE/!wxUSE_UNICODE
-
-    // update internal arg[cv] as GTK+ may have removed processed options:
-    this->argc = argc_;
-#if wxUSE_UNICODE
-    this->argv.Init(argc_, argv_);
-#else
-    this->argv = argv_;
 #endif
 
     if ( !init_result )
@@ -574,10 +588,10 @@ bool wxApp::Initialize(int& argc_, wxChar **argv_)
     // focus in/out hooks used for generating wxEVT_ACTIVATE_APP
     g_signal_add_emission_hook(
         g_signal_lookup("focus_in_event", widgetType),
-        0, wx_focus_event_hook, GINT_TO_POINTER(1), NULL);
+        0, wx_focus_event_hook, GINT_TO_POINTER(1), nullptr);
     g_signal_add_emission_hook(
         g_signal_lookup("focus_out_event", widgetType),
-        0, wx_focus_event_hook, GINT_TO_POINTER(2), NULL);
+        0, wx_focus_event_hook, GINT_TO_POINTER(2), nullptr);
 
     WakeUpIdle();
 
@@ -586,17 +600,17 @@ bool wxApp::Initialize(int& argc_, wxChar **argv_)
 
 void wxApp::CleanUp()
 {
+    wxAppBase::CleanUp();
+
     if (m_idleSourceId != 0)
         g_source_remove(m_idleSourceId);
 
     // release reference acquired by Initialize()
     gpointer gt = g_type_class_peek(GTK_TYPE_WIDGET);
-    if (gt != NULL)
+    if (gt != nullptr)
         g_type_class_unref(gt);
 
     gdk_threads_leave();
-
-    wxAppBase::CleanUp();
 }
 
 void wxApp::WakeUpIdle()
@@ -605,7 +619,7 @@ void wxApp::WakeUpIdle()
     wxMutexLocker lock(m_idleMutex);
 #endif
     if (m_idleSourceId == 0)
-        m_idleSourceId = g_idle_add_full(G_PRIORITY_LOW, wxapp_idle_callback, NULL, NULL);
+        m_idleSourceId = g_idle_add_full(G_PRIORITY_LOW, wxapp_idle_callback, nullptr, nullptr);
 }
 
 // Checking for pending events requires first removing our idle source,

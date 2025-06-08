@@ -21,14 +21,14 @@
 class WXDLLIMPEXP_CORE wxTextWrapper
 {
 public:
-    wxTextWrapper() { m_eol = false; }
+    wxTextWrapper() = default;
 
     // win is used for getting the font, text is the text to wrap, width is the
     // max line width or -1 to disable wrapping
     void Wrap(wxWindow *win, const wxString& text, int widthMax);
 
     // we don't need it, but just to avoid compiler warnings
-    virtual ~wxTextWrapper() { }
+    virtual ~wxTextWrapper() = default;
 
 protected:
     // line may be empty
@@ -60,7 +60,7 @@ private:
     }
 
 
-    bool m_eol;
+    bool m_eol = false;
 
     wxDECLARE_NO_COPY_CLASS(wxTextWrapper);
 };
@@ -101,7 +101,7 @@ protected:
                                 wxControl::EscapeMnemonics(line));
     }
 
-    virtual void OnOutputLine(const wxString& line) wxOVERRIDE
+    virtual void OnOutputLine(const wxString& line) override
     {
         if ( !line.empty() )
         {

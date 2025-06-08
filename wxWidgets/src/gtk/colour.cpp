@@ -64,7 +64,7 @@ public:
         m_blue = blue;
         m_alpha = alpha;
         m_color.pixel = 0;
-        m_colormap = NULL;
+        m_colormap = nullptr;
     }
 
     virtual ~wxColourRefData()
@@ -93,7 +93,7 @@ void wxColourRefData::FreeColour()
     if (m_colormap)
     {
         gdk_colormap_free_colors(m_colormap, &m_color, 1);
-        m_colormap = NULL;
+        m_colormap = nullptr;
         m_color.pixel = 0;
     }
 }
@@ -138,10 +138,6 @@ wxColour::wxColour(const GdkColor& gdkColor)
     m_refData = new wxColourRefData(gdkColor.red, gdkColor.green, gdkColor.blue);
 }
 #endif
-
-wxColour::~wxColour()
-{
-}
 
 bool wxColour::operator == ( const wxColour& col ) const
 {
@@ -239,7 +235,7 @@ int wxColour::GetPixel() const
 
 const GdkColor *wxColour::GetColor() const
 {
-    wxCHECK_MSG( IsOk(), NULL, wxT("invalid colour") );
+    wxCHECK_MSG( IsOk(), nullptr, wxT("invalid colour") );
 
 #ifdef __WXGTK3__
     return &M_COLDATA->m_gdkColor;
@@ -251,30 +247,9 @@ const GdkColor *wxColour::GetColor() const
 #ifdef __WXGTK3__
 wxColour::operator const GdkRGBA*() const
 {
-    const GdkRGBA* c = NULL;
+    const GdkRGBA* c = nullptr;
     if (IsOk())
         c = &M_COLDATA->m_gdkRGBA;
     return c;
 }
 #endif
-
-bool wxColour::FromString(const wxString& str)
-{
-#ifdef __WXGTK3__
-    GdkRGBA gdkRGBA;
-    if (gdk_rgba_parse(&gdkRGBA, wxGTK_CONV_SYS(str)))
-    {
-        *this = wxColour(gdkRGBA);
-        return true;
-    }
-#else
-    GdkColor colGDK;
-    if ( gdk_color_parse( wxGTK_CONV_SYS( str ), &colGDK ) )
-    {
-        *this = wxColour(colGDK);
-        return true;
-    }
-#endif
-
-    return wxColourBase::FromString(str);
-}

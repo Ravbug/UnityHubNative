@@ -2,7 +2,6 @@
 // Name:        src/msw/utils.cpp
 // Purpose:     Various utilities
 // Author:      Julian Smart
-// Modified by:
 // Created:     04/01/98
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
@@ -47,6 +46,9 @@
 #   include <sys/types.h>
 #endif
 
+#include <wx/dynlib.h>
+#include <lm.h>
+
 // Doesn't work with Cygwin at present
 #if wxUSE_SOCKETS && (defined(__CYGWIN32__))
     // apparently we need to include winsock.h to get WSADATA and other stuff
@@ -67,16 +69,6 @@
     // and cygwin_conv_to_full_win32_path()
     #include <cygwin/version.h>
 #endif  //GNUWIN32
-
-// VZ: there is some code using NetXXX() functions to get the full user name:
-//     I don't think it's a good idea because they don't work under Win95 and
-//     seem to return the same as wxGetUserId() under NT. If you really want
-//     to use them, just #define USE_NET_API
-#undef USE_NET_API
-
-#ifdef USE_NET_API
-    #include <lm.h>
-#endif // USE_NET_API
 
 #ifndef __UNIX__
     #include <io.h>
@@ -123,20 +115,23 @@
 // constants
 // ----------------------------------------------------------------------------
 
-// In the WIN.INI file
-#if !defined(USE_NET_API)
-static const wxChar WX_SECTION[] = wxT("wxWindows");
-#endif
-
-#if !defined(USE_NET_API)
-static const wxChar eUSERNAME[]  = wxT("UserName");
-#endif
-
 WXDLLIMPEXP_DATA_BASE(const wxChar *) wxUserResourceStr = wxT("TEXT");
 
 // ============================================================================
 // implementation
 // ============================================================================
+
+using NetGetAnyDCName_t = NET_API_STATUS(NET_API_FUNCTION*)(
+    LPCWSTR ServerName,
+    LPCWSTR DomainName,
+    LPBYTE* Buffer);
+using NetUserGetInfo_t = NET_API_STATUS(NET_API_FUNCTION*)(
+    LPCWSTR servername,
+    LPCWSTR username,
+    DWORD   level,
+    LPBYTE* bufptr);
+using NetApiBufferFree_t = NET_API_STATUS(NET_API_FUNCTION*)(
+    LPVOID Buffer);
 
 // ----------------------------------------------------------------------------
 // get host name and related
@@ -159,7 +154,7 @@ bool wxGetHostName(wxChar *buf, int maxSize)
 // get full hostname (with domain name if possible)
 bool wxGetFullHostName(wxChar *buf, int maxSize)
 {
-#if wxUSE_DYNLIB_CLASS && wxUSE_SOCKETS
+#if wxUSE_SOCKETS
     // TODO should use GetComputerNameEx() when available
 
     // we don't want to always link with Winsock DLL as we might not use it at
@@ -201,7 +196,7 @@ bool wxGetFullHostName(wxChar *buf, int maxSize)
 
                         struct hostent *pHostEnt = pfngethostbyname
                                                     ? pfngethostbyname(bufA)
-                                                    : NULL;
+                                                    : nullptr;
 
                         if ( pHostEnt )
                         {
@@ -211,7 +206,7 @@ bool wxGetFullHostName(wxChar *buf, int maxSize)
                             pHostEnt = pfngethostbyaddr
                                         ? pfngethostbyaddr(pHostEnt->h_addr,
                                                            4, AF_INET)
-                                        : NULL;
+                                        : nullptr;
                         }
 
                         if ( pHostEnt )
@@ -235,7 +230,7 @@ bool wxGetFullHostName(wxChar *buf, int maxSize)
             }
         }
     }
-#endif // wxUSE_DYNLIB_CLASS && wxUSE_SOCKETS
+#endif // wxUSE_SOCKETS
 
     return wxGetHostName(buf, maxSize);
 }
@@ -259,93 +254,110 @@ bool wxGetUserId(wxChar *buf,
     return true;
 }
 
-// Get user name e.g. Julian Smart
-bool wxGetUserName(wxChar *buf, int maxSize)
+// Get user name (e.g., Julian Smart)
+bool wxGetUserName(wxChar* buf, int maxSize)
 {
-    wxCHECK_MSG( buf && ( maxSize > 0 ), false,
-                    wxT("empty buffer in wxGetUserName") );
-#if defined(USE_NET_API)
-    CHAR szUserName[256];
-    if ( !wxGetUserId(szUserName, WXSIZEOF(szUserName)) )
+    wxCHECK_MSG(buf && (maxSize > 0), false,
+        "Empty buffer in wxGetUserName");
+
+    if ( !wxGetUserId(buf, maxSize) )
         return false;
 
-    // TODO how to get the domain name?
-    CHAR *szDomain = "";
+    /* This code is based on Microsoft Learn's ::NetUserGetInfo example code.
+       Attempt to get the full user name; if any of this fails, we can still
+       return true with the buffer at least filled with the login name
+       from wxGetUserId().
 
-    // the code is based on the MSDN example (also see KB article Q119670)
-    WCHAR wszUserName[256];          // Unicode user name
-    WCHAR wszDomain[256];
-    LPBYTE ComputerName;
+       Note that there is a ::GetUserNameEx function, but that requires
+       defining SECURITY_WIN32, which may have other side effects.
+       Instead, use the NetAPI functions.*/
 
-    USER_INFO_2 *ui2;         // User structure
-
-    // Convert ANSI user name and domain to Unicode
-    MultiByteToWideChar( CP_ACP, 0, szUserName, strlen(szUserName)+1,
-            wszUserName, WXSIZEOF(wszUserName) );
-    MultiByteToWideChar( CP_ACP, 0, szDomain, strlen(szDomain)+1,
-            wszDomain, WXSIZEOF(wszDomain) );
-
-    // Get the computer name of a DC for the domain.
-    if ( NetGetDCName( NULL, wszDomain, &ComputerName ) != NERR_Success )
+    const static wxDynamicLibrary netapi32("netapi32", wxDL_VERBATIM | wxDL_QUIET);
+    if ( !netapi32.IsLoaded() )
     {
-        wxLogError(wxT("Cannot find domain controller"));
-
-        goto error;
+        wxLogTrace("utils", "Failed to load netapi32.dll");
+        return true;
     }
 
-    // Look up the user on the DC
-    NET_API_STATUS status = NetUserGetInfo( (LPWSTR)ComputerName,
-            (LPWSTR)&wszUserName,
-            2, // level - we want USER_INFO_2
-            (LPBYTE *) &ui2 );
-    switch ( status )
+    const static NetGetAnyDCName_t netGetAnyDCName =
+        reinterpret_cast<NetGetAnyDCName_t>(netapi32.GetSymbol("NetGetAnyDCName"));
+    const static NetUserGetInfo_t netUserGetInfo =
+        reinterpret_cast<NetUserGetInfo_t>(netapi32.GetSymbol("NetUserGetInfo"));
+    const static NetApiBufferFree_t netApiBufferFree =
+        reinterpret_cast<NetApiBufferFree_t>(netapi32.GetSymbol("NetApiBufferFree"));
+
+    if ( netGetAnyDCName == nullptr ||
+         netUserGetInfo == nullptr ||
+         netApiBufferFree == nullptr )
     {
-        case NERR_Success:
-            // ok
-            break;
-
-        case NERR_InvalidComputer:
-            wxLogError(wxT("Invalid domain controller name."));
-
-            goto error;
-
-        case NERR_UserNotFound:
-            wxLogError(wxT("Invalid user name '%s'."), szUserName);
-
-            goto error;
-
-        default:
-            wxLogSysError(wxT("Can't get information about user"));
-
-            goto error;
+        return true;
     }
 
-    // Convert the Unicode full name to ANSI
-    WideCharToMultiByte( CP_ACP, 0, ui2->usri2_full_name, -1,
-            buf, maxSize, NULL, NULL );
+    LPBYTE computerName{ nullptr };
+    USER_INFO_2* ui2{ nullptr };
+
+    // Get the domain controller for any domain.
+    if ( netGetAnyDCName(nullptr, nullptr, &computerName) != NERR_Success )
+    {
+        // May not be networked, so use the local machine.
+        computerName = nullptr;
+    }
+    // ::NetGetAnyDCName calls ::NetApiBufferAlloc to fill the
+    // domain controller name, so need to free that upon exit.
+    auto dcBufferFree = std::unique_ptr<BYTE, void(*)(LPBYTE)>
+        {
+        computerName,
+        [](LPBYTE computerName)
+            {
+                if ( computerName != nullptr )
+                    netApiBufferFree(computerName);
+            }
+        };
+
+    // Look up the user on the DC.
+    const NET_API_STATUS status = netUserGetInfo((LPWSTR)computerName,
+        (LPWSTR)buf,
+        2, // level - we want USER_INFO_2
+        (LPBYTE*)&ui2);
+    // ::NetUserGetInfo calls ::NetApiBufferAlloc to create the
+    // USER_INFO_2 structure, so need to free that upon exit.
+    auto uiBufferFree = std::unique_ptr<USER_INFO_2, void(*)(USER_INFO_2*)>
+        {
+        ui2,
+        [](USER_INFO_2* ui2)
+            {
+                if ( ui2 != nullptr )
+                    netApiBufferFree(ui2);
+            }
+        };
+
+    if ( status != NERR_Success )
+    {
+        wxLogTrace("utils", "Failed to retrieve full user information.");
+        return true;
+    }
+
+    if ( ui2 != nullptr &&
+         ui2->usri2_full_name != nullptr )
+    {
+        wxString fullUserName(ui2->usri2_full_name);
+        if ( fullUserName.empty() )
+        {
+            return true;
+        }
+        // In the case of full name being in the format of "[LAST_NAME], [FIRST_NAME]",
+        // reformat it to a more readable "[FIRST_NAME] [LAST_NAME]".
+        const size_t commaPosition = fullUserName.find(", ");
+        if ( commaPosition != wxString::npos )
+            {
+            const wxString firstName = fullUserName.substr(commaPosition + 2);
+            fullUserName.erase(commaPosition);
+            fullUserName.insert(0, firstName + ' ');
+            }
+        wxStrlcpy(buf, fullUserName.t_str(), maxSize);
+    }
 
     return true;
-
-error:
-    wxLogError(wxT("Couldn't look up full user name."));
-
-    return false;
-#else  // !USE_NET_API
-    // Could use NIS, MS-Mail or other site specific programs
-    // Use wxWidgets configuration data
-    bool ok = GetProfileString(WX_SECTION, eUSERNAME, wxEmptyString, buf, maxSize - 1) != 0;
-    if ( !ok )
-    {
-        ok = wxGetUserId(buf, maxSize);
-    }
-
-    if ( !ok )
-    {
-        wxStrlcpy(buf, wxT("Unknown User"), maxSize);
-    }
-
-    return true;
-#endif // Win32/16
 }
 
 const wxChar* wxGetHomeDir(wxString *pstr)
@@ -355,7 +367,7 @@ const wxChar* wxGetHomeDir(wxString *pstr)
     // first branch is for Cygwin
 #if defined(__UNIX__) && !defined(__WINE__)
     const wxChar *szHome = wxGetenv(wxT("HOME"));
-    if ( szHome == NULL ) {
+    if ( szHome == nullptr ) {
       // we're homeless...
       wxLogWarning(_("can't find user's HOME, using current directory."));
       strDir = wxT(".");
@@ -384,18 +396,18 @@ const wxChar* wxGetHomeDir(wxString *pstr)
     // have unix utilities on them, we should use that.
     const wxChar *szHome = wxGetenv(wxT("HOME"));
 
-    if ( szHome != NULL )
+    if ( szHome != nullptr )
     {
         strDir = szHome;
     }
     else // no HOME, try HOMEDRIVE/PATH
     {
         szHome = wxGetenv(wxT("HOMEDRIVE"));
-        if ( szHome != NULL )
+        if ( szHome != nullptr )
             strDir << szHome;
         szHome = wxGetenv(wxT("HOMEPATH"));
 
-        if ( szHome != NULL )
+        if ( szHome != nullptr )
         {
             strDir << szHome;
 
@@ -416,7 +428,7 @@ const wxChar* wxGetHomeDir(wxString *pstr)
         // Windows NT, 2000 and XP, we should use that as our home directory.
         szHome = wxGetenv(wxT("USERPROFILE"));
 
-        if ( szHome != NULL )
+        if ( szHome != nullptr )
             strDir = szHome;
     }
 
@@ -429,7 +441,7 @@ const wxChar* wxGetHomeDir(wxString *pstr)
     else // fall back to the program directory
     {
         // extract the directory component of the program file name
-        wxFileName::SplitPath(wxGetFullModuleName(), &strDir, NULL, NULL);
+        wxFileName::SplitPath(wxGetFullModuleName(), &strDir, nullptr, nullptr);
     }
 #endif  // UNIX/Win
 
@@ -459,32 +471,21 @@ bool wxGetDiskSpace(const wxString& path,
     if ( !::GetDiskFreeSpaceEx(path.t_str(),
                                &bytesFree,
                                &bytesTotal,
-                               NULL) )
+                               nullptr) )
     {
         wxLogLastError(wxT("GetDiskFreeSpaceEx"));
 
         return false;
     }
 
-    // ULARGE_INTEGER is a union of a 64 bit value and a struct containing
-    // two 32 bit fields which may be or may be not named
-    #define UL(ul) ul
     if ( pTotal )
     {
-#if wxUSE_LONGLONG
-        *pTotal = wxDiskspaceSize_t(UL(bytesTotal).HighPart, UL(bytesTotal).LowPart);
-#else
-        *pTotal = wxDiskspaceSize_t(UL(bytesTotal).LowPart);
-#endif
+        *pTotal = wxDiskspaceSize_t(bytesTotal.HighPart, bytesTotal.LowPart);
     }
 
     if ( pFree )
     {
-#if wxUSE_LONGLONG
-        *pFree = wxLongLong(UL(bytesFree).HighPart, UL(bytesFree).LowPart);
-#else
-        *pFree = wxDiskspaceSize_t(UL(bytesFree).LowPart);
-#endif
+        *pFree = wxLongLong(bytesFree.HighPart, bytesFree.LowPart);
     }
 
     return true;
@@ -498,7 +499,7 @@ bool wxGetEnv(const wxString& var,
               wxString *value)
 {
     // first get the size of the buffer
-    DWORD dwRet = ::GetEnvironmentVariable(var.t_str(), NULL, 0);
+    DWORD dwRet = ::GetEnvironmentVariable(var.t_str(), nullptr, 0);
     if ( !dwRet )
     {
         // this means that there is no such variable
@@ -555,7 +556,7 @@ bool wxSetEnv(const wxString& variable, const wxString& value)
 
 bool wxUnsetEnv(const wxString& variable)
 {
-    return wxDoSetEnv(variable, NULL);
+    return wxDoSetEnv(variable, nullptr);
 }
 
 // ----------------------------------------------------------------------------
@@ -615,12 +616,12 @@ BOOL CALLBACK wxEnumFindByPidProc(HWND hwnd, LPARAM lParam)
     return TRUE;
 }
 
-int wxKillAllChildren(long pid, wxSignal sig, wxKillError *krc);
+int wxKillAllChildren(long pid, wxSignal sig, wxKillError *krc, int flags);
 
 int wxKill(long pid, wxSignal sig, wxKillError *krc, int flags)
 {
     if (flags & wxKILL_CHILDREN)
-        wxKillAllChildren(pid, sig, krc);
+        wxKillAllChildren(pid, sig, krc, flags);
 
     // get the process handle to operate on
     DWORD dwAccess = PROCESS_QUERY_INFORMATION | SYNCHRONIZE;
@@ -628,7 +629,7 @@ int wxKill(long pid, wxSignal sig, wxKillError *krc, int flags)
         dwAccess |= PROCESS_TERMINATE;
 
     HANDLE hProcess = ::OpenProcess(dwAccess, FALSE, (DWORD)pid);
-    if ( hProcess == NULL )
+    if ( hProcess == nullptr )
     {
         if ( krc )
         {
@@ -800,7 +801,7 @@ bool wxMSWActivatePID(long pid)
 }
 
 // By John Skiff
-int wxKillAllChildren(long pid, wxSignal sig, wxKillError *krc)
+int wxKillAllChildren(long pid, wxSignal sig, wxKillError *krc, int flags)
 {
     if (krc)
         *krc = wxKILL_OK;
@@ -830,7 +831,7 @@ int wxKillAllChildren(long pid, wxSignal sig, wxKillError *krc)
 
     do {
         if (pe.th32ParentProcessID == (DWORD) pid) {
-            if (wxKill(pe.th32ProcessID, sig, krc))
+            if (wxKill(pe.th32ProcessID, sig, krc, flags))
                 return -1;
         }
     } while (::Process32Next (hProcessSnap, &pe));
@@ -848,7 +849,7 @@ bool wxShell(const wxString& command)
     if ( !shell )
         shell = wxT("\\COMMAND.COM");
 
-    if ( !command )
+    if ( command.empty() )
     {
         // just the shell
         cmd = shell;
@@ -877,7 +878,7 @@ bool wxShutdown(int flags)
         TOKEN_PRIVILEGES tkp;
 
         // Get the LUID for the shutdown privilege.
-        bOK = ::LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME,
+        bOK = ::LookupPrivilegeValue(nullptr, SE_SHUTDOWN_NAME,
                                         &tkp.Privileges[0].Luid) != 0;
 
         if ( bOK )
@@ -887,7 +888,7 @@ bool wxShutdown(int flags)
 
             // Get the shutdown privilege for this process.
             ::AdjustTokenPrivileges(hToken, FALSE, &tkp, 0,
-                                    (PTOKEN_PRIVILEGES)NULL, 0);
+                                    nullptr, 0);
 
             // Cannot test the return value of AdjustTokenPrivileges.
             bOK = ::GetLastError() == ERROR_SUCCESS;
@@ -971,7 +972,7 @@ wxLoadUserResource(const void **outData,
                    const wxChar* resourceType,
                    WXHINSTANCE instance)
 {
-    wxCHECK_MSG( outData && outLen, false, "output pointers can't be NULL" );
+    wxCHECK_MSG( outData && outLen, false, "output pointers can't be null" );
 
     HRSRC hResource = ::FindResource(instance,
                                      resourceName.t_str(),
@@ -1011,7 +1012,7 @@ wxLoadUserResource(const wxString& resourceName,
     const void *data;
     size_t len;
     if ( !wxLoadUserResource(&data, &len, resourceName, resourceType, instance) )
-        return NULL;
+        return nullptr;
 
     char *s = new char[len + 1];
     memcpy(s, data, len);
@@ -1040,7 +1041,6 @@ OSVERSIONINFOEXW wxGetWindowsVersionInfo()
 
     // The simplest way to get the version is to call the kernel
     // RtlGetVersion() directly, if it is available.
-#if wxUSE_DYNLIB_CLASS
     wxDynamicLibrary dllNtDll;
     if ( dllNtDll.Load(wxS("ntdll.dll"), wxDL_VERBATIM | wxDL_QUIET) )
     {
@@ -1053,7 +1053,6 @@ OSVERSIONINFOEXW wxGetWindowsVersionInfo()
             return info;
         }
     }
-#endif // wxUSE_DYNLIB_CLASS
 
 #ifdef __VISUALC__
     #pragma warning(push)
@@ -1097,8 +1096,18 @@ int wxIsWindowsServer()
     return -1;
 }
 
+static const int WINDOWS_SERVER2016_BUILD = 14393;
+static const int WINDOWS_SERVER2019_BUILD = 17763;
+static const int WINDOWS_SERVER2022_BUILD = 20348;
+static const int WINDOWS_SERVER2025_BUILD = 26100;
+
+// Windows 11 uses the same version as Windows 10 but its build numbers start
+// from 22000, which provides a way to test for it.
+static const int FIRST_WINDOWS11_BUILD = 22000;
+
 } // anonymous namespace
 
+// When adding a new version, update also the table in wxGetOsVersion() docs.
 wxString wxGetOsDescription()
 {
     wxString str;
@@ -1160,26 +1169,45 @@ wxString wxGetOsDescription()
                     break;
 
                 case 10:
-                    if (info.dwBuildNumber >= 22000)
-                        str = wxIsWindowsServer() == 1
-                            ? "Windows Server 2022"
-                            : "Windows 11";
+                    if ( wxIsWindowsServer() == 1 )
+                    {
+                        switch ( info.dwBuildNumber )
+                        {
+                            case WINDOWS_SERVER2016_BUILD:
+                                str = "Windows Server 2016";
+                                break;
+                            case WINDOWS_SERVER2019_BUILD:
+                                str = "Windows Server 2019";
+                                break;
+                            case WINDOWS_SERVER2022_BUILD:
+                                str = "Windows Server 2022";
+                                break;
+                            case WINDOWS_SERVER2025_BUILD:
+                                str = "Windows Server 2025";
+                                break;
+                        }
+                    }
                     else
-                        str = wxIsWindowsServer() == 1
-                                ? "Windows Server 2016"
-                                : "Windows 10";
+                    {
+                        str = info.dwBuildNumber >= FIRST_WINDOWS11_BUILD
+                            ? "Windows 11"
+                            : "Windows 10";
+                    }
                     break;
             }
 
             if ( str.empty() )
             {
-                str.Printf("Windows %lu.%lu",
+                str.Printf("Windows %s%lu.%lu",
+                           wxIsWindowsServer() == 1 ? "Server " : "",
                            info.dwMajorVersion,
                            info.dwMinorVersion);
             }
 
             str << wxT(" (")
-                << wxString::Format(_("build %lu"), info.dwBuildNumber);
+                << wxString::Format(
+                       /* TRANSLATORS: MS Windows build number */_("build %lu"),
+                       info.dwBuildNumber);
             if ( !wxIsEmpty(info.szCSDVersion) )
             {
                 str << wxT(", ") << info.szCSDVersion;
@@ -1198,7 +1226,7 @@ bool wxIsPlatform64Bit()
 {
 #if defined(__WIN64__)
     return true;  // 64-bit programs run only on Win64
-#elif wxUSE_DYNLIB_CLASS // Win32
+#else // Win32
     // 32-bit programs run on both 32-bit and 64-bit Windows so check
     typedef BOOL (WINAPI *IsWow64Process_t)(HANDLE, BOOL *);
 
@@ -1214,8 +1242,6 @@ bool wxIsPlatform64Bit()
     //else: running under a system without Win64 support
 
     return wow64 != FALSE;
-#else
-    return false;
 #endif // Win64/Win32
 }
 
@@ -1273,8 +1299,9 @@ bool wxCheckOsVersion(int majorVsn, int minorVsn, int microVsn)
 wxWinVersion wxGetWinVersion()
 {
     int verMaj,
-        verMin;
-    switch ( wxGetOsVersion(&verMaj, &verMin) )
+        verMin,
+        build;
+    switch ( wxGetOsVersion(&verMaj, &verMin, &build) )
     {
         case wxOS_WINDOWS_NT:
             switch ( verMaj )
@@ -1309,7 +1336,8 @@ wxWinVersion wxGetWinVersion()
                     break;
 
                 case 10:
-                    return wxWinVersion_10;
+                    return build >= FIRST_WINDOWS11_BUILD ? wxWinVersion_11
+                                                          : wxWinVersion_10;
             }
             break;
         default:
@@ -1342,8 +1370,6 @@ wxString wxGetCpuArchitecureNameFromImageType(USHORT imageType)
 // Wrap IsWow64Process2 API (Available since Win10 1511)
 BOOL wxIsWow64Process2(HANDLE hProcess, USHORT* pProcessMachine, USHORT* pNativeMachine)
 {
-#if wxUSE_DYNLIB_CLASS // Win32
-
     typedef BOOL(WINAPI *IsWow64Process2_t)(HANDLE, USHORT *, USHORT *);
 
     wxDynamicLibrary dllKernel32("kernel32.dll");
@@ -1352,8 +1378,7 @@ BOOL wxIsWow64Process2(HANDLE hProcess, USHORT* pProcessMachine, USHORT* pNative
 
     if (pfnIsWow64Process2)
         return pfnIsWow64Process2(hProcess, pProcessMachine, pNativeMachine);
-    else
-#endif
+
     return FALSE;
 }
 
@@ -1362,7 +1387,7 @@ wxString wxGetCpuArchitectureName()
     // Try to get the current active CPU architecture via IsWow64Process2()
     // first, fallback to GetNativeSystemInfo() otherwise
     USHORT machine;
-    if (wxIsWow64Process2(::GetCurrentProcess(), &machine, NULL) &&
+    if (wxIsWow64Process2(::GetCurrentProcess(), &machine, nullptr) &&
         machine != IMAGE_FILE_MACHINE_UNKNOWN)
         return wxGetCpuArchitecureNameFromImageType(machine);
 
@@ -1643,11 +1668,11 @@ extern long wxCharsetToCodepage(const char *name)
 extern "C" WXDLLIMPEXP_BASE HWND
 wxCreateHiddenWindow(LPCTSTR *pclassname, LPCTSTR classname, WNDPROC wndproc)
 {
-    wxCHECK_MSG( classname && pclassname && wndproc, NULL,
-                    wxT("NULL parameter in wxCreateHiddenWindow") );
+    wxCHECK_MSG( classname && pclassname && wndproc, nullptr,
+                    wxT("null parameter in wxCreateHiddenWindow") );
 
     // register the class fi we need to first
-    if ( *pclassname == NULL )
+    if ( *pclassname == nullptr )
     {
         WNDCLASS wndclass;
         wxZeroMemory(wndclass);
@@ -1660,7 +1685,7 @@ wxCreateHiddenWindow(LPCTSTR *pclassname, LPCTSTR classname, WNDPROC wndproc)
         {
             wxLogLastError(wxT("RegisterClass() in wxCreateHiddenWindow"));
 
-            return NULL;
+            return nullptr;
         }
 
         *pclassname = classname;
@@ -1670,13 +1695,13 @@ wxCreateHiddenWindow(LPCTSTR *pclassname, LPCTSTR classname, WNDPROC wndproc)
     HWND hwnd = ::CreateWindow
                   (
                     *pclassname,
-                    NULL,
+                    nullptr,
                     0, 0, 0, 0,
                     0,
-                    (HWND) NULL,
-                    (HMENU)NULL,
+                    nullptr,
+                    nullptr,
                     wxGetInstance(),
-                    (LPVOID) NULL
+                    nullptr
                   );
 
     if ( !hwnd )

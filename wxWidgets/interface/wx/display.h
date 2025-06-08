@@ -95,6 +95,24 @@ public:
     static int GetFromPoint(const wxPoint& pt);
 
     /**
+        Returns the index of the display with biggest intersection with the
+        given rectangle or @c wxNOT_FOUND if the rectangle doesn't intersect
+        any display.
+
+        Note that usually the returned display will be the same display which
+        contains the center of the rectangle, but this is not always the case,
+        as rectangle might be partly visible even if its center is off screen,
+        and in this case GetFromPoint() would returns @c wxNOT_FOUND, but this
+        function would return a valid display.
+
+        @param rect
+            The rectangle to check.
+
+        @since 3.3.0
+    */
+    static int GetFromRect(const wxRect& rect);
+
+    /**
         Returns the index of the display on which the given window lies.
 
         If the window is on more than one display it gets the display that
@@ -131,13 +149,19 @@ public:
     wxString GetName() const;
 
     /**
+        Returns display depth, i.e. number of bits per pixel (0 if unknown)
+
+        @since 3.1.2
+    */
+    int GetDepth() const;
+
+    /**
         Returns display resolution in pixels per inch.
 
         Horizontal and vertical resolution are returned in @c x and @c y
         components of the wxSize object respectively.
 
-        If the resolution information is not available, returns @code wxSize(0,
-        0) @endcode.
+        If the resolution information is not available, returns `wxSize(0, 0)`.
 
         @since 3.1.2
      */
@@ -182,6 +206,26 @@ public:
         @since 3.1.5
      */
     static wxSize GetStdPPI();
+
+    /**
+        Returns @true if the display has not been unplugged yet.
+
+        This function can return @false if the display configuration has
+        changed since this wxDisplay object has been created and either this
+        display is known not to be connected to the system any more (support
+        for detecting this is currently only implemented in wxMSW) or the
+        display status is now unknown (which happens in all the other ports
+        detecting the display configuration changes, e.g. wxOSX).
+
+        A disconnected object is still usable, but all accessor functions
+        return invalid fallback values (e.g. 0 for the width and height) and so
+        such objects are not really useful any more. It is recommended to
+        recreate them when the display configuration changes, which can be done
+        in wxEVT_DISPLAY_CHANGED handler of any top-level window.
+
+        @since 3.3.0
+    */
+    bool IsConnected() const;
 
     /**
         Returns @true if the display is the primary display. The primary

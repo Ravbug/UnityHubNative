@@ -2,7 +2,6 @@
 // Name:        src/generic/helpext.cpp
 // Purpose:     an external help controller for wxWidgets
 // Author:      Karsten Ballueder
-// Modified by:
 // Created:     04/01/98
 // Copyright:   (c) Karsten Ballueder
 // Licence:     wxWindows licence
@@ -65,7 +64,7 @@ wxIMPLEMENT_CLASS(wxExtHelpController, wxHelpControllerBase);
 wxExtHelpController::wxExtHelpController(wxWindow* parentWindow)
                    : wxHelpControllerBase(parentWindow)
 {
-    m_MapList = NULL;
+    m_MapList = nullptr;
     m_NumOfEntries = 0;
     m_BrowserIsNetscape = false;
 
@@ -82,14 +81,6 @@ wxExtHelpController::~wxExtHelpController()
 {
     DeleteList();
 }
-
-#if WXWIN_COMPATIBILITY_2_8
-void wxExtHelpController::SetBrowser(const wxString& browsername, bool isNetscape)
-{
-    m_BrowserName = browsername;
-    m_BrowserIsNetscape = isNetscape;
-}
-#endif
 
 void wxExtHelpController::SetViewer(const wxString& viewer, long flags)
 {
@@ -399,7 +390,7 @@ bool wxExtHelpController::KeywordSearch(const wxString& k,
         if (! showAll)
         {
             compA = k;
-            compA.LowerCase();
+            compA.MakeLower();
         }
 
         while (node)
@@ -410,7 +401,7 @@ bool wxExtHelpController::KeywordSearch(const wxString& k,
             bool testTarget = ! compB.empty();
             if (testTarget && ! showAll)
             {
-                compB.LowerCase();
+                compB.MakeLower();
                 testTarget = compB.Contains(compA);
             }
 
@@ -424,7 +415,7 @@ bool wxExtHelpController::KeywordSearch(const wxString& k,
                 choices[idx].clear();
                 for (int j=0; ; j++)
                 {
-                    wxChar targetChar = entry->doc.c_str()[j];
+                    wxUniChar targetChar = entry->doc.c_str()[j];
                     if ((targetChar == 0) || (targetChar == WXEXTHELP_COMMENTCHAR))
                         break;
 

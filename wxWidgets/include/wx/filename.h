@@ -2,7 +2,6 @@
 // Name:        wx/filename.h
 // Purpose:     wxFileName - encapsulates a file path
 // Author:      Robert Roebling, Vadim Zeitlin
-// Modified by:
 // Created:     28.12.00
 // Copyright:   (c) 2000 Robert Roebling
 // Licence:     wxWindows licence
@@ -122,10 +121,8 @@ enum
     wxFILE_EXISTS_ANY       = 0x1FFF   // check for existence of anything
 };
 
-#if wxUSE_LONGLONG
 // error code of wxFileName::GetSize()
 extern WXDLLIMPEXP_DATA_BASE(const wxULongLong) wxInvalidSize;
-#endif // wxUSE_LONGLONG
 
 
 
@@ -277,7 +274,7 @@ public:
     // time functions
 #if wxUSE_DATETIME
         // set the file last access/mod and creation times
-        // (any of the pointers may be NULL)
+        // (any of the pointers may be null)
     bool SetTimes(const wxDateTime *dtAccess,
                   const wxDateTime *dtMod,
                   const wxDateTime *dtCreate) const;
@@ -286,7 +283,7 @@ public:
     bool Touch() const;
 
         // return the last access, last modification and create times
-        // (any of the pointers may be NULL)
+        // (any of the pointers may be null)
     bool GetTimes(wxDateTime *dtAccess,
                   wxDateTime *dtMod,
                   wxDateTime *dtCreate) const;
@@ -295,7 +292,7 @@ public:
     wxDateTime GetModificationTime() const
     {
         wxDateTime dtMod;
-        (void)GetTimes(NULL, &dtMod, NULL);
+        (void)GetTimes(nullptr, &dtMod, nullptr);
         return dtMod;
     }
 #endif // wxUSE_DATETIME
@@ -422,7 +419,7 @@ public:
         // the arguments
     bool GetShortcutTarget(const wxString& shortcutPath,
                            wxString& targetFilename,
-                           wxString* arguments = NULL) const;
+                           wxString* arguments = nullptr) const;
 #endif
 
         // if the path contains the value of the environment variable named envname
@@ -495,6 +492,10 @@ public:
     // is the char a path separator for this format?
     static bool IsPathSeparator(wxChar ch, wxPathFormat format = wxPATH_NATIVE);
 
+    // is this is a DOS path which begins with "\\?\"?
+    static bool IsMSWExtendedLengthPath(const wxString& path,
+                                        wxPathFormat format = wxPATH_NATIVE);
+
     // is this is a DOS path which begins with a windows unique volume name
     // ('\\?\Volume{guid}\')?
     static bool IsMSWUniqueVolumeNamePath(const wxString& path,
@@ -554,13 +555,13 @@ public:
     static wxPathFormat GetFormat( wxPathFormat format = wxPATH_NATIVE );
 
         // split a fullpath into the volume, path, (base) name and extension
-        // (all of the pointers can be NULL)
+        // (all of the pointers can be null)
     static void SplitPath(const wxString& fullpath,
                           wxString *volume,
                           wxString *path,
                           wxString *name,
                           wxString *ext,
-                          bool *hasExt = NULL,
+                          bool *hasExt = nullptr,
                           wxPathFormat format = wxPATH_NATIVE);
 
     static void SplitPath(const wxString& fullpath,
@@ -570,7 +571,7 @@ public:
                           wxString *ext,
                           wxPathFormat format)
     {
-        SplitPath(fullpath, volume, path, name, ext, NULL, format);
+        SplitPath(fullpath, volume, path, name, ext, nullptr, format);
     }
 
         // compatibility version: volume is part of path
@@ -596,7 +597,6 @@ public:
 
     // File size
 
-#if wxUSE_LONGLONG
         // returns the size of the given filename
     wxULongLong GetSize() const;
     static wxULongLong GetSize(const wxString &file);
@@ -611,7 +611,6 @@ public:
                          const wxString& nullsize = wxGetTranslation(wxASCII_STR("Not available")),
                          int precision = 1,
                          wxSizeConvention conv = wxSIZE_CONV_TRADITIONAL);
-#endif // wxUSE_LONGLONG
 
 
     // deprecated methods, don't use any more
@@ -633,7 +632,8 @@ private:
         SetPath_MayHaveVolume = 1
     };
 
-    // helper of public SetPath() also used internally
+    // helpers of public functions with the corresponding names
+    wxString DoGetPath(int flags, wxPathFormat format) const;
     void DoSetPath(const wxString& path, wxPathFormat format,
                    int flags = SetPath_MayHaveVolume);
 

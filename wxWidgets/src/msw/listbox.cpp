@@ -34,7 +34,7 @@
 #include <windowsx.h>
 
 #if wxUSE_OWNER_DRAWN
-    #include  "wx/ownerdrw.h"
+    #include "wx/msw/private/listboxitem.h"
 
     namespace
     {
@@ -49,24 +49,7 @@
 
 #if wxUSE_OWNER_DRAWN
 
-class wxListBoxItem : public wxOwnerDrawn
-{
-public:
-    wxListBoxItem(wxListBox *parent)
-        { m_parent = parent; }
-
-    wxListBox *GetParent() const
-        { return m_parent; }
-
-    int GetIndex() const
-        { return m_parent->GetItemIndex(const_cast<wxListBoxItem*>(this)); }
-
-    wxString GetName() const wxOVERRIDE
-        { return m_parent->GetString(GetIndex()); }
-
-private:
-    wxListBox *m_parent;
-};
+using wxListBoxItem = wxListBoxItemBase<wxListBox>;
 
 wxOwnerDrawn *wxListBox::CreateLboxItem(size_t WXUNUSED(n))
 {
@@ -376,7 +359,7 @@ void *wxListBox::DoGetItemClientData(unsigned int n) const
     {
         wxLogLastError(wxT("LB_GETITEMDATA"));
 
-        return NULL;
+        return nullptr;
     }
 
     return (void *)rc;
@@ -524,8 +507,8 @@ void wxListBox::SetString(unsigned int n, const wxString& s)
     // remember the state of the item
     bool wasSelected = IsSelected(n);
 
-    void *oldData = NULL;
-    wxClientData *oldObjData = NULL;
+    void *oldData = nullptr;
+    wxClientData *oldObjData = nullptr;
     if ( HasClientUntypedData() )
         oldData = GetClientData(n);
     else if ( HasClientObjectData() )
@@ -569,7 +552,7 @@ void wxListBox::SetHorizontalExtent(const wxString& s)
         return;
 
 
-    WindowHDC dc(GetHwnd());
+    ClientHDC dc(GetHwnd());
     SelectInHDC selFont(dc, GetHfontOf(GetFont()));
 
     TEXTMETRIC lpTextMetric;
@@ -614,7 +597,7 @@ void wxListBox::SetHorizontalExtent(const wxString& s)
 bool wxListBox::MSWSetTabStops(const wxVector<int>& tabStops)
 {
     return SendMessage(GetHwnd(), LB_SETTABSTOPS, (WPARAM)tabStops.size(),
-                       (LPARAM)(tabStops.empty() ? NULL : &tabStops[0])) == TRUE;
+                       (LPARAM)(tabStops.empty() ? nullptr : &tabStops[0])) == TRUE;
 }
 
 wxSize wxListBox::DoGetBestClientSize() const
@@ -625,7 +608,7 @@ wxSize wxListBox::DoGetBestClientSize() const
     for (unsigned int i = 0; i < m_noItems; i++)
     {
         wxString str(GetString(i));
-        GetTextExtent(str, &wLine, NULL);
+        GetTextExtent(str, &wLine, nullptr);
         if ( wLine > wListbox )
             wListbox = wLine;
     }
@@ -719,7 +702,7 @@ bool wxListBox::SetFont(const wxFont &font)
 
         // Non owner drawn list boxes update the item height on their own, but
         // we need to do it manually in the owner drawn case.
-        wxClientDC dc(this);
+        wxInfoDC dc(this);
         dc.SetFont(m_font);
         SendMessage(GetHwnd(), LB_SETITEMHEIGHT, 0,
                     dc.GetCharHeight() + 2 * LISTBOX_EXTRA_SPACE);
@@ -775,7 +758,7 @@ bool wxListBox::MSWOnMeasure(WXMEASUREITEMSTRUCT *item)
 
     MEASUREITEMSTRUCT *pStruct = (MEASUREITEMSTRUCT *)item;
 
-    HDC hdc = CreateIC(wxT("DISPLAY"), NULL, NULL, 0);
+    HDC hdc = CreateIC(wxT("DISPLAY"), nullptr, nullptr, 0);
 
     {
         wxDCTemp dc((WXHDC)hdc);

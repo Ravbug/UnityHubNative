@@ -29,6 +29,7 @@
 
 #include "wx/gifdecod.h"
 #include "wx/anidecod.h"
+#include "wx/webpdecoder.h"
 
 #include "wx/private/animate.h"
 
@@ -126,6 +127,31 @@ bool wxAnimation::Load(wxInputStream& stream, wxAnimationType type)
     return GetImpl()->Load(stream, type);
 }
 
+// ----------------------------------------------------------------------------
+// wxAnimationBundle
+// ----------------------------------------------------------------------------
+
+void wxAnimationBundle::Add(const wxAnimation& anim)
+{
+    // It's ok to have empty animation bundle, but any animations added to
+    // it should be valid.
+    wxCHECK_RET( anim.IsOk(), "shouldn't add invalid animations" );
+
+    if ( !m_animations.empty() )
+    {
+        // They also should be added in increasing size.
+        const wxSize thisSize = anim.GetSize();
+        const wxSize lastSize = m_animations.back().GetSize();
+
+        wxCHECK_RET( thisSize != lastSize,
+                     "shouldn't have multiple animations of the same size" );
+
+        wxCHECK_RET( thisSize.IsAtLeast(lastSize),
+                     "should be added in order of increasing size" );
+    }
+
+    m_animations.push_back(anim);
+}
 
 // ----------------------------------------------------------------------------
 // wxAnimationCtrlBase
@@ -148,7 +174,7 @@ void wxAnimationCtrlBase::UpdateStaticImage()
             m_bmpStaticReal.GetLogicalHeight() != sz.GetHeight())
         {
             // need to (re)create m_bmpStaticReal
-            if (!m_bmpStaticReal.CreateWithDIPSize(sz,
+            if (!m_bmpStaticReal.CreateWithLogicalSize(sz,
                                           bmpCurrent.GetScaleFactor(),
                                           bmpCurrent.GetDepth()))
             {
@@ -178,7 +204,7 @@ void wxAnimationCtrlBase::UpdateStaticImage()
         {
             // the user-provided bitmap is bigger than our control, strech it
             wxImage temp(bmpCurrent.ConvertToImage());
-            temp.Rescale(sz.GetWidth(), sz.GetHeight(), wxIMAGE_QUALITY_HIGH);
+            temp.Rescale(sz, wxIMAGE_QUALITY_HIGH);
             m_bmpStaticReal = wxBitmap(temp);
         }
     }
@@ -202,7 +228,7 @@ void wxAnimationCtrlBase::SetInactiveBitmap(const wxBitmapBundle &bmp)
 void wxAnimation::AddHandler( wxAnimationDecoder *handler )
 {
     // Check for an existing handler of the type being added.
-    if (FindHandler( handler->GetType() ) == 0)
+    if (FindHandler( handler->GetType() ) == nullptr)
     {
         sm_handlers.Append( handler );
     }
@@ -222,7 +248,7 @@ void wxAnimation::AddHandler( wxAnimationDecoder *handler )
 void wxAnimation::InsertHandler( wxAnimationDecoder *handler )
 {
     // Check for an existing handler of the type being added.
-    if (FindHandler( handler->GetType() ) == 0)
+    if (FindHandler( handler->GetType() ) == nullptr)
     {
         sm_handlers.Insert( handler );
     }
@@ -244,7 +270,7 @@ const wxAnimationDecoder *wxAnimation::FindHandler( wxAnimationType animType )
         if (handler->GetType() == animType) return handler;
         node = node->GetNext();
     }
-    return 0;
+    return nullptr;
 }
 
 void wxAnimation::InitStandardHandlers()
@@ -255,6 +281,9 @@ void wxAnimation::InitStandardHandlers()
 #if wxUSE_ICO_CUR
     AddHandler(new wxANIDecoder);
 #endif // wxUSE_ICO_CUR
+#if wxUSE_LIBWEBP
+    AddHandler(new wxWebPDecoder);
+#endif // wxUSE_LIBWEBP
 }
 
 void wxAnimation::CleanUpHandlers()
@@ -281,8 +310,8 @@ class wxAnimationModule: public wxModule
     wxDECLARE_DYNAMIC_CLASS(wxAnimationModule);
 public:
     wxAnimationModule() {}
-    bool OnInit() wxOVERRIDE { wxAnimation::InitStandardHandlers(); return true; }
-    void OnExit() wxOVERRIDE { wxAnimation::CleanUpHandlers(); }
+    bool OnInit() override { wxAnimation::InitStandardHandlers(); return true; }
+    void OnExit() override { wxAnimation::CleanUpHandlers(); }
 };
 
 wxIMPLEMENT_DYNAMIC_CLASS(wxAnimationModule, wxModule);

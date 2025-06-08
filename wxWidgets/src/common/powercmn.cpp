@@ -2,7 +2,6 @@
 // Name:        src/common/powercmn.cpp
 // Purpose:     power event types and stubs for power functions
 // Author:      Vadim Zeitlin
-// Modified by:
 // Created:     2006-05-27
 // Copyright:   (c) 2006 Vadim Zeitlin <vadim@wxwidgets.org>
 // Licence:     wxWindows licence
@@ -25,6 +24,11 @@
 
 #include "wx/power.h"
 
+#ifdef __WXGTK__
+    // This defines wxHAS_GLIB_POWER_SUPPORT
+    #include "wx/gtk/private/power.h"
+#endif
+
 // ============================================================================
 // implementation
 // ============================================================================
@@ -39,11 +43,12 @@
 #endif
 
 // Provide stubs for systems without power resource management functions
-#if !defined(__WINDOWS__) && !defined(__APPLE__)
+#if !(defined(__WINDOWS__) || defined(__APPLE__) || defined(wxHAS_GLIB_POWER_SUPPORT))
 
 bool
 wxPowerResource::Acquire(wxPowerResourceKind WXUNUSED(kind),
-                         const wxString& WXUNUSED(reason))
+                         const wxString& WXUNUSED(reason),
+                         wxPowerBlockKind WXUNUSED(blockKind))
 {
     return false;
 }

@@ -27,7 +27,7 @@
 // and update the corresponding submodule.
 #ifdef __has_include
     #if ! __has_include("../../3rdparty/nanosvg/src/nanosvg.h")
-        #error You need to run "git submodule update --init 3rdparty/nanosvg".
+        #error You need to run "git submodule update --init 3rdparty/nanosvg" from the wxWidgets directory.
         #undef wxHAS_SVG
     #endif
 #endif // __has_include
@@ -49,13 +49,10 @@
     #pragma warning(push)
     #pragma warning(disable:4456)
     #pragma warning(disable:4702)
-
-    // Also make nanosvg.h compile with older MSVC versions which didn't have
-    // strtoll().
-    #if _MSC_VER < 1800
-        #define strtoll _strtoi64
-    #endif
 #endif
+
+wxGCC_WARNING_SUPPRESS(cast-qual)
+wxGCC_WARNING_SUPPRESS(double-promotion)
 
 #if !wxUSE_NANOSVG_EXTERNAL || defined(wxUSE_NANOSVG_EXTERNAL_ENABLE_IMPL)
     #define NANOSVG_IMPLEMENTATION
@@ -70,6 +67,9 @@
     #include "../../3rdparty/nanosvg/src/nanosvg.h"
     #include "../../3rdparty/nanosvg/src/nanosvgrast.h"
 #endif
+
+wxGCC_WARNING_RESTORE(double-promotion)
+wxGCC_WARNING_RESTORE(cast-qual)
 
 #ifdef __VISUALC__
     #pragma warning(pop)
@@ -115,9 +115,9 @@ public:
         nsvgDelete(m_svgImage);
     }
 
-    virtual wxSize GetDefaultSize() const wxOVERRIDE;
-    virtual wxSize GetPreferredBitmapSizeAtScale(double scale) const wxOVERRIDE;
-    virtual wxBitmap GetBitmap(const wxSize& size) wxOVERRIDE;
+    virtual wxSize GetDefaultSize() const override;
+    virtual wxSize GetPreferredBitmapSizeAtScale(double scale) const override;
+    virtual wxBitmap GetBitmap(const wxSize& size) override;
 
 private:
     wxBitmap DoRasterize(const wxSize& size);
@@ -195,11 +195,25 @@ wxBitmap wxBitmapBundleImplSVG::DoRasterize(const wxSize& size)
         for ( int x = 0; x < size.x; ++x )
         {
             const unsigned char a = src[3];
+#ifdef wxHAS_PREMULTIPLIED_ALPHA
+            // Some platforms require premultiplication by alpha.
             dst.Red()   = src[0] * a / 255;
             dst.Green() = src[1] * a / 255;
             dst.Blue()  = src[2] * a / 255;
             dst.Alpha() = a;
-
+#else
+            // Other platforms store bitmaps with straight alpha.
+            dst.Alpha() = a;
+            if ( a )
+            {
+                dst.Red()   = src[0];
+                dst.Green() = src[1];
+                dst.Blue()  = src[2];
+            }
+            else
+                // A more canonical form for completely transparent pixels.
+                dst.Red() = dst.Green() = dst.Blue() = 0;
+#endif
             ++dst;
             src += 4;
         }

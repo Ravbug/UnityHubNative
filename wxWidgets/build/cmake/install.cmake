@@ -12,17 +12,39 @@ if(NOT wxBUILD_INSTALL)
 endif()
 
 install(CODE "message(STATUS \"Installing: Headers...\")")
-install(
-    DIRECTORY "${wxSOURCE_DIR}/include/wx"
-    DESTINATION "${wxINSTALL_INCLUDE_DIR}")
+
+foreach(header ${wxINSTALL_HEADERS})
+    get_filename_component(path "${header}" PATH)
+    install(
+        FILES "${wxSOURCE_DIR}/include/${header}"
+        DESTINATION "${wxINSTALL_INCLUDE_DIR}/${path}"
+    )
+endforeach()
+
 if(MSVC)
     install(
         DIRECTORY "${wxSOURCE_DIR}/include/msvc"
-        DESTINATION "${wxINSTALL_INCLUDE_DIR}")
+        DESTINATION "${wxINSTALL_INCLUDE_DIR}"
+    )
+    install(
+        FILES "${wxSOURCE_DIR}/wxwidgets.props"
+        DESTINATION "."
+    )
+    install(
+        FILES "${wxSOURCE_DIR}/build/msw/wx_setup.props"
+        DESTINATION "build/msw"
+    )
 endif()
 
 # setup header and wx-config
 if(WIN32_MSVC_NAMING)
+    # create both Debug and Release directories, so CMake doesn't complain about
+    # non-existent path when only Release or Debug build has been installed
+    set(lib_unicode "u")
+    install(DIRECTORY
+        DESTINATION "lib/${wxPLATFORM_LIB_DIR}/${wxBUILD_TOOLKIT}${lib_unicode}")
+    install(DIRECTORY
+        DESTINATION "lib/${wxPLATFORM_LIB_DIR}/${wxBUILD_TOOLKIT}${lib_unicode}d")
     install(
         DIRECTORY "${wxSETUP_HEADER_PATH}"
         DESTINATION "lib/${wxPLATFORM_LIB_DIR}")

@@ -2,7 +2,6 @@
 // Name:        src/osx/cocoa/overlay.mm
 // Purpose:     common wxOverlay code
 // Author:      Stefan Csomor
-// Modified by:
 // Created:     2006-10-20
 // Copyright:   (c) wxWidgets team
 // Licence:     wxWindows licence
@@ -99,7 +98,7 @@
         NSRect backingBounds = [self convertRectToBacking:bounds];
 
         NSBitmapImageRep* bmp = [[NSBitmapImageRep alloc]
-                         initWithBitmapDataPlanes:NULL
+                         initWithBitmapDataPlanes:nullptr
                          pixelsWide:backingBounds.size.width
                          pixelsHigh:backingBounds.size.height
                          bitsPerSample:8
@@ -127,7 +126,7 @@
 class wxOverlayImpl: public wxOverlay::Impl
 {
 public:
-    wxOverlayImpl();
+    wxOverlayImpl() = default;
     ~wxOverlayImpl();
 
     virtual void Reset() override;
@@ -139,16 +138,16 @@ public:
 
     void CreateOverlayWindow(wxDC* dc);
 
-    WXWindow m_overlayWindow;
-    WXWindow m_overlayParentWindow;
-    CGContextRef m_overlayContext;
+    WXWindow m_overlayWindow = nullptr;
+    WXWindow m_overlayParentWindow = nullptr;
+    CGContextRef m_overlayContext = nullptr;
     // we store the window in case we would have to issue a Refresh()
-    wxWindow* m_window;
+    wxWindow* m_window = nullptr;
 
-    int m_x;
-    int m_y;
-    int m_width;
-    int m_height;
+    int m_x = 0;
+    int m_y = 0;
+    int m_width = 0;
+    int m_height = 0;
 } ;
 
 wxOverlay::Impl* wxOverlay::Create()
@@ -156,21 +155,19 @@ wxOverlay::Impl* wxOverlay::Create()
     return new wxOverlayImpl;
 }
 
-wxOverlayImpl::wxOverlayImpl()
-{
-    m_window = NULL ;
-    m_overlayContext = NULL ;
-    m_overlayWindow = NULL ;
-}
-
 wxOverlayImpl::~wxOverlayImpl()
 {
+    // Set it to null before calling Reset() to prevent it from drawing
+    // anything: this is not needed when destroying the overlay and would
+    // result in problems.
+    m_window = nullptr;
+
     Reset();
 }
 
 bool wxOverlayImpl::IsOk()
 {
-    return m_overlayWindow != NULL ;
+    return m_overlayWindow != nullptr ;
 }
 
 void wxOverlayImpl::CreateOverlayWindow( wxDC* dc )
@@ -187,7 +184,7 @@ void wxOverlayImpl::CreateOverlayWindow( wxDC* dc )
         origin = m_window->ClientToScreen(origin);
 
         wxSize size(m_width, m_height);
-        NSRect overlayRect = wxToNSRect(NULL, wxRect(origin, size));
+        NSRect overlayRect = wxToNSRect(nullptr, wxRect(origin, size));
         overlayRect = [NSWindow contentRectForFrameRect:overlayRect styleMask:NSBorderlessWindowMask];
 
         m_overlayWindow = [[wxOSXOverlayWindow alloc] initWithContentRect:overlayRect
@@ -198,7 +195,7 @@ void wxOverlayImpl::CreateOverlayWindow( wxDC* dc )
     }
     else
     {
-        m_overlayParentWindow = NULL;
+        m_overlayParentWindow = nullptr;
         CGRect cgbounds;
         cgbounds = CGDisplayBounds(CGMainDisplayID());
 
@@ -223,7 +220,7 @@ void wxOverlayImpl::Init( wxDC* dc, int x , int y , int width , int height )
     m_height = height ;
 
     CreateOverlayWindow(dc);
-    wxASSERT_MSG(m_overlayWindow != NULL, "Couldn't create the overlay window");
+    wxASSERT_MSG(m_overlayWindow != nullptr, "Couldn't create the overlay window");
 }
 
 void wxOverlayImpl::BeginDrawing( wxDC* dc)
@@ -247,7 +244,7 @@ void wxOverlayImpl::BeginDrawing( wxDC* dc)
         wxOSXOverlayWindow* wxoverlay = (wxOSXOverlayWindow*) m_overlayWindow;
         NSBitmapImageRep* rep = wxoverlay.overlayView.bitmapImageRep;
         m_overlayContext = [[NSGraphicsContext graphicsContextWithBitmapImageRep:rep] CGContext];
-        wxASSERT_MSG(  m_overlayContext != NULL , "Couldn't init the context on the overlay window" );
+        wxASSERT_MSG(  m_overlayContext != nullptr , "Couldn't init the context on the overlay window" );
 
         wxGraphicsContext* ctx = wxGraphicsContext::CreateFromNative( m_overlayContext );
         ctx->Translate(0, ySize);
@@ -266,10 +263,10 @@ void wxOverlayImpl::EndDrawing( wxDC* dc)
     wxDCImpl *impl = dc->GetImpl();
     wxGCDCImpl *win_impl = wxDynamicCast(impl,wxGCDCImpl);
     if (win_impl)
-        win_impl->SetGraphicsContext(NULL);
+        win_impl->SetGraphicsContext(nullptr);
 
     CGContextFlush( m_overlayContext );
-    m_overlayContext = NULL;
+    m_overlayContext = nullptr;
     wxOSXOverlayWindow* wxoverlay = (wxOSXOverlayWindow*) m_overlayWindow;
     [wxoverlay.overlayView setNeedsDisplay:YES];
 }
@@ -283,19 +280,30 @@ void wxOverlayImpl::Clear(wxDC* dc)
 
 void wxOverlayImpl::Reset()
 {
+    // Do nothing if Init() was never called: it's still valid to call Reset()
+    // in this case, but we can't, and don't need to, do anything in it.
+    if ( !m_overlayWindow )
+        return;
+
+    if ( m_window )
+    {
+        // erase whatever was drawn on the overlay the last time
+        wxClientDC dc(m_window);
+        BeginDrawing(&dc);
+        Clear(&dc);
+        EndDrawing(&dc);
+    }
+
     if ( m_overlayContext )
     {
         [(id)m_overlayContext release];
-        m_overlayContext = NULL ;
+        m_overlayContext = nullptr ;
     }
 
     // todo : don't dispose, only hide and reposition on next run
-    if (m_overlayWindow)
-    {
-        [m_overlayParentWindow removeChildWindow:m_overlayWindow];
-        [m_overlayWindow release];
-        m_overlayWindow = NULL ;
-    }
+    [m_overlayParentWindow removeChildWindow:m_overlayWindow];
+    [m_overlayWindow release];
+    m_overlayWindow = nullptr ;
 }
 
 #endif // wxHAS_NATIVE_OVERLAY

@@ -2,7 +2,6 @@
 // Name:        wx/msw/wrapcctl.h
 // Purpose:     Wrapper for the standard <commctrl.h> header
 // Author:      Vadim Zeitlin
-// Modified by:
 // Created:     03.08.2003
 // Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwidgets.org>
 // Licence:     wxWindows licence
@@ -18,10 +17,13 @@
 // define things which might be missing from our commctrl.h
 #include "wx/msw/missing.h"
 
+// For wxZeroMemory()
+#include "wx/msw/private.h"
+
 // Set Unicode format for a common control
 inline void wxSetCCUnicodeFormat(HWND hwnd)
 {
-    ::SendMessage(hwnd, CCM_SETUNICODEFORMAT, wxUSE_UNICODE, 0);
+    ::SendMessage(hwnd, CCM_SETUNICODEFORMAT, TRUE, 0);
 }
 
 #if wxUSE_GUI
@@ -37,7 +39,7 @@ struct wxHDITEM : public HDITEM
 {
     wxHDITEM()
     {
-        ::ZeroMemory(this, sizeof(*this));
+        wxZeroMemory(*this);
     }
 };
 

@@ -1,38 +1,40 @@
-September 09, 2022 -- The wxWidgets team is pleased to announce a new
-major release of our open source framework for the development of native
+June 6, 2025 -- The wxWidgets team is pleased to announce the first new
+development release of our open source framework for the development of native
 cross-platform applications in C++.
 
-wxWidgets 3.2.1 is part of the API and ABI-stable 3.2.x release series and is
-now available from
+wxWidgets 3.3.0 is the first release in the new 3.3.x development series and is
+available now from
 
     https://www.wxwidgets.org/downloads/
 
-and
+Compared to the stable 3.0.x series, this version brings too many
+improvements and even more bug fixes to list all of them here, please
+see the change log
 
-    https://github.com/wxWidgets/wxWidgets/releases/v3.2.1
+https://raw.githubusercontent.com/wxWidgets/wxWidgets/v3.3.0/docs/changes.txt
 
-Coming soon after 3.2.0, this is mostly a bug fix release, with just one
-noteworthy new feature: the addition of wxFileDialog::AddShortcut() function.
-However it fixes some important regressions and other problems:
+for the list of the most important ones and here is the maximally condensed
+summary of the major changes compared to 3.2:
 
-- Fix crash in applications calling g_log_set_writer_func() with recent glib.
-- Several fixes to alpha channel handling in wxMSW bitmaps.
-- Generate key and focus events for wxSearchCtrl in wxOSX.
-- Fix creating wxRadioBox without any items in wxOSX.
-- Fix regression with AUI floating pane positioning.
-- Avoid new warnings given by gcc 12.
-- Fix building with MSVS 2022 standard-conforming preprocessor.
-- Work around MSVS 2022 optimizer bug that broke wxImage resizing.
-- NetBSD build fixes.
+- Support for dark mode in wxMSW under Windows 10 and later.
+- New Chrome-based wxWebView backend and many other wxWebView improvements.
+- Many improvements to wxAUI, including support for pinned and multiline tabs.
+- Support for WebP format in wxImage.
+- Support for high DPI cursors and animations.
+- Latest versions of 3rd party libraries.
+- Support for latest compilers (gcc 15, clang 19/Xcode 16) and C++ standards.
 
-Please see the full change log for more details:
 
-https://raw.githubusercontent.com/wxWidgets/wxWidgets/v3.2.1/docs/changes.txt
+This release is the start of a new "development" release series, but these
+development releases are suitable for production use: the only difference
+between them and "stable" releases is that neither ABI nor API stability is
+guaranteed in 3.3.x. However we strive to minimize API-incompatible changes
+even so and, in spite of a huge number of changes in it, this release remains
+almost fully API-compatible with wxWidgets 3.2 and updating the existing
+applications to use it should be straightforward. However please make sure to
+read the "INCOMPATIBLE CHANGES" section in the change log to be aware of the
+breaking changes in it.
 
-This release is API and ABI-compatible with 3.2.0, so the existing
-applications don't even need to be rebuilt to profit from all the fixes
-above if they use shared/dynamic libraries. And if they do need to be
-recompiled, this can be done without any changes to the code.
 
 We hope that you will enjoy using the new release!
 

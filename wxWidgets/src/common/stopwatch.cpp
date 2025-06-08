@@ -6,7 +6,6 @@
 //    Vadim Zeitlin got rid of all ifdefs (11.12.99)
 //    Sylvain Bougnoux added wxStopWatch class
 //    Guillermo Rodriguez <guille@iies.es> rewrote from scratch (Dic/99)
-// Modified by:
 // Created:     20.06.2003 (extracted from common/timercmn.cpp)
 // Copyright:   (c) 1998-2003 wxWidgets Team
 // Licence:     wxWindows licence
@@ -151,8 +150,6 @@ wxLongLong wxStopWatch::TimeInMicro() const
 // old timer functions superceded by wxStopWatch
 // ----------------------------------------------------------------------------
 
-#if wxUSE_LONGLONG
-
 static wxLongLong wxStartTime = 0l;
 
 // starts the global timer
@@ -172,5 +169,3 @@ long wxGetElapsedTime(bool resetTimer)
 
     return (newTime - oldTime).GetLo();
 }
-
-#endif // wxUSE_LONGLONG

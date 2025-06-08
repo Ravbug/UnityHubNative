@@ -23,6 +23,7 @@ Cham cham
 Cher cherokee
 Chrs chorasmian
 Copt coptic
+Cpmn cypro_minoan
 Cprt cypriot
 Cyrl cyrillic
 Deva devanagari
@@ -47,6 +48,8 @@ Guru gurmukhi
 Hang hangul
 Hani han
 Hano hanunoo
+Hans Hans
+Hant Hant
 Hatr hatran
 Hebr hebrew
 Hira hiragana
@@ -59,6 +62,7 @@ Ital old_italic
 Java javanese
 Kali kayah_li
 Kana katakana
+Kawi kawi
 Khar kharoshthi
 Khmr khmer
 Khoj khojki
@@ -91,6 +95,7 @@ Mroo mro
 Mtei meetei_mayek
 Mult multani
 Mymr myanmar
+Nagm nag_mundari
 Nand nandinagari
 Narb old_north_arabian
 Nbat nabataean
@@ -103,6 +108,7 @@ Orkh old_turkic
 Orya oriya
 Osge osage
 Osma osmanya
+Ougr old_uyghur
 Palm palmyrene
 Pauc pau_cin_hau
 Perm old_permic
@@ -145,8 +151,11 @@ Thaa thaana
 Thai thai
 Tibt tibetan
 Tirh tirhuta
+Tnsa tangsa
+Toto toto
 Ugar ugaritic
 Vaii vai
+Vith vithkuqi
 Wara warang_citi
 Wcho wancho
 Xpeo old_persian

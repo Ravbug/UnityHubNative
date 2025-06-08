@@ -14,6 +14,7 @@
 #include "wx/gdicmn.h"
 
 class WXDLLIMPEXP_FWD_CORE wxDC;
+class WXDLLIMPEXP_FWD_CORE wxReadOnlyDC;
 
 class wxMarkupParserOutput;
 
@@ -24,10 +25,18 @@ class wxMarkupParserOutput;
 class WXDLLIMPEXP_CORE wxMarkupTextBase
 {
 public:
-    virtual ~wxMarkupTextBase() {}
+    virtual ~wxMarkupTextBase() = default;
 
-    // Update the markup string.
-    void SetMarkup(const wxString& markup) { m_markup = markup; }
+    // Update the markup string, return false if it didn't change.
+    bool SetMarkup(const wxString& markup)
+    {
+        if ( markup == m_markup )
+            return false;
+
+        m_markup = markup;
+
+        return true;
+    }
 
     // Return the width and height required by the given string and optionally
     // the height of the visible part above the baseline (i.e. ascent minus
@@ -36,7 +45,7 @@ public:
     // The font currently selected into the DC is used for measuring (notice
     // that it is changed by this function but normally -- i.e. if markup is
     // valid -- restored to its original value when it returns).
-    wxSize Measure(wxDC& dc, int *visibleHeight = NULL) const;
+    wxSize Measure(wxReadOnlyDC& dc, int *visibleHeight = nullptr) const;
 
 protected:
     wxMarkupTextBase(const wxString& markup)
@@ -80,20 +89,16 @@ public:
 
     // Default copy ctor, assignment operator and dtor are ok.
 
-    // Update the markup string.
-    //
-    // The same rules for mnemonics as in the ctor apply to this string.
-    void SetMarkup(const wxString& markup) { m_markup = markup; }
-
     // Render the markup string into the given DC in the specified rectangle.
     //
     // Notice that while the function uses the provided rectangle for alignment
-    // (it centers the text in it), no clipping is done by it so use Measure()
-    // and set the clipping region before rendering if necessary.
-    void Render(wxDC& dc, const wxRect& rect, int flags);
+    // (by default it centers the text in it), no clipping is done by it so use
+    // Measure() and set the clipping region before rendering if necessary.
+    void Render(wxDC& dc, const wxRect& rect, int flags,
+                int alignment = wxALIGN_CENTER);
 
 protected:
-    virtual wxString GetMarkupForMeasuring() const wxOVERRIDE;
+    virtual wxString GetMarkupForMeasuring() const override;
 };
 
 
@@ -132,7 +137,7 @@ public:
                 wxEllipsizeMode ellipsizeMode);
 
 protected:
-    virtual wxString GetMarkupForMeasuring() const wxOVERRIDE { return m_markup; }
+    virtual wxString GetMarkupForMeasuring() const override { return m_markup; }
 };
 
 #endif // _WX_GENERIC_PRIVATE_MARKUPTEXT_H_

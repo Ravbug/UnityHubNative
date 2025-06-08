@@ -2,7 +2,6 @@
 // Name:        src/osx/printdlg_osx.cpp
 // Purpose:     wxPrintDialog, wxPageSetupDialog
 // Author:      Stefan Csomor
-// Modified by:
 // Created:     1998-01-01
 // Copyright:   (c) Stefan Csomor
 // Licence:     wxWindows licence
@@ -33,8 +32,8 @@ wxIMPLEMENT_DYNAMIC_CLASS(wxMacPrintDialog, wxPrintDialogBase);
 
 wxMacPrintDialog::wxMacPrintDialog()
 {
-    m_dialogParent = NULL;
-    m_printerDC = NULL;
+    m_dialogParent = nullptr;
+    m_printerDC = nullptr;
     m_destroyDC = true;
 }
 
@@ -46,7 +45,7 @@ wxMacPrintDialog::wxMacPrintDialog( wxWindow *p, wxPrintDialogData *data )
 wxMacPrintDialog::wxMacPrintDialog( wxWindow *p, wxPrintData *data )
 {
     wxPrintDialogData data2;
-    if (data != NULL)
+    if (data != nullptr)
         data2 = *data;
 
     Create( p, &data2 );
@@ -55,10 +54,10 @@ wxMacPrintDialog::wxMacPrintDialog( wxWindow *p, wxPrintData *data )
 bool wxMacPrintDialog::Create( wxWindow *p, wxPrintDialogData *data )
 {
     m_dialogParent = p;
-    m_printerDC = NULL;
+    m_printerDC = nullptr;
     m_destroyDC = true;
 
-    if (data != NULL)
+    if (data != nullptr)
         m_printDialogData = *data;
 
     return true;
@@ -89,7 +88,7 @@ bool wxMacPageSetupDialog::Create( wxWindow *p, wxPageSetupDialogData *data )
 {
     m_dialogParent = p;
 
-    if (data != NULL)
+    if (data != nullptr)
         m_pageSetupData = (*data);
 
     return true;
@@ -113,7 +112,7 @@ wxMacPageMarginsDialog::wxMacPageMarginsDialog(wxFrame *parent, wxPageSetupDialo
   GetMinMargins();
   wxBoxSizer *colSizer = new wxBoxSizer(wxVERTICAL);
   wxFlexGridSizer *gridSizer = new wxFlexGridSizer(4, 5, 5);
-  colSizer->Add(gridSizer, wxSizerFlags().Border(wxALL, 5));
+  colSizer->Add(gridSizer, wxSizerFlags().Border(wxALL));
   gridSizer->Add(new wxStaticText(this, wxID_ANY, wxT("Left (mm):")), wxSizerFlags().Right());
   gridSizer->Add(m_LeftMargin = new wxTextCtrl(this, wxID_ANY), wxSizerFlags().Left());
   gridSizer->Add(new wxStaticText(this, wxID_ANY, wxT("Top (mm):")), wxSizerFlags().Right());
@@ -122,8 +121,8 @@ wxMacPageMarginsDialog::wxMacPageMarginsDialog(wxFrame *parent, wxPageSetupDialo
   gridSizer->Add(m_RightMargin = new wxTextCtrl(this, wxID_ANY), wxSizerFlags().Left());
   gridSizer->Add(new wxStaticText(this, wxID_ANY, wxT("Bottom (mm):")), wxSizerFlags().Right());
   gridSizer->Add(m_BottomMargin = new wxTextCtrl(this, wxID_ANY), wxSizerFlags().Left());
-  colSizer->Add(new wxStaticLine(this), wxSizerFlags().Expand().Border(wxTOP|wxBOTTOM, 5));
-  colSizer->Add(CreateButtonSizer(wxOK | wxCANCEL), wxSizerFlags().Expand().Border(wxALL, 5));
+  colSizer->Add(new wxStaticLine(this), wxSizerFlags().Expand().Border(wxTOP|wxBOTTOM));
+  colSizer->Add(CreateButtonSizer(wxOK | wxCANCEL), wxSizerFlags().Expand().Border(wxALL));
   TransferToWindow();
   SetSizerAndFit(colSizer);
   Center(wxBOTH);

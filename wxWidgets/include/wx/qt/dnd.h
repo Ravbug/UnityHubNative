@@ -8,19 +8,23 @@
 #ifndef _WX_QT_DND_H_
 #define _WX_QT_DND_H_
 
+#ifdef __WINDOWS__
+#define wxDROP_ICON(name)   wxCursor(#name)
+#else
 #define wxDROP_ICON(name)   wxCursor(name##_xpm)
+#endif
 
 class WXDLLIMPEXP_CORE wxDropTarget : public wxDropTargetBase
 {
 public:
-    wxDropTarget(wxDataObject *dataObject = NULL);
+    wxDropTarget(wxDataObject *dataObject = nullptr);
     virtual ~wxDropTarget();
 
-    virtual bool OnDrop(wxCoord x, wxCoord y) wxOVERRIDE;
+    virtual bool OnDrop(wxCoord x, wxCoord y) override;
     virtual wxDragResult OnData(wxCoord x,
                                 wxCoord y,
-                                wxDragResult def) wxOVERRIDE;
-    virtual bool GetData() wxOVERRIDE;
+                                wxDragResult def) override;
+    virtual bool GetData() override;
 
     wxDataFormat GetMatchingPair();
 
@@ -35,18 +39,18 @@ private:
 class WXDLLIMPEXP_CORE wxDropSource: public wxDropSourceBase
 {
 public:
-    wxDropSource(wxWindow *win = NULL,
-                 const wxCursor &copy = wxNullCursor,
-                 const wxCursor &move = wxNullCursor,
-                 const wxCursor &none = wxNullCursor);
+    wxDropSource(wxWindow *win = nullptr,
+                 const wxCursorBundle& copy = {},
+                 const wxCursorBundle& move = {},
+                 const wxCursorBundle& none = {});
 
     wxDropSource(wxDataObject& data,
                  wxWindow *win,
-                 const wxCursor &copy = wxNullCursor,
-                 const wxCursor &move = wxNullCursor,
-                 const wxCursor &none = wxNullCursor);
+                 const wxCursorBundle& copy = {},
+                 const wxCursorBundle& move = {},
+                 const wxCursorBundle& none = {});
 
-    virtual wxDragResult DoDragDrop(int flags = wxDrag_CopyOnly) wxOVERRIDE;
+    virtual wxDragResult DoDragDrop(int flags = wxDrag_CopyOnly) override;
 
 private:
     wxWindow* m_parentWindow;

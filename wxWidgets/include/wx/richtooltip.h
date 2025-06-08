@@ -18,6 +18,7 @@
 
 class WXDLLIMPEXP_FWD_CORE wxBitmapBundle;
 class WXDLLIMPEXP_FWD_CORE wxFont;
+class WXDLLIMPEXP_FWD_CORE wxRect;
 class WXDLLIMPEXP_FWD_CORE wxWindow;
 
 class wxRichToolTipImpl;
@@ -87,7 +88,7 @@ public:
     void SetTitleFont(const wxFont& font);
 
     // Show the tooltip for the given window and optionally a specified area.
-    void ShowFor(wxWindow* win, const wxRect* rect = NULL);
+    void ShowFor(wxWindow* win, const wxRect* rect = nullptr);
 
     // Non-virtual dtor as this class is not supposed to be derived from.
     ~wxRichToolTip();

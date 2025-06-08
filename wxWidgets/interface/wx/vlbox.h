@@ -184,6 +184,23 @@ public:
     bool IsCurrent(size_t item) const;
 
     /**
+        Get the current item or @c wxNOT_FOUND if there is no
+        current item.
+
+        @since 3.3.0
+    */
+    int GetCurrent() const;
+
+    /**
+        Set the specified item as the current item, if it is wxNOT_FOUND
+        the current item is unset. The current item will be automatically
+        scrolled into view if it isn't currently visible.
+
+        @since 3.3.0
+    */
+    void SetCurrent(int current);
+
+    /**
         Returns @true if this item is selected, @false otherwise.
     */
     bool IsSelected(size_t item) const;
@@ -334,3 +351,54 @@ protected:
     virtual wxCoord OnMeasureItem(size_t n) const = 0;
 };
 
+/**
+    @class wxXRCPreviewVListBox
+
+    GUI editors, e.g., wxFormBuilder, typically allow users to lay out
+    instances of controls.  However, wxVListBox is an abstract class, so a GUI
+    editor can only create instances of a subclass of wxVListBox.  Rather than
+    require every GUI editor to repeat the work of subclassing wxVListBox for
+    GUI editing, and because the user's intended subclass will not exist in GUI
+    editors, provide a class that GUI editors can use.  Also, the
+    wxVListBoxXmlHandler can create instances of this class when in
+    wxXRC_NO_SUBCLASSING mode;
+
+    @library{wxcore}
+    @category{ctrl}
+
+    @since 3.3.0
+*/
+class wxXRCPreviewVListBox : public wxVListBox
+{
+public:
+    /**
+        Default constructor, you must call Create() later.
+    */
+    wxXRCPreviewVListBox();
+    /**
+        Normal constructor which calls Create() internally.
+    */
+    wxXRCPreviewVListBox(wxWindow *parent,
+                            wxWindowID id = wxID_ANY,
+                            const wxPoint& pos = wxDefaultPosition,
+                            const wxSize& size = wxDefaultSize,
+                            long style = 0,
+                            const wxString& name = wxXRCPreviewVListBoxNameStr);
+
+    /**
+        Creates the control. To finish creating it you also should call
+        SetItemCount() to let it know about the number of items it contains.
+
+        The only special style which may be used with wxXRCPreviewVListBox is
+        @c wxLB_MULTIPLE which indicates that the listbox should support
+        multiple selection.
+
+        @return @true on success or @false if the control couldn't be created.
+    */
+    bool Create(wxWindow *parent,
+                wxWindowID id = wxID_ANY,
+                const wxPoint& pos = wxDefaultPosition,
+                const wxSize& size = wxDefaultSize,
+                long style = 0,
+                const wxString& name = wxXRCPreviewVListBoxNameStr);
+};

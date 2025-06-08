@@ -37,7 +37,7 @@ enum wxStringTokenizerMode
 // wxStringTokenizer: replaces infamous strtok() and has some other features
 // ----------------------------------------------------------------------------
 
-class WXDLLIMPEXP_BASE wxStringTokenizer : public wxObject
+class WXDLLIMPEXP_BASE wxWARN_UNUSED wxStringTokenizer : public wxObject
 {
 public:
     // ctors and initializers
@@ -128,8 +128,7 @@ protected:
 
     wxString m_string;              // the string we tokenize
     wxString::const_iterator m_stringEnd;
-    // FIXME-UTF8: use wxWcharBuffer
-    wxWxCharBuffer m_delims;        // all possible delimiters
+    wxWCharBuffer m_delims;         // all possible delimiters
     size_t m_delimsLen;
 
     wxString::const_iterator m_pos; // the current position in m_string

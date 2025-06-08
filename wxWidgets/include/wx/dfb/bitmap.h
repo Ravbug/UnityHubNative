@@ -23,7 +23,7 @@ wxDFB_DECLARE_INTERFACE(IDirectFBSurface);
 class WXDLLIMPEXP_CORE wxBitmap : public wxBitmapBase
 {
 public:
-    wxBitmap() {}
+    wxBitmap() = default;
     wxBitmap(const wxIDirectFBSurfacePtr& surface) { Create(surface); }
     wxBitmap(int width, int height, int depth = -1) { Create(width, height, depth); }
     wxBitmap(const wxSize& sz, int depth = -1) { Create(sz, depth); }
@@ -39,8 +39,8 @@ public:
 #endif
 
     bool Create(const wxIDirectFBSurfacePtr& surface);
-    bool Create(int width, int height, int depth = wxBITMAP_SCREEN_DEPTH);
-    bool Create(const wxSize& sz, int depth = wxBITMAP_SCREEN_DEPTH)
+    bool Create(int width, int height, int depth = wxBITMAP_SCREEN_DEPTH) final;
+    bool Create(const wxSize& sz, int depth = wxBITMAP_SCREEN_DEPTH) final
         { return Create(sz.GetWidth(), sz.GetHeight(), depth); }
     bool Create(int width, int height, const wxDC& WXUNUSED(dc))
         { return Create(width,height); }
@@ -59,7 +59,7 @@ public:
     virtual wxBitmap GetSubBitmap(const wxRect& rect) const;
 
     virtual bool SaveFile(const wxString &name, wxBitmapType type,
-                          const wxPalette *palette = NULL) const;
+                          const wxPalette *palette = nullptr) const;
     virtual bool LoadFile(const wxString &name, wxBitmapType type = wxBITMAP_DEFAULT_TYPE);
 
 #if wxUSE_PALETTE
@@ -87,7 +87,7 @@ public:
 
 protected:
     virtual wxGDIRefData *CreateGDIRefData() const;
-    virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const;
+    wxNODISCARD virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const;
 
     void InitFromImage(const wxImage& image, int depth, double scale);
 

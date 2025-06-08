@@ -2,7 +2,6 @@
 // Name:        wx/fontenc.h
 // Purpose:     wxFontEncoding constants
 // Author:      Vadim Zeitlin
-// Modified by:
 // Created:     29.03.00
 // Copyright:   (c) Vadim Zeitlin
 // Licence:     wxWindows licence
@@ -10,6 +9,8 @@
 
 #ifndef _WX_FONTENC_H_
 #define _WX_FONTENC_H_
+
+#include "wx/defs.h"
 
 // font encodings
 enum wxFontEncoding
@@ -105,7 +106,7 @@ enum wxFontEncoding
     wxFONTENCODING_MACMONGOLIAN,
     wxFONTENCODING_MACETHIOPIC,
     wxFONTENCODING_MACCENTRALEUR,
-    wxFONTENCODING_MACVIATNAMESE,
+    wxFONTENCODING_MACVIETNAMESE,
     wxFONTENCODING_MACARABICEXT,
     wxFONTENCODING_MACSYMBOL,
     wxFONTENCODING_MACDINGBATS,
@@ -156,7 +157,9 @@ enum wxFontEncoding
     wxFONTENCODING_JOHAB = wxFONTENCODING_CP1361,
 
         // Vietnamese
-    wxFONTENCODING_VIETNAMESE = wxFONTENCODING_CP1258
+    wxFONTENCODING_VIETNAMESE = wxFONTENCODING_CP1258,
+        // misspelling kept for backward compatibility
+    wxFONTENCODING_MACVIATNAMESE = wxFONTENCODING_MACVIETNAMESE
 };
 
 #endif // _WX_FONTENC_H_

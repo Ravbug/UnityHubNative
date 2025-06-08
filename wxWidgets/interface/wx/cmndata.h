@@ -6,6 +6,50 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
+    @class wxPrintPageRange
+
+    This class represents a range of pages to be printed.
+
+    @library{wxcore}
+    @category{printing,data}
+
+    @see wxPrintDialogData
+
+    @since 3.3.0
+*/
+class wxPrintPageRange
+{
+public:
+    /// Default constructor creates an uninitialized range.
+    wxPrintPageRange() = default;
+
+    /**
+        Constructor creating a range from @a from to @a to (inclusive).
+
+        Parameters must be valid, i.e. @a from must be strictly positive and @a
+        to must be greater or equal to @a from.
+     */
+    wxPrintPageRange(int from, int to);
+
+    /// Return @true if both components are initialized correctly.
+    bool IsValid() const;
+
+    /// Return the number of pages in this range if it is valid.
+    int GetNumberOfPages() const;
+
+    int fromPage = 0;
+    int toPage = 0;
+};
+
+/**
+    Synonym for a vector of page ranges.
+
+    @since 3.3.0
+*/
+using wxPrintPageRanges = std::vector<wxPrintPageRange>;
+
+
+/**
     @class wxPageSetupDialogData
 
     This class holds a variety of information related to wxPageSetupDialog.
@@ -490,6 +534,18 @@ public:
     void EnableSelection(bool flag);
 
     /**
+        Allows or disallows selecting printing the "Current Page" in the
+        dialog.
+
+        This currently only has an effect under MSW, where the native dialog
+        enables the "Current Page" radio button if this function is called to
+        allow the user to print the current page only.
+
+        @since 3.3.0
+    */
+    void EnableCurrentPage(bool flag);
+
+    /**
         Returns @true if the user requested that all pages be printed.
     */
     bool GetAllPages() const;
@@ -501,6 +557,9 @@ public:
 
     /**
         Returns the @e from page number, as entered by the user.
+
+        This function can't be used if multiple page ranges were specified, use
+        GetPageRanges() instead.
     */
     int GetFromPage() const;
 
@@ -536,7 +595,31 @@ public:
     bool GetSelection() const;
 
     /**
+        Returns @true if the user requested that the current page be printed.
+
+        Note that the "current page" is defined by the application.
+
+        It only makes sense to call this function if EnableCurrentPage() had been
+        called before, otherwise it always returns @false.
+
+        @since 3.3.0
+    */
+    bool GetCurrentPage() const;
+
+    /**
+        Returns @true if the user requested printing only the specified pages.
+
+        The pages to print can be retrieved using GetPageRanges().
+
+        @since 3.3.0
+    */
+    bool GetSpecifiedPages() const;
+
+    /**
         Returns the @e "print to" page number, as entered by the user.
+
+        This function can't be used if multiple page ranges were specified, use
+        GetPageRanges() instead.
     */
     int GetToPage() const;
 
@@ -548,12 +631,31 @@ public:
     bool IsOk() const;
 
     /**
+        Selects the "All pages" radio button.
+
+        When called with @true value, enables printing all pages. This is the
+        default behaviour.
+
+        If @a flag is @false, this function doesn't do anything unless it had
+        been called with @true value before and in this case it switches to
+        printing the selected pages only (see GetSpecifiedPages()).
+    */
+    void SetAllPages(bool flag = true);
+
+    /**
         Sets the "Collate" checkbox to @true or @false.
     */
     void SetCollate(bool flag);
 
     /**
         Sets the @e from page number.
+
+        Together with SetToPage(), this function can be used to define a single
+        range of pages to print. If you need to specify multiple ranges, use
+        SetPageRanges() instead.
+
+        @note If SetPageRanges() was used to specify multiple ranges, this
+              function cannot be used as there is no single "from" page to set.
     */
     void SetFromPage(int page);
 
@@ -584,11 +686,36 @@ public:
     void SetPrintToFile(bool flag);
 
     /**
-        Selects the "Selection" radio button. The effect of printing the
-        selection depends on how the application implements this command, if at
-        all.
+        Selects the "Selection" radio button.
+
+        The effect of printing the selection depends on how the application
+        implements this command, if at all.
+
+        This function should only be called when EnableSelection() is used as
+        well.
+
+        If @a flag is @false, this function doesn't do anything unless it had
+        been called with @true value before and in this case it switches to
+        printing the selected pages only (see GetSpecifiedPages()).
     */
-    void SetSelection(bool flag);
+    void SetSelection(bool flag = true);
+
+    /**
+        Selects the "Current Page" radio button when the dialog is initially
+        shown.
+
+        This function can only be called when EnableCurrentPage() is used as
+        well.
+
+        If @a flag is @false, this function doesn't do anything unless it had
+        been called with @true value before and in this case it switches to
+        printing the selected pages only (see GetSpecifiedPages()).
+
+        @see GetCurrentPage()
+
+        @since 3.3.0
+    */
+    void SetCurrentPage(bool flag = true);
 
     /**
         @deprecated This function has been deprecated since version 2.5.4.
@@ -601,6 +728,13 @@ public:
 
     /**
         Sets the @e "print to" page number.
+
+        Together with SetFromPage(), this function can be used to define a
+        single range of pages to print. If you need to specify multiple ranges,
+        use SetPageRanges() instead.
+
+        @note If SetPageRanges() was used to specify multiple ranges, this
+              function cannot be used as there is no single "to" page to set.
     */
     void SetToPage(int page);
 
@@ -613,5 +747,53 @@ public:
         Assigns another print dialog data object to this object.
     */
     void operator =(const wxPrintDialogData& data);
+
+    /**
+        Sets the maximum number of page ranges that the user can specify.
+
+        This value is used as a limit for the number of page ranges that can be
+        used in the print dialog. The default value is 64.
+
+        Currently this is only used in wxMSW.
+
+        @since 3.3.0
+    */
+    void SetMaxPageRanges(int maxRanges);
+
+    /**
+        Returns the maximum number of page ranges that the user can specify.
+
+        @see SetMaxRanges()
+
+        @since 3.3.0
+    */
+    int GetMaxPageRanges() const;
+
+    /**
+        Returns the page ranges to print.
+
+        This vector contains the page ranges to be printed. If it is empty, all
+        pages are printed, otherwise only the pages in the specified ranges are.
+
+        @see SetPageRanges()
+
+        @since 3.3.0
+    */
+    const std::vector<wxPrintPageRange>& GetPageRanges() const;
+
+    /**
+        Sets the ranges of pages to print.
+
+        Each element of the vector represents a range of pages to print. All
+        ranges should be disjoint and be specified in increasing order.
+
+        Currently only wxMSW supports the full functionality of this function,
+        all other ports only allow specifying a single range.
+
+        Passing an empty vector is equivalent to printing all pages.
+
+        @since 3.3.0
+    */
+    void SetPageRanges(const std::vector<wxPrintPageRange>& pageRanges);
 };
 

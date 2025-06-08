@@ -6,7 +6,9 @@
 #                      \___/_/\_\ .__/ \__,_|\__|
 #                               |_| XML parser
 #
-# Copyright (c) 2019-2021 Sebastian Pipping <sebastian@pipping.org>
+# Copyright (c) 2019-2024 Sebastian Pipping <sebastian@pipping.org>
+# Copyright (c) 2022      Rosen Penev <rosenp@gmail.com>
+# Copyright (c) 2024      Dag-Erling Smørgrav <des@des.dev>
 # Licensed under the MIT license:
 #
 # Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -28,34 +30,32 @@
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 # USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-set -e
-set -u
-set -o pipefail
+set -e -u -o pipefail
 
-clang-format --version
+cd "$(dirname "$(type -P "$0")")"
 
-clang_format_args=(
+args=(
     -i
     -style=file
     -verbose
 )
 
-if [[ $# -ge 1 ]]; then
-    exec clang-format "${clang_format_args[@]}" "$@"
+if [[ $# -gt 0 ]]; then
+    files=( "$@" )
+else
+    files=( $(git ls-files -- '*.[ch]' '*.cpp' '*.cxx' '*.h.cmake') )
 fi
 
-expand --tabs=2 --initial lib/siphash.h | sponge lib/siphash.h
+set -x
 
-find \
-        -name '*.[ch]' \
-        -o -name '*.cpp' \
-        -o -name '*.cxx' \
-        -o -name '*.h.cmake' \
-    | sort \
-    | xargs clang-format "${clang_format_args[@]}"
+type -P clang-format
+
+clang-format --version
+
+clang-format "${args[@]}" -- "${files[@]}"
 
 sed \
         -e 's, @$,@,' \
-        -e 's,#\( \+\)cmakedefine,\1#cmakedefine,' \
-        -i \
+        -e 's,#\( \+\)cmakedefine,#cmakedefine,' \
+        -i.bak \
         expat_config.h.cmake

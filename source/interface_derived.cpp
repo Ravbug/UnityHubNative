@@ -83,7 +83,9 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	#elif defined _WIN32
 		int status = mkdir(datapath.string().c_str());
 		//on windows also make the main window background white
-		this->SetBackgroundColour(*wxWHITE);
+        if (!wxSystemSettings::GetAppearance().IsDark()) {
+            this->SetBackgroundColour(*wxWHITE);
+        }
 		//high DPI scaling fixes
 		dpi_scale(this);
 		//set reveal label
@@ -95,7 +97,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	#if defined __linux__
 	launchHubBtn->Hide();
 	#endif
-	
+
 	//if no projects to load, the interface will be blank
 
 	//show current version in titlebar
@@ -211,7 +213,7 @@ void MainFrameDerived::Filter(wxKeyEvent &){
     wxListEvent e;
     OnDeselectProject(e);
     projects.clear();
-    auto filter = projSearchCtrl->GetValue();
+    auto filter = projSearchCtrl->GetValue().ToStdString();
     transform(filter.begin(), filter.end(), filter.begin(), ::tolower);
     LoadProjects(filter);
 }

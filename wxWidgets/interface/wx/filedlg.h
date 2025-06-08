@@ -146,6 +146,12 @@ const char wxFileSelectorDefaultWildcardStr[];
     @ref page_samples_dialogs, please check it for more details.
 
 
+    @note New style file dialogs can only be used in wxMSW when the apartment,
+        COM threading model is used. This is the case by default, but if the
+        application initializes COM on its own using multi-threaded model, old
+        style dialogs are used, at least when they must have a parent, as the
+        new style dialog doesn't support this threading model.
+
     @beginStyleTable
     @style{wxFD_DEFAULT_STYLE}
            Equivalent to @c wxFD_OPEN.
@@ -206,8 +212,6 @@ public:
             The default filename, or the empty string.
         @param wildcard
             A wildcard, such as "*.*" or "BMP files (*.bmp)|*.bmp|GIF files (*.gif)|*.gif".
-            Note that the native Motif dialog has some limitations with respect to
-            wildcards; see the Remarks section above.
         @param style
             A dialog style. See @c wxFD_* styles for more info.
         @param pos
@@ -268,7 +272,7 @@ public:
             because this functionality is not available on the current
             platform.
 
-        @since 3.2.1
+        @since 3.3.0
      */
     bool AddShortcut(const wxString& directory, int flags = 0);
 
@@ -464,9 +468,6 @@ public:
     /**
         Sets the wildcard, which can contain multiple file types, for example:
         "BMP files (*.bmp)|*.bmp|GIF files (*.gif)|*.gif".
-
-        Note that the native Motif dialog has some limitations with respect to
-        wildcards; see the Remarks section above.
     */
     virtual void SetWildcard(const wxString& wildCard);
 
@@ -494,9 +495,9 @@ public:
     default filename will be supplied. The wildcard determines what files are
     displayed in the file selector, and file extension supplies a type
     extension for the required filename. Flags may be a combination of
-    wxFD_OPEN, wxFD_SAVE, wxFD_OVERWRITE_PROMPT or wxFD_FILE_MUST_EXIST.
+    @c wxFD_OPEN, @c wxFD_SAVE, @c wxFD_OVERWRITE_PROMPT or @c wxFD_FILE_MUST_EXIST.
 
-    @note wxFD_MULTIPLE can only be used with wxFileDialog and not here since
+    @note @c wxFD_MULTIPLE can only be used with wxFileDialog and not here since
           this function only returns a single file name.
 
     Both the Unix and Windows versions implement a wildcard filter. Typing a
@@ -532,7 +533,7 @@ wxString wxFileSelector(const wxString& message,
                         const wxString& default_extension = wxEmptyString,
                         const wxString& wildcard = wxFileSelectorDefaultWildcardStr,
                         int flags = 0,
-                        wxWindow* parent = NULL,
+                        wxWindow* parent = nullptr,
                         int x = wxDefaultCoord,
                         int y = wxDefaultCoord);
 
@@ -544,15 +545,17 @@ wxString wxFileSelector(const wxString& message,
 wxString wxFileSelectorEx(const wxString& message = wxFileSelectorPromptStr,
                           const wxString& default_path = wxEmptyString,
                           const wxString& default_filename = wxEmptyString,
-                          int *indexDefaultExtension = NULL,
+                          int *indexDefaultExtension = nullptr,
                           const wxString& wildcard = wxFileSelectorDefaultWildcardStr,
                           int flags = 0,
-                          wxWindow *parent = NULL,
+                          wxWindow *parent = nullptr,
                           int x = wxDefaultCoord,
                           int y = wxDefaultCoord);
 
 /**
     Shows a file dialog asking the user for a file name for opening a file.
+
+    The file dialog will have @c wxFD_FILE_MUST_EXIST flag set.
 
     @see wxFileSelector(), wxFileDialog
 
@@ -561,10 +564,12 @@ wxString wxFileSelectorEx(const wxString& message = wxFileSelectorPromptStr,
 wxString wxLoadFileSelector(const wxString& what,
                             const wxString& extension,
                             const wxString& default_name = wxEmptyString,
-                            wxWindow *parent = NULL);
+                            wxWindow *parent = nullptr);
 
 /**
     Shows a file dialog asking the user for a file name for saving a file.
+
+    The file dialog will not have @c wxFD_OVERWRITE_PROMPT flag set.
 
     @see wxFileSelector(), wxFileDialog
 
@@ -573,7 +578,7 @@ wxString wxLoadFileSelector(const wxString& what,
 wxString wxSaveFileSelector(const wxString& what,
                             const wxString& extension,
                             const wxString& default_name = wxEmptyString,
-                            wxWindow *parent = NULL);
+                            wxWindow *parent = nullptr);
 
 ///@}
 

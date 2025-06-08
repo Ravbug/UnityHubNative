@@ -27,7 +27,7 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
     bSizer0 = new wxBoxSizer( wxVERTICAL );
     m_notebook1 = new wxNotebook( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
 
-    m_commonExpandFlags = wxSizerFlags(1).Expand().Border(wxALL, 20);
+    m_commonExpandFlags = wxSizerFlags(1).Expand().Border(wxALL, FromDIP(20));
 
     //Add panels into m_notebook1
 
@@ -209,7 +209,7 @@ void GUIFrame::AddPanel_2()
     m_checkList1->Check(0);
     fgSizer2->Add(m_checkList1, m_commonExpandFlags);
 
-    m_listBox1 = new wxListBox( m_panel2, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0, NULL, 0 );
+    m_listBox1 = new wxListBox( m_panel2, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0, nullptr, 0 );
     m_listBox1->Append( _("wxListBox") );
     m_listBox1->Append( _("Item1") );
     m_listBox1->Append( _("Item2") );
@@ -261,7 +261,7 @@ void GUIFrame::AddPanel_2()
     collbSizer->Add( m_collBut, 0, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 0 );
     collbSizer->Add( m_collText, wxSizerFlags().Expand() );
     win->SetSizer(collbSizer);
-    fgSizer2->Add( m_collPane1, wxSizerFlags().Expand().Border(wxALL, 5) );
+    fgSizer2->Add( m_collPane1, wxSizerFlags().Expand().Border(wxALL) );
 
     //wxCollapsiblePane 2
     m_collPane2 = new wxCollapsiblePane(m_panel2, -1, wxT("Expanded"));
@@ -279,7 +279,7 @@ void GUIFrame::AddPanel_2()
 
     m_collPane2->Expand();
 
-    fgSizer2->Add( m_collPane2, wxSizerFlags().Expand().Border(wxALL, 5) );
+    fgSizer2->Add( m_collPane2, wxSizerFlags().Expand().Border(wxALL) );
 
     m_panel2->SetSizer( fgSizer2 );
     m_panel2->Layout();
@@ -394,7 +394,7 @@ void GUIFrame::AddPanel_5()
     m_choice1->SetSelection( 0 );
     fgSizer4->Add( m_choice1, 0, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 20 );
 
-    m_comboBox1 = new wxComboBox( m_panel5, wxID_ANY, _("wxComboBox"), wxDefaultPosition, wxDefaultSize, 0, NULL, 0 );
+    m_comboBox1 = new wxComboBox( m_panel5, wxID_ANY, _("wxComboBox"), wxDefaultPosition, wxDefaultSize, 0, nullptr, 0 );
     m_comboBox1->Append( _("wxComboBox") );
     m_comboBox1->Append( _("Item1") );
     m_comboBox1->Append( _("Item2") );
@@ -417,7 +417,7 @@ void GUIFrame::AddPanel_5()
     for a screenshot.
     */
     m_bmpComboBox1 = new wxBitmapComboBox(m_panel5, wxID_ANY,_("Item1"),
-        wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_READONLY);
+        wxDefaultPosition, wxDefaultSize, 0, nullptr, wxCB_READONLY);
     m_bmpComboBox1->Append(_("Item1"), wxBitmap(wxT("bitmaps/bell.png"),wxBITMAP_TYPE_PNG));
     m_bmpComboBox1->Append(_("Item2"), wxBitmap(wxT("bitmaps/sound.png"),wxBITMAP_TYPE_PNG));
     m_bmpComboBox1->Append(_("Item3"), wxBitmap(wxT("bitmaps/bell.png"),wxBITMAP_TYPE_PNG));

@@ -29,57 +29,66 @@
 
 #include "tiffio.h"
 
-#define ROUND(x)    (uint16) ((x) + 0.5)
-#define CMSIZE      256
-#define WIDTH       525
-#define HEIGHT      512
-#define TIFF_GAMMA  2.2
+#define ROUND(x) (uint16_t)((x) + 0.5)
+#define CMSIZE 256
+#define WIDTH 525
+#define HEIGHT 512
+#define TIFF_GAMMA 2.2
 
-void                Usage();
-char *              programName;
+void Usage();
+char *programName;
 
 int main(int argc, char **argv)
 {
-    char *          input_file = NULL;
-    double          image_gamma = TIFF_GAMMA;
-    int             i, j;
-    TIFF *          tif;
-    unsigned char * scan_line;
-    uint16          red[CMSIZE], green[CMSIZE], blue[CMSIZE];
-    float	    refblackwhite[2*3];
+    char *input_file = NULL;
+    double image_gamma = TIFF_GAMMA;
+    int i, j;
+    TIFF *tif;
+    unsigned char *scan_line;
+    uint16_t red[CMSIZE], green[CMSIZE], blue[CMSIZE];
+    float refblackwhite[2 * 3];
 
     programName = argv[0];
 
-    switch (argc) {
-    case 2:
-        image_gamma = TIFF_GAMMA;
-        input_file = argv[1];
-        break;
-    case 4:
-        if (!strcmp(argv[1], "-gamma")) {
-            image_gamma = atof(argv[2]);
-            input_file = argv[3];
-        } else
+    switch (argc)
+    {
+        case 2:
+            image_gamma = TIFF_GAMMA;
+            input_file = argv[1];
+            break;
+        case 4:
+            if (!strcmp(argv[1], "-gamma"))
+            {
+                image_gamma = atof(argv[2]);
+                input_file = argv[3];
+            }
+            else
+                Usage();
+            break;
+        default:
             Usage();
-        break;
-    default:
-        Usage();
     }
 
-    for (i = 0; i < CMSIZE; i++) {
+    for (i = 0; i < CMSIZE; i++)
+    {
         if (i == 0)
             red[i] = green[i] = blue[i] = 0;
-        else {
+        else
+        {
             red[i] = ROUND((pow(i / 255.0, 1.0 / image_gamma) * 65535.0));
             green[i] = ROUND((pow(i / 255.0, 1.0 / image_gamma) * 65535.0));
             blue[i] = ROUND((pow(i / 255.0, 1.0 / image_gamma) * 65535.0));
         }
     }
-    refblackwhite[0] = 0.0; refblackwhite[1] = 255.0;
-    refblackwhite[2] = 0.0; refblackwhite[3] = 255.0;
-    refblackwhite[4] = 0.0; refblackwhite[5] = 255.0;
+    refblackwhite[0] = 0.0;
+    refblackwhite[1] = 255.0;
+    refblackwhite[2] = 0.0;
+    refblackwhite[3] = 255.0;
+    refblackwhite[4] = 0.0;
+    refblackwhite[5] = 255.0;
 
-    if ((tif = TIFFOpen(input_file, "w")) == NULL) {
+    if ((tif = TIFFOpen(input_file, "w")) == NULL)
+    {
         fprintf(stderr, "can't open %s as a TIFF file\n", input_file);
         exit(0);
     }
@@ -100,81 +109,97 @@ int main(int argc, char **argv)
     TIFFSetField(tif, TIFFTAG_REFERENCEBLACKWHITE, refblackwhite);
     TIFFSetField(tif, TIFFTAG_TRANSFERFUNCTION, red, green, blue);
 
-    scan_line = (unsigned char *) malloc(WIDTH * 3);
+    scan_line = (unsigned char *)malloc(WIDTH * 3);
 
-    for (i = 0; i < 255; i++) {
-        for (j = 0; j < 75; j++) {
-             scan_line[j * 3] = 255;
-             scan_line[(j * 3) + 1] = 255 - i;
-             scan_line[(j * 3) + 2] = 255 - i;
+    for (i = 0; i < 255; i++)
+    {
+        for (j = 0; j < 75; j++)
+        {
+            scan_line[j * 3] = 255;
+            scan_line[(j * 3) + 1] = 255 - i;
+            scan_line[(j * 3) + 2] = 255 - i;
         }
-        for (j = 75; j < 150; j++) {
-             scan_line[j * 3] = 255 - i;
-             scan_line[(j * 3) + 1] = 255;
-             scan_line[(j * 3) + 2] = 255 - i;
+        for (j = 75; j < 150; j++)
+        {
+            scan_line[j * 3] = 255 - i;
+            scan_line[(j * 3) + 1] = 255;
+            scan_line[(j * 3) + 2] = 255 - i;
         }
-        for (j = 150; j < 225; j++) {
-             scan_line[j * 3] = 255 - i;
-             scan_line[(j * 3) + 1] = 255 - i;
-             scan_line[(j * 3) + 2] = 255;
+        for (j = 150; j < 225; j++)
+        {
+            scan_line[j * 3] = 255 - i;
+            scan_line[(j * 3) + 1] = 255 - i;
+            scan_line[(j * 3) + 2] = 255;
         }
-        for (j = 225; j < 300; j++) {
-             scan_line[j * 3] = (i - 1) / 2;
-             scan_line[(j * 3) + 1] = (i - 1) / 2;
-             scan_line[(j * 3) + 2] = (i - 1) / 2;
+        for (j = 225; j < 300; j++)
+        {
+            scan_line[j * 3] = (i - 1) / 2;
+            scan_line[(j * 3) + 1] = (i - 1) / 2;
+            scan_line[(j * 3) + 2] = (i - 1) / 2;
         }
-        for (j = 300; j < 375; j++) {
-             scan_line[j * 3] = 255 - i;
-             scan_line[(j * 3) + 1] = 255;
-             scan_line[(j * 3) + 2] = 255;
+        for (j = 300; j < 375; j++)
+        {
+            scan_line[j * 3] = 255 - i;
+            scan_line[(j * 3) + 1] = 255;
+            scan_line[(j * 3) + 2] = 255;
         }
-        for (j = 375; j < 450; j++) {
-             scan_line[j * 3] = 255;
-             scan_line[(j * 3) + 1] = 255 - i;
-             scan_line[(j * 3) + 2] = 255;
+        for (j = 375; j < 450; j++)
+        {
+            scan_line[j * 3] = 255;
+            scan_line[(j * 3) + 1] = 255 - i;
+            scan_line[(j * 3) + 2] = 255;
         }
-        for (j = 450; j < 525; j++) {
-             scan_line[j * 3] = 255;
-             scan_line[(j * 3) + 1] = 255;
-             scan_line[(j * 3) + 2] = 255 - i;
+        for (j = 450; j < 525; j++)
+        {
+            scan_line[j * 3] = 255;
+            scan_line[(j * 3) + 1] = 255;
+            scan_line[(j * 3) + 2] = 255 - i;
         }
         TIFFWriteScanline(tif, scan_line, i, 0);
     }
-    for (i = 255; i < 512; i++) {
-        for (j = 0; j < 75; j++) {
-             scan_line[j * 3] = i;
-             scan_line[(j * 3) + 1] = 0;
-             scan_line[(j * 3) + 2] = 0;
+    for (i = 255; i < 512; i++)
+    {
+        for (j = 0; j < 75; j++)
+        {
+            scan_line[j * 3] = i;
+            scan_line[(j * 3) + 1] = 0;
+            scan_line[(j * 3) + 2] = 0;
         }
-        for (j = 75; j < 150; j++) {
-             scan_line[j * 3] = 0;
-             scan_line[(j * 3) + 1] = i;
-             scan_line[(j * 3) + 2] = 0;
+        for (j = 75; j < 150; j++)
+        {
+            scan_line[j * 3] = 0;
+            scan_line[(j * 3) + 1] = i;
+            scan_line[(j * 3) + 2] = 0;
         }
-        for (j = 150; j < 225; j++) {
-             scan_line[j * 3] = 0;
-             scan_line[(j * 3) + 1] = 0;
-             scan_line[(j * 3) + 2] = i;
+        for (j = 150; j < 225; j++)
+        {
+            scan_line[j * 3] = 0;
+            scan_line[(j * 3) + 1] = 0;
+            scan_line[(j * 3) + 2] = i;
         }
-        for (j = 225; j < 300; j++) {
-             scan_line[j * 3] = (i - 1) / 2;
-             scan_line[(j * 3) + 1] = (i - 1) / 2;
-             scan_line[(j * 3) + 2] = (i - 1) / 2;
+        for (j = 225; j < 300; j++)
+        {
+            scan_line[j * 3] = (i - 1) / 2;
+            scan_line[(j * 3) + 1] = (i - 1) / 2;
+            scan_line[(j * 3) + 2] = (i - 1) / 2;
         }
-        for (j = 300; j < 375; j++) {
-             scan_line[j * 3] = 0;
-             scan_line[(j * 3) + 1] = i;
-             scan_line[(j * 3) + 2] = i;
+        for (j = 300; j < 375; j++)
+        {
+            scan_line[j * 3] = 0;
+            scan_line[(j * 3) + 1] = i;
+            scan_line[(j * 3) + 2] = i;
         }
-        for (j = 375; j < 450; j++) {
-             scan_line[j * 3] = i;
-             scan_line[(j * 3) + 1] = 0;
-             scan_line[(j * 3) + 2] = i;
+        for (j = 375; j < 450; j++)
+        {
+            scan_line[j * 3] = i;
+            scan_line[(j * 3) + 1] = 0;
+            scan_line[(j * 3) + 2] = i;
         }
-        for (j = 450; j < 525; j++) {
-             scan_line[j * 3] = i;
-             scan_line[(j * 3) + 1] = i;
-             scan_line[(j * 3) + 2] = 0;
+        for (j = 450; j < 525; j++)
+        {
+            scan_line[j * 3] = i;
+            scan_line[(j * 3) + 1] = i;
+            scan_line[(j * 3) + 2] = 0;
         }
         TIFFWriteScanline(tif, scan_line, i, 0);
     }
@@ -184,16 +209,8 @@ int main(int argc, char **argv)
     exit(0);
 }
 
-void
-Usage()
+void Usage()
 {
     fprintf(stderr, "Usage: %s -gamma gamma tiff-image\n", programName);
     exit(0);
 }
-/*
- * Local Variables:
- * mode: c
- * c-basic-offset: 8
- * fill-column: 78
- * End:
- */

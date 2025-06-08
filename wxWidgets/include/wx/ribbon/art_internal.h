@@ -2,7 +2,6 @@
 // Name:        wx/ribbon/art_internal.h
 // Purpose:     Helper functions & classes used by ribbon art providers
 // Author:      Peter Cawley
-// Modified by:
 // Created:     2009-08-04
 // Copyright:   (C) Peter Cawley
 // Licence:     wxWindows licence
@@ -14,6 +13,8 @@
 #include "wx/defs.h"
 
 #if wxUSE_RIBBON
+
+#include "wx/settings.h"
 
 WXDLLIMPEXP_RIBBON wxColour wxRibbonInterpolateColour(
                                 const wxColour& start_colour,
@@ -63,7 +64,15 @@ public:
 
    wxColour    ToRGB() const;
 
-   wxRibbonHSLColour& MakeDarker(float delta);
+   // In dark mode, makes the colour darker, while in light mode make it
+   // lighter.
+   wxRibbonHSLColour AdjustLuminance(float delta)
+   {
+       return wxSystemSettings::GetAppearance().IsDark()
+           ? Darker(delta)
+           : Lighter(delta);
+   }
+
    wxRibbonHSLColour Darker(float delta) const;
    wxRibbonHSLColour Lighter(float delta) const;
    wxRibbonHSLColour Saturated(float delta) const;

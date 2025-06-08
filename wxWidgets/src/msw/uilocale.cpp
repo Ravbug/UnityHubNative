@@ -24,12 +24,14 @@
 #include "wx/private/uilocale.h"
 
 #include "wx/msw/private/uilocale.h"
+#include "wx/msw/registry.h"
 
 #include "wx/scopedarray.h"
 #include "wx/dynlib.h"
+#include "wx/wxcrt.h"
 
 #ifndef LOCALE_NAME_USER_DEFAULT
-    #define LOCALE_NAME_USER_DEFAULT NULL
+    #define LOCALE_NAME_USER_DEFAULT nullptr
 #endif
 
 #ifndef LOCALE_NAME_MAX_LENGTH
@@ -76,6 +78,10 @@
 #define LOCALE_IREADINGLAYOUT         0x00000070
 #endif
 
+#ifndef LOCALE_RETURN_GENITIVE_NAMES
+#define LOCALE_RETURN_GENITIVE_NAMES  0x10000000
+#endif
+
 // ============================================================================
 // implementation
 // ============================================================================
@@ -86,32 +92,81 @@
 
 namespace
 {
-
-// Trivial wrapper for ::SetThreadUILanguage().
-//
-// TODO-XP: Drop this when we don't support XP any longer.
-static void wxMSWSetThreadUILanguage(LANGID langid)
+// Function to retrieve the user's preferred languages
+void GetUserPreferredLanguagesFromRegistry(wxVector<wxString>& userLanguages)
 {
-    // SetThreadUILanguage() is available on XP, but with unclear
-    // behavior, so avoid calling it there.
-    if ( wxGetWinVersion() >= wxWinVersion_Vista )
+    // Open the registry key for user preferred languages
+    HKEY hKey;
+    if (::RegOpenKeyEx(HKEY_CURRENT_USER,
+                       L"Control Panel\\International\\User Profile",
+                       0, KEY_READ, &hKey) == ERROR_SUCCESS)
     {
-        wxLoadedDLL dllKernel32(wxS("kernel32.dll"));
-        typedef LANGID(WINAPI *SetThreadUILanguage_t)(LANGID);
-        SetThreadUILanguage_t pfnSetThreadUILanguage = NULL;
-        wxDL_INIT_FUNC(pfn, SetThreadUILanguage, dllKernel32);
-        if (pfnSetThreadUILanguage)
-            pfnSetThreadUILanguage(langid);
+        // Retrieve the "Languages" value from the key
+        DWORD type = REG_SZ;
+        DWORD valueSize = 256;
+        wxScopedArray<WCHAR> languages(valueSize);
+        if (::RegQueryValueEx(hKey, L"Languages", nullptr, &type, reinterpret_cast<LPBYTE>(languages.get()), &valueSize) == ERROR_SUCCESS)
+        {
+            // Extract languages from multi-string value
+            WCHAR* buf = languages.get();
+            while (*buf != 0)
+            {
+                const wxString language(buf);
+                userLanguages.push_back(language);
+                buf += language.length() + 1;
+            }
+        }
+        // Close the registry key
+        ::RegCloseKey(hKey);
     }
 }
 
 } // anonymous namespace
 
-void wxUseLCID(LCID lcid)
+LCTYPE wxGetLCTYPEFormatFromLocalInfo(wxLocaleInfo index)
 {
-    ::SetThreadLocale(lcid);
+    switch ( index )
+    {
+        case wxLOCALE_SHORT_DATE_FMT:
+            return LOCALE_SSHORTDATE;
 
-    wxMSWSetThreadUILanguage(LANGIDFROMLCID(lcid));
+        case wxLOCALE_LONG_DATE_FMT:
+            return LOCALE_SLONGDATE;
+
+        case wxLOCALE_TIME_FMT:
+            return LOCALE_STIMEFORMAT;
+
+        default:
+            wxFAIL_MSG( "no matching LCTYPE" );
+    }
+
+    return 0;
+}
+
+WXDLLIMPEXP_BASE wxString wxGetMSWDateTimeFormat(wxLocaleInfo index)
+{
+    wxString format;
+    wxString localeName = wxUILocale::GetCurrent().GetName();
+    if (localeName.IsSameAs("C"))
+    {
+        localeName = "en-US";
+    }
+
+    const wchar_t* name = localeName.wc_str();
+    LCTYPE lctype = wxGetLCTYPEFormatFromLocalInfo(index);
+    if (lctype != 0)
+    {
+        wchar_t buf[256];
+        if (::GetLocaleInfoEx(name, lctype, buf, WXSIZEOF(buf)))
+        {
+            format = buf;
+        }
+        else
+        {
+            wxLogLastError(wxT("GetLocaleInfoEx"));
+        }
+    }
+    return format;
 }
 
 // ----------------------------------------------------------------------------
@@ -160,7 +215,7 @@ class wxUILocaleImplStdC : public wxUILocaleImpl
 {
 public:
 
-    // Create object corresponding to the given locale, return NULL if not
+    // Create object corresponding to the given locale, return nullptr if not
     // supported.
     static wxUILocaleImplStdC* Create()
     {
@@ -168,30 +223,30 @@ public:
     }
 
 
-    ~wxUILocaleImplStdC() wxOVERRIDE
+    ~wxUILocaleImplStdC() override
     {
     }
 
-    void Use() wxOVERRIDE
+    void Use() override
     {
     }
 
-    wxString GetName() const wxOVERRIDE
+    wxString GetName() const override
     {
         return wxString("C");
     }
 
-    wxLocaleIdent GetLocaleId() const wxOVERRIDE
+    wxLocaleIdent GetLocaleId() const override
     {
         return wxLocaleIdent().Language("C");
     }
 
-    wxString GetInfo(wxLocaleInfo index, wxLocaleCategory cat) const wxOVERRIDE
+    wxString GetInfo(wxLocaleInfo index, wxLocaleCategory cat) const override
     {
         return wxGetStdCLocaleInfo(index, cat);
     }
 
-    wxString GetLocalizedName(wxLocaleName name, wxLocaleForm WXUNUSED(form)) const wxOVERRIDE
+    wxString GetLocalizedName(wxLocaleName name, wxLocaleForm WXUNUSED(form)) const override
     {
         wxString str;
         switch (name)
@@ -210,13 +265,25 @@ public:
         return str;
     }
 
-    wxLayoutDirection GetLayoutDirection() const wxOVERRIDE
+#if wxUSE_DATETIME
+    wxString GetMonthName(wxDateTime::Month month, wxDateTime::NameForm form) const override
+    {
+        return wxDateTime::GetEnglishMonthName(month, form);
+    }
+
+    wxString GetWeekDayName(wxDateTime::WeekDay weekday, wxDateTime::NameForm form) const override
+    {
+        return wxDateTime::GetEnglishWeekDayName(weekday, form);
+    }
+#endif // wxUSE_DATETIME
+
+    wxLayoutDirection GetLayoutDirection() const override
     {
         return wxLayout_Default;
     }
 
     int CompareStrings(const wxString& lhs, const wxString& rhs,
-        int flags) const wxOVERRIDE
+        int flags) const override
     {
         const int rc = flags & wxCompare_CaseInsensitive ? lhs.CmpNoCase(rhs)
             : lhs.Cmp(rhs);
@@ -237,214 +304,36 @@ private:
 };
 
 // ----------------------------------------------------------------------------
-// LCID-based wxUILocale implementation for MSW
-// ----------------------------------------------------------------------------
-
-// TODO-XP: Replace with wxUILocaleImplName when we don't support XP any longer.
-class wxUILocaleImplLCID : public wxUILocaleImpl
-{
-public:
-    explicit wxUILocaleImplLCID(LCID lcid)
-        : m_lcid(lcid)
-    {
-    }
-
-    void Use() wxOVERRIDE
-    {
-        wxUseLCID(m_lcid);
-    }
-
-    wxString GetName() const wxOVERRIDE
-    {
-        wxString str;
-
-        // Try using newer constant available since Vista which produces names
-        // more similar to the other platforms.
-        if ( wxGetWinVersion() >= wxWinVersion_Vista )
-        {
-            str = DoGetInfo(LOCALE_SNAME);
-        }
-        else // TODO-XP: Drop this branch.
-        {
-            // This name constant is available under all systems, including
-            // pre-Vista ones.
-            str = DoGetInfo(LOCALE_SENGLANGUAGE);
-        }
-
-        return str;
-    }
-
-    wxLocaleIdent GetLocaleId() const wxOVERRIDE
-    {
-        return wxLocaleIdent::FromTag(GetName());
-    }
-
-    wxString GetInfo(wxLocaleInfo index, wxLocaleCategory cat) const wxOVERRIDE
-    {
-        return wxGetInfoFromLCID(m_lcid, index, cat);
-    }
-
-    wxString GetLocalizedName(wxLocaleName name, wxLocaleForm form) const wxOVERRIDE
-    {
-        wxString str;
-        switch (name)
-        {
-            case wxLOCALE_NAME_LOCALE:
-                switch (form)
-                {
-                    case wxLOCALE_FORM_NATIVE:
-                        {
-                            wxString strLang = DoGetInfo(LOCALE_SNATIVELANGNAME);
-                            wxString strCtry = DoGetInfo(LOCALE_SNATIVECTRYNAME);
-                            str << strLang << " (" << strCtry << ")";
-                        }
-                        break;
-                    case wxLOCALE_FORM_ENGLISH:
-                        {
-                            wxString strLang = DoGetInfo(LOCALE_SENGLANGUAGE);
-                            wxString strCtry = DoGetInfo(LOCALE_SENGCOUNTRY);
-                            str << strLang << " (" << strCtry << ")";
-                        }
-                        break;
-                    default:
-                        wxFAIL_MSG("unknown wxLocaleForm");
-                }
-                break;
-            case wxLOCALE_NAME_LANGUAGE:
-                switch (form)
-                {
-                    case wxLOCALE_FORM_NATIVE:
-                        str = DoGetInfo(LOCALE_SNATIVELANGNAME);
-                        break;
-                    case wxLOCALE_FORM_ENGLISH:
-                        str = DoGetInfo(LOCALE_SENGLANGUAGE);
-                        break;
-                    default:
-                        wxFAIL_MSG("unknown wxLocaleForm");
-                }
-                break;
-            case wxLOCALE_NAME_COUNTRY:
-                switch (form)
-                {
-                    case wxLOCALE_FORM_NATIVE:
-                        str = DoGetInfo(LOCALE_SNATIVECTRYNAME);
-                        break;
-                    case wxLOCALE_FORM_ENGLISH:
-                        str = DoGetInfo(LOCALE_SENGCOUNTRY);
-                        break;
-                    default:
-                        wxFAIL_MSG("unknown wxLocaleForm");
-                }
-                break;
-        }
-
-        return str;
-    }
-
-    wxLayoutDirection GetLayoutDirection() const wxOVERRIDE
-    {
-        return wxLayout_Default;
-    }
-
-    int CompareStrings(const wxString& lhs, const wxString& rhs,
-                       int flags) const wxOVERRIDE
-    {
-        // Can't be really implemented on the OS versions where this class is
-        // used.
-        return flags & wxCompare_CaseInsensitive
-                ? lhs.CmpNoCase(rhs)
-                : lhs.Cmp(rhs) ;
-    }
-
-private:
-    const LCID m_lcid;
-
-    wxString DoGetInfo(LCTYPE lctype) const
-    {
-        wxChar buf[256];
-        if (!::GetLocaleInfo(m_lcid, lctype, buf, WXSIZEOF(buf)))
-        {
-            wxLogLastError(wxT("GetLocaleInfo"));
-            return wxString();
-        }
-
-        return buf;
-    }
-
-    wxDECLARE_NO_COPY_CLASS(wxUILocaleImplLCID);
-};
-
-// ----------------------------------------------------------------------------
 // Name-based wxUILocale implementation for MSW
 // ----------------------------------------------------------------------------
 
 class wxUILocaleImplName : public wxUILocaleImpl
 {
 public:
-    // TODO-XP: Get rid of this function and all the code branches handling the
-    // return value of "false" from it and just always use this class.
-    static bool CanUse()
-    {
-        static int s_canUse = -1;
-
-        if ( s_canUse == -1 )
-        {
-            // One time only initialization.
-            s_canUse = 0;
-
-            wxLoadedDLL dllKernel32(wxS("kernel32.dll"));
-            wxDL_INIT_FUNC(ms_, GetLocaleInfoEx, dllKernel32);
-            if ( !ms_GetLocaleInfoEx )
-                return false;
-            wxDL_INIT_FUNC(ms_, SetThreadPreferredUILanguages, dllKernel32);
-            if ( !ms_SetThreadPreferredUILanguages )
-                return false;
-            wxDL_INIT_FUNC(ms_, GetUserPreferredUILanguages, dllKernel32);
-            if (!ms_GetUserPreferredUILanguages)
-                return false;
-            wxDL_INIT_FUNC(ms_, GetUserDefaultLocaleName, dllKernel32);
-            if (!ms_GetUserDefaultLocaleName)
-                return false;
-
-            wxDL_INIT_FUNC(ms_, CompareStringEx, dllKernel32);
-            if ( !ms_CompareStringEx )
-                return false;
-
-            s_canUse = 1;
-        }
-
-        return s_canUse == 1;
-    }
-
     static wxVector<wxString> GetPreferredUILanguages()
     {
         wxVector<wxString> preferred;
 
-        if (CanUse())
+        // Check if Windows supports preferred UI languages.
+        // Note: Windows 8.x might support them as well, but Windows 7
+        // and below definitely do not.
+        if (wxGetWinVersion() >= wxWinVersion_10)
         {
-            // Check if Windows supports preferred UI languages.
-            // Note: Windows 8.x might support them as well, but Windows 7
-            // and below definitely do not.
-            if (wxGetWinVersion() >= wxWinVersion_10)
+            GetUserPreferredLanguagesFromRegistry(preferred);
+
+            ULONG numberOfLanguages = 0;
+            ULONG bufferSize = 0;
+            if (::GetUserPreferredUILanguages(MUI_LANGUAGE_NAME, &numberOfLanguages, nullptr, &bufferSize))
             {
-                ULONG numberOfLanguages = 0;
-                ULONG bufferSize = 0;
-                if (ms_GetUserPreferredUILanguages(MUI_LANGUAGE_NAME, &numberOfLanguages, NULL, &bufferSize))
+                wxScopedArray<WCHAR> languages(bufferSize);
+                if (::GetUserPreferredUILanguages(MUI_LANGUAGE_NAME, &numberOfLanguages, languages.get(), &bufferSize))
                 {
-                    wxScopedArray<WCHAR> languages(bufferSize);
-                    if (ms_GetUserPreferredUILanguages(MUI_LANGUAGE_NAME, &numberOfLanguages, languages.get(), &bufferSize))
+                    WCHAR* buf = languages.get();
+                    for (unsigned k = 0; k < numberOfLanguages; ++k)
                     {
-                        WCHAR* buf = languages.get();
-                        for (unsigned k = 0; k < numberOfLanguages; ++k)
-                        {
-                            const wxString language(buf);
-                            preferred.push_back(language);
-                            buf += language.length() + 1;
-                        }
-                    }
-                    else
-                    {
-                        wxLogLastError(wxT("GetUserPreferredUILanguages"));
+                        const wxString language(buf);
+                        preferred.push_back(language);
+                        buf += language.length() + 1;
                     }
                 }
                 else
@@ -454,41 +343,20 @@ public:
             }
             else
             {
-                // Use the default user locale for Windows 7 resp Windows 8.x and below
-                wchar_t buf[LOCALE_NAME_MAX_LENGTH];
-                if (!ms_GetUserDefaultLocaleName(buf, LOCALE_NAME_MAX_LENGTH))
-                {
-                    preferred.push_back(buf);
-                }
-                else
-                {
-                    wxLogLastError(wxT("GetUserDefaultLocaleName"));
-                }
+                wxLogLastError(wxT("GetUserPreferredUILanguages"));
             }
         }
         else
         {
-            const wxLanguageInfos& languagesDB = wxGetLanguageInfos();
-            size_t count = languagesDB.size();
-            const LANGID langid = ::GetUserDefaultUILanguage();
-            if (langid != LOCALE_CUSTOM_UI_DEFAULT)
+            // Use the default user locale for Windows 7 resp Windows 8.x and below
+            wchar_t buf[LOCALE_NAME_MAX_LENGTH];
+            if (::GetUserDefaultLocaleName(buf, LOCALE_NAME_MAX_LENGTH))
             {
-                size_t ixLanguage = 0;
-                wxUint32 lang = PRIMARYLANGID(langid);
-                wxUint32 sublang = SUBLANGID(langid);
-
-                for (ixLanguage = 0; ixLanguage < count; ++ixLanguage)
-                {
-                    if (languagesDB[ixLanguage].WinLang == lang &&
-                        languagesDB[ixLanguage].WinSublang == sublang)
-                    {
-                        break;
-                    }
-                }
-                if (ixLanguage < count)
-                {
-                    preferred.push_back(languagesDB[ixLanguage].CanonicalName);
-                }
+                preferred.push_back(buf);
+            }
+            else
+            {
+                wxLogLastError(wxT("GetUserDefaultLocaleName"));
             }
         }
 
@@ -501,14 +369,14 @@ public:
         return new wxUILocaleImplName(LOCALE_NAME_USER_DEFAULT);
     }
 
-    // Create object corresponding to the given locale, return NULL if not
+    // Create object corresponding to the given locale, return nullptr if not
     // supported.
     static wxUILocaleImplName* Create(const wchar_t* name)
     {
         // Getting the locale name seems to be the simplest way to see if it's
         // really supported: unknown locale result in an error here.
-        if ( !ms_GetLocaleInfoEx(name, LOCALE_SNAME, NULL, 0) )
-            return NULL;
+        if ( !::GetLocaleInfoEx(name, LOCALE_SNAME, nullptr, 0) )
+            return nullptr;
 
         // Unfortunately under Windows 10 the call above only fails if the given
         // locale name is not a valid BCP 47 identifier. For example,
@@ -531,26 +399,26 @@ public:
             // Windows header file). However, for now constructed locales will
             // be rejected here.
             int isConstructed = 0;
-            if (!ms_GetLocaleInfoEx
+            if (!::GetLocaleInfoEx
                  (
                     name,
                     LOCALE_ICONSTRUCTEDLOCALE | LOCALE_RETURN_NUMBER,
                     (LPWSTR)&isConstructed,
                     sizeof(int)
                  ) || isConstructed != 0)
-                return NULL;
+                return nullptr;
         }
 
         return new wxUILocaleImplName(name);
     }
 
 
-    ~wxUILocaleImplName() wxOVERRIDE
+    ~wxUILocaleImplName() override
     {
         free(const_cast<wchar_t*>(m_name));
     }
 
-    void Use() wxOVERRIDE
+    void Use() override
     {
         // Construct a double NUL-terminated buffer.
         wchar_t buf[256];
@@ -562,24 +430,22 @@ public:
 
         ULONG num = 1;
 
-        if ( !ms_SetThreadPreferredUILanguages(MUI_LANGUAGE_NAME, buf, &num) )
+        if ( !::SetThreadPreferredUILanguages(MUI_LANGUAGE_NAME, buf, &num) )
             wxLogLastError(wxT("SetThreadPreferredUILanguages"));
     }
 
-    wxString GetName() const wxOVERRIDE
+    wxString GetName() const override
     {
         return DoGetInfo(LOCALE_SNAME);
     }
 
-    wxLocaleIdent GetLocaleId() const wxOVERRIDE
+    wxLocaleIdent GetLocaleId() const override
     {
         return wxLocaleIdent::FromTag(GetName());
     }
 
-    wxString GetInfo(wxLocaleInfo index, wxLocaleCategory cat) const wxOVERRIDE
+    wxString GetInfo(wxLocaleInfo index, wxLocaleCategory cat) const override
     {
-        // TODO-XP: This duplicates code from in wxGetInfoFromLCID(), but
-        // it's only temporary because we will drop all code using LCID soon.
         wxString str;
         switch ( index )
         {
@@ -620,12 +486,8 @@ public:
         return str;
     }
 
-    wxString GetLocalizedName(wxLocaleName name, wxLocaleForm form) const wxOVERRIDE
+    wxString GetLocalizedName(wxLocaleName name, wxLocaleForm form) const override
     {
-        // TODO-XP: This duplicates code from in wxGetInfoFromLCID(), but
-        // it's only temporary because we will drop all code using LCID soon.
-                // LOCALE_SINTLSYMBOL (Currency 3-letter ISO 4217)
-        static wxWinVersion ver = wxGetWinVersion();
         wxString str;
         switch (name)
         {
@@ -633,28 +495,10 @@ public:
                 switch (form)
                 {
                     case wxLOCALE_FORM_NATIVE:
-                        if (ver >= wxWinVersion_7)
-                        {
-                            str = DoGetInfo(LOCALE_SNATIVEDISPLAYNAME);
-                        }
-                        else
-                        {
-                            wxString strLang = DoGetInfo(LOCALE_SNATIVELANGNAME);
-                            wxString strCtry = DoGetInfo(LOCALE_SNATIVECTRYNAME);
-                            str << strLang << " (" << strCtry << ")";
-                        }
+                        str = DoGetInfo(LOCALE_SNATIVEDISPLAYNAME);
                         break;
                     case wxLOCALE_FORM_ENGLISH:
-                        if (ver >= wxWinVersion_7)
-                        {
-                            str = DoGetInfo(LOCALE_SENGLISHDISPLAYNAME);
-                        }
-                        else
-                        {
-                            wxString strLang = DoGetInfo(LOCALE_SENGLANGUAGE);
-                            wxString strCtry = DoGetInfo(LOCALE_SENGCOUNTRY);
-                            str << strLang << " (" << strCtry << ")";
-                        }
+                        str = DoGetInfo(LOCALE_SENGLISHDISPLAYNAME);
                         break;
                     default:
                         wxFAIL_MSG("unknown wxLocaleForm");
@@ -691,37 +535,100 @@ public:
         return str;
     }
 
-    wxLayoutDirection GetLayoutDirection() const wxOVERRIDE
+#if wxUSE_DATETIME
+    wxString GetMonthName(wxDateTime::Month month, wxDateTime::NameForm form) const override
     {
-        if (wxGetWinVersion() >= wxWinVersion_7)
+        static LCTYPE monthNameIndex[3][12] =
         {
-            wxString str = DoGetInfo(LOCALE_IREADINGLAYOUT);
-            // str contains a number between 0 and 3:
-            // 0 = LTR, 1 = RTL, 2 = TTB+RTL, 3 = TTB + LTR
-            // If str equals 1 return RTL, otherwise LTR
-            return (str.IsSameAs("1") ? wxLayout_RightToLeft : wxLayout_LeftToRight);
-        }
-        else
+            { LOCALE_SMONTHNAME1,  LOCALE_SMONTHNAME2,  LOCALE_SMONTHNAME3,
+              LOCALE_SMONTHNAME4,  LOCALE_SMONTHNAME5,  LOCALE_SMONTHNAME6,
+              LOCALE_SMONTHNAME7,  LOCALE_SMONTHNAME8,  LOCALE_SMONTHNAME9,
+              LOCALE_SMONTHNAME10, LOCALE_SMONTHNAME11, LOCALE_SMONTHNAME12 },
+            { LOCALE_SABBREVMONTHNAME1,  LOCALE_SABBREVMONTHNAME2,  LOCALE_SABBREVMONTHNAME3,
+              LOCALE_SABBREVMONTHNAME4,  LOCALE_SABBREVMONTHNAME5,  LOCALE_SABBREVMONTHNAME6,
+              LOCALE_SABBREVMONTHNAME7,  LOCALE_SABBREVMONTHNAME8,  LOCALE_SABBREVMONTHNAME9,
+              LOCALE_SABBREVMONTHNAME10, LOCALE_SABBREVMONTHNAME11, LOCALE_SABBREVMONTHNAME12 },
+            { LOCALE_SABBREVMONTHNAME1,  LOCALE_SABBREVMONTHNAME2,  LOCALE_SABBREVMONTHNAME3,
+              LOCALE_SABBREVMONTHNAME4,  LOCALE_SABBREVMONTHNAME5,  LOCALE_SABBREVMONTHNAME6,
+              LOCALE_SABBREVMONTHNAME7,  LOCALE_SABBREVMONTHNAME8,  LOCALE_SABBREVMONTHNAME9,
+              LOCALE_SABBREVMONTHNAME10, LOCALE_SABBREVMONTHNAME11, LOCALE_SABBREVMONTHNAME12 }
+        };
+
+        const int idx = ArrayIndexFromFlag(form.GetFlags());
+        if (idx == -1)
+            return wxString();
+
+        auto lctype = monthNameIndex[idx][month];
+        switch ( form.GetContext() )
         {
-            return wxLayout_Default;
+            case wxDateTime::Context_Standalone:
+                // Nothing else needed.
+                break;
+
+            case wxDateTime::Context_Formatting:
+                lctype |= LOCALE_RETURN_GENITIVE_NAMES;
+                break;
         }
+
+        return DoGetInfo(lctype);
+    }
+
+    wxString GetWeekDayName(wxDateTime::WeekDay weekday, wxDateTime::NameForm form) const override
+    {
+        static LCTYPE weekdayNameIndex[3][12] =
+        {
+            { LOCALE_SDAYNAME7, LOCALE_SDAYNAME1, LOCALE_SDAYNAME2, LOCALE_SDAYNAME3,
+              LOCALE_SDAYNAME4, LOCALE_SDAYNAME5, LOCALE_SDAYNAME6 },
+            { LOCALE_SABBREVDAYNAME7, LOCALE_SABBREVDAYNAME1, LOCALE_SABBREVDAYNAME2, LOCALE_SABBREVDAYNAME3,
+              LOCALE_SABBREVDAYNAME4, LOCALE_SABBREVDAYNAME5, LOCALE_SABBREVDAYNAME6 },
+            { LOCALE_SSHORTESTDAYNAME7, LOCALE_SSHORTESTDAYNAME1, LOCALE_SSHORTESTDAYNAME2, LOCALE_SSHORTESTDAYNAME3,
+              LOCALE_SSHORTESTDAYNAME4, LOCALE_SSHORTESTDAYNAME5, LOCALE_SSHORTESTDAYNAME6 }
+        };
+
+        const int idx = ArrayIndexFromFlag(form.GetFlags());
+        if (idx == -1)
+            return wxString();
+
+        auto lctype = weekdayNameIndex[idx][weekday];
+        switch ( form.GetContext() )
+        {
+            case wxDateTime::Context_Standalone:
+                // Nothing else needed.
+                break;
+
+            case wxDateTime::Context_Formatting:
+                lctype |= LOCALE_RETURN_GENITIVE_NAMES;
+                break;
+        }
+
+        return DoGetInfo(lctype);
+    }
+#endif // wxUSE_DATETIME
+
+    wxLayoutDirection GetLayoutDirection() const override
+    {
+        wxString str = DoGetInfo(LOCALE_IREADINGLAYOUT);
+        // str contains a number between 0 and 3:
+        // 0 = LTR, 1 = RTL, 2 = TTB+RTL, 3 = TTB + LTR
+        // If str equals 1 return RTL, otherwise LTR
+        return (str.IsSameAs("1") ? wxLayout_RightToLeft : wxLayout_LeftToRight);
     }
 
     int CompareStrings(const wxString& lhs, const wxString& rhs,
-                       int flags) const wxOVERRIDE
+                       int flags) const override
     {
         DWORD dwFlags = 0;
 
         if ( flags & wxCompare_CaseInsensitive )
             dwFlags |= NORM_IGNORECASE;
 
-        const int ret = ms_CompareStringEx
+        const int ret = ::CompareStringEx
             (
                 m_name,
                 dwFlags,
                 lhs.wc_str(), -1,
                 rhs.wc_str(), -1,
-                NULL,               // [out] version information -- not needed
+                nullptr,               // [out] version information -- not needed
                 wxRESERVED_PARAM,
                 wxRESERVED_PARAM
             );
@@ -741,44 +648,18 @@ public:
     }
 
 private:
-    typedef int (WINAPI *GetLocaleInfoEx_t)(LPCWSTR, LCTYPE, LPWSTR, int);
-    static GetLocaleInfoEx_t ms_GetLocaleInfoEx;
-
-    typedef BOOL (WINAPI *SetThreadPreferredUILanguages_t)(DWORD, CONST WCHAR*, ULONG*);
-    static SetThreadPreferredUILanguages_t ms_SetThreadPreferredUILanguages;
-
-    typedef BOOL (WINAPI *GetUserPreferredUILanguages_t)(DWORD, ULONG*, WCHAR*, ULONG*);
-    static GetUserPreferredUILanguages_t ms_GetUserPreferredUILanguages;
-
-    typedef int (WINAPI* GetUserDefaultLocaleName_t)(LPWSTR, int);
-    static GetUserDefaultLocaleName_t ms_GetUserDefaultLocaleName;
-
-    // Note: we currently don't use NLSVERSIONINFO output parameter and so we
-    // don't bother dealing with the different sizes of this struct under
-    // different OS versions and define the function type as using "void*" to
-    // avoid using this parameter accidentally. If we ever really need to use
-    // it, we'd need to check the OS version/struct size during run-time.
-    typedef int (WINAPI *CompareStringEx_t)(LPCWSTR, DWORD,
-                                            CONST WCHAR*, int,
-                                            CONST WCHAR*, int,
-                                            void*, // actually LPNLSVERSIONINFO
-                                            void*,
-                                            LPARAM);
-    static CompareStringEx_t ms_CompareStringEx;
-
-
     // Ctor is private, use CreateDefault() or Create() instead.
     //
-    // Note that "name" can be NULL here (LOCALE_NAME_USER_DEFAULT).
+    // Note that "name" can be null here (LOCALE_NAME_USER_DEFAULT).
     explicit wxUILocaleImplName(const wchar_t* name)
-        : m_name(name ? wxStrdup(name) : NULL)
+        : m_name(name ? wxStrdup(name) : nullptr)
     {
     }
 
     wxString DoGetInfo(LCTYPE lctype) const
     {
         wchar_t buf[256];
-        if ( !ms_GetLocaleInfoEx(m_name, lctype, buf, WXSIZEOF(buf)) )
+        if ( !::GetLocaleInfoEx(m_name, lctype, buf, WXSIZEOF(buf)) )
         {
             wxLogLastError(wxT("GetLocaleInfoEx"));
             return wxString();
@@ -791,12 +672,6 @@ private:
 
     wxDECLARE_NO_COPY_CLASS(wxUILocaleImplName);
 };
-
-wxUILocaleImplName::GetLocaleInfoEx_t wxUILocaleImplName::ms_GetLocaleInfoEx;
-wxUILocaleImplName::SetThreadPreferredUILanguages_t wxUILocaleImplName::ms_SetThreadPreferredUILanguages;
-wxUILocaleImplName::GetUserPreferredUILanguages_t wxUILocaleImplName::ms_GetUserPreferredUILanguages;
-wxUILocaleImplName::GetUserDefaultLocaleName_t wxUILocaleImplName::ms_GetUserDefaultLocaleName;
-wxUILocaleImplName::CompareStringEx_t wxUILocaleImplName::ms_CompareStringEx;
 
 // ----------------------------------------------------------------------------
 // wxUILocaleImpl implementation
@@ -811,42 +686,18 @@ wxUILocaleImpl* wxUILocaleImpl::CreateStdC()
 /* static */
 wxUILocaleImpl* wxUILocaleImpl::CreateUserDefault()
 {
-    if ( !wxUILocaleImplName::CanUse() )
-        return new wxUILocaleImplLCID(LOCALE_USER_DEFAULT);
-
     return wxUILocaleImplName::CreateDefault();
 }
 
 /* static */
 wxUILocaleImpl* wxUILocaleImpl::CreateForLanguage(const wxLanguageInfo& info)
 {
-    if (!wxUILocaleImplName::CanUse())
-    {
-        if (info.WinLang == 0)
-        {
-            wxLogWarning(wxS("Locale '%s' not supported by OS."), info.Description);
-            return NULL;
-        }
-        return new wxUILocaleImplLCID(info.GetLCID());
-    }
-    else
-    {
-        return wxUILocaleImplName::Create(info.LocaleTag.wc_str());
-    }
+    return wxUILocaleImplName::Create(info.LocaleTag.wc_str());
 }
 
 /* static */
 wxUILocaleImpl* wxUILocaleImpl::CreateForLocale(const wxLocaleIdent& locId)
 {
-    if ( !wxUILocaleImplName::CanUse() )
-    {
-        // We could try finding the LCID matching the name, but support for XP
-        // will be dropped soon, so it just doesn't seem worth to do it (note
-        // that LocaleNameToLCID() itself is not available in XP either, so we
-        // can't just use it here).
-        return NULL;
-    }
-
     return wxUILocaleImplName::Create(locId.GetTag(wxLOCALE_TAGTYPE_WINDOWS).wc_str());
 }
 

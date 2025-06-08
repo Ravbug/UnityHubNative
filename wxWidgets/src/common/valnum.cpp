@@ -80,7 +80,7 @@ wxTextEntry *wxNumValidatorBase::GetTextEntry() const
         return combo;
 #endif // wxUSE_COMBOBOX
 
-    return NULL;
+    return nullptr;
 }
 
 void
@@ -150,7 +150,6 @@ void wxNumValidatorBase::OnChar(wxKeyEvent& event)
     if ( !m_validatorWindow )
         return;
 
-#if wxUSE_UNICODE
     const int ch = event.GetUnicodeKey();
     if ( ch == WXK_NONE )
     {
@@ -158,18 +157,17 @@ void wxNumValidatorBase::OnChar(wxKeyEvent& event)
         // arrow or function key, we never filter those.
         return;
     }
-#else // !wxUSE_UNICODE
-    const int ch = event.GetKeyCode();
-    if ( ch > WXK_DELETE )
-    {
-        // Not a character either.
-        return;
-    }
-#endif // wxUSE_UNICODE/!wxUSE_UNICODE
 
     if ( ch < WXK_SPACE || ch == WXK_DELETE )
     {
         // Allow ASCII control characters and Delete.
+        return;
+    }
+
+    if ( event.GetModifiers() & ~wxMOD_SHIFT )
+    {
+        // Keys using modifiers other than Shift don't change the number, so
+        // ignore them.
         return;
     }
 
@@ -199,7 +197,20 @@ void wxNumValidatorBase::OnKillFocus(wxFocusEvent& event)
     if ( !control )
         return;
 
-    const wxString& valueNorm = NormalizeString(control->GetValue());
+    // Notice that only wxTextCtrl (and not wxTextEntry) has
+    // IsModified()/MarkDirty() methods hence the need for dynamic cast.
+    wxTextCtrl * const text = wxDynamicCast(m_validatorWindow, wxTextCtrl);
+    const bool wasModified = text ? text->IsModified() : false;
+
+    const wxString& value = control->GetValue();
+
+    // If the control is currently empty and it hasn't been modified by the
+    // user at all, leave it empty because just giving it focus and taking it
+    // away again shouldn't change the value.
+    if ( value.empty() && !wasModified )
+        return;
+
+    const wxString& valueNorm = NormalizeString(value);
     if ( control->GetValue() == valueNorm )
     {
         // Don't do anything at all if the value doesn't really change, even if
@@ -209,17 +220,11 @@ void wxNumValidatorBase::OnKillFocus(wxFocusEvent& event)
         return;
     }
 
-    // When we change the control value below, its "modified" status is reset
-    // so we need to explicitly keep it marked as modified if it was so in the
-    // first place.
-    //
-    // Notice that only wxTextCtrl (and not wxTextEntry) has
-    // IsModified()/MarkDirty() methods hence the need for dynamic cast.
-    wxTextCtrl * const text = wxDynamicCast(m_validatorWindow, wxTextCtrl);
-    const bool wasModified = text ? text->IsModified() : false;
-
     control->ChangeValue(valueNorm);
 
+    // When we changed the control value above, its "modified" status was reset
+    // so we need to explicitly keep it marked as modified if it was so in the
+    // first place.
     if ( wasModified )
         text->MarkDirty();
 }
@@ -264,19 +269,22 @@ wxIntegerValidatorBase::FromString(const wxString& s,
 }
 
 bool
-wxIntegerValidatorBase::IsCharOk(const wxString& val, int pos, wxChar ch) const
+wxIntegerValidatorBase::IsCharOk(const wxString& val,
+                                 int pos,
+                                 wxChar ch) const
 {
     // We only accept digits here (remember that '-' is taken care of by the
     // base class already).
     if ( ch < '0' || ch > '9' )
         return false;
 
-    // And the value after insertion needs to be in the defined range.
+    // And the value after insertion needs to be at least in the range
+    // allowed on input.
     LongestValueType value;
     if ( !FromString(GetValueAfterInsertingChar(val, pos, ch), &value) )
         return false;
 
-    return IsInRange(value);
+    return IsInInputRange(value);
 }
 
 // ============================================================================
@@ -317,7 +325,7 @@ wxFloatingPointValidatorBase::IsCharOk(const wxString& val,
                                        int pos,
                                        wxChar ch) const
 {
-    const wxChar separator = wxNumberFormatter::GetDecimalSeparator();
+    const wxUniChar separator = wxNumberFormatter::GetDecimalSeparator();
     if ( ch == separator )
     {
         if ( val.find(separator) != wxString::npos )
@@ -342,7 +350,8 @@ wxFloatingPointValidatorBase::IsCharOk(const wxString& val,
     if ( ch < '0' || ch > '9' )
         return false;
 
-    // Check whether the value we'd obtain if we accepted this key is correct.
+    // Check whether the value we'd obtain if we accepted this key passes some
+    // basic checks.
     const wxString newval(GetValueAfterInsertingChar(val, pos, ch));
 
     LongestValueType value;
@@ -354,8 +363,8 @@ wxFloatingPointValidatorBase::IsCharOk(const wxString& val,
     if ( posSep != wxString::npos && newval.length() - posSep - 1 > m_precision )
         return false;
 
-    // Finally check whether it is in the range.
-    return IsInRange(value);
+    // Finally check whether it is at least in the range allowed on input.
+    return IsInInputRange(value);
 }
 
 #endif // wxUSE_VALIDATORS && wxUSE_TEXTCTRL

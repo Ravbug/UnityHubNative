@@ -22,7 +22,8 @@
 class WXDLLIMPEXP_CORE wxColourPickerWidget : public wxGenericColourButton
 {
 public:
-    wxColourPickerWidget();
+    wxColourPickerWidget() = default;
+
     wxColourPickerWidget(wxWindow *parent,
                    wxWindowID id,
                    const wxColour& initial = *wxBLACK,
@@ -42,7 +43,7 @@ public:
                 const wxString& name = wxASCII_STR(wxColourPickerWidgetNameStr));
 
 protected:
-    virtual void UpdateColour() wxOVERRIDE;
+    virtual void UpdateColour() override;
 
 private:
 };

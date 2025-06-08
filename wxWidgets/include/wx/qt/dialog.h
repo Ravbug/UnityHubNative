@@ -14,7 +14,8 @@ class QDialog;
 class WXDLLIMPEXP_CORE wxDialog : public wxDialogBase
 {
 public:
-    wxDialog();
+    wxDialog() = default;
+
     wxDialog( wxWindow *parent, wxWindowID id,
             const wxString &title,
             const wxPoint &pos = wxDefaultPosition,
@@ -31,10 +32,10 @@ public:
             long style = wxDEFAULT_DIALOG_STYLE,
             const wxString &name = wxASCII_STR(wxDialogNameStr) );
 
-    virtual int ShowModal() wxOVERRIDE;
-    virtual void EndModal(int retCode) wxOVERRIDE;
-    virtual bool IsModal() const wxOVERRIDE;
-    virtual bool Show(bool show = true) wxOVERRIDE;
+    virtual int ShowModal() override;
+    virtual void EndModal(int retCode) override;
+    virtual bool IsModal() const override;
+    virtual bool Show(bool show = true) override;
 
     QDialog *GetDialogHandle() const;
 

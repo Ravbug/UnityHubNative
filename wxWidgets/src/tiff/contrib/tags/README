@@ -56,7 +56,7 @@ so that multiple clients may be installed.
 The TIFFExtendProc method that you define should be used to override
 the TIFF file's "vsetfield" and "vgetfield" methods, so that you
 can trap your new, private tags, and install their values into
-a private directory structure. For your convienience, a new pointer
+a private directory structure. For your convenience, a new pointer
 has also been added to the "TIFF" file structure:
 
 	tidata_t	tif_clientdir;	/* client TIFF directory */

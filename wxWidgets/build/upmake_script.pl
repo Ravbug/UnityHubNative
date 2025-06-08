@@ -70,13 +70,13 @@ if (!$only_bkl) {
     # The base names of all our projects with the list of variables
     # containing the files that should appear in them.
     my %projects_vars = (
-            adv      => [qw(ADVANCED_CMN ADVANCED_MSW ADVANCED_MSW_DESKTOP ADVANCED_MSW_NATIVE)],
+            adv      => [qw(ADVANCED_CMN ADVANCED_MSW ADVANCED_MSW_NATIVE)],
             aui      => [qw(AUI_CMN AUI_MSW)],
             base     => [qw(BASE_CMN BASE_AND_GUI_CMN BASE_WIN32 BASE_AND_GUI_WIN32)],
-            core     => [qw(BASE_AND_GUI_CMN BASE_AND_GUI_WIN32 MSW_LOWLEVEL MSW_DESKTOP_LOWLEVEL MSW MSW_DESKTOP GUI_CMN)],
+            core     => [qw(BASE_AND_GUI_CMN BASE_AND_GUI_WIN32 MSW_LOWLEVEL MSW GUI_CMN)],
             gl       => [qw(OPENGL_CMN OPENGL_MSW)],
             html     => [qw(HTML_CMN HTML_MSW)],
-            media    => [qw(MEDIA_CMN MEDIA_MSW MEDIA_MSW_DESKTOP)],
+            media    => [qw(MEDIA_CMN MEDIA_MSW)],
             net      => [qw(NET_CMN NET_WIN32)],
             propgrid => [qw(PROPGRID)],
             qa       => [qw(QA)],
@@ -87,9 +87,6 @@ if (!$only_bkl) {
             xml      => [qw(XML)],
             xrc      => [qw(XRC)],
         );
-
-    # The versions of non-MSBuild projects (MSBuild ones all use version "10").
-    my @vcproj_versions = qw(8 9);
 
     # Return the "filter" to use for the given file.
     sub filter_cb
@@ -179,12 +176,6 @@ if (!$only_bkl) {
         # are actually used as headers (i.e. they are #include'd).
         if ($proj eq 'base') {
             @headers = grep { $_ !~ /\.cpp$/ } @headers;
-        }
-
-        foreach my $ver (@vcproj_versions) {
-            next if defined $only_version && $ver != $only_version;
-
-            call_upmake("$Bin/msw/wx_vc${ver}_${proj}.vcproj", \&update_vcproj, @args);
         }
     }
 }

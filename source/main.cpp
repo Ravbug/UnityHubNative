@@ -20,12 +20,15 @@
 class UnityHubNative: public wxApp
 {
 public:
-    virtual bool OnInit();
+	virtual bool OnInit();
 };
 
 wxIMPLEMENT_APP(UnityHubNative);
 bool UnityHubNative::OnInit()
 {
+#if _WIN32
+	MSWEnableDarkMode();
+#endif
     MainFrame *frame = new MainFrameDerived();
 	//set the icon (windows and linux only)
 #ifdef _WIN32
@@ -33,6 +36,7 @@ bool UnityHubNative::OnInit()
 	//the resource file definition must have the same ending as the name of the icon file itself
 	//in this case, the icon file is wxwin.ico, so the definition is IDI_WXWIN
 	frame->SetIcon(wxIcon("IDI_WXWIN"));
+	SetAppearance(Appearance::System);
 #elif __linux
 	frame->SetIcon(wxIcon(wxICON(wxlin)));
 #endif

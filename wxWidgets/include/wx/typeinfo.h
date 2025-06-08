@@ -31,14 +31,14 @@
 // RTTI well enough, so we can use it and work around harmless memory
 // leaks reported by the static run-time libraries.
 //
-#if wxCHECK_VISUALC_VERSION(9)
+#ifdef __VISUALC__
     #define wxTRUST_CPP_RTTI    1
 #else
     #define wxTRUST_CPP_RTTI    0
 #endif
 
 #include <typeinfo>
-#include <string.h>
+#include <cstring>
 
 #define _WX_DECLARE_TYPEINFO_CUSTOM(CLS, IDENTFUNC)
 #define WX_DECLARE_TYPEINFO_INLINE(CLS)
@@ -106,7 +106,7 @@ typedef void (*wxTypeIdentifier)();
 // WX_DECLARE_TYPEINFO() or WX_DECLARE_TYPEINFO_INLINE() however.
 #define _WX_DECLARE_TYPEINFO_CUSTOM(CLS, IDENTFUNC) \
 public: \
-    virtual wxTypeIdentifier GetWxTypeId() const wxOVERRIDE \
+    virtual wxTypeIdentifier GetWxTypeId() const override \
     { \
         return reinterpret_cast<wxTypeIdentifier> \
             (&IDENTFUNC); \
@@ -116,23 +116,22 @@ public: \
 // type identifier, defined with WX_DEFINE_TYPEINFO().
 #define WX_DECLARE_TYPEINFO(CLS) \
 private: \
-    static CLS sm_wxClassInfo(); \
-_WX_DECLARE_TYPEINFO_CUSTOM(CLS, sm_wxClassInfo)
+    static char ms_wxDummy; \
+    static void ms_wxClassInfo(); \
+_WX_DECLARE_TYPEINFO_CUSTOM(CLS, ms_wxClassInfo)
 
 // Use this macro to implement type identifier function required by
 // WX_DECLARE_TYPEINFO().
-// NOTE: CLS is required to have default ctor. If it doesn't
-//       already, you should provide a private dummy one.
 #define WX_DEFINE_TYPEINFO(CLS) \
-CLS CLS::sm_wxClassInfo() { return CLS(); }
+char CLS::ms_wxDummy; \
+void CLS::ms_wxClassInfo() { ms_wxDummy = 0; }
 
 // Use this macro to declare type info fully inline in class.
-// NOTE: CLS is required to have default ctor. If it doesn't
-//       already, you should provide a private dummy one.
 #define WX_DECLARE_TYPEINFO_INLINE(CLS) \
 private: \
-    static CLS sm_wxClassInfo() { return CLS(); } \
-_WX_DECLARE_TYPEINFO_CUSTOM(CLS, sm_wxClassInfo)
+    static char ms_wxDummy; \
+    static void ms_wxClassInfo() { ms_wxDummy = 0; } \
+_WX_DECLARE_TYPEINFO_CUSTOM(CLS, ms_wxClassInfo)
 
 #define wxTypeId(OBJ) (OBJ).GetWxTypeId()
 

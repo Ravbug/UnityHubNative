@@ -5,7 +5,8 @@ includedir=@includedir@
 
 Name: libtiff
 Description:  Tag Image File Format (TIFF) library.
-Version: @VERSION@
+Version: @LIBTIFF_MAJOR_VERSION@.@LIBTIFF_MINOR_VERSION@.@LIBTIFF_MICRO_VERSION@
 Libs: -L${libdir} -ltiff
 Libs.private: @tiff_libs_private@
 Cflags: -I${includedir}
+Requires.private: @tiff_requires_private@

@@ -140,12 +140,12 @@ public:
     wxBitmapBundleImplRC(const ResourceInfos& resourceInfos,
                          const wxBitmap& bitmap);
 
-    virtual wxSize GetDefaultSize() const wxOVERRIDE;
-    virtual wxSize GetPreferredBitmapSizeAtScale(double scale) const wxOVERRIDE;
-    virtual wxBitmap GetBitmap(const wxSize& size) wxOVERRIDE;
+    virtual wxSize GetDefaultSize() const override;
+    virtual wxSize GetPreferredBitmapSizeAtScale(double scale) const override;
+    virtual wxBitmap GetBitmap(const wxSize& size) override;
 
 protected:
-    virtual double GetNextAvailableScale(size_t& i) const wxOVERRIDE;
+    virtual double GetNextAvailableScale(size_t& i) const override;
 
 private:
     // Load the bitmap from the given resource and add it m_bitmaps, after
@@ -223,8 +223,13 @@ wxBitmapBundleImplRC::AddBitmap(const ResourceInfo& info,
     wxASSERT_MSG
     (
         bitmap.GetSize() == sizeExpected,
-        wxString::Format(wxS("Bitmap \"%s\" should have size %d*%d."),
-                         info.name, sizeExpected.x, sizeExpected.y)
+        wxString::Format
+        (
+            wxS("Bitmap \"%s\" is of size %d*%d but should be %d*%d."),
+            info.name,
+            bitmap.GetWidth(), bitmap.GetHeight(),
+            sizeExpected.x, sizeExpected.y
+        )
     );
 
     if ( sizeNeeded != sizeExpected )
@@ -302,7 +307,7 @@ wxBitmapBundle wxBitmapBundle::FromResources(const wxString& name)
     // First of all, find all resources starting with this name.
     RCEnumCallbackData data(name);
 
-    if ( !::EnumResourceNames(NULL, // this HMODULE
+    if ( !::EnumResourceNames(nullptr, // this HMODULE
                               RT_RCDATA,
                               EnumRCBitmaps,
                               reinterpret_cast<LONG_PTR>(&data)) )
@@ -325,6 +330,24 @@ wxBitmapBundle wxBitmapBundle::FromResources(const wxString& name)
     if ( !bitmap.IsOk() )
         return wxBitmapBundle();
 
+    // It's not an error to not have any other bitmaps, but it's rather useless
+    // to use this class if there is only one version of the bitmap in the
+    // resources, so try to warn the developer about it because it could be
+    // just due to a typo in the name in the resource file or something similar.
+    if ( resourceInfos.size() == 1 )
+    {
+        // If you get this message and want to avoid it, you can either:
+        //
+        // - Add name_2x RCDATA resource containing the PNG to your resources.
+        // - Stop using wxBitmapBundle::FromResources() and use FromBitmap()
+        //   instead, e.g. use wxBITMAP_PNG() rather than wxBITMAP_BUNDLE_2().
+        wxLogDebug
+        (
+            wxS("No higher resolution bitmaps for \"%s\" found in the resources."),
+            name
+        );
+    }
+
     // Sort the resources in the order of increasing sizes to simplify the code
     // of wxBitmapBundleImplRC::GetBitmap().
     std::sort(resourceInfos.begin(), resourceInfos.end(), ScaleComparator());
@@ -341,7 +364,7 @@ wxBitmapBundle wxBitmapBundle::FromSVGResource(const wxString& name, const wxSiz
     // used for the embedded images. We could allow specifying the type as part
     // of the name in the future (e.g. "type:name" or something like this) if
     // really needed.
-    wxCharBuffer svgData = wxCharBuffer::CreateOwned(wxLoadUserResource(name, RT_RCDATA, NULL, wxGetInstance()));
+    wxCharBuffer svgData = wxCharBuffer::CreateOwned(wxLoadUserResource(name, RT_RCDATA, nullptr, wxGetInstance()));
 
     if ( !svgData.data() )
     {

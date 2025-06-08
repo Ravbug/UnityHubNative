@@ -199,7 +199,7 @@ bool wxDirExists(const wxString& dirname);
     separators under Windows, however it will not consider backslashes as path
     separators under Unix (where backslash is a valid character in a filename).
 
-    On entry, @a fullname should be non-@NULL (it may be empty though).
+    On entry, @a fullname should be non-null (it may be empty though).
 
     On return, @a path contains the file path (without the trailing separator),
     @a name contains the file name and @c ext contains the file extension
@@ -231,6 +231,10 @@ time_t wxFileModificationTime(const wxString& filename);
     ignored in this case). Otherwise, if @a newpath is an existing file, it is
     overwritten if @a overwrite is @true (default) and the function fails if @a
     overwrite is @false.
+
+    Since wxWidgets 3.3.0, if @a overwrite is @true `ReplaceFile()` function is
+    used under MSW which allows to preserve the file attributes while replacing
+    its contents.
 
     @header{wx/filefn.h}
 */
@@ -285,7 +289,7 @@ bool wxMatchWild(const wxString& pattern,
 
     @header{wx/filefn.h}
 */
-wxString wxGetWorkingDirectory(char* buf = NULL, int sz = 1000);
+wxString wxGetWorkingDirectory(char* buf = nullptr, int sz = 1000);
 
 /**
     Returns the directory part of the filename.
@@ -527,7 +531,7 @@ char* wxFileNameFromPath(char* path);
 
     @header{wx/filefn.h}
 */
-char* wxGetTempFileName(const wxString& prefix, char* buf = NULL);
+char* wxGetTempFileName(const wxString& prefix, char* buf = nullptr);
 bool wxGetTempFileName(const wxString& prefix, wxString& buf);
 ///@}
 

@@ -2,7 +2,6 @@
 // Name:        src/generic/buttonbar.cpp
 // Purpose:     wxButtonToolBar implementation
 // Author:      Julian Smart, after Robert Roebling, Vadim Zeitlin, SciTech
-// Modified by:
 // Created:     2006-04-13
 // Copyright:   (c) Julian Smart, Robert Roebling, Vadim Zeitlin,
 //              SciTech Software, Inc.
@@ -59,7 +58,7 @@ public:
         m_width =
         m_height = 0;
 
-        m_button = NULL;
+        m_button = nullptr;
     }
 
     wxButtonToolBarTool(wxButtonToolBar *tbar,
@@ -70,7 +69,7 @@ public:
         m_x = m_y = wxDefaultCoord;
         m_width =
         m_height = 0;
-        m_button = NULL;
+        m_button = nullptr;
     }
 
     wxBitmapButton* GetButton() const { return m_button; }
@@ -145,7 +144,7 @@ bool wxButtonToolBar::Create(wxWindow *parent,
     // Calculate the label height if necessary
     if (GetWindowStyle() & wxTB_TEXT)
     {
-        wxClientDC dc(this);
+        wxInfoDC dc(this);
         dc.SetFont(font);
         int w, h;
         dc.GetTextExtent(wxT("X"), & w, & h);
@@ -169,7 +168,7 @@ wxToolBarToolBase *wxButtonToolBar::FindToolForPosition(wxCoord x, wxCoord y) co
     if ( IsVertical() )
     {
         if ( x < 0 || x > m_maxWidth )
-            return NULL;
+            return nullptr;
 
         // we always use x, even for a vertical toolbar, this makes the code
         // below simpler
@@ -178,7 +177,7 @@ wxToolBarToolBase *wxButtonToolBar::FindToolForPosition(wxCoord x, wxCoord y) co
     else // horizontal
     {
         if ( y < 0 || y > m_maxHeight )
-            return NULL;
+            return nullptr;
     }
 
     for ( wxToolBarToolsList::compatibility_iterator node = m_tools.GetFirst();
@@ -195,18 +194,18 @@ wxToolBarToolBase *wxButtonToolBar::FindToolForPosition(wxCoord x, wxCoord y) co
         {
             // don't return the separators from here, they don't accept any
             // input anyhow
-            return tool->IsSeparator() ? NULL : tool;
+            return tool->IsSeparator() ? nullptr : tool;
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 void wxButtonToolBar::GetRectLimits(const wxRect& rect,
                               wxCoord *start,
                               wxCoord *end) const
 {
-    wxCHECK_RET( start && end, wxT("NULL pointer in GetRectLimits") );
+    wxCHECK_RET( start && end, wxT("null pointer in GetRectLimits") );
 
     if ( IsVertical() )
     {
@@ -288,7 +287,7 @@ wxRect wxButtonToolBar::GetToolRect(wxToolBarToolBase *toolBase) const
 
     wxRect rect;
 
-    wxCHECK_MSG( tool, rect, wxT("GetToolRect: NULL tool") );
+    wxCHECK_MSG( tool, rect, wxT("GetToolRect: null tool") );
 
     // ensure that we always have the valid tool position
     if ( m_needsLayout )
@@ -409,8 +408,7 @@ void wxButtonToolBar::DoLayout()
 
                     if (!tool->GetShortHelp().empty())
                     {
-                        wxClientDC dc(this);
-                        dc.SetFont(GetFont());
+                        wxInfoDC dc(this);
                         int tw, th;
                         dc.GetTextExtent(tool->GetShortHelp(), & tw, & th);
 
@@ -496,7 +494,6 @@ void wxButtonToolBar::OnPaint(wxPaintEvent& WXUNUSED(event))
 {
     wxPaintDC dc(this);
 
-    dc.SetFont(GetFont());
     dc.SetBackgroundMode(wxBRUSHSTYLE_TRANSPARENT);
 
     for ( wxToolBarToolsList::compatibility_iterator node = m_tools.GetFirst();
@@ -546,10 +543,10 @@ void wxButtonToolBar::OnLeftUp(wxMouseEvent& event)
         wxButtonToolBarTool* tool = (wxButtonToolBarTool*) FindToolForPosition(event.GetX(), event.GetY());
         if (tool && tool->GetButton() && (event.GetY() > (tool->m_y + tool->GetButton()->GetSize().y)))
         {
-            wxCommandEvent event(wxEVT_BUTTON, tool->GetId());
-            event.SetEventObject(tool->GetButton());
-            if (!GetEventHandler()->ProcessEvent(event))
-                event.Skip();
+            wxCommandEvent evt(wxEVT_BUTTON, tool->GetId());
+            evt.SetEventObject(tool->GetButton());
+            if (!GetEventHandler()->ProcessEvent(evt))
+                evt.Skip();
         }
     }
 }

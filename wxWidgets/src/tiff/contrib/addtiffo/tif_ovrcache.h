@@ -3,11 +3,11 @@
  *
  * Project:  TIFF Overview Builder
  * Purpose:  Library functions to maintain two rows of tiles or two strips
- *           of data for output overviews as an output cache. 
+ *           of data for output overviews as an output cache.
  * Author:   Frank Warmerdam, warmerdam@pobox.com
  *
  * This code could potentially be used by other applications wanting to
- * manage a once-through write cache. 
+ * manage a once-through write cache.
  *
  ******************************************************************************
  * Copyright (c) 2000, Frank Warmerdam
@@ -38,66 +38,58 @@
 #include "tiffio.h"
 
 #if defined(__cplusplus)
-extern "C" {
-#endif
-    
-typedef struct 
+extern "C"
 {
-    uint32	nXSize;
-    uint32	nYSize;
+#endif
 
-    uint16	nBitsPerPixel;
-    uint16	nSamples;
-    uint16      nPlanarConfig;
-    uint32	nBlockXSize;
-    uint32	nBlockYSize;
-    toff_t	nBytesPerBlock;
-    toff_t      nBytesPerRow;
+    typedef struct
+    {
+        uint32_t nXSize;
+        uint32_t nYSize;
 
-    int		nBlocksPerRow;
-    int		nBlocksPerColumn;
+        uint16_t nBitsPerPixel;
+        uint16_t nSamples;
+        uint16_t nPlanarConfig;
+        uint32_t nBlockXSize;
+        uint32_t nBlockYSize;
+        toff_t nBytesPerBlock;
+        toff_t nBytesPerRow;
 
-    int	        nBlockOffset; /* what block is the first in papabyBlocks? */
-    unsigned char *pabyRow1Blocks;
-    unsigned char *pabyRow2Blocks;
+        int nBlocksPerRow;
+        int nBlocksPerColumn;
 
-    toff_t	nDirOffset;
-    TIFF	*hTIFF;
-    int		bTiled;
-    
-} TIFFOvrCache;
+        int nBlockOffset; /* what block is the first in papabyBlocks? */
+        unsigned char *pabyRow1Blocks;
+        unsigned char *pabyRow2Blocks;
 
-TIFFOvrCache *TIFFCreateOvrCache( TIFF *hTIFF, toff_t nDirOffset );
-unsigned char *TIFFGetOvrBlock( TIFFOvrCache *psCache, int iTileX, int iTileY,
-                                int iSample );
-unsigned char *TIFFGetOvrBlock_Subsampled( TIFFOvrCache *psCache, int iTileX, int iTileY );
-void           TIFFDestroyOvrCache( TIFFOvrCache * );
+        toff_t nDirOffset;
+        TIFF *hTIFF;
+        int bTiled;
 
-void TIFFBuildOverviews( TIFF *, int, int *, int, const char *,
-                         int (*)(double,void*), void * );
+    } TIFFOvrCache;
 
-void TIFF_ProcessFullResBlock( TIFF *, int, int, int, int, int, int *, int, 
-                               int, TIFFOvrCache **, uint32, uint32,
-                               unsigned char *, uint32, uint32,
-                               int, const char * );
+    TIFFOvrCache *TIFFCreateOvrCache(TIFF *hTIFF, toff_t nDirOffset);
+    unsigned char *TIFFGetOvrBlock(TIFFOvrCache *psCache, int iTileX,
+                                   int iTileY, int iSample);
+    unsigned char *TIFFGetOvrBlock_Subsampled(TIFFOvrCache *psCache, int iTileX,
+                                              int iTileY);
+    void TIFFDestroyOvrCache(TIFFOvrCache *);
 
-uint32 TIFF_WriteOverview( TIFF *, uint32, uint32, int, int, int, int, int,
-                           int, int, int, int, unsigned short *,
-                           unsigned short *, unsigned short *, int,
-                           int, int);
+    void TIFFBuildOverviews(TIFF *, int, int *, int, const char *,
+                            int (*)(double, void *), void *);
 
+    void TIFF_ProcessFullResBlock(TIFF *, int, int, int, int, int, int *, int,
+                                  int, TIFFOvrCache **, uint32_t, uint32_t,
+                                  unsigned char *, uint32_t, uint32_t, int,
+                                  const char *);
 
+    uint32_t TIFF_WriteOverview(TIFF *, uint32_t, uint32_t, int, int, int, int,
+                                int, int, int, int, int, unsigned short *,
+                                unsigned short *, unsigned short *, int, int,
+                                int);
 
 #if defined(__cplusplus)
 }
 #endif
-    
-#endif /* ndef TIF_OVRCACHE_H_INCLUDED */
 
-/*
- * Local Variables:
- * mode: c
- * c-basic-offset: 8
- * fill-column: 78
- * End:
- */
+#endif /* ndef TIF_OVRCACHE_H_INCLUDED */

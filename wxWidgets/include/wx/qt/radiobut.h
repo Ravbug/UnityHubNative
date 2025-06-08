@@ -13,7 +13,8 @@ class QRadioButton;
 class WXDLLIMPEXP_CORE wxRadioButton : public wxRadioButtonBase
 {
 public:
-    wxRadioButton();
+    wxRadioButton() = default;
+
     wxRadioButton( wxWindow *parent,
                    wxWindowID id,
                    const wxString& label,
@@ -32,15 +33,15 @@ public:
                  const wxValidator& validator = wxDefaultValidator,
                  const wxString& name = wxASCII_STR(wxRadioButtonNameStr) );
 
-    virtual void SetValue(bool value) wxOVERRIDE;
-    virtual bool GetValue() const wxOVERRIDE;
+    virtual void SetValue(bool value) override;
+    virtual bool GetValue() const override;
 
-    virtual QWidget *GetHandle() const wxOVERRIDE;
+    virtual void SetLabel(const wxString &label) override;
+    virtual wxString GetLabel() const override;
 
-private:
-    QRadioButton *m_qtRadioButton;
+    QRadioButton* GetQRadioButton() const;
 
-    wxDECLARE_DYNAMIC_CLASS( wxRadioButton );
+    wxDECLARE_DYNAMIC_CLASS(wxRadioButton);
 };
 
 #endif // _WX_QT_RADIOBUT_H_

@@ -31,7 +31,9 @@ EXTRA_DIST = \
 	CMakeLists.txt \
 	README
 
+if TIFF_CONTRIB
 noinst_PROGRAMS = tiff-bi tiff-grayscale tiff-palette tiff-rgb
+endif
 
 tiff_bi_SOURCES = tiff-bi.c
 tiff_bi_LDADD = $(LIBTIFF)

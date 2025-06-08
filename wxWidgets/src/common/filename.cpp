@@ -2,7 +2,6 @@
 // Name:        src/common/filename.cpp
 // Purpose:     wxFileName - encapsulates a file path
 // Author:      Robert Roebling, Vadim Zeitlin
-// Modified by:
 // Created:     28.12.2000
 // Copyright:   (c) 2000 Robert Roebling
 // Licence:     wxWindows licence
@@ -28,8 +27,8 @@
                 its current mount point, i.e. you can change a volume's mount
                 point from D: to E:, or even remove it, and still be able to
                 access it through its unique volume name. More on the subject can
-                be found in MSDN's article "Naming a Volume" that is currently at
-                http://msdn.microsoft.com/en-us/library/aa365248(VS.85).aspx.
+                be found in Microsoft's "Naming a Volume" documentation at
+                https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-volume
 
 
    wxPATH_MAC:  Mac OS 8/9 only, not used any longer, absolute file
@@ -95,7 +94,7 @@
     #include "wx/vector.h"
 #endif
 
-#if defined(__WIN32__) && defined(__MINGW32__)
+#if defined(__WINDOWS__) && defined(__MINGW32__)
     #include "wx/msw/gccpriv.h"
 #endif
 
@@ -126,9 +125,7 @@
     #define S_ISDIR(mode) ((mode) & S_IFDIR)
 #endif
 
-#if wxUSE_LONGLONG
 extern const wxULongLong wxInvalidSize = (unsigned)-1;
-#endif // wxUSE_LONGLONG
 
 namespace
 {
@@ -137,8 +134,10 @@ namespace
 // private constants
 // ----------------------------------------------------------------------------
 
-// length of \\?\Volume{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}\ string
-static const size_t wxMSWUniqueVolumePrefixLength = 49;
+// Prefix of MSW extended-length paths.
+static constexpr char wxMSW_EXTENDED_PATH_PREFIX[] = R"(\\?\)";
+static constexpr size_t
+    wxMSW_EXTENDED_PATH_PREFIX_LEN = WXSIZEOF(wxMSW_EXTENDED_PATH_PREFIX) - 1;
 
 // ----------------------------------------------------------------------------
 // private classes
@@ -146,7 +145,7 @@ static const size_t wxMSWUniqueVolumePrefixLength = 49;
 
 // small helper class which opens and closes the file - we use it just to get
 // a file handle for the given file name to pass it to some Win32 API function
-#if defined(__WIN32__)
+#if defined(__WINDOWS__)
 
 class wxFileHandle
 {
@@ -170,10 +169,10 @@ public:
                                       : FILE_WRITE_ATTRIBUTES,
                      FILE_SHARE_READ |              // sharing mode
                      FILE_SHARE_WRITE,              // (allow everything)
-                     NULL,                          // no secutity attr
+                     nullptr,                       // no secutity attr
                      OPEN_EXISTING,                 // creation disposition
                      flags,                         // flags
-                     NULL                           // no template file
+                     nullptr                        // no template file
                     );
 
         if ( m_hFile == INVALID_HANDLE_VALUE )
@@ -212,13 +211,13 @@ private:
     HANDLE m_hFile;
 };
 
-#endif // __WIN32__
+#endif // __WINDOWS__
 
 // ----------------------------------------------------------------------------
 // private functions
 // ----------------------------------------------------------------------------
 
-#if wxUSE_DATETIME && defined(__WIN32__)
+#if wxUSE_DATETIME && defined(__WINDOWS__)
 
 // Convert between wxDateTime and FILETIME which is a 64-bit value representing
 // the number of 100-nanosecond intervals since January 1, 1601 UTC.
@@ -246,7 +245,7 @@ static void ConvertWxToFileTime(FILETIME *ft, const wxDateTime& dt)
     ft->dwLowDateTime = t.GetLo();
 }
 
-#endif // wxUSE_DATETIME && __WIN32__
+#endif // wxUSE_DATETIME && __WINDOWS__
 
 // return a string with the volume par
 static wxString wxGetVolumeString(const wxString& volume, wxPathFormat format)
@@ -303,16 +302,8 @@ static bool IsUNCPath(const wxString& path)
                             !IsDOSPathSep(path[2u]);
 }
 
-// return true if the string looks like a GUID volume path ("\\?\Volume{guid}\")
-static bool IsVolumeGUIDPath(const wxString& path)
-{
-    return path.length() >= wxMSWUniqueVolumePrefixLength &&
-             path.StartsWith(wxS("\\\\?\\Volume{")) &&
-              path[wxMSWUniqueVolumePrefixLength - 1] == wxFILE_SEP_PATH_DOS;
-}
-
 // Under Unix-ish systems (basically everything except Windows but we can't
-// just test for non-__WIN32__ because Cygwin defines it, yet we want to use
+// just test for non-__WINDOWS__ because Cygwin defines it, yet we want to use
 // lstat() under it, so test for all the rest explicitly) we may work either
 // with the file itself or its target if it's a symbolic link and we should
 // dereference it, as determined by wxFileName::ShouldFollowLink() and the
@@ -454,7 +445,7 @@ wxFileName::DoSetPath(const wxString& pathOrig, wxPathFormat format, int flags)
 
     // 1) Determine if the path is relative or absolute.
 
-    wxChar leadingChar = path[0u];
+    const wxUniChar leadingChar = path[0u];
 
     switch (format)
     {
@@ -622,22 +613,44 @@ namespace
 
 void RemoveTrailingSeparatorsFromPath(wxString& strPath)
 {
-    // Windows fails to find directory named "c:\dir\" even if "c:\dir" exists,
-    // so remove all trailing backslashes from the path - but don't do this for
-    // the paths "d:\" (which are different from "d:"), for just "\" or for
-    // windows unique volume names ("\\?\Volume{GUID}\")
-    while ( wxEndsWithPathSeparator( strPath ) )
-    {
-        size_t len = strPath.length();
-        if ( len == 1 || (len == 3 && strPath[len - 2] == wxT(':')) ||
-                (len == wxMSWUniqueVolumePrefixLength &&
-                 wxFileName::IsMSWUniqueVolumeNamePath(strPath)))
-        {
-            break;
-        }
+    // We should never have empty paths here, but skip them if we ever do.
+    if ( strPath.empty() )
+        return;
 
-        strPath.Truncate(len - 1);
+    // Windows fails to find directory named "c:\dir\" even if "c:\dir" exists,
+    // so remove all trailing backslashes from the path - but don't do this if
+    // it is the last slash in the path to avoid turning "d:\" into "d:" (which
+    // is a different path), turning "\" into nothing or making extended length
+    // paths invalid.
+    const auto lastNonSeparator = strPath.find_last_not_of(R"(\/)");
+
+    const auto firstTrailingSeparator =
+        lastNonSeparator == wxString::npos ? 0 : lastNonSeparator + 1;
+
+    if ( firstTrailingSeparator == strPath.length() )
+    {
+        // The path doesn't end with a separator, nothing to do.
+        return;
     }
+
+    // Check if there any separators would remain if we removed all trailing
+    // ones, ignoring those that are part of fixed wxMSW_EXTENDED_PATH_PREFIX
+    // or UNC path prefix.
+    const auto lastButOneSeparator =
+        strPath.find_last_of(R"(\/)", lastNonSeparator);
+    if ( lastButOneSeparator == wxString::npos ||
+            (lastButOneSeparator == wxMSW_EXTENDED_PATH_PREFIX_LEN - 1 &&
+             strPath.StartsWith(wxMSW_EXTENDED_PATH_PREFIX)) ||
+                (lastButOneSeparator == 1 && IsUNCPath(strPath)) )
+    {
+        // The path doesn't contain any other separators, so don't remove all
+        // of them.
+        strPath.erase(firstTrailingSeparator + 1);
+        return;
+    }
+
+    // Remove all trailing separators.
+    strPath.erase(firstTrailingSeparator);
 }
 
 #endif // __WINDOWS_
@@ -838,8 +851,8 @@ static int wxOpenWithDeleteOnClose(const wxString& filename)
     DWORD attributes = FILE_ATTRIBUTE_TEMPORARY |
                        FILE_FLAG_DELETE_ON_CLOSE;
 
-    HANDLE h = ::CreateFile(filename.t_str(), access, 0, NULL,
-                            disposition, attributes, NULL);
+    HANDLE h = ::CreateFile(filename.t_str(), access, 0, nullptr,
+                            disposition, attributes, nullptr);
 
     return wxOpenOSFHandle(h, wxO_BINARY);
 }
@@ -894,10 +907,10 @@ static bool wxTempOpen(wxFFile *file, const wxString& path, bool *deleteOnClose)
 static wxString wxCreateTempImpl(
         const wxString& prefix,
         WXFILEARGS(wxFile *fileTemp, wxFFile *ffileTemp),
-        bool *deleteOnClose = NULL)
+        bool *deleteOnClose = nullptr)
 {
 #if wxUSE_FILE && wxUSE_FFILE
-    wxASSERT(fileTemp == NULL || ffileTemp == NULL);
+    wxASSERT(fileTemp == nullptr || ffileTemp == nullptr);
 #endif
     wxString path, dir, name;
     bool wantDeleteOnClose = false;
@@ -915,7 +928,7 @@ static wxString wxCreateTempImpl(
     }
 
     // use the directory specified by the prefix
-    wxFileName::SplitPath(prefix, &dir, &name, NULL /* extension */);
+    wxFileName::SplitPath(prefix, &dir, &name, nullptr /* extension */);
 
     if (dir.empty())
     {
@@ -1121,13 +1134,13 @@ static void wxAssignTempImpl(
 
 void wxFileName::AssignTempFileName(const wxString& prefix)
 {
-    wxAssignTempImpl(this, prefix, WXFILEARGS(NULL, NULL));
+    wxAssignTempImpl(this, prefix, WXFILEARGS(nullptr, nullptr));
 }
 
 /* static */
 wxString wxFileName::CreateTempFileName(const wxString& prefix)
 {
-    return wxCreateTempImpl(prefix, WXFILEARGS(NULL, NULL));
+    return wxCreateTempImpl(prefix, WXFILEARGS(nullptr, nullptr));
 }
 
 #endif // wxUSE_FILE || wxUSE_FFILE
@@ -1139,19 +1152,19 @@ wxString wxCreateTempFileName(const wxString& prefix,
                               wxFile *fileTemp,
                               bool *deleteOnClose)
 {
-    return wxCreateTempImpl(prefix, WXFILEARGS(fileTemp, NULL), deleteOnClose);
+    return wxCreateTempImpl(prefix, WXFILEARGS(fileTemp, nullptr), deleteOnClose);
 }
 
 bool wxCreateTempFile(const wxString& prefix,
                       wxFile *fileTemp,
                       wxString *name)
 {
-    return wxCreateTempImpl(prefix, WXFILEARGS(fileTemp, NULL), name);
+    return wxCreateTempImpl(prefix, WXFILEARGS(fileTemp, nullptr), name);
 }
 
 void wxFileName::AssignTempFileName(const wxString& prefix, wxFile *fileTemp)
 {
-    wxAssignTempImpl(this, prefix, WXFILEARGS(fileTemp, NULL));
+    wxAssignTempImpl(this, prefix, WXFILEARGS(fileTemp, nullptr));
 }
 
 /* static */
@@ -1170,20 +1183,20 @@ wxString wxCreateTempFileName(const wxString& prefix,
                               wxFFile *fileTemp,
                               bool *deleteOnClose)
 {
-    return wxCreateTempImpl(prefix, WXFILEARGS(NULL, fileTemp), deleteOnClose);
+    return wxCreateTempImpl(prefix, WXFILEARGS(nullptr, fileTemp), deleteOnClose);
 }
 
 bool wxCreateTempFile(const wxString& prefix,
                       wxFFile *fileTemp,
                       wxString *name)
 {
-    return wxCreateTempImpl(prefix, WXFILEARGS(NULL, fileTemp), name);
+    return wxCreateTempImpl(prefix, WXFILEARGS(nullptr, fileTemp), name);
 
 }
 
 void wxFileName::AssignTempFileName(const wxString& prefix, wxFFile *fileTemp)
 {
-    wxAssignTempImpl(this, prefix, WXFILEARGS(NULL, fileTemp));
+    wxAssignTempImpl(this, prefix, WXFILEARGS(nullptr, fileTemp));
 }
 
 /* static */
@@ -1278,26 +1291,17 @@ bool wxFileName::Mkdir( const wxString& dir, int perm, int flags )
         wxFileName filename;
         filename.AssignDir(dir);
 
-        wxString currPath;
-        if ( filename.HasVolume())
-        {
-            currPath << wxGetVolumeString(filename.GetVolume(), wxPATH_NATIVE);
-        }
+        // create the directories one by one
+        wxFileName currPath(filename);
+        currPath.m_dirs.Clear();
 
-        wxArrayString dirs = filename.GetDirs();
-        size_t count = dirs.GetCount();
-        for ( size_t i = 0; i < count; i++ )
+        for ( const auto& pathComponent : filename.GetDirs() )
         {
-            // Do not use IsAbsolute() here because we want the path to start
-            // with the separator even if it doesn't have any volume, but
-            // IsAbsolute() would return false in this case.
-            if ( i > 0 || !filename.m_relative )
-                currPath += wxFILE_SEP_PATH;
-            currPath += dirs[i];
+            currPath.AppendDir(pathComponent);
 
-            if (!DirExists(currPath))
+            if (!currPath.DirExists())
             {
-                if (!wxMkdir(currPath, perm))
+                if (!wxMkdir(currPath.GetPath(), perm))
                 {
                     // no need to try creating further directories
                     return false;
@@ -1339,9 +1343,10 @@ bool wxFileName::Rmdir(const wxString& dir, int flags)
         int ret = SHFileOperation(&fileop);
         if ( ret != 0 )
         {
-            // SHFileOperation may return non-Win32 error codes, so the error
-            // message can be incorrect
-            wxLogApiError(wxT("SHFileOperation"), ret);
+            // SHFileOperation may return non-Win32 error codes, so don't use
+            // wxLogApiError() as the error message used by it could be wrong.
+            wxLogDebug(wxS("SHFileOperation(FO_DELETE) failed: error 0x%08x"),
+                       ret);
             return false;
         }
 
@@ -1540,7 +1545,7 @@ bool wxFileName::Normalize(int flags,
         m_dirs.Add(dir);
     }
 
-#if defined(__WIN32__) && wxUSE_OLE
+#if defined(__WINDOWS__) && wxUSE_OLE
     if ( (flags & wxPATH_NORM_SHORTCUT) )
     {
         wxString filename;
@@ -1552,7 +1557,7 @@ bool wxFileName::Normalize(int flags,
     }
 #endif
 
-#if defined(__WIN32__)
+#if defined(__WINDOWS__)
     if ( (flags & wxPATH_NORM_LONG) && (format == wxPATH_DOS) )
     {
         Assign(GetLongPath());
@@ -1633,7 +1638,7 @@ bool wxFileName::ReplaceHomeDir(wxPathFormat format)
 // get the shortcut target
 // ----------------------------------------------------------------------------
 
-#if defined(__WIN32__) && wxUSE_OLE
+#if defined(__WINDOWS__) && wxUSE_OLE
 
 bool wxFileName::GetShortcutTarget(const wxString& shortcutPath,
                                    wxString& targetFilename,
@@ -1654,7 +1659,7 @@ bool wxFileName::GetShortcutTarget(const wxString& shortcutPath,
     wxOleInitializer oleInit;
 
     // create a ShellLink object
-    hres = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER,
+    hres = CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER,
                             IID_IShellLink, (LPVOID*) &psl);
 
     if (SUCCEEDED(hres))
@@ -1672,7 +1677,7 @@ bool wxFileName::GetShortcutTarget(const wxString& shortcutPath,
             if (SUCCEEDED(hres))
             {
                 wxChar buf[2048];
-                psl->GetPath(buf, 2048, NULL, SLGP_UNCPRIORITY);
+                psl->GetPath(buf, 2048, nullptr, SLGP_UNCPRIORITY);
                 targetFilename = wxString(buf);
                 success = (shortcutPath != targetFilename);
 
@@ -1688,7 +1693,7 @@ bool wxFileName::GetShortcutTarget(const wxString& shortcutPath,
     return success;
 }
 
-#endif // __WIN32__
+#endif // __WINDOWS__
 
 // ----------------------------------------------------------------------------
 // Resolve links
@@ -1725,7 +1730,7 @@ wxFileName wxFileName::ResolveLink()
 
     if ( result != -1 )
     {
-        buf[result] = '\0'; // readlink() doesn't NULL-terminate the buffer
+        buf[result] = '\0'; // readlink() doesn't NUL-terminate the buffer
         linkTarget.Assign( wxString(buf, wxConvLibc) );
 
         // Ensure the resulting path is absolute since readlink can return paths relative to the link
@@ -1999,11 +2004,26 @@ bool wxFileName::IsPathSeparator(wxChar ch, wxPathFormat format)
 
 /* static */
 bool
+wxFileName::IsMSWExtendedLengthPath(const wxString& path, wxPathFormat format)
+{
+    return GetFormat(format) == wxPATH_DOS &&
+            path.StartsWith(wxMSW_EXTENDED_PATH_PREFIX);
+}
+
+/* static */
+bool
 wxFileName::IsMSWUniqueVolumeNamePath(const wxString& path, wxPathFormat format)
 {
+    // length of \\?\Volume{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}\ string
+    constexpr size_t wxMSWUniqueVolumePrefixLength = 49;
+
     // return true if the format used is the DOS/Windows one and the string begins
     // with a Windows unique volume name ("\\?\Volume{guid}\")
-    return GetFormat(format) == wxPATH_DOS && IsVolumeGUIDPath(path);
+    return GetFormat(format) == wxPATH_DOS &&
+            path.length() >= wxMSWUniqueVolumePrefixLength &&
+             path.StartsWith(wxS("\\\\?\\Volume{")) &&
+              path[wxMSWUniqueVolumePrefixLength - 1] == wxFILE_SEP_PATH_DOS;
+
 }
 
 // ----------------------------------------------------------------------------
@@ -2065,7 +2085,7 @@ void wxFileName::RemoveDir(size_t pos)
 
 void wxFileName::SetFullName(const wxString& fullname)
 {
-    SplitPath(fullname, NULL /* no volume */, NULL /* no path */,
+    SplitPath(fullname, nullptr /* no volume */, nullptr /* no path */,
                         &m_name, &m_ext, &m_hasExt);
 }
 
@@ -2080,7 +2100,7 @@ wxString wxFileName::GetFullName() const
     return fullname;
 }
 
-wxString wxFileName::GetPath( int flags, wxPathFormat format ) const
+wxString wxFileName::DoGetPath( int flags, wxPathFormat format ) const
 {
     format = GetFormat( format );
 
@@ -2184,6 +2204,55 @@ wxString wxFileName::GetPath( int flags, wxPathFormat format ) const
     return fullpath;
 }
 
+wxString wxFileName::GetPath( int flags, wxPathFormat format ) const
+{
+    wxString fullpath = DoGetPath(flags, format);
+
+#ifdef __WINDOWS__
+    // Paths have to use "extended length" form to be longer than MAX_PATH
+    // under Windows, check if we need to use it.
+    if ( GetFormat(format) == wxPATH_DOS && (flags & wxPATH_GET_VOLUME) )
+    {
+        // Extended length paths can't be relative and can't contain any
+        // periods etc, so normalize the path first.
+        wxFileName fnAbs(*this);
+        fnAbs.MakeAbsolute();
+        const wxString absPath = fnAbs.DoGetPath(flags, format);
+
+        // No need to do anything if it fits: note that normally paths up to
+        // MAX_PATH should work but in practice the limit is lower than that
+        // depending on whether it's a file or a directory, whether it's in the
+        // root directory or a subdirectory, Windows version and probably the
+        // phase of the moon as well, so keep things simple and use the lowest
+        // known limit which is 248 (which is MAX_PATH minus 12, where 12 is,
+        // apparently, the length of a 8.3 filename) characters for a directory:
+        // it does no real harm to use extended length limit paths for shorter
+        // paths while not using them would result in a "file not found" error.
+        if ( absPath.length() < 248 )
+            return fullpath;
+
+        // But if it doesn't, we have to switch to using absolute path and
+        // modify it to use the extended length form.
+        fullpath = absPath;
+
+        // We can switch to extended length paths for paths using normal driver
+        // letters or UNC paths.
+        if ( fullpath[1] == GetVolumeSeparator() )
+        {
+            // Turn C: into \\?\C:
+            fullpath.insert(0, wxMSW_EXTENDED_PATH_PREFIX);
+        }
+        else if ( fullpath.StartsWith(R"(\\)") && fullpath[2] != '?' )
+        {
+            // Turn \\share into \\?\UNC\share
+            fullpath.insert(1, R"(\?\UNC)");
+        }
+    }
+#endif // __WINDOWS__
+
+    return fullpath;
+}
+
 wxString wxFileName::GetFullPath( wxPathFormat format ) const
 {
     // we already have a function to get the path
@@ -2201,8 +2270,8 @@ wxString wxFileName::GetShortPath() const
 {
     wxString path(GetFullPath());
 
-#if defined(__WINDOWS__) && defined(__WIN32__)
-    DWORD sz = ::GetShortPathName(path.t_str(), NULL, 0);
+#if defined(__WINDOWS__)
+    DWORD sz = ::GetShortPathName(path.t_str(), nullptr, 0);
     if ( sz != 0 )
     {
         wxString pathOut;
@@ -2227,9 +2296,9 @@ wxString wxFileName::GetLongPath() const
     wxString pathOut,
              path = GetFullPath();
 
-#if defined(__WIN32__)
+#if defined(__WINDOWS__)
 
-    DWORD dwSize = ::GetLongPathName(path.t_str(), NULL, 0);
+    DWORD dwSize = ::GetLongPathName(path.t_str(), nullptr, 0);
     if ( dwSize > 0 )
     {
         if ( ::GetLongPathName
@@ -2369,18 +2438,33 @@ wxFileName::SplitVolume(const wxString& fullpath,
     switch ( format )
     {
         case wxPATH_DOS:
-            // Deal with MSW UNC and volume GUID paths complications first.
-            if ( IsVolumeGUIDPath(fullpath) )
+            // Deal with MSW complications first: first, the special case of
+            // extended-length paths.
+            if ( fullpath.StartsWith(wxMSW_EXTENDED_PATH_PREFIX) )
             {
+                // Find the next path separator after this prefix.
+                //
+                // Note that such paths contain only backslashes, never slashes.
+                const auto posNextSep =
+                    fullpath.find(wxFILE_SEP_PATH_DOS,
+                                  wxMSW_EXTENDED_PATH_PREFIX_LEN);
+
+                // Note that this works even if posNextSep is npos.
                 if ( pstrVolume )
-                    *pstrVolume = fullpath.Left(wxMSWUniqueVolumePrefixLength - 1);
+                    *pstrVolume = fullpath(0, posNextSep);
 
-                // Note: take the first slash here.
-                pathOnly = fullpath.Mid(wxMSWUniqueVolumePrefixLength - 1);
-
+                // Extended-length paths must have a backslash after the volume
+                // but if they ever don't, still pretend that there is one at
+                // the end because this is not going to be a normal path
+                // anyhow, so this seems like the least useless thing we can do.
+                if ( posNextSep != wxString::npos )
+                    pathOnly = fullpath.substr(posNextSep);
+                else
+                    pathOnly = wxFILE_SEP_PATH_DOS;
                 break;
             }
 
+            // Next check for UNC \\share\path syntax.
             if ( IsUNCPath(fullpath) )
             {
                 // Note that IsUNCPath() checks that 3rd character is not a
@@ -2602,9 +2686,9 @@ bool wxFileName::SetPermissions(int permissions)
     if ( m_dontFollowLinks &&
             Exists(GetFullPath(), wxFILE_EXISTS_SYMLINK|wxFILE_EXISTS_NO_FOLLOW) )
     {
-        // Looks like changing permissions for a symlinc is only supported
+        // Looks like changing permissions for a symlink is only supported
         // on BSD where lchmod is present and correctly implemented.
-        // http://lists.gnu.org/archive/html/bug-coreutils/2009-09/msg00268.html
+        // https://lists.gnu.org/archive/html/bug-coreutils/2009-09/msg00268.html
         return false;
     }
 
@@ -2717,7 +2801,7 @@ bool wxFileName::SetTimes(const wxDateTime *dtAccess,
                           const wxDateTime *dtMod,
                           const wxDateTime *dtCreate) const
 {
-#if defined(__WIN32__)
+#if defined(__WINDOWS__)
     FILETIME ftAccess, ftCreate, ftWrite;
 
     if ( dtCreate )
@@ -2744,9 +2828,9 @@ bool wxFileName::SetTimes(const wxDateTime *dtAccess,
     if ( fh.IsOk() )
     {
         if ( ::SetFileTime(fh,
-                           dtCreate ? &ftCreate : NULL,
-                           dtAccess ? &ftAccess : NULL,
-                           dtMod ? &ftWrite : NULL) )
+                           dtCreate ? &ftCreate : nullptr,
+                           dtAccess ? &ftAccess : nullptr,
+                           dtMod ? &ftWrite : nullptr) )
         {
             return true;
         }
@@ -2761,7 +2845,7 @@ bool wxFileName::SetTimes(const wxDateTime *dtAccess,
     }
 
     // if dtAccess or dtMod is not specified, use the other one (which must be
-    // non NULL because of the test above) for both times
+    // non null because of the test above) for both times
     utimbuf utm;
     utm.actime = dtAccess ? dtAccess->GetTicks() : dtMod->GetTicks();
     utm.modtime = dtMod ? dtMod->GetTicks() : dtAccess->GetTicks();
@@ -2784,8 +2868,8 @@ bool wxFileName::SetTimes(const wxDateTime *dtAccess,
 bool wxFileName::Touch() const
 {
 #if defined(__UNIX_LIKE__)
-    // under Unix touching file is simple: just pass NULL to utime()
-    if ( utime(GetFullPath().fn_str(), NULL) == 0 )
+    // under Unix touching file is simple: just pass nullptr to utime()
+    if ( utime(GetFullPath().fn_str(), nullptr) == 0 )
     {
         return true;
     }
@@ -2796,7 +2880,7 @@ bool wxFileName::Touch() const
 #else // other platform
     wxDateTime dtNow = wxDateTime::Now();
 
-    return SetTimes(&dtNow, &dtNow, NULL /* don't change create time */);
+    return SetTimes(&dtNow, &dtNow, nullptr /* don't change create time */);
 #endif // platforms
 }
 
@@ -2804,7 +2888,7 @@ bool wxFileName::GetTimes(wxDateTime *dtAccess,
                           wxDateTime *dtMod,
                           wxDateTime *dtCreate) const
 {
-#if defined(__WIN32__)
+#if defined(__WINDOWS__)
     // we must use different methods for the files and directories under
     // Windows as CreateFile(GENERIC_READ) doesn't work for the directories and
     // CreateFile(FILE_FLAG_BACKUP_SEMANTICS) works -- but only under NT and
@@ -2828,9 +2912,9 @@ bool wxFileName::GetTimes(wxDateTime *dtAccess,
         if ( fh.IsOk() )
         {
             ok = ::GetFileTime(fh,
-                               dtCreate ? &ftCreate : NULL,
-                               dtAccess ? &ftAccess : NULL,
-                               dtMod ? &ftWrite : NULL) != 0;
+                               dtCreate ? &ftCreate : nullptr,
+                               dtAccess ? &ftAccess : nullptr,
+                               dtMod ? &ftWrite : nullptr) != 0;
         }
         else
         {
@@ -2884,15 +2968,13 @@ bool wxFileName::GetTimes(wxDateTime *dtAccess,
 // file size functions
 // ----------------------------------------------------------------------------
 
-#if wxUSE_LONGLONG
-
 /* static */
 wxULongLong wxFileName::GetSize(const wxString &filename)
 {
     if (!wxFileExists(filename))
         return wxInvalidSize;
 
-#if defined(__WIN32__)
+#if defined(__WINDOWS__)
     wxFileHandle f(filename, wxFileHandle::ReadAttr);
     if (!f.IsOk())
         return wxInvalidSize;
@@ -2903,7 +2985,7 @@ wxULongLong wxFileName::GetSize(const wxString &filename)
         return wxInvalidSize;
 
     return wxULongLong(lpFileSizeHigh, ret);
-#else // ! __WIN32__
+#else // ! __WINDOWS__
     wxStructStat st;
     if (wxStat( filename, &st) != 0)
         return wxInvalidSize;
@@ -2975,6 +3057,3 @@ wxString wxFileName::GetHumanReadableSize(const wxString& failmsg,
 {
     return GetHumanReadableSize(GetSize(), failmsg, precision, conv);
 }
-
-#endif // wxUSE_LONGLONG
-

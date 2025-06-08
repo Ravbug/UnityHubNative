@@ -1,10 +1,6 @@
 #!/bin/sh
 # This script is used for testing the build, primarily for use
-# with travis, but may be used by hand as well.
-
-# Library versions to use
-ZSTD_VER=1.4.4
-WEBP_VER=1.1.0
+# with GitLab CI, but may be used by hand as well.
 
 set -e
 set -x
@@ -17,11 +13,27 @@ autoconf_build()
     mkdir autoconf-build
     cd autoconf-build
     echo "Running ../configure --prefix=$(pwd)/../autoconf-install) ${opts}"
-    ../configure --prefix=$(pwd)/../autoconf-install --with-zstd-include-dir=/tmp/include --with-zstd-lib-dir=/tmp/lib --with-webp-include-dir=/tmp/include --with-webp-lib-dir=/tmp/lib ${opts}
+    CFLAGS="-Wall -Wextra -Werror" ../configure --prefix=$(pwd)/../autoconf-install ${opts}
     make
     make install
     make check
     make distcheck
+    mkdir ../distribution
+    cp tiff-*.tar.* tiff*.zip ../distribution
+}
+
+# Test autoconf build (minimal; no distcheck)
+autoconf_build_minimal()
+{
+    autoreconf -ivf
+
+    mkdir autoconf-build
+    cd autoconf-build
+    echo "Running ../configure --prefix=$(pwd)/../autoconf-install) ${opts}"
+    CFLAGS="-Wall -Wextra -Werror" ../configure --prefix=$(pwd)/../autoconf-install ${opts}
+    make
+    make install
+    make check
 }
 
 # Test cmake build
@@ -33,45 +45,75 @@ cmake_build()
     fi
     mkdir cmake-build
     cd cmake-build
-    echo "Running cmake -G "$1" -DCMAKE_BUILD_TYPE="$2" -DCMAKE_INSTALL_PREFIX=../autoconf-install -DZSTD_INCLUDE_DIR=/tmp/include -DZSTD_LIBRARY=/tmp/lib/libzstd.so -DWEBP_INCLUDE_DIR=/tmp/include -DZWEBP_LIBRARY=/tmp/lib/libwebp.so ${opts} .."
-    cmake -G "$1" -DCMAKE_BUILD_TYPE="$2" -DCMAKE_INSTALL_PREFIX=../autoconf-install -DZSTD_INCLUDE_DIR=/tmp/include -DZSTD_LIBRARY=/tmp/lib/libzstd.so -DWEBP_INCLUDE_DIR=/tmp/include -DWEBP_LIBRARY=/tmp/lib/libwebp.so ${opts} ..
-    cmake --build .
+    opts="-Dfatal-warnings=ON"
+    para3=`echo "$3" | sed 's/./\L&/g'`
+    if [ "$para3" = "static" ]; then
+        opts2="-DBUILD_SHARED_LIBS:BOOL=OFF"
+    else
+        opts2=""
+    fi
+    echo "Running cmake -G "$1" -DCMAKE_UNITY_BUILD=ON -DCMAKE_BUILD_TYPE="$2" -DCMAKE_INSTALL_PREFIX=../cmake-install ${opts} ${opts2} .."
+    cmake -G "$1" -DCMAKE_UNITY_BUILD=ON -DCMAKE_BUILD_TYPE="$2" -DCMAKE_INSTALL_PREFIX=../cmake-install -DCMAKE_C_FLAGS="-Wall -Wextra -Werror" ${opts} ${opts2}  ..
+    $COVERITY_BUILD cmake --build .
     cmake --build . --target install
     ctest -V
+    cd ..
+    if [ "$para3" = "static" ]; then
+        echo No test project build for STATIC CI/CD build - skipped -.
+    else
+        # Build test project using find_package(Tiff CONFIG)
+        mkdir cmake-test-build
+        cd cmake-test-build
+        cmake -G "$1" -DCMAKE_BUILD_TYPE="$2" "-DTiff_DIR=$PWD/../cmake-install/lib/cmake/tiff" -S ../build/test_cmake -B .
+        cmake --build .
+        cd ..
+        mkdir cmake-test-no-target-build
+        cd cmake-test-no-target-build
+        cmake -G "$1" -DCMAKE_BUILD_TYPE="$2" "-DTiff_DIR=$PWD/../cmake-install/lib/cmake/tiff" -S ../build/test_cmake_no_target -B .
+        cmake --build .
+        # Return to cmake-build for coverity_build()
+        cd ../cmake-build
+    fi
 }
+
+# Static-analysis with coverity
+coverity_build()
+{
+    curl -o /tmp/cov-analysis-linux64.tgz \
+        https://scan.coverity.com/download/linux64 \
+        --form project=$COVERITY_SCAN_PROJECT_NAME \
+        --form token=$COVERITY_SCAN_TOKEN
+    tar xfz /tmp/cov-analysis-linux64.tgz
+    COVERITY_BUILD="$(pwd)/cov-analysis-linux64-*/bin/cov-build --dir cov-int" cmake_build "$@"
+    tar cfz cov-int.tar.gz cov-int
+    curl https://scan.coverity.com/builds?project=$COVERITY_SCAN_PROJECT_NAME \
+        --form token=$COVERITY_SCAN_TOKEN \
+        --form email=$GITLAB_USER_EMAIL \
+        --form file=@cov-int.tar.gz \
+        --form version="`git describe --tags`" \
+        --form description="`git describe --tags` / $CI_COMMIT_TITLE / $CI_COMMIT_REF_NAME:$CI_PIPELINE_ID"
+}
+
 
 build=$1
 shift
-
-# Build zstd
-wget https://github.com/facebook/zstd/archive/v${ZSTD_VER}.tar.gz
-tar xvzf v${ZSTD_VER}.tar.gz
-cd zstd-${ZSTD_VER}/lib
-# Faster build
-make -j3 PREFIX=/tmp ZSTD_LEGACY_SUPPORT=0 CFLAGS=-O1
-make install PREFIX=/tmp ZSTD_LEGACY_SUPPORT=0 CFLAGS=-O1
-cd ../..
-rm -rf zstd-${ZSTD_VER}
-
-# Build webp
-wget https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-${WEBP_VER}.tar.gz
-tar xvzf libwebp-${WEBP_VER}.tar.gz
-cd libwebp-${WEBP_VER}
-./configure --prefix=/tmp
-make && make install
-cd ..
-rm -rf libwebp-${WEBP_VER}
-
-export LD_LIBRARY_PATH=/tmp/lib
 
 case $build in
     autoconf)
         echo "Testing Autoconf build"
         autoconf_build "$@"
         ;;
+    autoconf-minimal)
+        echo "Testing Autoconf build (minimal)"
+        autoconf_build_minimal "$@"
+        ;;
     cmake)
         echo "Testing CMake build"
         cmake_build "$@"
+        ;;
+    coverity)
+        echo "Static analysis with Coverity"
+        coverity_build "$@"
         ;;
     *)
         echo "Invalid argument: \"$arg\"" >&2

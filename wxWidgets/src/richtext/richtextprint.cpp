@@ -26,6 +26,7 @@
 #include "wx/printdlg.h"
 #include "wx/richtext/richtextprint.h"
 #include "wx/wfstream.h"
+#include "wx/numformatter.h"
 
 /*!
  * wxRichTextPrintout
@@ -70,14 +71,14 @@ void wxRichTextPrintout::OnPreparePrinting()
 
         int yOffset = 0;
 
-        wxRichTextLine* lastLine = NULL;
+        wxRichTextLine* lastLine = nullptr;
 
         wxRichTextObjectList::compatibility_iterator node = GetRichTextBuffer()->GetChildren().GetFirst();
         while (node)
         {
             // child is a paragraph
             wxRichTextParagraph* child = wxDynamicCast(node->GetData(), wxRichTextParagraph);
-            wxASSERT (child != NULL);
+            wxASSERT (child != nullptr);
             if (child)
             {
                 wxRichTextLineVector::const_iterator it = child->GetLines().begin();
@@ -416,16 +417,16 @@ void wxRichTextPrintout::CalculateScaling(wxDC* dc, wxRect& textRect, wxRect& he
 
 bool wxRichTextPrintout::SubstituteKeywords(wxString& str, const wxString& title, int pageNum, int pageCount)
 {
-    wxString num;
+    str.Replace("@PAGENUM@",
+        wxNumberFormatter::ToString(pageNum, 0,
+            wxNumberFormatter::Style::Style_WithThousandsSep));
 
-    num.Printf(wxT("%i"), pageNum);
-    str.Replace(wxT("@PAGENUM@"), num);
-
-    num.Printf(wxT("%lu"), (unsigned long) pageCount);
-    str.Replace(wxT("@PAGESCNT@"), num);
+    str.Replace("@PAGESCNT@",
+        wxNumberFormatter::ToString(pageCount, 0,
+            wxNumberFormatter::Style::Style_WithThousandsSep));
 
 #if wxUSE_DATETIME
-    wxDateTime now = wxDateTime::Now();
+    const wxDateTime now = wxDateTime::Now();
 
     str.Replace(wxT("@DATE@"), now.FormatDate());
     str.Replace(wxT("@TIME@"), now.FormatTime());
@@ -433,6 +434,8 @@ bool wxRichTextPrintout::SubstituteKeywords(wxString& str, const wxString& title
     str.Replace(wxT("@DATE@"), wxEmptyString);
     str.Replace(wxT("@TIME@"), wxEmptyString);
 #endif
+
+    str.Replace("@USER@", wxGetUserName());
 
     str.Replace(wxT("@TITLE@"), title);
 
@@ -447,11 +450,11 @@ wxRichTextPrinting::wxRichTextPrinting(const wxString& name, wxWindow *parentWin
     : m_title(name)
     , m_previewRect(100, 100, 800, 800)
 {
-    m_richTextBufferPrinting = NULL;
-    m_richTextBufferPreview = NULL;
+    m_richTextBufferPrinting = nullptr;
+    m_richTextBufferPreview = nullptr;
 
     m_parentWindow = parentWindow;
-    m_printData = NULL;
+    m_printData = nullptr;
 
     m_pageSetupData = new wxPageSetupDialogData;
     m_pageSetupData->EnableMargins(true);
@@ -469,7 +472,7 @@ wxRichTextPrinting::~wxRichTextPrinting()
 
 wxPrintData *wxRichTextPrinting::GetPrintData()
 {
-    if (m_printData == NULL)
+    if (m_printData == nullptr)
         m_printData = new wxPrintData();
     return m_printData;
 }
@@ -491,7 +494,7 @@ void wxRichTextPrinting::SetRichTextBufferPrinting(wxRichTextBuffer* buf)
     if (m_richTextBufferPrinting)
     {
         delete m_richTextBufferPrinting;
-        m_richTextBufferPrinting = NULL;
+        m_richTextBufferPrinting = nullptr;
     }
     m_richTextBufferPrinting = buf;
 }
@@ -501,7 +504,7 @@ void wxRichTextPrinting::SetRichTextBufferPreview(wxRichTextBuffer* buf)
     if (m_richTextBufferPreview)
     {
         delete m_richTextBufferPreview;
-        m_richTextBufferPreview = NULL;
+        m_richTextBufferPreview = nullptr;
     }
     m_richTextBufferPreview = buf;
 }
@@ -513,7 +516,7 @@ bool wxRichTextPrinting::PreviewFile(const wxString& richTextFile)
 
     if (!m_richTextBufferPreview->LoadFile(richTextFile))
     {
-        SetRichTextBufferPreview(NULL);
+        SetRichTextBufferPreview(nullptr);
         return false;
     }
     else
@@ -549,7 +552,7 @@ bool wxRichTextPrinting::PrintFile(const wxString& richTextFile, bool showPrintD
 
     if (!m_richTextBufferPrinting->LoadFile(richTextFile))
     {
-        SetRichTextBufferPrinting(NULL);
+        SetRichTextBufferPrinting(nullptr);
         return false;
     }
 

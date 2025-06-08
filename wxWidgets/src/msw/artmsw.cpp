@@ -2,7 +2,6 @@
 // Name:        src/msw/artmsw.cpp
 // Purpose:     stock wxArtProvider instance with native MSW stock icons
 // Author:      Vaclav Slavik
-// Modified by:
 // Created:     2008-10-15
 // Copyright:   (c) Vaclav Slavik, 2008
 // Licence:     wxWindows licence
@@ -23,6 +22,7 @@
 #endif
 
 #include "wx/image.h"
+#include "wx/display.h"
 #include "wx/dynlib.h"
 #include "wx/volume.h"
 #include "wx/msw/private.h"
@@ -49,7 +49,7 @@ MSW_SHDefExtractIcon(LPCTSTR pszIconFile, int iIndex, UINT uFlags,
     typedef HRESULT
     (WINAPI *SHDefExtractIcon_t)(LPCTSTR, int, UINT, HICON*, HICON*, UINT);
 
-    static SHDefExtractIcon_t s_SHDefExtractIcon = NULL;
+    static SHDefExtractIcon_t s_SHDefExtractIcon = nullptr;
     if ( !s_SHDefExtractIcon )
     {
         wxDynamicLibrary shell32(wxT("shell32.dll"));
@@ -95,64 +95,30 @@ SHSTOCKICONID MSWGetStockIconIdForArtProviderId(const wxArtID& art_id)
 };
 
 
-// try to load SHGetStockIconInfo dynamically, so this code runs
-// even on pre-Vista Windows versions
-HRESULT
-MSW_SHGetStockIconInfo(SHSTOCKICONID siid,
-                       UINT uFlags,
-                       SHSTOCKICONINFO *psii)
-{
-    typedef HRESULT (WINAPI *PSHGETSTOCKICONINFO)(SHSTOCKICONID, UINT, SHSTOCKICONINFO *);
-    static PSHGETSTOCKICONINFO pSHGetStockIconInfo = (PSHGETSTOCKICONINFO)-1;
-
-    if ( pSHGetStockIconInfo == (PSHGETSTOCKICONINFO)-1 )
-    {
-        wxDynamicLibrary shell32(wxT("shell32.dll"));
-
-        pSHGetStockIconInfo = (PSHGETSTOCKICONINFO)shell32.RawGetSymbol( wxT("SHGetStockIconInfo") );
-    }
-
-    if ( !pSHGetStockIconInfo )
-        return E_FAIL;
-
-    return pSHGetStockIconInfo(siid, uFlags, psii);
-}
-
 #endif // #ifdef wxHAS_SHGetStockIconInfo
 
 // Wrapper for SHDefExtractIcon().
 wxBitmap
 MSWGetBitmapFromIconLocation(const TCHAR* path, int index, const wxSize& size)
 {
-    HICON hIcon = NULL;
-    if ( MSW_SHDefExtractIcon(path, index, 0, &hIcon, NULL, size.x) != S_OK )
+    HICON hIcon = nullptr;
+    if ( MSW_SHDefExtractIcon(path, index, 0, &hIcon, nullptr, size.x) != S_OK )
         return wxNullBitmap;
 
     // Note that using "size.x" twice here is not a typo: normally size.y is
     // the same anyhow, of course, but if it isn't, the actual icon size would
     // be size.x in both directions as we only pass "x" to SHDefExtractIcon()
     // above.
+    //
+    // Also always use the primary display scale factor here because this is
+    // what SHDefExtractIcon() uses.
     wxIcon icon;
-    if ( !icon.InitFromHICON((WXHICON)hIcon, size.x, size.x) )
+    if ( !icon.InitFromHICON((WXHICON)hIcon, size.x, size.x,
+                             wxDisplay().GetScaleFactor()) )
         return wxNullBitmap;
 
     return wxBitmap(icon);
 }
-
-#if !wxUSE_UNICODE
-
-// SHSTOCKICONINFO always uses WCHAR, even in ANSI build, so we need to convert
-// it to TCHAR, which is just CHAR in this case, used by the other functions.
-// Provide an overload doing it as this keeps the code in the main function
-// clean and this entire block (inside !wxUSE_UNICODE check) can be just
-// removed when support for ANSI build is finally dropped.
-wxBitmap
-MSWGetBitmapFromIconLocation(const WCHAR* path, int index, const wxSize& size)
-{
-    return MSWGetBitmapFromIconLocation(wxString(path).mb_str(), index, size);
-}
-
-#endif // !wxUSE_UNICODE
 
 wxBitmap
 MSWGetBitmapForPath(const wxString& path, const wxSize& size, DWORD uFlags = 0)
@@ -200,7 +166,7 @@ class wxWindowsArtProvider : public wxArtProvider
 {
 protected:
     virtual wxBitmap CreateBitmap(const wxArtID& id, const wxArtClient& client,
-                                  const wxSize& size) wxOVERRIDE;
+                                  const wxSize& size) override;
 };
 
 wxBitmap wxWindowsArtProvider::CreateBitmap(const wxArtID& id,
@@ -209,13 +175,15 @@ wxBitmap wxWindowsArtProvider::CreateBitmap(const wxArtID& id,
 {
     wxBitmap bitmap;
 
+    // We don't have any window here, so if we call GetNativeSizeHint(), it
+    // will use the primary monitor DPI scale factor, which is consistent with
+    // what MSWGetBitmapFromIconLocation() does.
     const wxSize
         sizeNeeded = size.IsFullySpecified()
                         ? size
                         : wxArtProvider::GetNativeSizeHint(client);
 
 #ifdef wxHAS_SHGetStockIconInfo
-    // first try to use SHGetStockIconInfo, available only on Vista and higher
     SHSTOCKICONID stockIconId = MSWGetStockIconIdForArtProviderId( id );
     if ( stockIconId != SIID_INVALID )
     {
@@ -223,7 +191,7 @@ wxBitmap wxWindowsArtProvider::CreateBitmap(const wxArtID& id,
 
         UINT uFlags = SHGSI_ICONLOCATION | SHGSI_SYSICONINDEX;
 
-        HRESULT res = MSW_SHGetStockIconInfo(stockIconId, uFlags, &sii);
+        HRESULT res = ::SHGetStockIconInfo(stockIconId, uFlags, &sii);
         if ( res == S_OK )
         {
             bitmap = MSWGetBitmapFromIconLocation(sii.szPath, sii.iIcon,
@@ -263,7 +231,7 @@ wxBitmap wxWindowsArtProvider::CreateBitmap(const wxArtID& id,
     {
         // handle message box icons specially (wxIcon ctor treat these names
         // as special cases via wxICOResourceHandler::LoadIcon):
-        const char *name = NULL;
+        const char *name = nullptr;
         if ( id == wxART_ERROR )
             name = "wxICON_ERROR";
         else if ( id == wxART_INFORMATION )
@@ -307,14 +275,20 @@ wxSize wxArtProvider::GetNativeDIPSizeHint(const wxArtClient& client)
     }
     else if ( client == wxART_FRAME_ICON )
     {
+        // We're supposed to return a DPI-independent value here, but
+        // ::GetSystemMetrics() uses the primary monitor DPI, so undo this by
+        // explicitly dividing by its scale.
         return wxSize(::GetSystemMetrics(SM_CXSMICON),
-                      ::GetSystemMetrics(SM_CYSMICON));
+                      ::GetSystemMetrics(SM_CYSMICON))
+                / wxDisplay().GetScaleFactor();
     }
     else if ( client == wxART_CMN_DIALOG ||
               client == wxART_MESSAGE_BOX )
     {
+        // As above, we need to convert to DIPs explicitly.
         return wxSize(::GetSystemMetrics(SM_CXICON),
-                      ::GetSystemMetrics(SM_CYICON));
+                      ::GetSystemMetrics(SM_CYICON))
+                / wxDisplay().GetScaleFactor();
     }
     else if (client == wxART_BUTTON)
     {

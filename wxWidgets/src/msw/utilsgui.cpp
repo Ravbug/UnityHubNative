@@ -2,7 +2,6 @@
 // Name:        src/msw/utilsgui.cpp
 // Purpose:     Various utility functions only available in wxMSW GUI
 // Author:      Vadim Zeitlin
-// Modified by:
 // Created:     21.06.2003 (extracted from msw/utils.cpp)
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
@@ -25,6 +24,8 @@
     #include "wx/window.h"
     #include "wx/utils.h"
 #endif //WX_PRECOMP
+
+#include "wx/msw/private/resource_usage.h"
 
 #include "wx/msw/private.h"     // includes <windows.h>
 
@@ -101,11 +102,9 @@ bool wxCheckForInterrupt(wxWindow *wnd)
 }
 
 // ----------------------------------------------------------------------------
-// get display info
+// get mouse position
 // ----------------------------------------------------------------------------
 
-// See also the wxGetMousePosition in window.cpp
-// Deprecated: use wxPoint wxGetMousePosition() instead
 void wxGetMousePosition( int* x, int* y )
 {
     POINT pt;
@@ -203,7 +202,7 @@ void PixelToHIMETRIC(LONG *x, LONG *y)
 
 void wxDrawLine(HDC hdc, int x1, int y1, int x2, int y2)
 {
-    MoveToEx(hdc, x1, y1, NULL); LineTo(hdc, x2, y2);
+    MoveToEx(hdc, x1, y1, nullptr); LineTo(hdc, x2, y2);
 }
 
 // Function dedicated to drawing horizontal/vertical lines with solid color
@@ -231,7 +230,7 @@ void wxDrawHVLine(HDC hdc, int x1, int y1, int x2, int y2, COLORREF color, int w
     COLORREF bgColorOrig = ::GetBkColor(hdc);
     ::SetBkColor(hdc, color);
 
-    ::ExtTextOutW(hdc, 0, 0, ETO_OPAQUE, &r, L"", 0, NULL);
+    ::ExtTextOutW(hdc, 0, 0, ETO_OPAQUE, &r, L"", 0, nullptr);
 
     ::SetBkColor(hdc, bgColorOrig);
 }
@@ -250,4 +249,57 @@ extern bool wxEnableFileNameAutoComplete(HWND hwnd)
     }
 
     return true;
+}
+
+// ----------------------------------------------------------------------------
+// GUI resources usage
+// ----------------------------------------------------------------------------
+
+namespace
+{
+
+// Common implementation of the public functions we provide.
+
+enum class UseType
+{
+    Current,
+    Peak
+};
+
+wxGUIObjectUsage wxGetUsedResources(UseType useType)
+{
+    DWORD flagsGDI = 0,
+          flagsUSER = 0;
+
+    switch ( useType )
+    {
+        case UseType::Current:
+            flagsGDI = GR_GDIOBJECTS;
+            flagsUSER = GR_USEROBJECTS;
+            break;
+
+        case UseType::Peak:
+            flagsGDI = GR_GDIOBJECTS_PEAK;
+            flagsUSER = GR_USEROBJECTS_PEAK;
+            break;
+    }
+
+    const auto hProcess = ::GetCurrentProcess();
+
+    wxGUIObjectUsage usage;
+    usage.numGDI = ::GetGuiResources(hProcess, flagsGDI);
+    usage.numUSER = ::GetGuiResources(hProcess, flagsUSER);
+    return usage;
+}
+
+} // anonymous namespace
+
+wxGUIObjectUsage wxGetCurrentlyUsedResources()
+{
+    return wxGetUsedResources(UseType::Current);
+}
+
+wxGUIObjectUsage wxGetMaxUsedResources()
+{
+    return wxGetUsedResources(UseType::Peak);
 }

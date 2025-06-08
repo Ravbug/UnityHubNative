@@ -1,33 +1,65 @@
-image: ubuntu:20.04
-
-before_script:
-  - apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq autoconf automake build-essential cmake libtool libjpeg8-dev libjbig-dev liblzma-dev ninja-build zlib1g-dev libdeflate-dev zip wget
+image: registry.gitlab.com/libtiff/libtiff-ci-ubuntu24.04:latest
 
 stages:
   - build
+  - static-analysis
   - pages
 
-autoconf:
+
+autoconf-current:
   stage: build
   script:
     - sh build/gitlab-ci autoconf
   after_script:
     - 'cat autoconf-build/test/test-suite.log'
+  artifacts:
+    name: distribution
+    paths:
+    - distribution
 
-cmake-makefiles:
+autoconf-old:
+  stage: build
+  image: registry.gitlab.com/libtiff/libtiff-ci-ubuntu22.04:latest
+  script:
+    - sh build/gitlab-ci autoconf-minimal
+  after_script:
+    - 'cat autoconf-build/test/test-suite.log'
+
+cmake-makefiles-current:
   stage: build
   script:
     - sh build/gitlab-ci cmake "Unix Makefiles" Release
 
-cmake-ninja:
+cmake-makefiles-current-static:
+  stage: build
+  script:
+    - sh build/gitlab-ci cmake "Unix Makefiles" Release static
+
+cmake-ninja-current:
   stage: build
   script:
     - sh build/gitlab-ci cmake "Ninja" Debug
 
+cmake-makefiles-old:
+  stage: build
+  image: registry.gitlab.com/libtiff/libtiff-ci-ubuntu22.04:latest
+  script:
+    - sh build/gitlab-ci cmake "Unix Makefiles" Release
+
+coverity:
+  stage: static-analysis
+  image: registry.gitlab.com/libtiff/libtiff-ci-ubuntu24.04-coverity:latest
+  script:
+    - sh build/gitlab-ci coverity "Ninja" Debug
+  only:
+    refs:
+      - master
+
 pages:
   stage: pages
   script:
-    - cp -r html public
+    - sh build/gitlab-ci cmake "Ninja" Debug
+    - cp -r cmake-install/share/doc/tiff/manual/html public
   artifacts:
     name: $CI_PROJECT_NAME-$CI_JOB_NAME
     paths:

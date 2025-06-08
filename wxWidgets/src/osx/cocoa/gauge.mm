@@ -2,7 +2,6 @@
 // Name:        src/osx/cocoa/gauge.mm
 // Purpose:     wxGauge class
 // Author:      Stefan Csomor
-// Modified by:
 // Created:     1998-01-01
 // Copyright:   (c) Stefan Csomor
 // Licence:       wxWindows licence
@@ -50,19 +49,19 @@ public :
     {
     }
 
-    void SetMaximum(wxInt32 v) wxOVERRIDE
+    void SetMaximum(wxInt32 v) override
     {
         SetDeterminateMode();
         wxWidgetCocoaImpl::SetMaximum( v ) ;
     }
 
-    void SetValue(wxInt32 v) wxOVERRIDE
+    void SetValue(wxInt32 v) override
     {
         SetDeterminateMode();
         wxWidgetCocoaImpl::SetValue( v ) ;
     }
 
-    void PulseGauge() wxOVERRIDE
+    void PulseGauge() override
     {
         if ( ![(wxNSProgressIndicator*)m_osxView isIndeterminate] )
         {

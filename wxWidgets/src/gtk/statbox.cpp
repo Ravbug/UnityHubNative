@@ -15,6 +15,8 @@
 
 #include "wx/gtk/private/wrapgtk.h"
 #include "wx/gtk/private/win_gtk.h"
+#include "wx/gtk/private/stylecontext.h"
+#include "wx/gtk/private/gtk3-compat.h"
 
 // constants taken from GTK sources
 #define LABEL_PAD 1
@@ -48,7 +50,7 @@ static gboolean expose_event(GtkWidget* widget, GdkEventExpose*, wxWindow*)
 {
     const GtkAllocation& a = widget->allocation;
     gtk_paint_flat_box(gtk_widget_get_style(widget), gtk_widget_get_window(widget),
-        GTK_STATE_NORMAL, GTK_SHADOW_NONE, NULL, widget, "", a.x, a.y, a.width, a.height);
+        GTK_STATE_NORMAL, GTK_SHADOW_NONE, nullptr, widget, "", a.x, a.y, a.width, a.height);
     return false;
 }
 }
@@ -104,7 +106,7 @@ bool wxStaticBox::DoCreate(wxWindow *parent,
 
         m_labelWin = labelWin;
 
-        m_widget = gtk_frame_new(NULL);
+        m_widget = gtk_frame_new(nullptr);
         gtk_frame_set_label_widget(GTK_FRAME(m_widget), labelWidget);
     }
 
@@ -127,7 +129,7 @@ bool wxStaticBox::DoCreate(wxWindow *parent,
     if (!wx_is_at_least_gtk2(12))
     {
         // we connect this signal to perform label-clipping as GTK >= 2.12 does
-        g_signal_connect(m_widget, "size_allocate", G_CALLBACK(size_allocate), NULL);
+        g_signal_connect(m_widget, "size_allocate", G_CALLBACK(size_allocate), nullptr);
     }
 #endif
 
@@ -153,7 +155,7 @@ void wxStaticBox::AddChild( wxWindowBase *child )
 
 void wxStaticBox::SetLabel( const wxString& label )
 {
-    wxCHECK_RET( m_widget != NULL, wxT("invalid staticbox") );
+    wxCHECK_RET( m_widget != nullptr, wxT("invalid staticbox") );
 
     wxCHECK_RET( !m_labelWin, wxS("Doesn't make sense when using label window") );
 
@@ -201,9 +203,25 @@ void wxStaticBox::GetBordersForSizer(int *borderTop, int *borderOther) const
     if (label)
     {
         int nat_width;
-        gtk_widget_get_preferred_width(label, NULL, &nat_width);
-        gtk_widget_get_preferred_height_for_width(label, nat_width, borderTop, NULL);
+        gtk_widget_get_preferred_width(label, nullptr, &nat_width);
+        gtk_widget_get_preferred_height_for_width(label, nat_width, borderTop, nullptr);
     }
+    wxGtkStyleContext sc(GetContentScaleFactor());
+    sc.Add(GTK_TYPE_FRAME, "frame", "frame", nullptr);
+    if (wx_is_at_least_gtk3(20))
+        sc.Add("border");
+    else
+    {
+        *borderOther = gtk_container_get_border_width(GTK_CONTAINER(m_widget));
+        *borderTop += *borderOther;
+    }
+    GtkBorder border;
+    gtk_style_context_get_border(sc, GTK_STATE_FLAG_NORMAL, &border);
+    *borderOther += border.left;
+    *borderTop += border.top;
+    gtk_style_context_get_padding(sc, GTK_STATE_FLAG_NORMAL, &border);
+    *borderOther += border.left;
+    *borderTop += border.top;
 #else
     gtk_widget_ensure_style(m_widget);
     const int border_width = GTK_CONTAINER(m_widget)->border_width;

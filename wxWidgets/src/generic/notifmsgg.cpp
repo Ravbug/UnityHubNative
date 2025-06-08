@@ -126,14 +126,14 @@ wxEND_EVENT_TABLE()
 wxVector<wxNotificationMessageWindow*> wxNotificationMessageWindow::ms_visibleNotifications;
 
 wxNotificationMessageWindow::wxNotificationMessageWindow(wxGenericNotificationMessageImpl* notificationImpl)
-                           : wxFrame(NULL, wxID_ANY, _("Notice"),
+                           : wxFrame(nullptr, wxID_ANY, _("Notice"),
                                       wxDefaultPosition, wxDefaultSize,
                                       wxBORDER_NONE | wxFRAME_TOOL_WINDOW | wxSTAY_ON_TOP /* no caption, no border styles */),
                              m_timer(this),
                              m_mouseActiveCount(0),
                              m_notificationImpl(notificationImpl)
 {
-    m_buttonSizer = NULL;
+    m_buttonSizer = nullptr;
 
     SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNSHADOW));
 
@@ -171,7 +171,7 @@ wxNotificationMessageWindow::wxNotificationMessageWindow(wxGenericNotificationMe
 
     // Add a single close button if no actions are specified
     m_closeBtn = wxBitmapButton::NewCloseButton(m_messagePanel, wxID_ANY);
-    msgSizer->Add(m_closeBtn, wxSizerFlags(0).Border(wxALL, 3).Top());
+    msgSizer->Add(m_closeBtn, wxSizerFlags(0).Border(wxALL, FromDIP(3)).Top());
     m_closeBtn->Bind(wxEVT_BUTTON, &wxNotificationMessageWindow::OnCloseClicked, this);
     PrepareNotificationControl(m_closeBtn, false);
 
@@ -215,7 +215,7 @@ void wxNotificationMessageWindow::SetMessageIcon(const wxIcon& icon)
 bool wxNotificationMessageWindow::AddAction(wxWindowID actionid, const wxString &label)
 {
     wxSizer* msgSizer = m_messagePanel->GetSizer();
-    if ( m_buttonSizer == NULL )
+    if ( m_buttonSizer == nullptr )
     {
         msgSizer->Detach(m_closeBtn);
         m_closeBtn->Hide();
@@ -265,6 +265,8 @@ void wxNotificationMessageWindow::Set(int timeout)
 void wxNotificationMessageWindow::OnClose(wxCloseEvent& WXUNUSED(event))
 {
     wxCommandEvent evt(wxEVT_NOTIFICATION_MESSAGE_DISMISSED);
+    evt.SetInt(static_cast<int>(wxNotificationMessage::DismissalReason::ByApp));
+
     m_notificationImpl->ProcessNotificationEvent(evt);
 
     if ( m_timer.IsRunning() )
@@ -307,6 +309,7 @@ void wxNotificationMessageWindow::OnNotificationMouseLeave(wxMouseEvent& WXUNUSE
 void wxNotificationMessageWindow::OnCloseClicked(wxCommandEvent& WXUNUSED(event))
 {
     wxCommandEvent evt(wxEVT_NOTIFICATION_MESSAGE_DISMISSED);
+    evt.SetInt(static_cast<int>(wxNotificationMessage::DismissalReason::ByUser));
     m_notificationImpl->ProcessNotificationEvent(evt);
 
     m_notificationImpl->Close();
@@ -470,7 +473,6 @@ bool wxGenericNotificationMessageImpl::Show(int timeout)
         timeout = GetDefaultTimeout();
     }
 
-    SetActive(true);
     m_window->Set(timeout);
 
     m_window->ShowWithEffect(wxSHOW_EFFECT_BLEND);
@@ -484,8 +486,6 @@ bool wxGenericNotificationMessageImpl::Close()
         return false;
 
     m_window->Hide();
-
-    SetActive(false);
 
     return true;
 }

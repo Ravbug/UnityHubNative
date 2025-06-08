@@ -66,7 +66,7 @@ TAG_HANDLER_BEGIN(FONT, "FONT" )
             wxString sizeStr;
             if (tag.GetParamAsString(wxT("SIZE"), &sizeStr) && sizeStr.ToLong(&tmp))
             {
-                wxChar c = sizeStr[0];
+                wxUniChar c = sizeStr[0];
                 if (c == wxT('+') || c == wxT('-'))
                     m_WParser->SetFontSize(oldsize+tmp);
                 else
@@ -287,14 +287,13 @@ TAG_HANDLER_BEGIN(Hx, "H1,H2,H3,H4,H5,H6")
         }
 
         c = m_WParser->GetContainer();
-        if (c->GetFirstChild())
+        if (c->GetFirstChild() || c->HasId())
         {
             m_WParser->CloseContainer();
-            m_WParser->OpenContainer();
-            c = m_WParser->GetContainer();
+            c = m_WParser->OpenContainer();
         }
-        c = m_WParser->GetContainer();
 
+        c->CopyId(tag);
         c->SetAlign(tag);
         c->InsertCell(new wxHtmlFontCell(m_WParser->CreateCurrentFont()));
         c->SetIndent(m_WParser->GetCharHeight(), wxHTML_INDENT_TOP);

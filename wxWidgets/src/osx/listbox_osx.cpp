@@ -2,7 +2,6 @@
 // Name:        src/osx/listbox_osx.cpp
 // Purpose:     wxListBox
 // Author:      Stefan Csomor
-// Modified by:
 // Created:     1998-01-01
 // Copyright:   (c) Stefan Csomor
 // Licence:     wxWindows licence
@@ -108,14 +107,14 @@ wxListBox::~wxListBox()
     m_blockEvents = false;
 
     // make sure no native events get sent to a object in destruction
-    SetPeer(NULL);
+    SetPeer(nullptr);
 
     if ( IsSorted() )
         delete m_strings.sorted;
     else
         delete m_strings.unsorted;
 
-    m_strings.sorted = NULL;
+    m_strings.sorted = nullptr;
 }
 
 void wxListBox::FreeData()
@@ -255,8 +254,7 @@ wxSize wxListBox::DoGetBestSize() const
     int lbHeight;
 
     {
-        wxClientDC dc(const_cast<wxListBox*>(this));
-        dc.SetFont(GetFont());
+        wxInfoDC dc(const_cast<wxListBox*>(this));
 
         // Find the widest line
         for (unsigned int i = 0; i < GetCount(); i++)
@@ -377,9 +375,9 @@ int wxListBox::DoInsertItems(const wxArrayStringsAdapter& items,
     {
         const wxString& item = items[i];
         idx = IsSorted() ? m_strings.sorted->Add(item)
-                         : (m_strings.unsorted->Insert(item, pos), pos++);
+                         : ((void)m_strings.unsorted->Insert(item, pos), pos++);
 
-        m_itemsClientData.Insert(NULL, idx);
+        m_itemsClientData.Insert(nullptr, idx);
         AssignNewItemClientData(idx, clientData, i, type);
 
         GetListPeer()->ListInsert(startpos+i);

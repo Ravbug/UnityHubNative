@@ -21,6 +21,7 @@
 #include "wx/scopeguard.h"
 #include "wx/apptrait.h"
 #include "wx/private/eventloopsourcesmanager.h"
+#include "wx/private/safecall.h"
 
 // Counts currently existing event loops.
 //
@@ -32,7 +33,7 @@ static int gs_eventLoopCount = 0;
 // wxEventLoopBase
 // ----------------------------------------------------------------------------
 
-wxEventLoopBase *wxEventLoopBase::ms_activeLoop = NULL;
+wxEventLoopBase *wxEventLoopBase::ms_activeLoop = nullptr;
 
 wxEventLoopBase::wxEventLoopBase()
 {
@@ -70,7 +71,7 @@ int wxEventLoopBase::Run()
     // event loops are not recursive, you need to create another loop!
     wxCHECK_MSG( !IsInsideRun(), -1, wxT("can't reenter a message loop") );
 
-    // ProcessIdle() and ProcessEvents() below may throw so the code here should
+    // Calling DoRun() below may throw so the code here should
     // be exception-safe, hence we must use local objects for all actions we
     // should undo
     wxEventLoopActivator activate(this);
@@ -93,6 +94,18 @@ void wxEventLoopBase::Exit(int rc)
 
     ScheduleExit(rc);
 }
+
+void wxEventLoopBase::ScheduleExit(int rc)
+{
+    wxCHECK_RET( IsInsideRun(), wxT("can't call ScheduleExit() if not running") );
+
+    m_shouldExit = true;
+
+    OnExit();
+
+    DoStop(rc);
+}
+
 void wxEventLoopBase::OnExit()
 {
     if (wxTheApp)
@@ -190,11 +203,11 @@ wxEventLoopBase::AddSourceForFD(int fd,
     // Delegate to the event loop sources manager defined by it.
     wxEventLoopSourcesManagerBase* const
         manager = wxApp::GetValidTraits().GetEventLoopSourcesManager();
-    wxCHECK_MSG( manager, NULL, wxS("Must have wxEventLoopSourcesManager") );
+    wxCHECK_MSG( manager, nullptr, wxS("Must have wxEventLoopSourcesManager") );
 
     return manager->AddSourceForFD(fd, handler, flags);
 #else // !wxUSE_CONSOLE_EVENTLOOP
-    return NULL;
+    return nullptr;
 #endif // wxUSE_CONSOLE_EVENTLOOP/!wxUSE_CONSOLE_EVENTLOOP
 }
 
@@ -243,144 +256,138 @@ bool wxEventLoopManual::ProcessEvents()
     return res;
 }
 
+void wxEventLoopManual::DoRunLoop()
+{
+    // this is the event loop itself
+    for ( ;; )
+    {
+        // give them the possibility to do whatever they want
+        OnNextIteration();
+
+        // generate and process idle events for as long as we don't
+        // have anything else to do, but stop doing this if Exit() is
+        // called by one of the idle handlers
+        //
+        // note that Pending() only checks for pending events from the
+        // underlying toolkit, but not our own pending events added by
+        // QueueEvent(), so we need to call HasPendingEvents() to check
+        // for them too
+        while ( !m_shouldExit
+                    && !Pending()
+                        && !(wxTheApp && wxTheApp->HasPendingEvents())
+                            && ProcessIdle() )
+            ;
+
+        // if Exit() was called, don't dispatch any more events here
+        if ( m_shouldExit )
+            break;
+
+        // a message came or no more idle processing to do, dispatch
+        // all the pending events and call Dispatch() to wait for the
+        // next message
+        if ( !ProcessEvents() || m_shouldExit )
+            break;
+    }
+
+    // Process any still pending events.
+    for ( ;; )
+    {
+        bool hasMoreEvents = false;
+
+        // We always dispatch events pending at wx level: it may be
+        // important to do it before the loop exits and e.g. the modal
+        // dialog possibly referenced by these events handlers is
+        // destroyed. It also shouldn't result in the problems
+        // described below for the native events and while there is
+        // still a risk of never existing the loop due to an endless
+        // stream of events generated from the user-defined event
+        // handlers, we consider that well-behaved programs shouldn't
+        // do this -- and if they do, it's better to keep running the
+        // loop than crashing after leaving it.
+        if ( wxTheApp && wxTheApp->HasPendingEvents() )
+        {
+            wxTheApp->ProcessPendingEvents();
+            hasMoreEvents = true;
+        }
+
+        // For the underlying toolkit events, we only handle them when
+        // exiting the outermost event loop but not when exiting nested
+        // loops. This is required at least under MSW where, in case of
+        // a nested modal event loop, the modality has already been
+        // undone as Exit() had been already called, so all UI elements
+        // are re-enabled and if we dispatched events from them here,
+        // we could end up reentering the same event handler that had
+        // shown the modal dialog in the first place and showing the
+        // dialog second time before its first instance was destroyed,
+        // resulting in a lot of fun.
+        //
+        // Also, unlike wx events above, it should be fine to dispatch
+        // the native events from the outer event loop, as any events
+        // generated from outside the dialog itself (necessarily, as
+        // the dialog is already hidden and about to be destroyed)
+        // shouldn't reference the dialog. Which is one of the reasons
+        // we still dispatch them in the outermost event loop, to
+        // ensure they're still processed. Another reason is that if we
+        // do have an endless stream of native events, e.g. because we
+        // have a timer with a too short interval, it's arguably better
+        // to keep handling them instead of exiting.
+        if ( gs_eventLoopCount == 1 )
+        {
+            if ( Pending() )
+            {
+                Dispatch();
+                hasMoreEvents = true;
+            }
+        }
+
+        if ( !hasMoreEvents )
+            break;
+    }
+}
+
 int wxEventLoopManual::DoRun()
 {
-
+#if wxUSE_EXCEPTIONS
     // we must ensure that OnExit() is called even if an exception is thrown
     // from inside ProcessEvents() but we must call it from Exit() in normal
     // situations because it is supposed to be called synchronously,
-    // wxModalEventLoop depends on this (so we can't just use ON_BLOCK_EXIT or
-    // something similar here)
-#if wxUSE_EXCEPTIONS
-    for ( ;; )
+    // wxModalEventLoop depends on this, so we can't just use ON_BLOCK_EXIT and
+    // need a named guard to be able to dismiss it if it was called normally
+    wxScopeGuard guardOnExit = wxMakeObjGuard(*this, &wxEventLoopManual::OnExit);
+#endif // wxUSE_EXCEPTIONS
+
+    // This loop is only used when exceptions are used, but it should hopefully
+    // be optimized away completely when they are not, so use it in any case to
+    // make the code simpler.
+    for ( bool stop = false; !stop; )
     {
-        try
+        wxSafeCall<void>([&, this]
         {
-#endif // wxUSE_EXCEPTIONS
+            DoRunLoop();
 
-            // this is the event loop itself
-            for ( ;; )
-            {
-                // give them the possibility to do whatever they want
-                OnNextIteration();
-
-                // generate and process idle events for as long as we don't
-                // have anything else to do, but stop doing this if Exit() is
-                // called by one of the idle handlers
-                //
-                // note that Pending() only checks for pending events from the
-                // underlying toolkit, but not our own pending events added by
-                // QueueEvent(), so we need to call HasPendingEvents() to check
-                // for them too
-                while ( !m_shouldExit
-                            && !Pending()
-                                && !(wxTheApp && wxTheApp->HasPendingEvents())
-                                    && ProcessIdle() )
-                    ;
-
-                // if Exit() was called, don't dispatch any more events here
-                if ( m_shouldExit )
-                    break;
-
-                // a message came or no more idle processing to do, dispatch
-                // all the pending events and call Dispatch() to wait for the
-                // next message
-                if ( !ProcessEvents() || m_shouldExit )
-                    break;
-            }
-
-            // Process any still pending events.
-            for ( ;; )
-            {
-                bool hasMoreEvents = false;
-
-                // We always dispatch events pending at wx level: it may be
-                // important to do it before the loop exits and e.g. the modal
-                // dialog possibly referenced by these events handlers is
-                // destroyed. It also shouldn't result in the problems
-                // described below for the native events and while there is
-                // still a risk of never existing the loop due to an endless
-                // stream of events generated from the user-defined event
-                // handlers, we consider that well-behaved programs shouldn't
-                // do this -- and if they do, it's better to keep running the
-                // loop than crashing after leaving it.
-                if ( wxTheApp && wxTheApp->HasPendingEvents() )
-                {
-                    wxTheApp->ProcessPendingEvents();
-                    hasMoreEvents = true;
-                }
-
-                // For the underlying toolkit events, we only handle them when
-                // exiting the outermost event loop but not when exiting nested
-                // loops. This is required at least under MSW where, in case of
-                // a nested modal event loop, the modality has already been
-                // undone as Exit() had been already called, so all UI elements
-                // are re-enabled and if we dispatched events from them here,
-                // we could end up reentering the same event handler that had
-                // shown the modal dialog in the first place and showing the
-                // dialog second time before its first instance was destroyed,
-                // resulting in a lot of fun.
-                //
-                // Also, unlike wx events above, it should be fine to dispatch
-                // the native events from the outer event loop, as any events
-                // generated from outside the dialog itself (necessarily, as
-                // the dialog is already hidden and about to be destroyed)
-                // shouldn't reference the dialog. Which is one of the reasons
-                // we still dispatch them in the outermost event loop, to
-                // ensure they're still processed. Another reason is that if we
-                // do have an endless stream of native events, e.g. because we
-                // have a timer with a too short interval, it's arguably better
-                // to keep handling them instead of exiting.
-                if ( gs_eventLoopCount == 1 )
-                {
-                    if ( Pending() )
-                    {
-                        Dispatch();
-                        hasMoreEvents = true;
-                    }
-                }
-
-                if ( !hasMoreEvents )
-                    break;
-            }
 #if wxUSE_EXCEPTIONS
-            // exit the outer loop as well
-            break;
-        }
-        catch ( ... )
-        {
-            try
-            {
-                if ( !wxTheApp || !wxTheApp->OnExceptionInMainLoop() )
-                {
-                    OnExit();
-                    break;
-                }
-                //else: continue running the event loop
-            }
-            catch ( ... )
-            {
-                // OnException() thrown, possibly rethrowing the same
-                // exception again: very good, but we still need OnExit() to
-                // be called
-                OnExit();
-                throw;
-            }
-        }
-    }
+            guardOnExit.Dismiss();
 #endif // wxUSE_EXCEPTIONS
+
+            stop = true;
+        }, [&]()
+        {
+#if wxUSE_EXCEPTIONS
+            if ( !wxTheApp || !wxTheApp->OnExceptionInMainLoop() )
+            {
+                stop = true;
+            }
+            //else: continue running the event loop
+#endif // wxUSE_EXCEPTIONS
+        });
+    }
 
     return m_exitcode;
 }
 
-void wxEventLoopManual::ScheduleExit(int rc)
+void wxEventLoopManual::DoStop(int rc)
 {
-    wxCHECK_RET( IsInsideRun(), wxT("can't call ScheduleExit() if not running") );
-
     m_exitcode = rc;
-    m_shouldExit = true;
-
-    OnExit();
 
     // all we have to do to exit from the loop is to (maybe) wake it up so that
     // it can notice that Exit() had been called

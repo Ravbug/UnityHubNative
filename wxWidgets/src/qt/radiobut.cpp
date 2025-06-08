@@ -8,6 +8,8 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
+#if wxUSE_RADIOBTN
+
 #include "wx/radiobut.h"
 #include "wx/qt/private/converter.h"
 #include "wx/qt/private/winevent.h"
@@ -32,16 +34,26 @@ void QtStartNewGroup(QRadioButton* qtRadioButton)
     // parent // QRadioButton is destroyed.
     QButtonGroup* qtButtonGroup = new QButtonGroup(qtRadioButton);
     qtButtonGroup->addButton(qtRadioButton);
+
+    // From QButtonGroup documentation:
+    // If you create an exclusive button group, you should ensure that one of
+    // the buttons in the group is initially checked; otherwise, the group will
+    // initially be in a state where no buttons are checked.
+
+    qtRadioButton->setChecked(true);
 }
 
 bool QtTryJoiningExistingGroup(wxRadioButton* radioBtnThis)
 {
+    bool checkRadioBtn = true;
+
     for ( wxWindow* previous = radioBtnThis->GetPrevSibling();
           previous;
           previous = previous->GetPrevSibling() )
     {
         if ( wxRadioButton* radioBtn = wxDynamicCast(previous, wxRadioButton) )
         {
+            checkRadioBtn = false;
             // We should never join the exclusive group of wxRB_SINGLE button.
             if ( !radioBtn->HasFlag(wxRB_SINGLE) )
             {
@@ -55,6 +67,11 @@ bool QtTryJoiningExistingGroup(wxRadioButton* radioBtnThis)
             break;
         }
     }
+
+    // Make sure radioBtnThis will be initially checked if there is no group
+    // to add it to.
+    if ( checkRadioBtn )
+        radioBtnThis->SetValue(true);
 
     return false;
 }
@@ -74,7 +91,7 @@ public:
     void OnClicked(bool checked)
     {
         wxRadioButton* handler = GetHandler();
-        if ( handler == NULL )
+        if ( handler == nullptr )
             return;
 
         wxCommandEvent event(wxEVT_RADIOBUTTON, handler->GetId());
@@ -82,11 +99,6 @@ public:
         EmitEvent(event);
     }
 };
-
-wxRadioButton::wxRadioButton() :
-    m_qtRadioButton(NULL)
-{
-}
 
 wxRadioButton::wxRadioButton( wxWindow *parent,
                wxWindowID id,
@@ -109,10 +121,11 @@ bool wxRadioButton::Create( wxWindow *parent,
              const wxValidator& validator,
              const wxString& name)
 {
-    m_qtRadioButton = new wxQtRadioButton( parent, this );
-    m_qtRadioButton->setText( wxQtConvertString( label ));
+    m_qtWindow = new wxQtRadioButton( parent, this );
 
-    if ( !QtCreateControl(parent, id, pos, size, style, validator, name) )
+    GetQRadioButton()->setText( wxQtConvertString( label ));
+
+    if ( !wxRadioButtonBase::Create(parent, id, pos, size, style, validator, name) )
         return false;
 
     // Check if we need to create a new button group: this must be done when
@@ -120,7 +133,7 @@ bool wxRadioButton::Create( wxWindow *parent,
     // buttons to prevent them implicitly becoming part of an existing group.
     if ( (style & wxRB_GROUP) || (style & wxRB_SINGLE) )
     {
-        QtStartNewGroup(m_qtRadioButton);
+        QtStartNewGroup(GetQRadioButton());
     }
     else
     {
@@ -135,17 +148,31 @@ bool wxRadioButton::Create( wxWindow *parent,
     return true;
 }
 
+QRadioButton* wxRadioButton::GetQRadioButton() const
+{
+    return static_cast<QRadioButton*>(m_qtWindow);
+}
+
 void wxRadioButton::SetValue(bool value)
 {
-    m_qtRadioButton->setChecked( value );
+    GetQRadioButton()->setChecked( value );
 }
 
 bool wxRadioButton::GetValue() const
 {
-    return m_qtRadioButton->isChecked();
+    return GetQRadioButton()->isChecked();
 }
 
-QWidget *wxRadioButton::GetHandle() const
+wxString wxRadioButton::GetLabel() const
 {
-    return m_qtRadioButton;
+    return wxQtConvertString( GetQRadioButton()->text() );
 }
+
+void wxRadioButton::SetLabel(const wxString& label)
+{
+    wxRadioButtonBase::SetLabel(label);
+
+    GetQRadioButton()->setText( wxQtConvertString(label) );
+}
+
+#endif // wxUSE_RADIOBTN

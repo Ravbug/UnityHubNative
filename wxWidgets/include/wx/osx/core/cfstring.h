@@ -2,7 +2,6 @@
 // Name:        wx/osx/core/cfstring.h
 // Purpose:     wxCFStringRef and other string functions
 // Author:      Stefan Csomor
-// Modified by:
 // Created:     2004-10-29 (from code in wx/mac/carbon/private.h)
 // Copyright:   (c) Stefan Csomor
 // Licence:     wxWindows licence
@@ -38,8 +37,7 @@ public:
     {
     }
 
-    wxCFStringRef(const wxString &str,
-                        wxFontEncoding encoding = wxFONTENCODING_DEFAULT) ;
+    wxCFStringRef(const wxString &str);
 
 #ifdef __OBJC__
     wxCFStringRef(WX_NSString ref)
@@ -62,14 +60,12 @@ public:
     {
     }
 
-    wxString AsString( wxFontEncoding encoding = wxFONTENCODING_DEFAULT ) const;
+    wxString AsString() const;
 
-    static wxString AsString( CFStringRef ref, wxFontEncoding encoding = wxFONTENCODING_DEFAULT ) ;
-    static wxString AsStringWithNormalizationFormC( CFStringRef ref, wxFontEncoding encoding = wxFONTENCODING_DEFAULT ) ;
-#ifdef __WXMAC__
-    static wxString AsString( WX_NSString ref, wxFontEncoding encoding = wxFONTENCODING_DEFAULT ) ;
-    static wxString AsStringWithNormalizationFormC( WX_NSString ref, wxFontEncoding encoding = wxFONTENCODING_DEFAULT ) ;
-#endif
+    static wxString AsString( CFStringRef ref ) ;
+    static wxString AsStringWithNormalizationFormC( CFStringRef ref ) ;
+    static wxString AsString( WX_NSString ref ) ;
+    static wxString AsStringWithNormalizationFormC( WX_NSString ref ) ;
 #ifdef __OBJC__
     WX_NSString AsNSString() const { return (WX_OSX_BRIDGE WX_NSString)(CFStringRef) *this; }
 #endif
@@ -78,7 +74,7 @@ private:
 
 /*! @function   wxCFStringRefFromGet
     @abstract   Factory function to create wxCFStringRefRef from a CFStringRef obtained from a Get-rule function
-    @param  p           The CFStringRef to retain and create a wxCFStringRefRef from.  May be NULL.
+    @param  p           The CFStringRef to retain and create a wxCFStringRefRef from.  May be null.
     @discussion Unlike the wxCFStringRef raw pointer constructor, this function explicitly retains its
                 argument.  This can be used for functions ) which return a temporary reference (Get-rule functions).
 */
@@ -87,10 +83,9 @@ inline wxCFStringRef wxCFStringRefFromGet(CFStringRef p)
     return wxCFStringRef(wxCFRetain(p));
 }
 
-#ifdef __WXMAC__
 /*! @function   wxCFStringRefFromGet
     @abstract   Factory function to create wxCFStringRefRef from a NSString* obtained from a Get-rule function
-    @param  p           The NSString pointer to retain and create a wxCFStringRefRef from.  May be NULL.
+    @param  p           The NSString pointer to retain and create a wxCFStringRefRef from.  May be null.
     @discussion Unlike the wxCFStringRef raw pointer constructor, this function explicitly retains its
                 argument.  This can be used for functions ) which return a temporary reference (Get-rule functions).
 */
@@ -98,6 +93,5 @@ inline wxCFStringRef wxCFStringRefFromGet(NSString *p)
 {
     return wxCFStringRefFromGet((WX_OSX_BRIDGE CFStringRef)p);
 }
-#endif
 
 #endif //__WXCFSTRINGHOLDER_H__

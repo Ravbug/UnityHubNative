@@ -94,9 +94,9 @@ void PersonalActivationDlg::OnActivateHit(wxCommandEvent&)
 
 void PlusProActivationDlg::OnActivateHit(wxCommandEvent&)
 {
-	const std::string& username = plusProActivUsernameCtrl->GetValue();
-    const std::string& password = plusProActivPasswordCtrl->GetValue();
-    const std::string& serial = plusProActivationSerialCtrl->GetValue();
+	const std::string& username = plusProActivUsernameCtrl->GetValue().ToStdString();
+    const std::string& password = plusProActivPasswordCtrl->GetValue().ToStdString();
+    const std::string& serial = plusProActivationSerialCtrl->GetValue().ToStdString();
 
 	auto cmd = fmt::format("{} -batchmode -username {} -password {} -serial {} -quit",the_editor.executablePath().string(),username,password,serial);
 

@@ -2,7 +2,6 @@
 // Name:        src/osx/cocoa/utils.mm
 // Purpose:     various cocoa utility functions
 // Author:      Stefan Csomor
-// Modified by:
 // Created:     1998-01-01
 // Copyright:   (c) Stefan Csomor
 // Licence:     wxWindows licence
@@ -14,7 +13,6 @@
 #include "wx/platinfo.h"
 
 #ifndef WX_PRECOMP
-    #include "wx/intl.h"
     #include "wx/app.h"
     #if wxUSE_GUI
         #include "wx/dialog.h"
@@ -95,7 +93,7 @@ void wxBell()
         CFURLRef url = CFBundleCopyBundleURL(CFBundleGetMainBundle() ) ;
         CFStringRef path = CFURLCopyFileSystemPath ( url , kCFURLPOSIXPathStyle ) ;
         CFRelease( url ) ;
-        wxString app = wxCFStringRef(path).AsString(wxLocale::GetSystemEncoding());
+        wxString app = wxCFStringRef(path).AsString();
         if ( !app.EndsWith(".app") )
         {
             [NSApp setActivationPolicy: NSApplicationActivationPolicyRegular];
@@ -110,8 +108,14 @@ void wxBell()
             activate = true;
         }
 
-        if ( activate )
-            [NSApp activateIgnoringOtherApps: YES];
+        if ( activate ) {
+            if ( [NSApp activationPolicy] == NSApplicationActivationPolicyAccessory ) {
+                [[NSRunningApplication currentApplication] activateWithOptions: NSApplicationActivateIgnoringOtherApps];
+            }
+            else {
+                [NSApp activateIgnoringOtherApps: YES];
+            }
+        }
     }
 }
 
@@ -240,14 +244,14 @@ void wxBell()
          ++i )
     {
         wxTopLevelWindow * const win = static_cast<wxTopLevelWindow *>(*i);
-        wxNonOwnedWindowImpl* winimpl = win ? win->GetNonOwnedPeer() : NULL;
+        wxNonOwnedWindowImpl* winimpl = win ? win->GetNonOwnedPeer() : nullptr;
         WXWindow nswindow = win ? win->GetWXWindow() : nil;
         
         if ( nswindow && [nswindow hidesOnDeactivate] == NO && winimpl)
             winimpl->RestoreWindowLevel();
     }
     if ( wxTheApp )
-        wxTheApp->SetActive( true , NULL ) ;
+        wxTheApp->SetActive( true , nullptr ) ;
 }
 
 - (void)applicationWillResignActive:(NSNotification *)notification
@@ -270,7 +274,14 @@ void wxBell()
 {
     wxUnusedVar(notification);
     if ( wxTheApp )
-        wxTheApp->SetActive( false , NULL ) ;
+        wxTheApp->SetActive( false , nullptr ) ;
+}
+
+- (BOOL)applicationSupportsSecureRestorableState:(NSApplication *)app
+{
+    // Just avoid the warning about not returning true from here: as we don't
+    // customize state restoration anyhow, we can let the system do its thing.
+    return YES;
 }
 
 @end
@@ -286,7 +297,7 @@ void wxBell()
     {
         sheetFinished = NO;
         resultCode = -1;
-        impl = 0;
+        impl = nullptr;
     }
     return self;
 }
@@ -362,7 +373,7 @@ void wxBell()
 
 @end
 
-WX_NSObject appcontroller = nil;
+static WX_NSObject appcontroller = nil;
 
 NSLayoutManager* gNSLayoutManager = nil;
 
@@ -458,11 +469,43 @@ void wxApp::OSXEnableAutomaticTabbing(bool enable)
 #endif // macOS 10.12+
 }
 
+wxApp::AppearanceResult wxApp::SetAppearance(Appearance appearance)
+{
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14
+    if ( WX_IS_MACOS_AVAILABLE(10, 14) )
+    {
+        NSString* name = nil;
+        switch ( appearance )
+        {
+            case Appearance::System:
+                name = [[NSAppearance currentAppearance] name];
+                break;
+
+            case Appearance::Light:
+                name = NSAppearanceNameAqua;
+                break;
+
+            case Appearance::Dark:
+                name = NSAppearanceNameDarkAqua;
+                break;
+        }
+
+        [NSApp setAppearance:[NSAppearance appearanceNamed:name]];
+
+        return AppearanceResult::Ok;
+    }
+#endif // macOS 10.14+
+
+    wxUnusedVar(appearance);
+
+    return AppearanceResult::Failure;
+}
+
 extern // used from src/osx/core/display.cpp
 wxRect wxOSXGetMainDisplayClientArea()
 {
     NSRect displayRect = [wxOSXGetMenuScreen() visibleFrame];
-    return wxFromNSRect( NULL, displayRect );
+    return wxFromNSRect( nullptr, displayRect );
 }
 
 static NSScreen* wxOSXGetScreenFromDisplay( CGDirectDisplayID ID)
@@ -473,19 +516,19 @@ static NSScreen* wxOSXGetScreenFromDisplay( CGDirectDisplayID ID)
         if ( displayID == ID )
             return screen;
     }
-    return NULL;
+    return nullptr;
 }
 
 extern // used from src/osx/core/display.cpp
 wxRect wxOSXGetDisplayClientArea(CGDirectDisplayID ID)
 {
     NSRect displayRect = [wxOSXGetScreenFromDisplay(ID) visibleFrame];
-    return wxFromNSRect( NULL, displayRect );
+    return wxFromNSRect( nullptr, displayRect );
 }
 
 void wxGetMousePosition( int* x, int* y )
 {
-    wxPoint pt = wxFromNSPoint(NULL, [NSEvent mouseLocation]);
+    wxPoint pt = wxFromNSPoint(nullptr, [NSEvent mouseLocation]);
     if ( x )
         *x = pt.x;
     if ( y )
@@ -520,9 +563,9 @@ wxTimerImpl* wxGUIAppTraits::CreateTimerImpl(wxTimer *timer)
     return new wxOSXTimerImpl(timer);
 }
 
-int gs_wxBusyCursorCount = 0;
+static int gs_wxBusyCursorCount = 0;
 extern wxCursor    gMacCurrentCursor;
-wxCursor        gMacStoredActiveCursor;
+static wxCursor gMacStoredActiveCursor;
 
 // Set the cursor to the busy cursor for all windows
 void wxBeginBusyCursor(const wxCursor *cursor)
@@ -581,7 +624,7 @@ wxBitmap wxWindowDCImpl::DoGetAsBitmap(const wxRect *subrect) const
 
     const wxSize bitmapSize(subrect ? subrect->GetSize() : m_window->GetSize());
     wxBitmap bitmap;
-    bitmap.CreateWithDIPSize(bitmapSize, m_contentScaleFactor);
+    bitmap.CreateWithLogicalSize(bitmapSize, m_contentScaleFactor);
 
     NSView* view = (NSView*) m_window->GetHandle();
     if ( [view isHiddenOrHasHiddenAncestor] == NO )
@@ -613,7 +656,7 @@ wxBitmap wxWindowDCImpl::DoGetAsBitmap(const wxRect *subrect) const
 
         CGRect r = CGRectMake( 0 , 0 , CGImageGetWidth(cgImageRef)  , CGImageGetHeight(cgImageRef) );
 
-        // The bitmap created by wxBitmap::CreateWithDIPSize() above is scaled,
+        // The bitmap created by wxBitmap::CreateWithLogicalSize() above is scaled,
         // so we need to adjust the coordinates for it.
         r.size.width /= m_contentScaleFactor;
         r.size.height /= m_contentScaleFactor;

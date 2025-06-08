@@ -2,7 +2,6 @@
 // Name:        src/msw/app.cpp
 // Purpose:     wxApp
 // Author:      Julian Smart
-// Modified by:
 // Created:     04/01/98
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
@@ -45,14 +44,18 @@
 #include "wx/filename.h"
 #include "wx/dynlib.h"
 #include "wx/evtloop.h"
+#include "wx/msgdlg.h"
 #include "wx/thread.h"
+#include "wx/platinfo.h"
 #include "wx/scopeguard.h"
+#include "wx/sysopt.h"
 #include "wx/vector.h"
 #include "wx/weakref.h"
 
 #include "wx/msw/private.h"
 #include "wx/msw/dc.h"
 #include "wx/msw/ole/oleutils.h"
+#include "wx/msw/private/darkmode.h"
 #include "wx/msw/private/timer.h"
 
 #if wxUSE_TOOLTIPS
@@ -146,6 +149,7 @@ LRESULT WXDLLEXPORT APIENTRY wxWndProc(HWND, UINT, WPARAM, LPARAM);
 // Module for OLE initialization and cleanup
 // ----------------------------------------------------------------------------
 
+#if wxUSE_OLE
 class wxOleInitModule : public wxModule
 {
 public:
@@ -153,12 +157,12 @@ public:
     {
     }
 
-    virtual bool OnInit() wxOVERRIDE
+    virtual bool OnInit() override
     {
         return wxOleInitialize();
     }
 
-    virtual void OnExit() wxOVERRIDE
+    virtual void OnExit() override
     {
         wxOleUninitialize();
     }
@@ -168,6 +172,7 @@ private:
 };
 
 wxIMPLEMENT_DYNAMIC_CLASS(wxOleInitModule, wxModule);
+#endif //wxUSE_OLE
 
 // ===========================================================================
 // wxGUIAppTraits implementation
@@ -314,25 +319,14 @@ wxEventLoopBase* wxGUIAppTraits::CreateEventLoop()
 // Stuff for using console from the GUI applications
 // ---------------------------------------------------------------------------
 
-#if wxUSE_DYNLIB_CLASS
-
-#include <wx/dynlib.h>
-
 namespace
 {
 
 /*
     Helper class to manipulate console from a GUI app.
 
-    Notice that console output is available in the GUI app only if:
-    - AttachConsole() returns TRUE (which means it never works under pre-XP)
-    - we have a valid STD_ERROR_HANDLE
-    - command history hasn't been changed since our startup
-
-    To check if all these conditions are verified, you need to simple call
-    IsOkToUse(). It will check the first two conditions above the first time it
-    is called (and if this fails, the subsequent calls will return immediately)
-    and also recheck the last one every time it is called.
+    It checks if can successfully attach to the console when either IsOkToUse()
+    or Write() is called for the first time.
  */
 class wxConsoleStderr
 {
@@ -341,9 +335,6 @@ public:
     wxConsoleStderr()
     {
         m_hStderr = INVALID_HANDLE_VALUE;
-        m_historyLen =
-        m_dataLen =
-        m_dataLine = 0;
 
         m_ok = -1;
     }
@@ -367,13 +358,9 @@ public:
         {
             wxConsoleStderr * const self = const_cast<wxConsoleStderr *>(this);
             self->m_ok = self->DoInit();
-
-            // no need to call IsHistoryUnchanged() as we just initialized
-            // m_history anyhow
-            return m_ok == 1;
         }
 
-        return m_ok && IsHistoryUnchanged();
+        return m_ok == 1;
     }
 
 
@@ -384,153 +371,35 @@ private:
     // called by Init() once only to do the real initialization
     bool DoInit();
 
-    // retrieve the command line history into the provided buffer and return
-    // its length
-    int GetCommandHistory(wxWxCharBuffer& buf) const;
-
-    // check if the console history has changed
-    bool IsHistoryUnchanged() const;
-
     int m_ok;                   // initially -1, set to true or false by Init()
-
-    wxDynamicLibrary m_dllKernel32;
 
     HANDLE m_hStderr;           // console handle, if it's valid we must call
                                 // FreeConsole() (even if m_ok != 1)
-
-    wxWxCharBuffer m_history;   // command history on startup
-    int m_historyLen;           // length command history buffer
-
-    wxCharBuffer m_data;        // data between empty line and cursor position
-    int m_dataLen;              // length data buffer
-    int m_dataLine;             // line offset
-
-    typedef DWORD (WINAPI *GetConsoleCommandHistory_t)(LPTSTR sCommands,
-                                                       DWORD nBufferLength,
-                                                       LPCTSTR sExeName);
-    typedef DWORD (WINAPI *GetConsoleCommandHistoryLength_t)(LPCTSTR sExeName);
-
-    GetConsoleCommandHistory_t m_pfnGetConsoleCommandHistory;
-    GetConsoleCommandHistoryLength_t m_pfnGetConsoleCommandHistoryLength;
 
     wxDECLARE_NO_COPY_CLASS(wxConsoleStderr);
 };
 
 bool wxConsoleStderr::DoInit()
 {
+    if ( !::AttachConsole(ATTACH_PARENT_PROCESS) )
+        return false;
+
     HANDLE hStderr = ::GetStdHandle(STD_ERROR_HANDLE);
 
     if ( hStderr == INVALID_HANDLE_VALUE || !hStderr )
         return false;
 
-    if ( !m_dllKernel32.Load(wxT("kernel32.dll")) )
-        return false;
-
-    if ( !::AttachConsole(ATTACH_PARENT_PROCESS) )
-        return false;
-
-    // console attached, set m_hStderr now to ensure that we free it in the
-    // dtor
+    // console attached, set m_hStderr now to ensure that we free it in the dtor
     m_hStderr = hStderr;
 
-    wxDL_INIT_FUNC_AW(m_pfn, GetConsoleCommandHistory, m_dllKernel32);
-    if ( !m_pfnGetConsoleCommandHistory )
-        return false;
-
-    wxDL_INIT_FUNC_AW(m_pfn, GetConsoleCommandHistoryLength, m_dllKernel32);
-    if ( !m_pfnGetConsoleCommandHistoryLength )
-        return false;
-
-    // remember the current command history to be able to compare with it later
-    // in IsHistoryUnchanged()
-    m_historyLen = GetCommandHistory(m_history);
-    if ( !m_history )
-        return false;
-
-
-    // now find the first blank line above the current position
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-
-    if ( !::GetConsoleScreenBufferInfo(m_hStderr, &csbi) )
-    {
-        wxLogLastError(wxT("GetConsoleScreenBufferInfo"));
-        return false;
-    }
-
-    COORD pos;
-    pos.X = 0;
-    pos.Y = csbi.dwCursorPosition.Y + 1;
-
-    // we decide that a line is empty if first 4 characters are spaces
-    DWORD ret;
-    char buf[4];
-    do
-    {
-        pos.Y--;
-        if ( !::ReadConsoleOutputCharacterA(m_hStderr, buf, WXSIZEOF(buf),
-                                            pos, &ret) )
-        {
-            wxLogLastError(wxT("ReadConsoleOutputCharacterA"));
-            return false;
-        }
-    } while ( wxStrncmp("    ", buf, WXSIZEOF(buf)) != 0 );
-
-    // calculate line offset and length of data
-    m_dataLine = csbi.dwCursorPosition.Y - pos.Y;
-    m_dataLen = m_dataLine*csbi.dwMaximumWindowSize.X + csbi.dwCursorPosition.X;
-
-    if ( m_dataLen > 0 )
-    {
-        m_data.extend(m_dataLen);
-        if ( !::ReadConsoleOutputCharacterA(m_hStderr, m_data.data(), m_dataLen,
-                                            pos, &ret) )
-        {
-            wxLogLastError(wxT("ReadConsoleOutputCharacterA"));
-            return false;
-        }
-    }
+    // also associate standard streams with this console: this may not work
+    // with all compilers, but it can't make things worse as by default none of
+    // these streams does anything useful in a GUI app anyhow
+    freopen("CONIN$", "r", stdin);
+    freopen("CONOUT$", "w", stdout);
+    freopen("CONOUT$", "w", stderr);
 
     return true;
-}
-
-int wxConsoleStderr::GetCommandHistory(wxWxCharBuffer& buf) const
-{
-    // these functions are internal and may only be called by cmd.exe
-    static const wxChar *CMD_EXE = wxT("cmd.exe");
-
-    const int len = m_pfnGetConsoleCommandHistoryLength(CMD_EXE);
-    if ( len )
-    {
-        buf.extend(len);
-
-        int len2 = m_pfnGetConsoleCommandHistory(buf.data(), len, CMD_EXE);
-
-#if !wxUSE_UNICODE
-        // there seems to be a bug in the GetConsoleCommandHistoryA(), it
-        // returns the length of Unicode string and not ANSI one
-        len2 /= 2;
-#endif // !wxUSE_UNICODE
-
-        if ( len2 != len )
-        {
-            wxFAIL_MSG( wxT("failed getting history?") );
-        }
-    }
-
-    return len;
-}
-
-bool wxConsoleStderr::IsHistoryUnchanged() const
-{
-    wxASSERT_MSG( m_ok == 1, wxT("shouldn't be called if not initialized") );
-
-    // get (possibly changed) command history
-    wxWxCharBuffer history;
-    const int historyLen = GetCommandHistory(history);
-
-    // and compare it with the original one
-    return historyLen == m_historyLen && history &&
-                memcmp(m_history, history, historyLen) == 0;
 }
 
 bool wxConsoleStderr::Write(const wxString& text)
@@ -538,41 +407,17 @@ bool wxConsoleStderr::Write(const wxString& text)
     wxASSERT_MSG( m_hStderr != INVALID_HANDLE_VALUE,
                     wxT("should only be called if Init() returned true") );
 
-    // get current position
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    if ( !::GetConsoleScreenBufferInfo(m_hStderr, &csbi) )
-    {
-        wxLogLastError(wxT("GetConsoleScreenBufferInfo"));
-        return false;
-    }
-
-    // and calculate new position (where is empty line)
-    csbi.dwCursorPosition.X = 0;
-    csbi.dwCursorPosition.Y -= m_dataLine;
-
-    if ( !::SetConsoleCursorPosition(m_hStderr, csbi.dwCursorPosition) )
-    {
-        wxLogLastError(wxT("SetConsoleCursorPosition"));
-        return false;
-    }
-
+    // Try directly console access first.
     DWORD ret;
-    if ( !::FillConsoleOutputCharacter(m_hStderr, wxT(' '), m_dataLen,
-                                       csbi.dwCursorPosition, &ret) )
-    {
-        wxLogLastError(wxT("FillConsoleOutputCharacter"));
-        return false;
-    }
+    if ( ::WriteConsole(m_hStderr, text.t_str(), text.length(), &ret, nullptr) )
+        return true;
 
-    if ( !::WriteConsole(m_hStderr, text.t_str(), text.length(), &ret, NULL) )
-    {
-        wxLogLastError(wxT("WriteConsole"));
-        return false;
-    }
+    // This fails, for not very clear reasons, when running under a Cygwin
+    // shell, so try to use the standard output functions as a fallback.
+    if ( fwprintf(stderr, L"%s", static_cast<const wchar_t*>(text.t_str())) != -1 )
+        return true;
 
-    WriteConsoleA(m_hStderr, m_data, m_dataLen, &ret, 0);
-
-    return true;
+    return false;
 }
 
 wxConsoleStderr s_consoleStderr;
@@ -589,24 +434,10 @@ bool wxGUIAppTraits::WriteToStderr(const wxString& text)
     return s_consoleStderr.IsOkToUse() && s_consoleStderr.Write(text);
 }
 
-#else // !wxUSE_DYNLIB_CLASS
-
-bool wxGUIAppTraits::CanUseStderr()
-{
-    return false;
-}
-
-bool wxGUIAppTraits::WriteToStderr(const wxString& WXUNUSED(text))
-{
-    return false;
-}
-
-#endif // wxUSE_DYNLIB_CLASS/!wxUSE_DYNLIB_CLASS
-
 WXHWND wxGUIAppTraits::GetMainHWND() const
 {
     const wxWindow* const w = wxApp::GetMainTopWindow();
-    return w ? w->GetHWND() : NULL;
+    return w ? w->GetHWND() : nullptr;
 }
 
 // ===========================================================================
@@ -635,7 +466,7 @@ public:
     wxCallBaseCleanup(wxApp *app) : m_app(app) { }
     ~wxCallBaseCleanup() { if ( m_app ) m_app->wxAppBase::CleanUp(); }
 
-    void Dismiss() { m_app = NULL; }
+    void Dismiss() { m_app = nullptr; }
 
 private:
     wxApp *m_app;
@@ -654,7 +485,54 @@ bool wxApp::Initialize(int& argc_, wxChar **argv_)
 
     wxSetKeyboardHook(true);
 
+    // this is useful to allow users to enable dark mode for the applications
+    // not enabling it themselves by setting the corresponding environment
+    // variable
+    if ( const int darkMode = wxSystemOptions::GetOptionInt("msw.dark-mode") )
+    {
+        MSWEnableDarkMode(darkMode > 1 ? DarkMode_Always : DarkMode_Auto);
+    }
+
     callBaseCleanup.Dismiss();
+
+    if ( !wxSystemOptions::GetOptionInt("msw.no-manifest-check") )
+    {
+        if ( GetComCtl32Version() < 610 )
+        {
+            // Check if we have wx resources in this program: this is not
+            // mandatory, but recommended and could be the simplest way to
+            // resolve the problem when not using MSVC.
+            wxString maybeNoResources;
+            if ( !::LoadIcon(wxGetInstance(), wxT("wxICON_AAA")) )
+            {
+                maybeNoResources = " (unless you don't include wx/msw/wx.rc "
+                    "from your resource file intentionally, you should do it "
+                    "and use the manifest defined in it)";
+            }
+
+            wxMessageBox
+            (
+                wxString::Format(R"(WARNING!
+
+This application doesn't use a correct manifest specifying
+the use of Common Controls Library v6%s.
+
+This is deprecated and won't be supported in the future
+wxWidgets versions, however for now you can still set
+"msw.no-manifest-check" system option to 1 (see
+https://docs.wxwidgets.org/latest/classwx_system_options.html
+for how to do it) to skip this check.
+
+Please use the appropriate manifest when building the
+application as described at
+https://docs.wxwidgets.org/latest/plat_msw_install.html#msw_manifest
+or contact us by posting to wx-dev@googlegroups.com
+if you believe not using the manifest should remain supported.
+)", maybeNoResources),
+                "wxWidgets Warning"
+            );
+        }
+    }
 
     return true;
 }
@@ -677,14 +555,23 @@ const wxChar *wxApp::GetRegisteredClassName(const wxChar *name,
             return gs_regClassesInfo[n].GetRequestedName(flags);
     }
 
+    // In dark mode, use the dark background brush instead of specified colour
+    // which would result in light background.
+    HBRUSH hbrBackground;
+    if ( wxMSWDarkMode::IsActive() )
+        hbrBackground = wxMSWDarkMode::GetBackgroundBrush();
+    else
+        hbrBackground = (HBRUSH)wxUIntToPtr(bgBrushCol + 1);
+
+
     // we need to register this class
     WNDCLASS wndclass;
     wxZeroMemory(wndclass);
 
     wndclass.lpfnWndProc   = (WNDPROC)wxWndProc;
     wndclass.hInstance     = wxGetInstance();
-    wndclass.hCursor       = ::LoadCursor(NULL, IDC_ARROW);
-    wndclass.hbrBackground = (HBRUSH)wxUIntToPtr(bgBrushCol + 1);
+    wndclass.hCursor       = ::LoadCursor(nullptr, IDC_ARROW);
+    wndclass.hbrBackground = hbrBackground;
     wndclass.style         = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS | extraStyles;
 
 
@@ -696,7 +583,7 @@ const wxChar *wxApp::GetRegisteredClassName(const wxChar *name,
         {
             wxLogLastError(wxString::Format(wxT("RegisterClass(%s)"),
                            regClass.regname));
-            return NULL;
+            return nullptr;
         }
     }
 
@@ -707,7 +594,7 @@ const wxChar *wxApp::GetRegisteredClassName(const wxChar *name,
         wxLogLastError(wxString::Format(wxT("RegisterClass(%s)"),
                        regClass.regname));
         ::UnregisterClass(regClass.regname.c_str(), wxGetInstance());
-        return NULL;
+        return nullptr;
     }
 
     gs_regClassesInfo.push_back(regClass);
@@ -781,6 +668,8 @@ void wxApp::CleanUp()
 wxApp::wxApp()
 {
     m_printMode = wxPRINT_WINDOWS;
+
+    WXAppConstructed();
 }
 
 wxApp::~wxApp()
@@ -822,7 +711,12 @@ void wxApp::MSWProcessPendingEventsIfNeeded()
     // both console and GUI applications.
     wxMSWEventLoopBase * const evtLoop =
         static_cast<wxMSWEventLoopBase *>(wxEventLoop::GetActive());
-    if ( evtLoop && evtLoop->MSWIsWakeUpRequested() )
+
+    // We don't want to do anything if we have an event loop which hadn't been
+    // woken up, but we need to do it if we don't have any event loop at all
+    // (which is uncommon but may happen), as otherwise pending events would
+    // just accumulate forever, without ever being processed.
+    if ( !evtLoop || evtLoop->MSWIsWakeUpRequested() )
         ProcessPendingEvents();
 }
 
@@ -836,20 +730,21 @@ void wxApp::OnEndSession(wxCloseEvent& WXUNUSED(event))
     // WM_ENDSESSION handler or when we delete our last window, so make sure we
     // at least execute our cleanup code before
 
-    // prevent the window from being destroyed when the corresponding wxTLW is
-    // destroyed: this will result in a leak of a HWND, of course, but who
-    // cares when the process is being killed anyhow
-    if ( !wxTopLevelWindows.empty() )
-        wxTopLevelWindows[0]->SetHWND(0);
-
     // Destroy all the remaining TLWs before calling OnExit() to have the same
     // sequence of events in this case as in case of the normal shutdown,
     // otherwise we could have many problems due to wxApp being already
     // destroyed when window cleanup code (in close event handlers or dtor) is
     // executed.
+    //
+    // Note that we survive after this call only because we don't delete any
+    // windows at MSW level, see gs_gotEndSession check in wxWindow dtor.
     DeleteAllTLWs();
 
     const int rc = OnExit();
+
+    // Skip unregistering windows classes: this is not really necessary and
+    // would result in an error because we may still have an open window.
+    gs_regClassesInfo.clear();
 
     wxEntryCleanup();
 
@@ -863,18 +758,26 @@ void wxApp::OnEndSession(wxCloseEvent& WXUNUSED(event))
 // user can veto the close, and therefore the end session.
 void wxApp::OnQueryEndSession(wxCloseEvent& event)
 {
-    if (GetTopWindow())
+    // Make a copy to avoid problems due to iterator invalidation if any
+    // windows get destroyed (rather than just closed) during the loop.
+    const auto tlws = wxTopLevelWindows;
+    for ( auto* tlw : tlws )
     {
-        if (!GetTopWindow()->Close(!event.CanVeto()))
-            event.Veto(true);
+        // If it's not in the list any more it could have been destroyed.
+        if ( !wxTopLevelWindows.Member(tlw) )
+            continue;
+
+        if ( !tlw->Close(!event.CanVeto()) )
+        {
+            event.Veto();
+            return;
+        }
     }
 }
 
 // ----------------------------------------------------------------------------
 // system DLL versions
 // ----------------------------------------------------------------------------
-
-#if wxUSE_DYNLIB_CLASS
 
 namespace
 {
@@ -912,6 +815,21 @@ int wxApp::GetComCtl32Version()
     // NB: this is MT-ok as in the worst case we'd compute s_verComCtl32 twice,
     //     but as its value should be the same both times it doesn't matter
     static int s_verComCtl32 = -1;
+
+    if ( s_verComCtl32 == -1 )
+    {
+        // Test for Wine first because its comctl32.dll always returns 581 from
+        // its DllGetVersion() even though it supports the functionality of
+        // much later versions too.
+        wxVersionInfo verWine;
+        if ( wxIsRunningUnderWine(&verWine) )
+        {
+            // Not sure which version of Wine implements comctl32.dll v6
+            // functionality, but 5 seems to have it already.
+            if ( verWine.GetMajor() >= 5 )
+                s_verComCtl32 = 610;
+        }
+    }
 
     if ( s_verComCtl32 == -1 )
     {
@@ -965,16 +883,6 @@ int wxApp::GetComCtl32Version()
     return s_verComCtl32;
 }
 
-#else // !wxUSE_DYNLIB_CLASS
-
-/* static */
-int wxApp::GetComCtl32Version()
-{
-    return 0;
-}
-
-#endif // wxUSE_DYNLIB_CLASS/!wxUSE_DYNLIB_CLASS
-
 #if wxUSE_EXCEPTIONS
 
 // ----------------------------------------------------------------------------
@@ -988,7 +896,7 @@ bool wxApp::OnExceptionInMainLoop()
     switch (
             ::MessageBox
               (
-                NULL,
+                nullptr,
                 wxT("An unhandled exception occurred. Press \"Abort\" to \
 terminate the program,\r\n\
 \"Retry\" to exit the program normally and \"Ignore\" to try to continue."),

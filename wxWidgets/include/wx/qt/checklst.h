@@ -11,12 +11,13 @@
 class WXDLLIMPEXP_CORE wxCheckListBox : public wxCheckListBoxBase
 {
 public:
-    wxCheckListBox();
+    wxCheckListBox() = default;
+
     wxCheckListBox(wxWindow *parent, wxWindowID id,
             const wxPoint& pos = wxDefaultPosition,
             const wxSize& size = wxDefaultSize,
             int nStrings = 0,
-            const wxString *choices = (const wxString *)NULL,
+            const wxString *choices = nullptr,
             long style = 0,
             const wxValidator& validator = wxDefaultValidator,
             const wxString& name = wxASCII_STR(wxListBoxNameStr));
@@ -34,7 +35,7 @@ public:
     bool Create(wxWindow *parent, wxWindowID id,
                   const wxPoint& pos = wxDefaultPosition,
                   const wxSize& size = wxDefaultSize,
-                  int n = 0, const wxString choices[] = NULL,
+                  int n = 0, const wxString choices[] = nullptr,
                   long style = 0,
                   const wxValidator& validator = wxDefaultValidator,
                   const wxString& name = wxASCII_STR(wxListBoxNameStr));
@@ -46,11 +47,8 @@ public:
                   const wxValidator& validator = wxDefaultValidator,
                   const wxString& name = wxASCII_STR(wxListBoxNameStr));
 
-    virtual bool IsChecked(unsigned int item) const wxOVERRIDE;
-    virtual void Check(unsigned int item, bool check = true) wxOVERRIDE;
-
-private:
-    virtual void Init() wxOVERRIDE; //common construction
+    virtual bool IsChecked(unsigned int item) const override;
+    virtual void Check(unsigned int item, bool check = true) override;
 
     wxDECLARE_DYNAMIC_CLASS(wxCheckListBox);
 };

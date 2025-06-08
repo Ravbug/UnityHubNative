@@ -25,6 +25,11 @@
     #include "wx/mstream.h"
 #endif
 
+extern bool wxDumpBitmap(const wxBitmap& bitmap, const char* path)
+{
+    return bitmap.SaveFile(path, wxBITMAP_TYPE_BMP);
+}
+
 // ----------------------------------------------------------------------------
 // wxVariant support
 // ----------------------------------------------------------------------------
@@ -70,11 +75,8 @@ void wxBitmapHelpers::Rescale(wxBitmap& bmp, const wxSize& sizeNeeded)
     wxCHECK_RET( sizeNeeded.IsFullySpecified(), wxS("New size must be given") );
 
 #if wxUSE_IMAGE
-    // Note that we use "nearest" rescale mode here to preserve sharp edges in
-    // the icons for which this function is often used. It's also consistent
-    // with what wxDC::DrawBitmap() does, i.e. the fallback method below.
     wxImage img = bmp.ConvertToImage();
-    img.Rescale(sizeNeeded.x, sizeNeeded.y, wxIMAGE_QUALITY_NEAREST);
+    img.Rescale(sizeNeeded);
     bmp = wxBitmap(img);
 #else // !wxUSE_IMAGE
     // Fallback method of scaling the bitmap
@@ -145,7 +147,7 @@ wxBitmapHandler *wxBitmapBase::FindHandler(const wxString& name)
             return handler;
         node = node->GetNext();
     }
-    return NULL;
+    return nullptr;
 }
 
 wxBitmapHandler *wxBitmapBase::FindHandler(const wxString& extension, wxBitmapType bitmapType)
@@ -159,7 +161,7 @@ wxBitmapHandler *wxBitmapBase::FindHandler(const wxString& extension, wxBitmapTy
             return handler;
         node = node->GetNext();
     }
-    return NULL;
+    return nullptr;
 }
 
 wxBitmapHandler *wxBitmapBase::FindHandler(wxBitmapType bitmapType)
@@ -172,7 +174,7 @@ wxBitmapHandler *wxBitmapBase::FindHandler(wxBitmapType bitmapType)
             return handler;
         node = node->GetNext();
     }
-    return NULL;
+    return nullptr;
 }
 
 void wxBitmapBase::CleanUpHandlers()
@@ -193,8 +195,8 @@ class wxBitmapBaseModule: public wxModule
     wxDECLARE_DYNAMIC_CLASS(wxBitmapBaseModule);
 public:
     wxBitmapBaseModule() {}
-    bool OnInit() wxOVERRIDE { wxBitmap::InitStandardHandlers(); return true; }
-    void OnExit() wxOVERRIDE { wxBitmap::CleanUpHandlers(); }
+    bool OnInit() override { wxBitmap::InitStandardHandlers(); return true; }
+    void OnExit() override { wxBitmap::CleanUpHandlers(); }
 };
 
 wxIMPLEMENT_DYNAMIC_CLASS(wxBitmapBaseModule, wxModule);
@@ -290,11 +292,11 @@ bool wxBitmapBase::UseAlpha(bool WXUNUSED(use))
 // wxBitmap common
 // ----------------------------------------------------------------------------
 
-#if !(defined(__WXGTK__) || defined(__WXMOTIF__) || defined(__WXX11__) || defined(__WXQT__))
+#if !(defined(__WXGTK__) || defined(__WXX11__) || defined(__WXQT__))
 
 wxBitmap::wxBitmap(const char* const* bits)
 {
-    wxCHECK2_MSG(bits != NULL, return, wxT("invalid bitmap data"));
+    wxCHECK2_MSG(bits != nullptr, return, wxT("invalid bitmap data"));
 
 #if wxUSE_IMAGE && wxUSE_XPM
     wxImage image(bits);
@@ -305,7 +307,7 @@ wxBitmap::wxBitmap(const char* const* bits)
     wxFAIL_MSG(wxT("creating bitmaps from XPMs not supported"));
 #endif // wxUSE_IMAGE && wxUSE_XPM
 }
-#endif // !(defined(__WXGTK__) || defined(__WXMOTIF__) || defined(__WXX11__))
+#endif // !(defined(__WXGTK__) || defined(__WXX11__))
 
 // ----------------------------------------------------------------------------
 // wxMaskBase

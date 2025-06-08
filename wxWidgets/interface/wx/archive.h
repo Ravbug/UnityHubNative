@@ -174,7 +174,7 @@ public:
     @li GetSize(): guaranteed to be available after the entry has been read to Eof(),
         or CloseEntry() has been called;
     @li IsReadOnly(): guaranteed to be available after the end of the archive has
-        been reached, i.e. after GetNextEntry() returns NULL and Eof() is true.
+        been reached, i.e. after GetNextEntry() returns @NULL and Eof() is true.
 
     @library{wxbase}
     @category{archive,streams}
@@ -373,7 +373,7 @@ public:
         const wxArchiveClassFactory *factory = wxArchiveClassFactory::GetFirst();
 
         while (factory) {
-            list << factory->GetProtocol() << wxT("\n");
+            list << factory->GetProtocol() << "\n";
             factory = factory->GetNext();
         }
         @endcode
@@ -410,7 +410,7 @@ public:
         const wxChar *const *p;
 
         for (p = factory->GetProtocols(wxSTREAM_FILEEXT); *p; p++)
-            list << *p << wxT("\n");
+            list << *p << "\n";
         @endcode
     */
     virtual const wxChar** GetProtocols(wxStreamProtocolType type = wxSTREAM_PROTOCOL) const = 0;
@@ -497,9 +497,7 @@ public:
     @class wxArchiveIterator
 
     An input iterator template class that can be used to transfer an archive's
-    catalogue to a container. It is only available if wxUSE_STL is set to 1
-    in setup.h, and the uses for it outlined below require a compiler which
-    supports member templates.
+    catalogue to a container.
 
     @code
     template<class Arc, class T = typename Arc::entry_type*>

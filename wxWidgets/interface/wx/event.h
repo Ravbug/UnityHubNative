@@ -184,7 +184,7 @@ public:
         differences between the timestamps and not their absolute values usually make sense).
 
         @warning
-        wxWidgets returns a non-NULL timestamp only for mouse and key events
+        wxWidgets returns a valid timestamp only for mouse and key events
         (see wxMouseEvent and wxKeyEvent).
     */
     long GetTimestamp() const;
@@ -416,41 +416,37 @@ public:
         moment).
 
         QueueEvent() can be used for inter-thread communication from the worker
-        threads to the main thread, it is safe in the sense that it uses
+        threads to the main thread. It is safe in the sense that it uses
         locking internally and avoids the problem mentioned in AddPendingEvent()
         documentation by ensuring that the @a event object is not used by the
-        calling thread any more. Care should still be taken to avoid that some
-        fields of this object are used by it, notably any wxString members of
-        the event object must not be shallow copies of another wxString object
-        as this would result in them still using the same string buffer behind
-        the scenes. For example:
+        calling thread any more.
+
+        Example:
         @code
             void FunctionInAWorkerThread(const wxString& str)
             {
                 wxCommandEvent* evt = new wxCommandEvent;
-
-                // NOT evt->SetString(str) as this would be a shallow copy
-                evt->SetString(str.c_str()); // make a deep copy
+                evt->SetString(str);
 
                 wxTheApp->QueueEvent( evt );
             }
         @endcode
 
-        Note that you can use wxThreadEvent instead of wxCommandEvent
-        to avoid this problem:
+        Note that if you want to pass more data than just a single string and/or
+        an integer carried by wxCommandEvent to the main thread, you may use
+        wxThreadEvent instead.
+
         @code
-            void FunctionInAWorkerThread(const wxString& str)
+            void FunctionInAWorkerThread(int val)
             {
                 wxThreadEvent evt;
-                evt.SetString(str);
+                evt.SetInt(val);
 
-                // wxThreadEvent::Clone() makes sure that the internal wxString
-                // member is not shared by other wxString instances:
                 wxTheApp->QueueEvent( evt.Clone() );
             }
         @endcode
 
-        Finally notice that this method automatically wakes up the event loop
+        Finally, notice that this method automatically wakes up the event loop
         if it is currently idle by calling ::wxWakeUpIdle() so there is no need
         to do it manually when using it.
 
@@ -458,7 +454,7 @@ public:
 
         @param event
             A heap-allocated event to be queued, QueueEvent() takes ownership
-            of it. This parameter shouldn't be @c NULL.
+            of it. This parameter shouldn't be @NULL.
      */
     virtual void QueueEvent(wxEvent *event);
 
@@ -526,10 +522,6 @@ public:
             more than 2 arguments, you can use the CallAfter<T>(const T& fn)
             overload that can call any functor.
 
-         @note This method is not available with Visual C++ before version 8
-               (Visual Studio 2005) as earlier versions of the compiler don't
-               have the required support for C++ templates to implement it.
-
          @since 2.9.5
      */
     template<typename T, typename T1, ...>
@@ -550,7 +542,7 @@ public:
          threads, but that the method will be always called in the main, GUI,
          thread context.
 
-         This overload is particularly useful in combination with C++11 lambdas:
+         This overload is particularly useful in combination with lambdas:
          @code
          wxGetApp().CallAfter([]{
              wxBell();
@@ -558,10 +550,6 @@ public:
          @endcode
 
          @param functor The functor to call.
-
-         @note This method is not available with Visual C++ before version 8
-               (Visual Studio 2005) as earlier versions of the compiler don't
-               have the required support for C++ templates to implement it.
 
          @since 3.0
      */
@@ -771,8 +759,8 @@ public:
     */
     void Connect(int id, int lastId, wxEventType eventType,
                  wxObjectEventFunction function,
-                 wxObject* userData = NULL,
-                 wxEvtHandler* eventSink = NULL);
+                 wxObject* userData = nullptr,
+                 wxEvtHandler* eventSink = nullptr);
 
     /**
         See the Connect(int, int, wxEventType, wxObjectEventFunction, wxObject*, wxEvtHandler*)
@@ -793,8 +781,8 @@ public:
     */
     void Connect(int id, wxEventType eventType,
                  wxObjectEventFunction function,
-                 wxObject* userData = NULL,
-                 wxEvtHandler* eventSink = NULL);
+                 wxObject* userData = nullptr,
+                 wxEvtHandler* eventSink = nullptr);
 
     /**
         See the Connect(int, int, wxEventType, wxObjectEventFunction, wxObject*, wxEvtHandler*)
@@ -809,8 +797,8 @@ public:
     */
     void Connect(wxEventType eventType,
                  wxObjectEventFunction function,
-                 wxObject* userData = NULL,
-                 wxEvtHandler* eventSink = NULL);
+                 wxObject* userData = nullptr,
+                 wxEvtHandler* eventSink = nullptr);
 
     /**
         Disconnects the given function dynamically from the event handler, using the
@@ -836,8 +824,8 @@ public:
     */
     bool Disconnect(wxEventType eventType,
                     wxObjectEventFunction function,
-                    wxObject* userData = NULL,
-                    wxEvtHandler* eventSink = NULL);
+                    wxObject* userData = nullptr,
+                    wxEvtHandler* eventSink = nullptr);
 
     /**
         See the Disconnect(wxEventType, wxObjectEventFunction, wxObject*, wxEvtHandler*)
@@ -851,9 +839,9 @@ public:
     */
     bool Disconnect(int id = wxID_ANY,
                     wxEventType eventType = wxEVT_NULL,
-                    wxObjectEventFunction function = NULL,
-                    wxObject* userData = NULL,
-                    wxEvtHandler* eventSink = NULL);
+                    wxObjectEventFunction function = nullptr,
+                    wxObject* userData = nullptr,
+                    wxEvtHandler* eventSink = nullptr);
 
     /**
         See the Disconnect(wxEventType, wxObjectEventFunction, wxObject*, wxEvtHandler*)
@@ -868,9 +856,9 @@ public:
     */
     bool Disconnect(int id, int lastId,
                     wxEventType eventType,
-                    wxObjectEventFunction function = NULL,
-                    wxObject* userData = NULL,
-                    wxEvtHandler* eventSink = NULL);
+                    wxObjectEventFunction function = nullptr,
+                    wxObject* userData = nullptr,
+                    wxEvtHandler* eventSink = nullptr);
     ///@}
 
 
@@ -884,7 +872,7 @@ public:
 
         This offers basically the same functionality as Connect(), but it is
         more flexible as it also allows you to use ordinary functions and
-        arbitrary functors as event handlers. It is also less restrictive then
+        arbitrary functors as event handlers. It is also less restrictive than
         Connect() because you can use an arbitrary method as an event handler,
         whereas Connect() requires a wxEvtHandler derived handler.
 
@@ -919,7 +907,7 @@ public:
               Functor functor,
               int id = wxID_ANY,
               int lastId = wxID_ANY,
-              wxObject *userData = NULL);
+              wxObject *userData = nullptr);
 
     /**
         See the Bind<>(const EventTag&, Functor, int, int, wxObject*) overload for
@@ -959,7 +947,7 @@ public:
               EventHandler *handler,
               int id = wxID_ANY,
               int lastId = wxID_ANY,
-              wxObject *userData = NULL);
+              wxObject *userData = nullptr);
     /**
         Unbinds the given function, functor or method dynamically from the
         event handler, using the specified parameters as search criteria and
@@ -998,7 +986,7 @@ public:
                 Functor functor,
                 int id = wxID_ANY,
                 int lastId = wxID_ANY,
-                wxObject *userData = NULL);
+                wxObject *userData = nullptr);
 
     /**
         See the Unbind<>(const EventTag&, Functor, int, int, wxObject*)
@@ -1031,7 +1019,7 @@ public:
                 EventHandler *handler,
                 int id = wxID_ANY,
                 int lastId = wxID_ANY,
-                wxObject *userData = NULL );
+                wxObject *userData = nullptr );
     ///@}
     /**
         @name User-supplied data
@@ -1304,10 +1292,20 @@ enum wxKeyCategoryFlags
     /// home and end keys, on and off numeric keypads
     WXK_CATEGORY_JUMP,
 
-    /// tab key, on and off numeric keypads
+    /**
+        Tab key, on and off numeric keypads.
+
+        Note that while `Ctrl+I` and `TAB` keys generate the same key code,
+        only the latter is considered to be in this category.
+     */
     WXK_CATEGORY_TAB,
 
-    /// backspace and delete keys, on and off numeric keypads
+    /**
+        Backspace and delete keys, on and off numeric keypads.
+
+        Note that while `Ctrl+H` and `BACKSPACE` keys generate the same key
+        code, only the latter is considered to be in this category.
+     */
     WXK_CATEGORY_CUT,
 
     /// union of WXK_CATEGORY_ARROW, WXK_CATEGORY_PAGING, and WXK_CATEGORY_JUMP categories
@@ -1357,30 +1355,36 @@ enum wxKeyCategoryFlags
     However for the key down and up events the returned key code will instead
     be @c A independently of the state of the modifier keys i.e. it depends
     only on physical key being pressed and is not translated to its logical
-    representation using the current keyboard state. Such untranslated key
-    codes are defined as follows:
-        - For the letters they correspond to the @e upper case value of the
-        letter.
-        - For the other alphanumeric keys (e.g. @c 7 or @c +), the untranslated
-        key code corresponds to the character produced by the key when it is
-        pressed without Shift. E.g. in standard US keyboard layout the
-        untranslated key code for the key @c =/+ in the upper right corner of
-        the keyboard is 61 which is the ASCII value of @c =.
-        - For the rest of the keys (i.e. special non-printable keys) it is the
-        same as the normal key code as no translation is used anyhow.
+    representation using the current keyboard state.
 
-    Notice that the first rule applies to all Unicode letters, not just the
-    usual Latin-1 ones. However for non-Latin-1 letters only GetUnicodeKey()
-    can be used to retrieve the key code as GetKeyCode() just returns @c
-    WXK_NONE in this case.
+    To summarize: you should handle @c wxEVT_CHAR if you need the character
+    that pressing the key would produce and @c wxEVT_KEY_DOWN if you only need
+    the value of the key itself, independent of the current keyboard state.
 
-    Also, note that @c wxEVT_CHAR events are not generated for keys which do
-    not have a wxWidgets mapping, so GetRawKeyCode() should never be required
-    for this event.
+    In more details, the key codes for the key down and up events are
+    determined as follows:
+        - For the ASCII letters they correspond to the @e upper case value of
+        the letter.
+        - For the other Latin-1 characters, including letters such as `ù` or
+        `ö` but also non-letter characters such as `²`, the key code is the
+        value of the corresponding character without conversion to upper case
+        (this behaviour is inconsistent but preserved for compatibility).
+        - For the other keys producing (non-Latin) printable characters, the
+        key code is the ASCII code of the character the same key would produce
+        in the standard US keyboard layout.
+        - For the special non-printable keys the code corresponds to the name
+        of the key, e.g. `WXK_INSERT` for the Insert key, and is the same as
+        for the char events as no translation is performed for such keys.
 
-    To summarize: you should handle @c wxEVT_CHAR if you need the translated
-    key and @c wxEVT_KEY_DOWN if you only need the value of the key itself,
-    independent of the current keyboard state.
+    For example, the key marked with `]` in the US layout generates the key
+    code `$` when using the standard French AZERTY layout because this is the
+    label of this key on the keyboards using this layout. However if the same
+    physical key is pressed in Ukrainian keyboard layout where it would
+    normally produce the non-ASCII letter `ï`, then the key code is the code of
+    the corresponding character in the standard US layout, i.e. `]`. This also
+    applies to the letters, i.e. the key code producing the Cyrillic letter `ц`
+    in Ukrainian layout generates the key code `W` corresponding to the letter
+    of this key in the US layout.
 
     @note Not all key down events may be generated by the user. As an example,
         @c wxEVT_KEY_DOWN with @c = key code can be generated using the
@@ -1388,21 +1392,38 @@ enum wxKeyCategoryFlags
         = key corresponds to Shift-0 key combination in this layout and the key
         code for it is @c 0, not @c =. Because of this you should avoid
         requiring your users to type key events that might be impossible to
-        enter on their keyboard.
+        enter on their keyboard. Similarly, not all possible accelerator can be
+        used in all keyboard layouts, e.g. `Ctrl-;` can't be activated when
+        using the standard French AZERTY layout because `;` is on the same key
+        as `.` in this layout and pressing it generates `Ctrl-.`. Hence it is
+        best to avoid using accelerators using non-alphanumeric characters for
+        the programs that can be used with different keyboard layouts.
 
 
     Another difference between key and char events is that another kind of
     translation is done for the latter ones when the Control key is pressed:
     char events for ASCII letters in this case carry codes corresponding to the
-    ASCII value of Ctrl-Latter, i.e. 1 for Ctrl-A, 2 for Ctrl-B and so on until
+    ASCII value of Ctrl-Letter, i.e. 1 for Ctrl-A, 2 for Ctrl-B and so on until
     26 for Ctrl-Z. This is convenient for terminal-like applications and can be
     completely ignored by all the other ones (if you need to handle Ctrl-A it
     is probably a better idea to use the key event rather than the char one).
-    Notice that currently no translation is done for the presses of @c [, @c
-    \\, @c ], @c ^ and @c _ keys which might be mapped to ASCII values from 27
-    to 31.
+    For completeness, the same translation is done for the presses of @c [, @c
+    \\, @c ], @c ^ and @c _ keys which are mapped to ASCII values from 27 to
+    31.
     Since version 2.9.2, the enum values @c WXK_CONTROL_A - @c WXK_CONTROL_Z
     can be used instead of the non-descriptive constant values 1-26.
+
+    @note Unfortunately, some keys don't generate consistent events when used
+    with the Control key. Notably:
+        - `Ctrl-Backspace` generates events with both key code and Unicode code
+          of ::WXK_DELETE in wxMSW, but ::WXK_BACK in wxGTK.
+        - `Ctrl-Enter` generates events with both key code and Unicode code of
+          ::WXK_CONTROL_J in wxMSW, but ::WXK_RETURN in wxGTK.
+        - `Ctrl-Letter` generates events corresponding to the control code even
+        when the letter is mapped to a non-Latin letter in the current keyboard
+        layout in wxMSW, but doesn't generate any `wxEVT_CHAR` events at all in
+        this case in wxGTK. Don't rely on getting these events in wxMSW, this
+        behaviour is only preserved for compatibility.
 
     Finally, modifier keys only generate key events but no char events at all.
     The modifiers keys are @c WXK_SHIFT, @c WXK_CONTROL, @c WXK_ALT and various
@@ -1632,9 +1653,6 @@ public:
         If the key pressed doesn't have any character value (e.g. a cursor key)
         this method will return @c WXK_NONE. In this case you should use
         GetKeyCode() to retrieve the value of the key.
-
-        This function is only available in Unicode build, i.e. when
-        @c wxUSE_UNICODE is 1.
     */
     wxChar GetUnicodeKey() const;
 
@@ -1902,7 +1920,7 @@ public:
 
     This class is used for system colour change events, which are generated
     when the user changes the colour settings or when the system theme changes
-    (e.g. automatic dark mode switching on macOS).
+    (e.g.\ automatic dark mode switching on macOS).
 
     Event handlers for this event can access the new system colour settings through
     wxSystemSettings::GetColour().
@@ -1933,6 +1951,65 @@ public:
     wxSysColourChangedEvent();
 };
 
+
+/**
+    Possible values for wxSysMetricChangedEvent::GetMetric().
+
+    @since 3.3.0
+ */
+enum class wxSysMetric
+{
+    /**
+        Undetermined or unknown system metric has changed.
+     */
+    Other,
+
+    /**
+        The default system cursor size has changed.
+
+        The new value can be obtained by calling wxSystemSettings::GetMetric()
+        with ::wxSYS_CURSOR_SIZE parameter.
+     */
+    CursorSize
+};
+
+/**
+    @class wxSysMetricChangedEvent
+
+    Notification about a change in one of the global system metrics.
+
+    Currently this event is only sent by wxMSW.
+
+    Event handlers for this event can access the new system metric values through
+    wxSystemSettings::GetMetric().
+
+    @remarks
+        The default event handler for this event propagates the event to child windows,
+        since the system events are only sent to top-level windows.
+        If intercepting this event for a top-level window, remember to either call
+        wxEvent::Skip() on the event, call the base class handler, or pass the event
+        on to the window's children explicitly.
+
+    @beginEventTable{wxSysMetricChangedEvent}
+    @event{EVT_SYS_METRIC_CHANGED(func)}
+        Process a @c wxEVT_SYS_METRIC_CHANGED event.
+    @endEventTable
+
+    @library{wxcore}
+    @category{events}
+
+    @see @ref overview_events
+
+    @since 3.3.0
+*/
+class wxSysMetricChangedEvent : public wxEvent
+{
+public:
+    /**
+        Return the metric which has changed.
+     */
+    wxSysMetric GetMetric() const;
+};
 
 
 /**
@@ -2158,7 +2235,7 @@ public:
     /**
         Constructor.
     */
-    wxWindowCreateEvent(wxWindow* win = NULL);
+    wxWindowCreateEvent(wxWindow* win = nullptr);
 
     /// Return the window being created.
     wxWindow *GetWindow() const;
@@ -2429,6 +2506,13 @@ public:
     void Check(bool check);
 
     /**
+        For wxCheckBox with wxCHK_3STATE:  Set the UI element state.
+
+        @since 3.3.0
+    */
+    void Set3StateValue(wxCheckBoxState check);
+
+    /**
         Enable or disable the UI element.
     */
     void Enable(bool enable);
@@ -2437,6 +2521,13 @@ public:
         Returns @true if the UI element should be checked.
     */
     bool GetChecked() const;
+
+    /**
+        Return the state a wxCheckBox with wxCHK_3STATE should display
+
+        @since 3.3.0
+    */
+    wxCheckBoxState Get3StateValue() const;
 
     /**
         Returns @true if the UI element should be enabled.
@@ -2464,6 +2555,28 @@ public:
     bool IsCheckable() const;
 
     /**
+        Returns @true if the UI element supports wxCheckboxState.
+
+        For the event handlers that can be used for multiple items, not all of
+        which support wxCheckboxState, this method can be useful to determine whether
+        to call Set3StateValue() on the event object or not, i.e. the main use case for
+        this method is:
+        @code
+        void MyWindow::OnUpdateUI(wxUpdateUIEvent& event)
+        {
+            ....
+            if ( event.Is3State() )
+                event.Set3StateValue(...some condition...);
+            else if ( event.IsCheckable() )
+                event.Check(...some condition...);
+        }
+        @endcode
+
+        @since 3.3.0
+    */
+    bool Is3State() const;
+
+    /**
         Static function returning a value specifying how wxWidgets will send update
         events: to all windows, or only to those which specify that they will process
         the events.
@@ -2473,7 +2586,7 @@ public:
     static wxUpdateUIMode GetMode();
 
     /**
-        Returns @true if the application has called Check().
+        Returns @true if the application has called Check() or SetSet3StateValue().
         For wxWidgets internal use only.
     */
     bool GetSetChecked() const;
@@ -2942,6 +3055,13 @@ public:
     bool IsPageScroll() const;
 
     /**
+        Returns @true if the event was synthesized from a touch event.
+
+        @since 3.3.0
+    */
+    bool IsSynthesized() const;
+
+    /**
         Returns @true if the mouse was leaving the window.
 
         @see Entering().
@@ -3052,7 +3172,7 @@ public:
         Constructor.
     */
     wxDropFilesEvent(wxEventType id = 0, int noFiles = 0,
-                     wxString* files = NULL);
+                     wxString* files = nullptr);
 
     /**
         Returns an array of filenames.
@@ -3242,7 +3362,7 @@ public:
     /**
         Constructor.
     */
-    wxEraseEvent(int id = 0, wxDC* dc = NULL);
+    wxEraseEvent(int id = 0, wxDC* dc = nullptr);
 
     /**
         Returns the device context associated with the erase event to draw on.
@@ -3336,7 +3456,7 @@ public:
             The direct child which is (or which contains the window which is) receiving
             the focus.
     */
-    wxChildFocusEvent(wxWindow* win = NULL);
+    wxChildFocusEvent(wxWindow* win = nullptr);
 
     /**
         Returns the direct child which receives the focus, or a (grand-)parent of the
@@ -3446,6 +3566,9 @@ public:
     <a href="https://docs.microsoft.com/en-us/windows/desktop/sbscs/application-manifests">"Application Manifests" documentation</a>
     for more details).
 
+    This event is generated by wxGTK when using GTK 3.10 or later and only
+    since wxWidgets version 3.3.0.
+
     @beginEventTable{wxDPIChangedEvent}
     @event{EVT_DPI_CHANGED(func)}
         Process a @c wxEVT_DPI_CHANGED event.
@@ -3482,9 +3605,18 @@ public:
         For example, the returned value will be twice bigger than the original
         one when switching from normal (96) DPI to high (2x, 192) DPI.
 
+        The overloads taking wxPoint and wxRect are only available in wxWidgets
+        3.3.0 and later.
+
         @since 3.1.6
      */
     wxSize Scale(wxSize sz) const;
+
+    /// @overload
+    wxPoint Scale(wxPoint pt) const;
+
+    /// @overload
+    wxRect Scale(wxRect rect) const;
 
     /**
         Rescale horizontal component to match the new DPI.
@@ -3881,7 +4013,82 @@ public:
     void SetPosition(int pos);
 };
 
+/**
+    @class wxTouchSequenceId
 
+    wxTouchSequenceId is a small opaque class that represents the ID of a touch point.
+
+    It must hold a unique ID of type @e void* in its only field and can be converted
+    to and from it.
+
+    If the ID is @NULL the wxTouchSequenceId is invalid and wxTouchSequenceId::IsOk will
+    return @false.
+
+    @since 3.3.0
+*/
+class wxTouchSequenceId : public wxItemId<void*>
+{
+public:
+    /**
+        Constructor.
+    */
+    wxTouchSequenceId();
+
+    /**
+        Constructor.
+    */
+    explicit wxTouchSequenceId(void* id);
+};
+
+/** @class wxMultiTouchEvent
+
+    This event class contains information about the events generated by touch devices:
+    they include press and release events and move events.
+
+    @beginEventTable{wxMultiTouchEvent}
+    @event{EVT_TOUCH_BEGIN(func)}
+        Process a @c wxEVT_TOUCH_BEGIN event.
+    @event{EVT_TOUCH_MOVE(func)}
+        Process a @c wxEVT_TOUCH_MOVE event.
+    @event{EVT_TOUCH_END(func)}
+        Process a @c wxEVT_TOUCH_END event.
+    @event{EVT_TOUCH_CANCEL(func)}
+        Process a @c wxEVT_TOUCH_CANCEL event.
+    @event{EVT_TOUCH_EVENTS(func)}
+        Process all touch events.
+    @endEventTable
+
+    @note Touch events are not generated by default, you must call
+          wxWindow::EnableTouchEvents() with the wxTOUCH_RAW_EVENTS parameter.
+
+    @library{wxcore}
+    @category{events}
+
+    @since 3.3.0
+*/
+class wxMultiTouchEvent : public wxEvent
+{
+public:
+    /**
+        Constructor only used by wxWidgets itself.
+    */
+    wxMultiTouchEvent(wxWindowID winid = 0, wxEventType type = wxEVT_NULL);
+
+    /**
+        Returns the position where the event took effect, in client coordinates.
+    */
+    const wxPoint2DDouble& GetPosition() const;
+
+    /**
+        Returns @true if the event is a primary (mouse pointer emulating) event.
+    */
+    bool IsPrimary() const;
+
+    /**
+        Returns the ID of the touch. This allows to track the move of an specific touch point.
+    */
+    const wxTouchSequenceId& GetSequenceId() const;
+};
 
 /** @class wxGestureEvent
     This is the base class for all supported gesture events.
@@ -4322,7 +4529,7 @@ public:
     /**
         Constructor.
     */
-    wxWindowDestroyEvent(wxWindow* win = NULL);
+    wxWindowDestroyEvent(wxWindow* win = nullptr);
 
     /// Return the window being destroyed.
     wxWindow *GetWindow() const;
@@ -4449,7 +4656,7 @@ public:
         Constructor.
     */
     wxMouseCaptureChangedEvent(wxWindowID windowId = 0,
-                               wxWindow* gainedCapture = NULL);
+                               wxWindow* gainedCapture = nullptr);
 
     /**
         Returns the window that gained the capture, or @NULL if it was a
@@ -4466,7 +4673,7 @@ public:
     This event class contains information about window and session close events.
 
     The handler function for EVT_CLOSE is called when the user has tried to close a
-    a frame or dialog box using the window manager (X) or system menu (Windows).
+    frame or dialog box using the window manager (X) or system menu (Windows).
     It can also be invoked by the application itself programmatically, for example by
     calling the wxWindow::Close function.
 
@@ -4515,8 +4722,13 @@ public:
     that it could still be executed and exit()s the process itself, without
     waiting for being killed. If this behaviour is for some reason undesirable,
     make sure that you define a handler for this event in your wxApp-derived
-    class and do not call @c event.Skip() in it (but be aware that the system
-    will still kill your application).
+    class and do not call @c event.Skip() in it, but be aware that the system
+    will still kill your application. Because of this, it is usually better to
+    skip this event and let the default handling take place. Please also note
+    that this handler must not be using any UI functionality (such as modal
+    dialogs asking whether the changes should be saved) as it is not safe to do
+    it any more, but it could, for example, save the program state into a file
+    unconditionally in order to restore it during the next program execution.
 
     @beginEventTable{wxCloseEvent}
     @event{EVT_CLOSE(func)}
@@ -4633,7 +4845,7 @@ public:
     /**
         Constructor.
     */
-    wxMenuEvent(wxEventType type = wxEVT_NULL, int id = 0, wxMenu* menu = NULL);
+    wxMenuEvent(wxEventType type = wxEVT_NULL, int id = 0, wxMenu* menu = nullptr);
 
     /**
         Returns the menu which is being opened or closed, or the menu containing
@@ -4889,12 +5101,27 @@ public:
     const wxCursor& GetCursor() const;
 
     /**
+        Returns the mouse position for which the cursor is requested.
+
+        This position is expressed in the client coordinates of the window.
+
+        @see GetX(), GetY()
+
+        @since 3.3.0
+    */
+    wxPoint GetPosition() const;
+
+    /**
         Returns the X coordinate of the mouse in client coordinates.
+
+        @see GetPosition()
     */
     wxCoord GetX() const;
 
     /**
         Returns the Y coordinate of the mouse in client coordinates.
+
+        @see GetPosition()
     */
     wxCoord GetY() const;
 
@@ -4928,7 +5155,7 @@ public:
 
     The values of this type should only be created using wxNewEventType().
 
-    See the macro wxDEFINE_EVENT_TYPE() for more information.
+    See the macro wxDEFINE_EVENT() for more information.
 
     @see @ref overview_events
 */
@@ -5119,9 +5346,9 @@ void wxPostEvent(wxEvtHandler* dest, const wxEvent& event);
     @header{wx/event.h}
 
     @param dest
-        The object to queue the event on, can't be @c NULL.
+        The object to queue the event on, can't be @NULL.
     @param event
-        The heap-allocated and non-@c NULL event to queue, the function takes
+        The heap-allocated and non-null event to queue, the function takes
         ownership of it.
  */
 void wxQueueEvent(wxEvtHandler* dest, wxEvent *event);
@@ -5199,6 +5426,10 @@ wxEventType wxEVT_SCROLLWIN_PAGEUP;
 wxEventType wxEVT_SCROLLWIN_PAGEDOWN;
 wxEventType wxEVT_SCROLLWIN_THUMBTRACK;
 wxEventType wxEVT_SCROLLWIN_THUMBRELEASE;
+wxEventType wxEVT_TOUCH_BEGIN;
+wxEventType wxEVT_TOUCH_MOVE;
+wxEventType wxEVT_TOUCH_END;
+wxEventType wxEVT_TOUCH_CANCEL;
 wxEventType wxEVT_GESTURE_PAN;
 wxEventType wxEVT_GESTURE_ZOOM;
 wxEventType wxEVT_GESTURE_ROTATE;
@@ -5228,6 +5459,7 @@ wxEventType wxEVT_MENU_CLOSE;
 wxEventType wxEVT_MENU_HIGHLIGHT;
 wxEventType wxEVT_CONTEXT_MENU;
 wxEventType wxEVT_SYS_COLOUR_CHANGED;
+wxEventType wxEVT_SYS_METRIC_CHANGED;
 wxEventType wxEVT_DISPLAY_CHANGED;
 wxEventType wxEVT_DPI_CHANGED;
 wxEventType wxEVT_QUERY_NEW_PALETTE;

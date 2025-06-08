@@ -2,7 +2,6 @@
 // Name:        wx/aui/floatpane.h
 // Purpose:     wxaui: wx advanced user interface - docking window manager
 // Author:      Benjamin I. Williams
-// Modified by:
 // Created:     2005-05-17
 // Copyright:   (C) Copyright 2005, Kirix Corporation, All Rights Reserved.
 // Licence:     wxWindows Library Licence, Version 3.1
@@ -16,9 +15,10 @@
 // ----------------------------------------------------------------------------
 
 #include "wx/defs.h"
-#include "wx/weakref.h"
 
 #if wxUSE_AUI
+
+#include "wx/weakref.h"
 
 #if wxUSE_MINIFRAME
     #include "wx/minifram.h"
@@ -27,6 +27,8 @@
     #include "wx/frame.h"
     #define wxAuiFloatingFrameBaseClass wxFrame
 #endif
+
+#include "wx/aui/framemanager.h"
 
 class WXDLLIMPEXP_AUI wxAuiFloatingFrame : public wxAuiFloatingFrameBaseClass
 {
@@ -44,7 +46,7 @@ public:
     wxAuiManager* GetOwnerManager() const;
 
     // Allow processing accelerators to the parent frame
-    virtual bool IsTopNavigationDomain(NavigationKind kind) const wxOVERRIDE;
+    virtual bool IsTopNavigationDomain(NavigationKind kind) const override;
 
     wxAuiManager& GetAuiManager()  { return m_mgr; }
 

@@ -525,14 +525,14 @@ public:
         @return The full temporary filepath, or an empty string on error.
     */
     static wxString CreateTempFileName(const wxString& prefix,
-                                       wxFile* fileTemp = NULL);
+                                       wxFile* fileTemp = nullptr);
 
     /**
         This is the same as CreateTempFileName(const wxString &prefix, wxFile *fileTemp)
         but takes a wxFFile parameter instead of wxFile.
     */
     static wxString CreateTempFileName(const wxString& prefix,
-                                       wxFFile* fileTemp = NULL);
+                                       wxFFile* fileTemp = nullptr);
 
 
     /**
@@ -869,9 +869,12 @@ public:
         one of the following forms:
 
         - Just a single letter, for the usual drive letter volumes, e.g. @c C.
-        - A share name preceded by a double backslash, e.g. @c \\\\share.
-        - A GUID volume preceded by a double backslash and a question mark,
-          e.g. @c \\\\?\\Volume{12345678-9abc-def0-1234-56789abcdef0}.
+        - A share name preceded by a double backslash, e.g. `\\share`.
+        - The first part of a so-called "Windows NT device" path, also called
+          "extended length" path, in the form of `\\.\X:` or a raw volume path,
+          e.g. `\\?\Volume{12345678-9abc-def0-1234-56789abcdef0}`. Such volumes
+          always start with a double backslash and a question mark. See also
+          IsMSWExtendedLengthPath().
     */
     wxString GetVolume() const;
 
@@ -1032,6 +1035,20 @@ public:
     */
     static bool IsPathSeparator(wxChar ch,
                                 wxPathFormat format = wxPATH_NATIVE);
+
+    /**
+        Returns @true if the path starts with a double backslash and a question
+        mark.
+
+        Such paths are known as "Windows NT device" paths or "extended length"
+        paths and are passed directly to the file system, allowing to access
+        objects not accessible using the normal paths and avoiding the 260
+        character path length restriction.
+
+        @since 3.3.0
+     */
+    static bool IsMSWExtendedLengthPath(const wxString& path,
+                                        wxPathFormat format = wxPATH_NATIVE);
 
     /**
         Returns @true if the volume part of the path is a unique volume name.
@@ -1423,7 +1440,7 @@ public:
                           wxString* path,
                           wxString* name,
                           wxString* ext,
-                          bool* hasExt = NULL,
+                          bool* hasExt = nullptr,
                           wxPathFormat format = wxPATH_NATIVE);
     static void SplitPath(const wxString& fullpath,
                           wxString* volume,

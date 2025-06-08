@@ -2,7 +2,6 @@
 // Name:        wx/flags.h
 // Purpose:     a bitset suited for replacing the current style flags
 // Author:      Stefan Csomor
-// Modified by:
 // Created:     27/07/03
 // Copyright:   (c) 2003 Stefan Csomor
 // Licence:     wxWindows licence
@@ -10,6 +9,8 @@
 
 #ifndef _WX_SETH__
 #define _WX_SETH__
+
+#include "wx/defs.h"
 
 // wxBitset should be applied to an enum, then this can be used like
 // bitwise operators but keeps the type safety and information, the
@@ -167,10 +168,6 @@ private :
 
 #define wxDEFINE_FLAGS( flags )
 
-#endif
-
-#if WXWIN_COMPATIBILITY_2_8
-    #define WX_DEFINE_FLAGS     wxDEFINE_FLAGS
 #endif
 
 #endif

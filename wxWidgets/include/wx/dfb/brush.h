@@ -30,7 +30,7 @@ class WXDLLIMPEXP_FWD_CORE wxBrush;
 class WXDLLIMPEXP_CORE wxBrush : public wxBrushBase
 {
 public:
-    wxBrush() {}
+    wxBrush() = default;
     wxBrush(const wxColour &colour, wxBrushStyle style = wxBRUSHSTYLE_SOLID);
     wxBrush(const wxBitmap &stippleBitmap);
 
@@ -55,7 +55,7 @@ public:
 
 protected:
     virtual wxGDIRefData *CreateGDIRefData() const;
-    virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const;
+    wxNODISCARD virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const;
 
     wxDECLARE_DYNAMIC_CLASS(wxBrush);
 };

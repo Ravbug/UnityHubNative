@@ -2,7 +2,6 @@
 // Name:        wx/power.h
 // Purpose:     functions and classes for system power management
 // Author:      Vadim Zeitlin
-// Modified by:
 // Created:     2006-05-27
 // Copyright:   (c) 2006 Vadim Zeitlin <vadim@wxwidgets.org>
 // Licence:     wxWindows licence
@@ -37,15 +36,15 @@ enum wxBatteryState
 // wxPowerEvent is generated when the system online status changes
 // ----------------------------------------------------------------------------
 
-// currently the power events are only available under Windows, to avoid
+// currently the power events are only available under some platforms, to avoid
 // compiling in the code for handling them which is never going to be invoked
 // under the other platforms, we define wxHAS_POWER_EVENTS symbol if this event
 // is available, it should be used to guard all code using wxPowerEvent
-#ifdef __WINDOWS__
+#if defined(__WINDOWS__) || defined(__WXGTK__)
 
 #define wxHAS_POWER_EVENTS
 
-class WXDLLIMPEXP_BASE wxPowerEvent : public wxEvent
+class WXDLLIMPEXP_CORE wxPowerEvent : public wxEvent
 {
 public:
     wxPowerEvent()            // just for use by wxRTTI
@@ -64,7 +63,7 @@ public:
 
     // default copy ctor, assignment operator and dtor are ok
 
-    virtual wxEvent *Clone() const wxOVERRIDE { return new wxPowerEvent(*this); }
+    wxNODISCARD virtual wxEvent *Clone() const override { return new wxPowerEvent(*this); }
 
 private:
     bool m_veto;
@@ -72,10 +71,10 @@ private:
     wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxPowerEvent);
 };
 
-wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_BASE, wxEVT_POWER_SUSPENDING, wxPowerEvent );
-wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_BASE, wxEVT_POWER_SUSPENDED, wxPowerEvent );
-wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_BASE, wxEVT_POWER_SUSPEND_CANCEL, wxPowerEvent );
-wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_BASE, wxEVT_POWER_RESUME, wxPowerEvent );
+wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_POWER_SUSPENDING, wxPowerEvent );
+wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_POWER_SUSPENDED, wxPowerEvent );
+wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_POWER_SUSPEND_CANCEL, wxPowerEvent );
+wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_POWER_RESUME, wxPowerEvent );
 
 typedef void (wxEvtHandler::*wxPowerEventFunction)(wxPowerEvent&);
 
@@ -105,11 +104,18 @@ enum wxPowerResourceKind
     wxPOWER_RESOURCE_SYSTEM
 };
 
-class WXDLLIMPEXP_BASE wxPowerResource
+enum wxPowerBlockKind
+{
+    wxPOWER_PREVENT,
+    wxPOWER_DELAY
+};
+
+class WXDLLIMPEXP_CORE wxPowerResource
 {
 public:
     static bool Acquire(wxPowerResourceKind kind,
-                        const wxString& reason = wxString());
+                        const wxString& reason = wxString(),
+                        wxPowerBlockKind blockKind = wxPOWER_PREVENT);
     static void Release(wxPowerResourceKind kind);
 };
 
@@ -117,9 +123,10 @@ class wxPowerResourceBlocker
 {
 public:
     explicit wxPowerResourceBlocker(wxPowerResourceKind kind,
-                                    const wxString& reason = wxString())
+                                    const wxString& reason = wxString(),
+                                    wxPowerBlockKind blockKind = wxPOWER_PREVENT)
         : m_kind(kind),
-          m_acquired(wxPowerResource::Acquire(kind, reason))
+          m_acquired(wxPowerResource::Acquire(kind, reason, blockKind))
     {
     }
 
@@ -143,9 +150,9 @@ private:
 // ----------------------------------------------------------------------------
 
 // return the current system power state: online or offline
-WXDLLIMPEXP_BASE wxPowerType wxGetPowerType();
+WXDLLIMPEXP_CORE wxPowerType wxGetPowerType();
 
 // return approximate battery state
-WXDLLIMPEXP_BASE wxBatteryState wxGetBatteryState();
+WXDLLIMPEXP_CORE wxBatteryState wxGetBatteryState();
 
 #endif // _WX_POWER_H_

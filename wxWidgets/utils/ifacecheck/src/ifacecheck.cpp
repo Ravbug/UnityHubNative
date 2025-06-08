@@ -59,9 +59,9 @@ static const wxCmdLineEntryDesc g_cmdLineDesc[] =
         "show help message", wxCMD_LINE_VAL_NONE, wxCMD_LINE_OPTION_HELP },
     { wxCMD_LINE_SWITCH, VERBOSE_SWITCH, "verbose",
         "be verbose" },
-    { wxCMD_LINE_PARAM,  NULL, NULL,
+    { wxCMD_LINE_PARAM,  nullptr, nullptr,
         "gccXML", wxCMD_LINE_VAL_STRING, wxCMD_LINE_OPTION_MANDATORY },
-    { wxCMD_LINE_PARAM,  NULL, NULL,
+    { wxCMD_LINE_PARAM,  nullptr, nullptr,
         "doxygenXML", wxCMD_LINE_VAL_STRING, wxCMD_LINE_OPTION_MANDATORY },
     wxCMD_LINE_DESC_END
 };
@@ -393,7 +393,7 @@ int IfaceCheckApp::CompareClasses(const wxClass* iface, const wxClass* api)
                     for (unsigned int j=0; j<overloads.GetCount(); j++)
                         warning += "\n\treal header: " + overloads[j]->GetAsString(true, true, true, true);
 
-                    wxLogWarning("%s", warning);
+                    wxLogWarning(warning);
                     count++;
 
                     if (overloads.GetCount()>1)
@@ -670,7 +670,7 @@ void IfaceCheckApp::PrintStatistics(long secs)
     int undoc = 0;
     const wxClassArray& arr = m_gccInterface.GetClasses();
     for (unsigned int i=0; i<arr.GetCount(); i++) {
-        if (m_doxyInterface.FindClass(arr[i].GetName()) == NULL) {
+        if (m_doxyInterface.FindClass(arr[i].GetName()) == nullptr) {
             list += arr[i].GetName() + ", ";
             undoc++;
         }

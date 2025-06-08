@@ -2,7 +2,6 @@
 // Name:        wx/osx/bitmap.h
 // Purpose:     wxBitmap class
 // Author:      Stefan Csomor
-// Modified by:
 // Created:     1998-01-01
 // Copyright:   (c) Stefan Csomor
 // Licence:     wxWindows licence
@@ -63,14 +62,14 @@ public:
 
 protected:
     // this function is called from Create() to free the existing mask data
-    virtual void FreeData() wxOVERRIDE;
+    virtual void FreeData() override;
 
     // these functions must be overridden to implement the corresponding public
     // Create() methods, they shouldn't call FreeData() as it's already called
     // by the public wrappers
     virtual bool InitFromColour(const wxBitmap& bitmap,
-                                const wxColour& colour) wxOVERRIDE;
-    virtual bool InitFromMonoBitmap(const wxBitmap& bitmap) wxOVERRIDE;
+                                const wxColour& colour) override;
+    virtual bool InitFromMonoBitmap(const wxBitmap& bitmap) override;
 
 private:
     void DoCreateMaskBitmap(int width, int height, int bytesPerRow = -1);
@@ -86,7 +85,7 @@ class WXDLLIMPEXP_CORE wxBitmap: public wxBitmapBase
     friend class WXDLLIMPEXP_FWD_CORE wxBitmapHandler;
 
 public:
-    wxBitmap() {} // Platform-specific
+    wxBitmap() = default; // Platform-specific
 
     // Initialize with raw data.
     wxBitmap(const char bits[], int width, int height, int depth = 1);
@@ -124,18 +123,16 @@ public:
     wxBitmap(const wxCursor &cursor);
 #endif
 
-    virtual ~wxBitmap() {}
-
-    wxImage ConvertToImage() const wxOVERRIDE;
+    wxImage ConvertToImage() const override;
 
     // get the given part of bitmap
-    wxBitmap GetSubBitmap( const wxRect& rect ) const wxOVERRIDE;
+    wxBitmap GetSubBitmap( const wxRect& rect ) const override;
 
-    virtual bool Create(int width, int height, int depth = wxBITMAP_SCREEN_DEPTH) wxOVERRIDE;
-    virtual bool Create(const wxSize& sz, int depth = wxBITMAP_SCREEN_DEPTH) wxOVERRIDE
+    bool Create(int width, int height, int depth = wxBITMAP_SCREEN_DEPTH) final;
+    bool Create(const wxSize& sz, int depth = wxBITMAP_SCREEN_DEPTH) final
         { return Create(sz.GetWidth(), sz.GetHeight(), depth); }
 
-    virtual bool Create(const void* data, wxBitmapType type, int width, int height, int depth = 1);
+    bool Create(const void* data, wxBitmapType type, int width, int height, int depth = 1);
     bool Create( CGImageRef image, double scale = 1.0 );
     bool Create( WXImage image );
     bool Create( CGContextRef bitmapcontext);
@@ -143,9 +140,8 @@ public:
     // Create a bitmap compatible with the given DC, inheriting its magnification factor
     bool Create(int width, int height, const wxDC& dc);
 
-    // virtual bool Create( WXHICON icon) ;
-    virtual bool LoadFile(const wxString& name, wxBitmapType type = wxBITMAP_DEFAULT_TYPE) wxOVERRIDE;
-    virtual bool SaveFile(const wxString& name, wxBitmapType type, const wxPalette *cmap = NULL) const wxOVERRIDE;
+    virtual bool LoadFile(const wxString& name, wxBitmapType type = wxBITMAP_DEFAULT_TYPE) override;
+    virtual bool SaveFile(const wxString& name, wxBitmapType type, const wxPalette *cmap = nullptr) const override;
 
     const wxBitmapRefData *GetBitmapData() const
         { return (const wxBitmapRefData *)m_refData; }
@@ -153,26 +149,26 @@ public:
     wxBitmapRefData *GetBitmapData()
         { return (wxBitmapRefData *)m_refData; }
 
-    int GetWidth() const wxOVERRIDE;
-    int GetHeight() const wxOVERRIDE;
-    int GetDepth() const wxOVERRIDE;
+    int GetWidth() const override;
+    int GetHeight() const override;
+    int GetDepth() const override;
 
 #if WXWIN_COMPATIBILITY_3_0
     wxDEPRECATED_MSG("this value is determined during creation, this method could lead to inconsistencies")
-    void SetWidth(int width) wxOVERRIDE;
+    void SetWidth(int width) override;
     wxDEPRECATED_MSG("this value is determined during creation, this method could lead to inconsistencies")
-    void SetHeight(int height) wxOVERRIDE;
+    void SetHeight(int height) override;
     wxDEPRECATED_MSG("this value is determined during creation, this method could lead to inconsistencies")
-    void SetDepth(int depth) wxOVERRIDE;
+    void SetDepth(int depth) override;
 #endif
 
 #if wxUSE_PALETTE
-    wxPalette* GetPalette() const wxOVERRIDE;
-    void SetPalette(const wxPalette& palette) wxOVERRIDE;
+    wxPalette* GetPalette() const override;
+    void SetPalette(const wxPalette& palette) override;
 #endif // wxUSE_PALETTE
 
-    wxMask *GetMask() const wxOVERRIDE;
-    void SetMask(wxMask *mask) wxOVERRIDE;
+    wxMask *GetMask() const override;
+    void SetMask(wxMask *mask) override;
 
     static void InitStandardHandlers();
 
@@ -180,11 +176,11 @@ public:
     void *GetRawData(wxPixelDataBase& data, int bpp);
     void UngetRawData(wxPixelDataBase& data);
 
-    bool HasAlpha() const wxOVERRIDE;
-    bool UseAlpha(bool use = true) wxOVERRIDE;
+    bool HasAlpha() const override;
+    bool UseAlpha(bool use = true) override;
 
     // returns the 'native' implementation, a GWorldPtr for the content and one for the mask
-    WXHBITMAP GetHBITMAP( WXHBITMAP * mask = NULL ) const;
+    WXHBITMAP GetHBITMAP( WXHBITMAP * mask = nullptr ) const;
 
     // returns a CGImageRef which must released after usage with CGImageRelease
     CGImageRef CreateCGImage() const ;
@@ -224,17 +220,17 @@ public:
     void EndRawAccess();
 #endif
 
-    void SetScaleFactor(double scale) wxOVERRIDE;
-    double GetScaleFactor() const wxOVERRIDE;
+    void SetScaleFactor(double scale) override;
+    double GetScaleFactor() const override;
 
     void SetSelectedInto(wxDC *dc);
     wxDC *GetSelectedInto() const;
 
 protected:
-    virtual wxGDIRefData *CreateGDIRefData() const wxOVERRIDE;
-    virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const wxOVERRIDE;
+    virtual wxGDIRefData *CreateGDIRefData() const override;
+    wxNODISCARD virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const override;
 
-    virtual bool DoCreate(const wxSize& sz, double scale, int depth) wxOVERRIDE;
+    virtual bool DoCreate(const wxSize& sz, double scale, int depth) override;
 
 private:
     void InitFromImage(const wxImage& image, int depth, double scale);

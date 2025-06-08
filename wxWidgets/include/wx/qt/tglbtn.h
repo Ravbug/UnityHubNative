@@ -14,7 +14,8 @@
 class WXDLLIMPEXP_CORE wxToggleButton : public wxToggleButtonBase
 {
 public:
-    wxToggleButton();
+    wxToggleButton() = default;
+
     wxToggleButton(wxWindow *parent,
                    wxWindowID id,
                    const wxString& label,
@@ -32,11 +33,11 @@ public:
                 const wxValidator& validator = wxDefaultValidator,
                 const wxString& name = wxASCII_STR(wxCheckBoxNameStr));
 
-    virtual void SetValue(bool state) wxOVERRIDE;
-    virtual bool GetValue() const wxOVERRIDE;
+    virtual void SetValue(bool state) override;
+    virtual bool GetValue() const override;
 
     // implementation only
-    virtual int QtGetEventType() const wxOVERRIDE { return wxEVT_TOGGLEBUTTON; }
+    virtual int QtGetEventType() const override { return wxEVT_TOGGLEBUTTON; }
 
 private:
     wxDECLARE_DYNAMIC_CLASS(wxToggleButton);
@@ -48,7 +49,8 @@ private:
 class WXDLLIMPEXP_CORE wxBitmapToggleButton: public wxToggleButton
 {
 public:
-    wxBitmapToggleButton();
+    wxBitmapToggleButton() = default;
+
     wxBitmapToggleButton(wxWindow *parent,
                    wxWindowID id,
                    const wxBitmapBundle& label,

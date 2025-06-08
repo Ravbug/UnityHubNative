@@ -2,7 +2,6 @@
 // Name:        src/msw/tooltip.cpp
 // Purpose:     wxToolTip class implementation for MSW
 // Author:      Vadim Zeitlin
-// Modified by:
 // Created:     31.01.99
 // Copyright:   (c) 1999 Vadim Zeitlin
 // Licence:     wxWindows licence
@@ -34,6 +33,7 @@
 #include "wx/tokenzr.h"
 #include "wx/vector.h"
 #include "wx/msw/private.h"
+#include "wx/msw/private/darkmode.h"
 
 #ifndef TTTOOLINFO_V1_SIZE
     #define TTTOOLINFO_V1_SIZE 0x28
@@ -58,7 +58,7 @@
 // ----------------------------------------------------------------------------
 
 // the tooltip parent window
-WXHWND wxToolTip::ms_hwndTT = (WXHWND)NULL;
+WXHWND wxToolTip::ms_hwndTT = nullptr;
 
 // new tooltip maximum width, default value is set on first call to wxToolTip::Add()
 int wxToolTip::ms_maxWidth = 0;
@@ -66,7 +66,7 @@ int wxToolTip::ms_maxWidth = 0;
 #if wxUSE_TTM_WINDOWFROMPOINT
 
 // the tooltip window proc
-static WNDPROC gs_wndprocToolTip = (WNDPROC)NULL;
+static WNDPROC gs_wndprocToolTip = nullptr;
 
 #endif // wxUSE_TTM_WINDOWFROMPOINT
 
@@ -91,7 +91,7 @@ public:
     wxToolInfo(HWND hwndOwner, unsigned int id, const wxRect& rc)
     {
         // initialize all members
-        ::ZeroMemory(this, sizeof(TOOLINFO));
+        wxZeroMemory(*this);
 
         // the structure TOOLINFO has been extended with a 4 byte field in
         // version 4.70 of comctl32.dll and another one in 5.01 but we don't
@@ -129,6 +129,10 @@ public:
         // tooltip which then reappears because mouse remains hovering over the
         // control, see SF patch 1821229
         uFlags |= TTF_TRANSPARENT;
+        // we use TTF_SUBCLASS to avoid the need for the rest of the code
+        // to handle all mouse move messages and relay them to wxToolTip
+        // (see https://github.com/wxWidgets/wxWidgets/pull/24482)
+        uFlags |= TTF_SUBCLASS;
     }
 };
 
@@ -140,12 +144,12 @@ public:
     {
     }
 
-    virtual bool OnInit() wxOVERRIDE
+    virtual bool OnInit() override
     {
         return true;
     }
 
-    virtual void OnExit() wxOVERRIDE
+    virtual void OnExit() override
     {
         wxToolTip::DeleteToolTipCtrl();
     }
@@ -280,7 +284,7 @@ void wxToolTip::DeleteToolTipCtrl()
     if ( ms_hwndTT )
     {
         ::DestroyWindow((HWND)ms_hwndTT);
-        ms_hwndTT = (WXHWND)NULL;
+        ms_hwndTT = nullptr;
     }
 }
 
@@ -304,16 +308,17 @@ WXHWND wxToolTip::GetToolTipCtrl()
         // active) and we don't want to strip "&"s from them
         ms_hwndTT = (WXHWND)::CreateWindowEx(exflags,
                                              TOOLTIPS_CLASS,
-                                             (LPCTSTR)NULL,
+                                             nullptr,
                                              TTS_ALWAYSTIP | TTS_NOPREFIX,
                                              CW_USEDEFAULT, CW_USEDEFAULT,
                                              CW_USEDEFAULT, CW_USEDEFAULT,
-                                             NULL, (HMENU)NULL,
+                                             nullptr, nullptr,
                                              wxGetInstance(),
-                                             NULL);
+                                             nullptr);
        if ( ms_hwndTT )
        {
            HWND hwnd = (HWND)ms_hwndTT;
+           wxMSWDarkMode::AllowForWindow(hwnd);
            SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
                         SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
@@ -330,7 +335,7 @@ WXHWND wxToolTip::GetToolTipCtrl()
 /* static */
 void wxToolTip::UpdateVisibility()
 {
-    wxToolInfo ti(NULL, 0, wxRect());
+    wxToolInfo ti(nullptr, 0, wxRect());
     ti.uFlags = 0;
 
     if ( !SendTooltipMessage(ms_hwndTT, TTM_GETCURRENTTOOL, &ti) )
@@ -361,12 +366,6 @@ void wxToolTip::UpdateVisibility()
         ::ShowWindow(ms_hwndTT, SW_HIDE);
 }
 
-/* static */
-void wxToolTip::RelayEvent(WXMSG *msg)
-{
-    (void)SendTooltipMessage(GetToolTipCtrl(), TTM_RELAYEVENT, msg);
-}
-
 // ----------------------------------------------------------------------------
 // ctor & dtor
 // ----------------------------------------------------------------------------
@@ -376,8 +375,8 @@ wxIMPLEMENT_ABSTRACT_CLASS(wxToolTip, wxObject);
 wxToolTip::wxToolTip(const wxString &tip)
          : m_text(tip)
 {
-    m_window = NULL;
-    m_others = NULL;
+    m_window = nullptr;
+    m_others = nullptr;
 
     // make sure m_rect.IsEmpty() == true
     m_rect.SetWidth(0);
@@ -390,8 +389,8 @@ wxToolTip::wxToolTip(const wxString &tip)
 wxToolTip::wxToolTip(wxWindow* win, unsigned int id, const wxString &tip, const wxRect& rc)
          : m_text(tip), m_rect(rc), m_id(id)
 {
-    m_window = NULL;
-    m_others = NULL;
+    m_window = nullptr;
+    m_others = nullptr;
 
     SetWindow(win);
 }
@@ -570,7 +569,7 @@ bool wxToolTip::AdjustMaxWidth()
     // use TTM_SETMAXTIPWIDTH to make tooltip multiline using the
     // extent of its first line as max value
     HFONT hfont = (HFONT)
-        SendTooltipMessage(GetToolTipCtrl(), WM_GETFONT, 0);
+        SendTooltipMessage(GetToolTipCtrl(), WM_GETFONT, nullptr);
 
     if ( !hfont )
     {
@@ -584,7 +583,7 @@ bool wxToolTip::AdjustMaxWidth()
     MemoryHDC hdc;
     if ( !hdc )
     {
-        wxLogLastError(wxT("CreateCompatibleDC(NULL)"));
+        wxLogLastError(wxT("CreateCompatibleDC(nullptr)"));
     }
 
     if ( !SelectObject(hdc, hfont) )
@@ -630,7 +629,7 @@ bool wxToolTip::AdjustMaxWidth()
     // one would result in breaking the longer lines unnecessarily as
     // all our tooltips share the same maximal width
     if ( maxWidth > SendTooltipMessage(GetToolTipCtrl(),
-                                       TTM_GETMAXTIPWIDTH, 0) )
+                                       TTM_GETMAXTIPWIDTH, nullptr) )
     {
         SendTooltipMessage(GetToolTipCtrl(), TTM_SETMAXTIPWIDTH,
                            wxUIntToPtr(maxWidth));

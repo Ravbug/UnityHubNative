@@ -2,7 +2,6 @@
 // Name:        src/msw/volume.cpp
 // Purpose:     wxFSVolume - encapsulates system volume information
 // Author:      George Policello
-// Modified by:
 // Created:     28 Jan 02
 // Copyright:   (c) 2002 George Policello
 // Licence:     wxWindows licence
@@ -29,13 +28,11 @@
     #endif
     #include "wx/intl.h"
     #include "wx/log.h"
-    #include "wx/hashmap.h"
     #include "wx/filefn.h"
 #endif // WX_PRECOMP
 
 #include "wx/dir.h"
 #include "wx/dynlib.h"
-#include "wx/arrimpl.cpp"
 
 // some compilers require including <windows.h> before <shellapi.h> so do it
 // even if this is not necessary with most of them
@@ -46,13 +43,13 @@
 
 #if wxUSE_BASE
 
+#include <unordered_map>
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Dynamic library function defs.
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-#if wxUSE_DYNLIB_CLASS
 static wxDynamicLibrary s_mprLib;
-#endif
 
 typedef DWORD (WINAPI* WNetOpenEnumPtr)(DWORD, DWORD, DWORD, LPNETRESOURCE, LPHANDLE);
 typedef DWORD (WINAPI* WNetEnumResourcePtr)(HANDLE, LPDWORD, LPVOID, LPDWORD);
@@ -78,6 +75,9 @@ static WNetCloseEnumPtr s_pWNetCloseEnum;
 
 static wxInterlockedArg_t s_cancelSearch = FALSE;
 
+namespace
+{
+
 struct FileInfo
 {
     FileInfo(unsigned flag=0, wxFSVolumeKind type=wxFS_VOL_OTHER) :
@@ -94,15 +94,17 @@ struct FileInfo
     unsigned m_flags;
     wxFSVolumeKind m_type;
 };
-WX_DECLARE_STRING_HASH_MAP(FileInfo, FileInfoMap);
-// Cygwin bug (?) destructor for global s_fileInfo is called twice...
+
+using FileInfoMap = std::unordered_map<wxString, FileInfo>;
+
 static FileInfoMap& GetFileInfoMap()
 {
     static FileInfoMap s_fileInfo(25);
 
     return s_fileInfo;
 }
-#define s_fileInfo (GetFileInfoMap())
+
+} // anonymous namespace
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Local helper functions.
@@ -182,7 +184,7 @@ static unsigned GetBasicFlags(const wxChar* filename)
     //------------------
     // Flags are cached.
     //------------------
-    s_fileInfo[filename] = FileInfo(flags, type);
+    GetFileInfoMap()[filename] = FileInfo(flags, type);
 
     return flags;
 } // GetBasicFlags
@@ -233,7 +235,6 @@ static void BuildListFromNN(wxArrayString& list, NETRESOURCE* pResSrc,
                             unsigned flagsSet, unsigned flagsUnset)
 {
     HANDLE hEnum;
-    int rc;
 
     //-----------------------------------------------
     // Scope may be all drives or all mounted drives.
@@ -247,13 +248,14 @@ static void BuildListFromNN(wxArrayString& list, NETRESOURCE* pResSrc,
     // Containers cause a recursive call to this function for their own
     // enumeration.
     //----------------------------------------------------------------------
-    if (rc = s_pWNetOpenEnum(scope, RESOURCETYPE_DISK, 0, pResSrc, &hEnum), rc == NO_ERROR)
+    if (s_pWNetOpenEnum(scope, RESOURCETYPE_DISK, 0, pResSrc, &hEnum) == NO_ERROR)
     {
         DWORD count = 1;
         DWORD size = 256;
         NETRESOURCE* pRes = (NETRESOURCE*)malloc(size);
         memset(pRes, 0, sizeof(NETRESOURCE));
-        while (rc = s_pWNetEnumResource(hEnum, &count, pRes, &size), rc == NO_ERROR || rc == ERROR_MORE_DATA)
+        int rc;
+        while ((rc = s_pWNetEnumResource(hEnum, &count, pRes, &size)) == NO_ERROR || rc == ERROR_MORE_DATA)
         {
             if (s_cancelSearch)
                 break;
@@ -297,7 +299,7 @@ static void BuildListFromNN(wxArrayString& list, NETRESOURCE* pResSrc,
                         // Volumes on disconnected servers, however, will correctly show as unmounted.
                         FilteredAdd(list, filename.t_str(), flagsSet, flagsUnset&~wxFS_VOL_MOUNTED);
                         if (scope == RESOURCE_GLOBALNET)
-                            s_fileInfo[filename].m_flags &= ~wxFS_VOL_MOUNTED;
+                            GetFileInfoMap()[filename].m_flags &= ~wxFS_VOL_MOUNTED;
                     }
                 }
             }
@@ -363,15 +365,11 @@ static bool BuildRemoteList(wxArrayString& list, NETRESOURCE* pResSrc,
         for (ssize_t iMounted = mounted.GetCount()-1; iMounted >= 0 && iList >= 0; iMounted--)
         {
             int compare;
-            wxString all(list[iList]);
-            wxString mount(mounted[iMounted]);
 
-            while (compare =
-                     wxStricmp(list[iList].c_str(), mounted[iMounted].c_str()),
-                   compare > 0 && iList >= 0)
+            while ((compare = wxStricmp(list[iList].c_str(), mounted[iMounted].c_str())) > 0
+                   && iList >= 0)
             {
                 iList--;
-                all = list[iList];
             }
 
 
@@ -381,7 +379,7 @@ static bool BuildRemoteList(wxArrayString& list, NETRESOURCE* pResSrc,
                 if (flagsUnset & wxFS_VOL_MOUNTED)
                     list.RemoveAt(iList);
                 else
-                    s_fileInfo[list[iList]].m_flags |= wxFS_VOL_MOUNTED;
+                    GetFileInfoMap()[list[iList]].m_flags |= wxFS_VOL_MOUNTED;
 
             }
 
@@ -405,19 +403,12 @@ wxArrayString wxFSVolumeBase::GetVolumes(int flagsSet, int flagsUnset)
 {
     ::InterlockedExchange(&s_cancelSearch, FALSE);     // reset
 
-#if wxUSE_DYNLIB_CLASS
     if (!s_mprLib.IsLoaded() && s_mprLib.Load(wxT("mpr.dll")))
     {
-#ifdef UNICODE
         s_pWNetOpenEnum = (WNetOpenEnumPtr)s_mprLib.GetSymbol(wxT("WNetOpenEnumW"));
         s_pWNetEnumResource = (WNetEnumResourcePtr)s_mprLib.GetSymbol(wxT("WNetEnumResourceW"));
-#else
-        s_pWNetOpenEnum = (WNetOpenEnumPtr)s_mprLib.GetSymbol(wxT("WNetOpenEnumA"));
-        s_pWNetEnumResource = (WNetEnumResourcePtr)s_mprLib.GetSymbol(wxT("WNetEnumResourceA"));
-#endif
         s_pWNetCloseEnum = (WNetCloseEnumPtr)s_mprLib.GetSymbol(wxT("WNetCloseEnum"));
     }
-#endif
 
     wxArrayString list;
 
@@ -425,7 +416,7 @@ wxArrayString wxFSVolumeBase::GetVolumes(int flagsSet, int flagsUnset)
     // Local and mapped drives first.
     //-------------------------------
     // Allocate the required space for the API call.
-    const DWORD chars = GetLogicalDriveStrings(0, NULL);
+    const DWORD chars = GetLogicalDriveStrings(0, nullptr);
     TCHAR* buf = new TCHAR[chars+1];
 
     // Get the list of drives.
@@ -455,7 +446,7 @@ wxArrayString wxFSVolumeBase::GetVolumes(int flagsSet, int flagsUnset)
         // The returned list will be sorted alphabetically.  We don't pass
         // our in since we don't want to change to order of the local drives.
         wxArrayString nn;
-        if (BuildRemoteList(nn, 0, flagsSet, flagsUnset))
+        if (BuildRemoteList(nn, nullptr, flagsSet, flagsUnset))
         {
             for (size_t idx = 0; idx < nn.GetCount(); idx++)
                 list.Add(nn[idx]);
@@ -542,8 +533,8 @@ wxFSVolumeKind wxFSVolumeBase::GetKind() const
     if (!m_isOk)
         return wxFS_VOL_OTHER;
 
-    FileInfoMap::iterator itr = s_fileInfo.find(m_volName);
-    if (itr == s_fileInfo.end())
+    FileInfoMap::iterator itr = GetFileInfoMap().find(m_volName);
+    if (itr == GetFileInfoMap().end())
         return wxFS_VOL_OTHER;
 
     return itr->second.m_type;
@@ -559,8 +550,8 @@ int wxFSVolumeBase::GetFlags() const
     if (!m_isOk)
         return -1;
 
-    FileInfoMap::iterator itr = s_fileInfo.find(m_volName);
-    if (itr == s_fileInfo.end())
+    FileInfoMap::iterator itr = GetFileInfoMap().find(m_volName);
+    if (itr == GetFileInfoMap().end())
         return -1;
 
     return itr->second.m_flags;
@@ -576,10 +567,7 @@ int wxFSVolumeBase::GetFlags() const
 
 void wxFSVolume::InitIcons()
 {
-    m_icons.Alloc(wxFS_VOL_ICO_MAX);
-    wxIcon null;
-    for (int idx = 0; idx < wxFS_VOL_ICO_MAX; idx++)
-        m_icons.Add(null);
+    m_icons.resize(wxFS_VOL_ICO_MAX);
 }
 
 //=============================================================================
@@ -589,7 +577,7 @@ void wxFSVolume::InitIcons()
 
 wxIcon wxFSVolume::GetIcon(wxFSIconType type) const
 {
-    wxCHECK_MSG( type >= 0 && (size_t)type < m_icons.GetCount(), wxNullIcon,
+    wxCHECK_MSG( type >= 0 && (size_t)type < m_icons.size(), wxNullIcon,
                  wxT("wxFSIconType::GetIcon(): invalid icon index") );
 
 #ifdef __WXMSW__
@@ -628,7 +616,7 @@ wxIcon wxFSVolume::GetIcon(wxFSIconType type) const
         }
         else
         {
-            m_icons[type].CreateFromHICON((WXHICON)fi.hIcon);
+            const_cast<wxIcon&>(m_icons[type]).CreateFromHICON((WXHICON)fi.hIcon);
         }
     }
 

@@ -3,7 +3,6 @@
 // Purpose:     wxFile - encapsulates low-level "file descriptor"
 //              wxTempFile
 // Author:      Vadim Zeitlin
-// Modified by:
 // Created:     29/01/98
 // Copyright:   (c) 1998 Vadim Zeitlin <zeitlin@dptmaths.ens-cachan.fr>
 // Licence:     wxWindows licence
@@ -244,7 +243,7 @@ bool wxFile::Close()
 
 bool wxFile::ReadAll(wxString *str, const wxMBConv& conv)
 {
-    wxCHECK_MSG( str, false, wxS("Output string must be non-NULL") );
+    wxCHECK_MSG( str, false, wxS("Output string must be non-null") );
 
     static const ssize_t READSIZE = 4096;
 
@@ -324,7 +323,7 @@ ssize_t wxFile::Read(void *pBuf, size_t nCount)
     if ( !nCount )
         return 0;
 
-    wxCHECK( (pBuf != NULL) && IsOpened(), 0 );
+    wxCHECK( (pBuf != nullptr) && IsOpened(), 0 );
 
     ssize_t iRc = wxRead(m_fd, pBuf, nCount);
 
@@ -343,7 +342,7 @@ size_t wxFile::Write(const void *pBuf, size_t nCount)
     if ( !nCount )
         return 0;
 
-    wxCHECK( (pBuf != NULL) && IsOpened(), 0 );
+    wxCHECK( (pBuf != nullptr) && IsOpened(), 0 );
 
     ssize_t iRc = wxWrite(m_fd, pBuf, nCount);
 
@@ -365,7 +364,6 @@ bool wxFile::Write(const wxString& s, const wxMBConv& conv)
 
     const wxWX2MBbuf buf = s.mb_str(conv);
 
-#if wxUSE_UNICODE
     const size_t size = buf.length();
 
     if ( !size )
@@ -375,9 +373,6 @@ bool wxFile::Write(const wxString& s, const wxMBConv& conv)
         // must fail too to indicate that we can't save the data.
         return false;
     }
-#else
-    const size_t size = s.length();
-#endif
 
     return Write(buf, size) == size;
 }
@@ -556,7 +551,7 @@ bool wxTempFile::Open(const wxString& strName)
     mode_t mode;
 
     wxStructStat st;
-    if ( stat( (const char*) m_strName.fn_str(), &st) == 0 )
+    if ( wxStat(m_strName, &st) == 0 )
     {
         mode = st.st_mode;
     }
@@ -592,12 +587,7 @@ bool wxTempFile::Commit()
 {
     m_file.Close();
 
-    if ( wxFile::Exists(m_strName) && wxRemove(m_strName) != 0 ) {
-        wxLogSysError(_("can't remove file '%s'"), m_strName);
-        return false;
-    }
-
-    if ( !wxRenameFile(m_strTemp, m_strName)  ) {
+    if ( !wxRenameFile(m_strTemp, m_strName) ) {
         wxLogSysError(_("can't commit changes to file '%s'"), m_strName);
         return false;
     }

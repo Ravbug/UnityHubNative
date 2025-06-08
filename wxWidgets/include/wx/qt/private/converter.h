@@ -16,6 +16,7 @@
 #include "wx/kbdstate.h"
 #include "wx/gdicmn.h"
 #include "wx/colour.h"
+#include "wx/geometry.h"
 
 #include <QtCore/QRect>
 #include <QtCore/QSize>
@@ -29,9 +30,20 @@ inline wxPoint wxQtConvertPoint( const QPoint &point )
 {
     return wxPoint( point.x(), point.y() );
 }
+
 inline QPoint wxQtConvertPoint( const wxPoint &point )
 {
     return QPoint( point.x, point.y );
+}
+
+inline wxPoint2DDouble wxQtConvertPointF(const QPointF& point)
+{
+    return wxPoint2DDouble(point.x(), point.y());
+}
+
+inline QPointF wxQtConvertPointF(const wxPoint2DDouble& point)
+{
+    return QPointF(point.m_x, point.m_y);
 }
 
 inline wxRect wxQtConvertRect( const QRect &rect )
@@ -70,9 +82,13 @@ inline QColor wxQtConvertColour(const wxColour &colour)
 
 class WXDLLIMPEXP_FWD_BASE wxDateTime;
 class QDate;
+class QTime;
 
 wxDateTime wxQtConvertDate(const QDate& date);
 QDate wxQtConvertDate(const wxDateTime& date);
+
+wxDateTime wxQtConvertTime(const QTime& Time);
+QTime wxQtConvertTime(const wxDateTime& time);
 
 #endif // wxUSE_DATETIME
 

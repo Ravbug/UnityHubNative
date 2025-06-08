@@ -2,7 +2,6 @@
 // Name:        src/osx/cocoa/radiobut.mm
 // Purpose:     wxRadioButton
 // Author:      Stefan Csomor
-// Modified by:
 // Created:     ??/??/98
 // Copyright:   (c) AUTHOR
 // Licence:     wxWindows licence
@@ -22,8 +21,8 @@
 
 #include <objc/objc-runtime.h>
 
-const int maxAlternateActions = 100;
-NSString* alternateActionsSelector = @"controlAction%d:";
+static const int maxAlternateActions = 100;
+static NSString* const alternateActionsSelector = @"controlAction%d:";
 
 extern void wxOSX_controlAction(NSView* self, SEL _cmd, id sender);
 

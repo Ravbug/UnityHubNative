@@ -62,7 +62,7 @@ Other layout classes:
 @section page_class_cat_managedwnd Managed Windows
 
 There are several types of window that are directly controlled by the window
-manager (such as MS Windows, or the Motif Window Manager). Frames and dialogs
+manager (such as MS Windows, or the X11 Window Manager). Frames and dialogs
 are similar in wxWidgets, but only dialogs may be modal.
 
 Related Overviews: @ref overview_cmndlg
@@ -292,11 +292,13 @@ Related Overviews: @ref overview_dc
 @li wxBufferedPaintDC: A helper device context for double buffered drawing
     inside @b OnPaint().
 @li wxClientDC: A device context to access the client area outside
-    @b OnPaint() events
+    @b OnPaint() events (doesn't work on many modern systems, deprecated).
 @li wxPaintDC: A device context to access the client area inside @b OnPaint()
     events
-@li wxWindowDC: A device context to access the non-client area
-@li wxScreenDC: A device context to access the entire screen
+@li wxWindowDC: A device context to access the non-client area (Windows-only,
+    deprecated).
+@li wxScreenDC: A device context to access the entire screen (doesn't work on
+    many modern systems, deprecated).
 @li wxDC: The device context base class
 @li wxMemoryDC: A device context for drawing into bitmaps
 @li wxMetafileDC: A device context for drawing into metafiles

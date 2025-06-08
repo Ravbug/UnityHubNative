@@ -11,6 +11,7 @@
 #define _WX_WINDOWPTR_H_
 
 #include "wx/sharedptr.h"
+#include "wx/window.h"
 
 // ----------------------------------------------------------------------------
 // wxWindowPtr: A smart pointer with correct wxWindow destruction.
@@ -40,7 +41,7 @@ public:
     {
     }
 
-    wxWindowPtr() {}
+    wxWindowPtr() = default;
     wxWindowPtr(const wxWindowPtr& tocopy) : wxSharedPtr<T>(tocopy) {}
 
     wxWindowPtr& operator=(const wxWindowPtr& tocopy)
@@ -54,7 +55,7 @@ public:
         return operator=(wxWindowPtr(win));
     }
 
-    void reset(T* ptr = NULL)
+    void reset(T* ptr = nullptr)
     {
         wxSharedPtr<T>::reset(ptr, wxPrivate::wxWindowDeleter());
     }

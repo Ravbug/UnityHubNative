@@ -2,7 +2,6 @@
 // Name:        src/common/bmpbtncmn.cpp
 // Purpose:     wxBitmapButton common code
 // Author:      Julian Smart
-// Modified by:
 // Created:     04/01/98
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
@@ -51,7 +50,6 @@ wxBEGIN_FLAGS( wxBitmapButtonStyle )
     // standard window styles
     wxFLAGS_MEMBER(wxTAB_TRAVERSAL)
     wxFLAGS_MEMBER(wxCLIP_CHILDREN)
-    wxFLAGS_MEMBER(wxTRANSPARENT_WINDOW)
     wxFLAGS_MEMBER(wxWANTS_CHARS)
     wxFLAGS_MEMBER(wxFULL_REPAINT_ON_RESIZE)
     wxFLAGS_MEMBER(wxALWAYS_SHOW_SB )
@@ -106,18 +104,18 @@ public:
     {
     }
 
-    virtual wxSize GetDefaultSize() const wxOVERRIDE
+    virtual wxSize GetDefaultSize() const override
     {
         return m_sizeDef;
     }
 
-    virtual wxSize GetPreferredBitmapSizeAtScale(double scale) const wxOVERRIDE
+    virtual wxSize GetPreferredBitmapSizeAtScale(double scale) const override
     {
         // We can render the bitmap at any scale.
         return m_sizeDef*scale;
     }
 
-    virtual wxBitmap GetBitmap(const wxSize& size) wxOVERRIDE
+    virtual wxBitmap GetBitmap(const wxSize& size) override
     {
         wxBitmap bmp;
         bmp.Create(size.x, size.y, wxBITMAP_SCREEN_DEPTH);

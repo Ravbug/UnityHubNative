@@ -2,7 +2,6 @@
 // Name:        wx/textctrl.h
 // Purpose:     wxTextAttr and wxTextCtrlBase class - the interface of wxTextCtrl
 // Author:      Vadim Zeitlin
-// Modified by:
 // Created:     13.07.99
 // Copyright:   (c) Vadim Zeitlin
 // Licence:     wxWindows licence
@@ -90,11 +89,6 @@ const wxTextCoord wxInvalidTextCoord    = -2;
 #define wxTE_WORDWRAP       0x0001  // wrap only at words boundaries
 #define wxTE_BESTWRAP       0x0000  // this is the default
 
-#if WXWIN_COMPATIBILITY_2_8
-    // this style is (or at least should be) on by default now, don't use it
-    #define wxTE_AUTO_SCROLL    0
-#endif // WXWIN_COMPATIBILITY_2_8
-
 // force using RichEdit version 2.0 or 3.0 instead of 1.0 (default) for
 // wxTE_RICH controls - can be used together with or instead of wxTE_RICH
 #define wxTE_RICH2          0x8000
@@ -109,7 +103,17 @@ const wxTextCoord wxInvalidTextCoord    = -2;
 // wxTextCtrl file types
 // ----------------------------------------------------------------------------
 
-#define wxTEXT_TYPE_ANY     0
+// wxOSX and wxMSW support RTF in wxTextCtrl.
+#if defined(__WXOSX__) || (defined(__WXMSW__) && wxUSE_RICHEDIT)
+    #define wxHAS_TEXTCTRL_RTF
+#endif
+
+enum wxTextCtrlFileType
+{
+    wxTEXT_TYPE_ANY,
+    wxTEXT_TYPE_PLAIN,
+    wxTEXT_TYPE_RTF
+};
 
 // ----------------------------------------------------------------------------
 // wxTextCtrl::HitTest return values
@@ -515,9 +519,9 @@ public:
     }
 
     // Merges the given attributes. If compareWith
-    // is non-NULL, then it will be used to mask out those attributes that are the same in style
+    // is non-null, then it will be used to mask out those attributes that are the same in style
     // and compareWith, for situations where we don't want to explicitly set inherited attributes.
-    bool Apply(const wxTextAttr& style, const wxTextAttr* compareWith = NULL);
+    bool Apply(const wxTextAttr& style, const wxTextAttr* compareWith = nullptr);
 
     // merges the attributes of the base and the overlay objects and returns
     // the result; the parameter attributes take precedence
@@ -525,7 +529,7 @@ public:
     // WARNING: the order of arguments is the opposite of Combine()
     static wxTextAttr Merge(const wxTextAttr& base, const wxTextAttr& overlay)
     {
-        return Combine(overlay, base, NULL);
+        return Combine(overlay, base, nullptr);
     }
 
     // merges the attributes of this object and overlay
@@ -605,14 +609,80 @@ private:
 };
 
 // ----------------------------------------------------------------------------
+// Search features for wxTextCtrl
+// ----------------------------------------------------------------------------
+
+// search options
+// --------------
+struct wxTextSearch
+{
+    explicit wxTextSearch(const wxString& text = wxString{}) : m_searchValue(text) {}
+
+    enum class Direction
+    {
+        Down,
+        Up
+    };
+
+    wxTextSearch& SearchValue(const wxString& value)
+    {
+        m_searchValue = value;
+        return *this;
+    }
+
+    wxTextSearch& MatchCase(bool matchCase = true)
+    {
+        m_matchCase = matchCase;
+        return *this;
+    }
+
+    wxTextSearch& MatchWholeWord(const bool matchWholeWord = true)
+    {
+        m_wholeWord = matchWholeWord;
+        return *this;
+    }
+
+    wxTextSearch& SearchDirection(const Direction direction)
+    {
+        m_direction = direction;
+        return *this;
+    }
+
+    wxTextSearch& Start(const long startPosition)
+    {
+        m_startingPosition = startPosition;
+        return *this;
+    }
+
+    wxString              m_searchValue;
+    long                  m_startingPosition = -1;
+    bool                  m_matchCase = false;
+    bool                  m_wholeWord = false;
+    Direction m_direction = Direction::Down;
+};
+
+// results from a search operation
+// -------------------------------
+struct wxTextSearchResult
+{
+    explicit operator bool() const { return m_start != wxNOT_FOUND; }
+    explicit wxTextSearchResult(long startPos, long endPos) :
+        m_start(startPos), m_end(endPos) {}
+    wxTextSearchResult() = default;
+
+    long m_start = wxNOT_FOUND;
+    long m_end = wxNOT_FOUND;
+};
+
+// ----------------------------------------------------------------------------
 // wxTextAreaBase: multiline text control specific methods
 // ----------------------------------------------------------------------------
 
 class WXDLLIMPEXP_CORE wxTextAreaBase
 {
 public:
-    wxTextAreaBase() { }
-    virtual ~wxTextAreaBase() { }
+    wxTextAreaBase() = default;
+    virtual ~wxTextAreaBase() = default;
 
     // lines access
     // ------------
@@ -686,6 +756,23 @@ public:
     virtual wxString GetValue() const = 0;
     virtual void SetValue(const wxString& value) = 0;
 
+    // Returns whether the RTF-related functions below can be used.
+    virtual bool IsRTFSupported() { return false; }
+
+    // Base class implementations simply assert, if IsRTFSupported() returns
+    // true, the port must override these functions to really implement them.
+    virtual wxString GetRTFValue() const;
+    virtual void SetRTFValue(const wxString& val);
+
+    // Searches for text.
+    // Base class implementations simply asserts,
+    // the port must override these functions to really implement them.
+    virtual wxTextSearchResult SearchText(const wxTextSearch& WXUNUSED(search)) const
+    {
+        wxFAIL_MSG("Text search not implemented for the current platform.");
+        return wxTextSearchResult();
+    }
+
 protected:
     // implementation of loading/saving
     virtual bool DoLoadFile(const wxString& file, int fileType);
@@ -719,20 +806,20 @@ class WXDLLIMPEXP_CORE wxTextCtrlIface : public wxTextAreaBase,
                                          public wxTextEntryBase
 {
 public:
-    wxTextCtrlIface() { }
+    wxTextCtrlIface() = default;
 
     // wxTextAreaBase overrides
-    virtual wxString GetValue() const wxOVERRIDE
+    virtual wxString GetValue() const override
     {
        return wxTextEntryBase::GetValue();
     }
-    virtual void SetValue(const wxString& value) wxOVERRIDE
+    virtual void SetValue(const wxString& value) override
     {
        wxTextEntryBase::SetValue(value);
     }
 
 protected:
-    virtual bool IsValidPosition(long pos) const wxOVERRIDE
+    virtual bool IsValidPosition(long pos) const override
     {
         return pos >= 0 && pos <= GetLastPosition();
     }
@@ -747,7 +834,7 @@ private:
 
 class WXDLLIMPEXP_CORE wxTextCtrlBase : public wxControl,
 #if wxHAS_TEXT_WINDOW_STREAM
-                                   public wxSTD streambuf,
+                                   public std::streambuf,
 #endif
                                    public wxTextAreaBase,
                                    public wxTextEntry
@@ -756,8 +843,8 @@ public:
     // creation
     // --------
 
-    wxTextCtrlBase() { }
-    virtual ~wxTextCtrlBase() { }
+    wxTextCtrlBase() = default;
+    virtual ~wxTextCtrlBase() = default;
 
 
     // more readable flag testing methods
@@ -780,42 +867,42 @@ public:
 
 
     // do the window-specific processing after processing the update event
-    virtual void DoUpdateWindowUI(wxUpdateUIEvent& event) wxOVERRIDE;
+    virtual void DoUpdateWindowUI(wxUpdateUIEvent& event) override;
 
-    virtual bool ShouldInheritColours() const wxOVERRIDE { return false; }
+    virtual bool ShouldInheritColours() const override { return false; }
 
     // work around the problem with having HitTest() both in wxControl and
     // wxTextAreaBase base classes
-    virtual wxTextCtrlHitTestResult HitTest(const wxPoint& pt, long *pos) const wxOVERRIDE
+    virtual wxTextCtrlHitTestResult HitTest(const wxPoint& pt, long *pos) const override
     {
         return wxTextAreaBase::HitTest(pt, pos);
     }
 
     virtual wxTextCtrlHitTestResult HitTest(const wxPoint& pt,
                                             wxTextCoord *col,
-                                            wxTextCoord *row) const wxOVERRIDE
+                                            wxTextCoord *row) const override
     {
         return wxTextAreaBase::HitTest(pt, col, row);
     }
 
     // we provide stubs for these functions as not all platforms have styles
     // support, but we really should leave them pure virtual here
-    virtual bool SetStyle(long start, long end, const wxTextAttr& style) wxOVERRIDE;
-    virtual bool GetStyle(long position, wxTextAttr& style) wxOVERRIDE;
-    virtual bool SetDefaultStyle(const wxTextAttr& style) wxOVERRIDE;
+    virtual bool SetStyle(long start, long end, const wxTextAttr& style) override;
+    virtual bool GetStyle(long position, wxTextAttr& style) override;
+    virtual bool SetDefaultStyle(const wxTextAttr& style) override;
 
     // wxTextAreaBase overrides
-    virtual wxString GetValue() const wxOVERRIDE
+    virtual wxString GetValue() const override
     {
        return wxTextEntry::GetValue();
     }
-    virtual void SetValue(const wxString& value) wxOVERRIDE
+    virtual void SetValue(const wxString& value) override
     {
        wxTextEntry::SetValue(value);
     }
 
     // wxWindow overrides
-    virtual wxVisualAttributes GetDefaultAttributes() const wxOVERRIDE
+    virtual wxVisualAttributes GetDefaultAttributes() const override
     {
         return GetClassDefaultAttributes(GetWindowVariant());
     }
@@ -826,7 +913,11 @@ public:
         return GetCompositeControlsDefaultAttributes(variant);
     }
 
-    virtual const wxTextEntry* WXGetTextEntry() const wxOVERRIDE { return this; }
+    // Setting label for text control doesn't work portably, use SetValue() or
+    // ChangeValue() instead.
+    virtual void SetLabel(const wxString& label) override;
+
+    virtual const wxTextEntry* WXGetTextEntry() const override { return this; }
 
 #if wxUSE_SPELLCHECK
     // Use native spelling and grammar checking functions.
@@ -845,21 +936,21 @@ protected:
     // Override wxEvtHandler method to check for a common problem of binding
     // wxEVT_TEXT_ENTER to a control without wxTE_PROCESS_ENTER style, which is
     // never going to work.
-    virtual bool OnDynamicBind(wxDynamicEventTableEntry& entry) wxOVERRIDE;
+    virtual bool OnDynamicBind(wxDynamicEventTableEntry& entry) override;
 
     // override streambuf method
 #if wxHAS_TEXT_WINDOW_STREAM
-    int overflow(int i) wxOVERRIDE;
+    int overflow(int i) override;
 #endif // wxHAS_TEXT_WINDOW_STREAM
 
     // Another wxTextAreaBase override.
-    virtual bool IsValidPosition(long pos) const wxOVERRIDE
+    virtual bool IsValidPosition(long pos) const override
     {
         return pos >= 0 && pos <= GetLastPosition();
     }
 
     // implement the wxTextEntry pure virtual method
-    virtual wxWindow *GetEditableWindow() wxOVERRIDE { return this; }
+    virtual wxWindow *GetEditableWindow() override { return this; }
 
     wxDECLARE_NO_COPY_CLASS(wxTextCtrlBase);
     wxDECLARE_ABSTRACT_CLASS(wxTextCtrlBase);
@@ -875,12 +966,8 @@ protected:
     #include "wx/univ/textctrl.h"
 #elif defined(__WXMSW__)
     #include "wx/msw/textctrl.h"
-#elif defined(__WXMOTIF__)
-    #include "wx/motif/textctrl.h"
-#elif defined(__WXGTK20__)
-    #include "wx/gtk/textctrl.h"
 #elif defined(__WXGTK__)
-    #include "wx/gtk1/textctrl.h"
+    #include "wx/gtk/textctrl.h"
 #elif defined(__WXMAC__)
     #include "wx/osx/textctrl.h"
 #elif defined(__WXQT__)
@@ -921,7 +1008,7 @@ public:
     // get the end of the URL
     long GetURLEnd() const { return m_end; }
 
-    virtual wxEvent *Clone() const wxOVERRIDE { return new wxTextUrlEvent(*this); }
+    wxNODISCARD virtual wxEvent *Clone() const override { return new wxTextUrlEvent(*this); }
 
 protected:
     // the corresponding mouse event
@@ -974,12 +1061,12 @@ private:
 
 public:
     wxStreamToTextRedirector(wxTextCtrl *text)
-        : m_ostr(wxSTD cout)
+        : m_ostr(std::cout)
     {
         Init(text);
     }
 
-    wxStreamToTextRedirector(wxTextCtrl *text, wxSTD ostream *ostr)
+    wxStreamToTextRedirector(wxTextCtrl *text, std::ostream *ostr)
         : m_ostr(*ostr)
     {
         Init(text);
@@ -992,10 +1079,10 @@ public:
 
 private:
     // the stream we're redirecting
-    wxSTD ostream&   m_ostr;
+    std::ostream&   m_ostr;
 
     // the old streambuf (before we changed it)
-    wxSTD streambuf *m_sbufOld;
+    std::streambuf *m_sbufOld;
 };
 
 #endif // wxHAS_TEXT_WINDOW_STREAM

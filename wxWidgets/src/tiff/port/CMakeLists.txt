@@ -22,44 +22,30 @@
 # LIABILITY, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
 # OF THIS SOFTWARE.
 
+# Generate headers
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libport_config.h.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/libport_config.h
+        @ONLY)
+
 set(port_HEADERS libport.h)
-set(port_SOURCES dummy.c)
-set(port_optional_SOURCES
-  getopt.c
-  lfind.c
-  strcasecmp.c
-  strtol.c
-  strtoll.c
-  strtoul.c
-  strtoull.c)
 
-set(port_USED_FILES ${port_SOURCES} ${port_HEADERS})
-
+# Only build if any needed features are missing
 if(NOT HAVE_GETOPT)
-  list(APPEND port_USED_FILES getopt.c)
-endif()
-if(NOT HAVE_LFIND)
-  list(APPEND port_USED_FILES lfind.c)
-endif()
-if(NOT HAVE_STRCASECMP)
-  list(APPEND port_USED_FILES strcasecmp.c)
-endif()
-if(NOT HAVE_STRTOL)
-  list(APPEND port_USED_FILES strtol.c)
-endif()
-if(NOT HAVE_STRTOLL)
-  list(APPEND port_USED_FILES strtoll.c)
-endif()
-if(NOT HAVE_STRTOUL)
-  list(APPEND port_USED_FILES strtoul.c)
-endif()
-if(NOT HAVE_STRTOULL)
-  list(APPEND port_USED_FILES strtoull.c)
-endif()
+  add_library(tiff_port STATIC ../placeholder.h)
 
-add_library(port STATIC ${port_USED_FILES})
+  # Add getopt if missing
+  if(NOT HAVE_GETOPT)
+    target_sources(tiff_port PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/getopt.c)
+  endif()
 
-foreach(file ${port_USED_FILES})
-  list(APPEND tiff_port_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/${file}")
-endforeach()
-set(tiff_port_SOURCES ${tiff_port_SOURCES} PARENT_SCOPE)
+  target_include_directories(tiff_port PUBLIC
+          ${CMAKE_CURRENT_BINARY_DIR}
+          ${CMAKE_CURRENT_SOURCE_DIR})
+else()
+  # Dummy interface library
+  add_library(tiff_port INTERFACE)
+  target_include_directories(tiff_port INTERFACE
+          ${CMAKE_CURRENT_BINARY_DIR}
+          ${CMAKE_CURRENT_SOURCE_DIR})
+endif()

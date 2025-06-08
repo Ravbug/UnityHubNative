@@ -1,100 +1,71 @@
 /*
-    This file is used on systems not using configure only and contains
-    hardcoded definitions for MSVC, Xcode and MinGW when using makefiles.
-
-    As an additional twist, the settings that ought to be in this file are in
-    tif_config.h when using Xcode (__APPLE__ defined).
- */
-
-/*
   Configuration defines for installed libtiff.
   This file maintained for backward compatibility. Do not use definitions
   from this file in your programs.
 */
 
+/* clang-format off */
+/* clang-format disabled because CMake scripts are very sensitive to the
+ * formatting of this file. configure_file variables of type "@VAR@" are
+ * modified by clang-format and won't be substituted.
+ */
+
 #ifndef _TIFFCONF_
 #define _TIFFCONF_
 
-#ifndef _WIN32
-#include "tif_config.h"
-#else
 
-#ifdef __MINGW32__
-#include <basetyps.h>
-#endif
+#include <stddef.h>
+#include <stdint.h>
+#include <inttypes.h>
 
-/* Define to 1 if the system has the type `int16'. */
-/* #undef HAVE_INT16 */
-
-/* Define to 1 if the system has the type `int32'. */
-/* #undef HAVE_INT32 */
-
-/* Define to 1 if the system has the type `int8'. */
-/* #undef HAVE_INT8 */
-
-/* The size of a `int', as computed by sizeof. */
-#define SIZEOF_INT 4
-
-/* Signed 8-bit type */
-#define TIFF_INT8_T signed char
-
-/* Unsigned 8-bit type */
-#define TIFF_UINT8_T unsigned char
 
 /* Signed 16-bit type */
-#define TIFF_INT16_T signed short
-
-/* Unsigned 16-bit type */
-#define TIFF_UINT16_T unsigned short
-
-/* Signed 32-bit type formatter */
-#define TIFF_INT32_FORMAT "%d"
+#define TIFF_INT16_T int16_t
 
 /* Signed 32-bit type */
-#define TIFF_INT32_T signed int
-
-/* Unsigned 32-bit type formatter */
-#define TIFF_UINT32_FORMAT "%u"
-
-/* Unsigned 32-bit type */
-#define TIFF_UINT32_T unsigned int
-
-/* Signed 64-bit type formatter */
-#define TIFF_INT64_FORMAT "%I64d"
+#define TIFF_INT32_T int32_t
 
 /* Signed 64-bit type */
-#define TIFF_INT64_T signed __int64
+#define TIFF_INT64_T int64_t
 
-/* Unsigned 64-bit type formatter */
-#define TIFF_UINT64_FORMAT "%I64u"
+/* Signed 8-bit type */
+#define TIFF_INT8_T int8_t
+
+/* Unsigned 16-bit type */
+#define TIFF_UINT16_T uint16_t
+
+/* Unsigned 32-bit type */
+#define TIFF_UINT32_T uint32_t
 
 /* Unsigned 64-bit type */
-#define TIFF_UINT64_T unsigned __int64
+#define TIFF_UINT64_T uint64_t
+
+/* Unsigned 8-bit type */
+#define TIFF_UINT8_T uint8_t
 
 /* Signed size type */
 #if defined(_WIN64)
-#define TIFF_SSIZE_T signed __int64
+#define TIFF_SSIZE_T TIFF_INT64_T
 #else
-#define TIFF_SSIZE_T signed int
+#define TIFF_SSIZE_T signed long
 #endif
-
-/* Signed size type formatter */
-#if defined(_WIN64)
-#define TIFF_SSIZE_FORMAT "%I64d"
-#else
-#define TIFF_SSIZE_FORMAT "%ld"
-#endif
-
-/* Pointer difference type */
-#define TIFF_PTRDIFF_T long
 
 /* Compatibility stuff. */
 
-/* Define as 0 or 1 according to the floating point format suported by the
+/* Define as 0 or 1 according to the floating point format supported by the
    machine */
 #define HAVE_IEEEFP 1
 
-/* Set the native cpu bit order (FILLORDER_LSB2MSB or FILLORDER_MSB2LSB) */
+/* The concept of HOST_FILLORDER is broken. Since libtiff 4.5.1
+ * this macro will always be hardcoded to FILLORDER_LSB2MSB on all
+ * architectures, to reflect past long behavior of doing so on x86 architecture.
+ * Note however that the default FillOrder used by libtiff is FILLORDER_MSB2LSB,
+ * as mandated per the TIFF specification.
+ * The influence of HOST_FILLORDER is only when passing the 'H' mode in
+ * TIFFOpen().
+ * You should NOT rely on this macro to decide the CPU endianness!
+ * This macro will be removed in libtiff 4.6
+ */
 #define HOST_FILLORDER FILLORDER_LSB2MSB
 
 /* Native cpu byte order: 1 if big-endian (Motorola) or 0 if little-endian
@@ -106,6 +77,12 @@
 
 /* Support JPEG compression (requires IJG JPEG library) */
 #define JPEG_SUPPORT 1
+
+/* Support JBIG compression (requires JBIG-KIT library) */
+/* #undef JBIG_SUPPORT */
+
+/* Support LERC compression */
+/* #undef LERC_SUPPORT */
 
 /* Support LogLuv high dynamic range encoding */
 #define LOGLUV_SUPPORT 1
@@ -132,8 +109,11 @@
 /* Support Deflate compression */
 #define ZIP_SUPPORT 1
 
+/* Support libdeflate enhanced compression */
+/* #undef LIBDEFLATE_SUPPORT */
+
 /* Support strip chopping (whether or not to convert single-strip uncompressed
-   images to mutiple strips of ~8Kb to reduce memory usage) */
+   images to multiple strips of ~8Kb to reduce memory usage) */
 #define STRIPCHOP_DEFAULT TIFF_STRIPCHOP
 
 /* Enable SubIFD tag (330) support */
@@ -163,12 +143,6 @@
 #define PHOTOSHOP_SUPPORT
 #define IPTC_SUPPORT
 
-#endif /* __APPLE__/!__APPLE__ */
 #endif /* _TIFFCONF_ */
-/*
- * Local Variables:
- * mode: c
- * c-basic-offset: 8
- * fill-column: 78
- * End:
- */
+
+/* clang-format on */

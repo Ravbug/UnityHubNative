@@ -11,7 +11,8 @@
 class WXDLLIMPEXP_CORE wxControl : public wxControlBase
 {
 public:
-    wxControl();
+    wxControl() = default;
+
     wxControl(wxWindow *parent, wxWindowID id,
              const wxPoint& pos = wxDefaultPosition,
              const wxSize& size = wxDefaultSize, long style = 0,
@@ -24,12 +25,7 @@ public:
             const wxValidator& validator = wxDefaultValidator,
             const wxString& name = wxASCII_STR(wxControlNameStr));
 
-    virtual wxSize DoGetBestSize() const wxOVERRIDE;
-
-protected:
-    bool QtCreateControl( wxWindow *parent, wxWindowID id, const wxPoint &pos,
-        const wxSize &size, long style, const wxValidator &validator,
-        const wxString &name );
+    virtual wxSize DoGetBestSize() const override;
 
 private:
     wxDECLARE_DYNAMIC_CLASS(wxControl);

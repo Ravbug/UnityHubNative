@@ -40,7 +40,7 @@ gtkcombobox_popupshown_callback(GObject *WXUNUSED(gobject),
                                 wxComboBox *combo)
 {
     gboolean isShown;
-    g_object_get( combo->m_widget, "popup-shown", &isShown, NULL );
+    g_object_get( combo->m_widget, "popup-shown", &isShown, nullptr );
     wxCommandEvent event( isShown ? wxEVT_COMBOBOX_DROPDOWN
                                   : wxEVT_COMBOBOX_CLOSEUP,
                           combo->GetId() );
@@ -97,7 +97,7 @@ wxComboBox::~wxComboBox()
 
 void wxComboBox::Init()
 {
-    m_entry = NULL;
+    m_entry = nullptr;
 }
 
 bool wxComboBox::Create( wxWindow *parent, wxWindowID id,
@@ -134,7 +134,7 @@ bool wxComboBox::Create( wxWindow *parent, wxWindowID id, const wxString& value,
     if (HasFlag(wxBORDER_NONE))
     {
         // Doesn't seem to work
-        // g_object_set (m_widget, "has-frame", FALSE, NULL);
+        // g_object_set (m_widget, "has-frame", FALSE, nullptr);
     }
 
     GtkEntry * const entry = GetEntry();
@@ -158,8 +158,6 @@ bool wxComboBox::Create( wxWindow *parent, wxWindowID id, const wxString& value,
     if ( entry )
         m_focusWidget = GTK_WIDGET( entry );
 
-    PostCreation(size);
-
     if ( entry )
     {
         if (style & wxCB_READONLY)
@@ -174,13 +172,15 @@ bool wxComboBox::Create( wxWindow *parent, wxWindowID id, const wxString& value,
         else // editable combobox
         {
             // any value is accepted, even if it's not in our list
-            gtk_entry_set_text( entry, wxGTK_CONV(value) );
+            gtk_entry_set_text( entry, value.utf8_str() );
         }
 
         GTKConnectChangedSignal();
         GTKConnectInsertTextSignal(entry);
         GTKConnectClipboardSignals(GTK_WIDGET(entry));
     }
+
+    PostCreation(size);
 
     g_signal_connect_after (m_widget, "changed",
                         G_CALLBACK (gtkcombobox_changed_callback), this);
@@ -264,7 +264,7 @@ void wxComboBox::GTKEnableEvents()
         (gpointer)gtkcombobox_popupshown_callback, this);
 }
 
-GtkWidget* wxComboBox::GetConnectWidget()
+GtkWidget* wxComboBox::GetConnectWidget() const
 {
     return GTK_WIDGET( GetEntry() );
 }

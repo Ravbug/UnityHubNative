@@ -2,7 +2,6 @@
 // Name:        src/generic/caret.cpp
 // Purpose:     generic wxCaret class implementation
 // Author:      Vadim Zeitlin (original code by Robert Roebling)
-// Modified by:
 // Created:     25.05.99
 // Copyright:   (c) wxWidgets team
 // Licence:     wxWindows licence
@@ -80,12 +79,12 @@ void wxCaretBase::SetBlinkTime(int milliseconds)
     GtkSettings *settings = gtk_settings_get_default();
     if (millseconds == 0)
     {
-        gtk_settings_set_long_property(settings, "gtk-cursor-blink", gtk_false, NULL);
+        gtk_settings_set_long_property(settings, "gtk-cursor-blink", gtk_false, nullptr);
     }
     else
     {
-        gtk_settings_set_long_property(settings, "gtk-cursor-blink", gtk_true, NULL);
-        gtk_settings_set_long_property(settings, "gtk-cursor-time", milliseconds, NULL);
+        gtk_settings_set_long_property(settings, "gtk-cursor-blink", gtk_true, nullptr);
+        gtk_settings_set_long_property(settings, "gtk-cursor-time", milliseconds, nullptr);
     }
 #endif
 }
@@ -311,7 +310,7 @@ void wxCaret::DoDraw(wxDC *dc, wxWindow* win)
     }
 
 #if wxUSE_GRAPHICS_CONTEXT
-    if (gc == NULL)
+    if (gc == nullptr)
 #endif
     {
         dc->SetLogicalFunction(wxINVERT);

@@ -2,7 +2,6 @@
 // Name:        src/common/platinfo.cpp
 // Purpose:     implements wxPlatformInfo class
 // Author:      Francesco Montorsi
-// Modified by:
 // Created:     07.07.2006 (based on wxToolkitInfo)
 // Copyright:   (c) 2006 Francesco Montorsi
 // Licence:     wxWindows licence
@@ -31,13 +30,24 @@
 
 #ifdef __WINDOWS__
     #include "wx/dynlib.h"
+    #include "wx/versioninfo.h"
 #endif
+
+namespace
+{
 
 // global object
 // VERY IMPORTANT: do not use the default constructor since it would
 //                 try to init the wxPlatformInfo instance using
 //                 gs_platInfo itself!
-static wxPlatformInfo gs_platInfo(wxPORT_UNKNOWN);
+wxPlatformInfo gs_platInfo(wxPORT_UNKNOWN);
+
+#if wxUSE_THREADS
+// Critical section protecting gs_platInfo initialization.
+wxCriticalSection gs_csInit;
+#endif // wxUSE_THREADS
+
+} // anonymous namespace
 
 // ----------------------------------------------------------------------------
 // constants
@@ -170,7 +180,8 @@ bool wxPlatformInfo::operator==(const wxPlatformInfo &t) const
            m_port == t.m_port &&
            m_usingUniversal == t.m_usingUniversal &&
            m_bitness == t.m_bitness &&
-           m_endian == t.m_endian;
+           m_endian == t.m_endian &&
+           m_platformDescription == t.m_platformDescription;
 }
 
 void wxPlatformInfo::InitForCurrentPlatform()
@@ -195,6 +206,7 @@ void wxPlatformInfo::InitForCurrentPlatform()
                                            &m_tkVersionMicro);
         m_usingUniversal = traits->IsUsingUniversalWidgets();
         m_desktopEnv = traits->GetDesktopEnvironment();
+        m_platformDescription = traits->GetPlatformDescription();
     }
 
     m_os = wxGetOsVersion(&m_osVersionMajor, &m_osVersionMinor, &m_osVersionMicro);
@@ -213,12 +225,12 @@ void wxPlatformInfo::InitForCurrentPlatform()
 /* static */
 const wxPlatformInfo& wxPlatformInfo::Get()
 {
-    static bool initialized = false;
-    if ( !initialized )
-    {
+#if wxUSE_THREADS
+    wxCriticalSectionLocker lockInit(gs_csInit);
+#endif // wxUSE_THREADS
+
+    if ( !gs_platInfo.m_initializedForCurrentPlatform )
         gs_platInfo.InitForCurrentPlatform();
-        initialized = true;
-    }
 
     return gs_platInfo;
 }
@@ -381,9 +393,33 @@ wxEndianness wxPlatformInfo::GetEndianness(const wxString& end)
 
 #ifdef __WINDOWS__
 
-bool wxIsRunningUnderWine()
+bool wxIsRunningUnderWine(wxVersionInfo* ver)
 {
-    return wxLoadedDLL("ntdll.dll").HasSymbol(wxS("wine_get_version"));
+    wxLoadedDLL dllNT("ntdll.dll");
+    const char* (*pfn_wine_get_version)() =
+        (decltype(pfn_wine_get_version))dllNT.RawGetSymbol(L"wine_get_version");
+    if ( !pfn_wine_get_version )
+        return false;
+
+    if ( ver )
+    {
+        const char* const wineVer = pfn_wine_get_version();
+        int major = 0,
+            minor = 0,
+            micro = 0;
+
+        // Ignore the return value because we can't do anything useful in case
+        // of an error anyhow.
+        sscanf(wineVer, "%d.%d.%d", &major, &minor, &micro);
+
+        *ver = wxVersionInfo{
+            wxString::FromAscii("Wine"),
+            major, minor, micro,
+            wxString::FromAscii(wineVer)
+        };
+    }
+
+    return true;
 }
 
 #endif // __WINDOWS__

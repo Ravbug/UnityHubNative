@@ -2,7 +2,6 @@
 // Name:        src/common/gdicmn.cpp
 // Purpose:     Common GDI classes
 // Author:      Julian Smart
-// Modified by:
 // Created:     01/02/97
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
@@ -30,8 +29,10 @@
     #include "wx/colour.h"
     #include "wx/font.h"
     #include "wx/math.h"
+    #include "wx/utils.h"
 #endif
 
+#include <unordered_map>
 
 wxIMPLEMENT_ABSTRACT_CLASS(wxGDIObject, wxObject);
 
@@ -60,6 +61,11 @@ const wxPoint wxDefaultPosition(wxDefaultCoord, wxDefaultCoord);
 #include "wx/listimpl.cpp"
 WX_DEFINE_LIST(wxPointList)
 
+// If wxIcon is really a different class (which is currently only the case in
+// wxMSW), this is done in its implementation file instead.
+#ifdef wxICON_IS_BITMAP
+wxIMPLEMENT_DYNAMIC_CLASS(wxIcon, wxBitmap);
+#endif
 
 #if wxUSE_EXTENDED_RTTI
 
@@ -259,6 +265,101 @@ wxRealPoint::wxRealPoint(const wxPoint& pt)
 // wxColourDatabase
 // ============================================================================
 
+namespace
+{
+
+struct wxColourDesc
+{
+    const char *name;
+    unsigned char r,g,b;
+};
+
+// Instead of just creating the colour and storing it in wxColourDatabase, we
+// create a struct which contains a yet uninitialized wxColour and the RGB
+// values that can be used to initialize it later if it's really needed. This
+// makes initialization faster (~15% in my tests) as we don't need to create
+// all the colour objects that we're never going to use.
+class wxColourWithRGB
+{
+public:
+    // Set the RGB values but leave wxColour uninitialized.
+    wxColourWithRGB& operator=(const wxColourDesc& cc)
+    {
+        r = cc.r;
+        g = cc.g;
+        b = cc.b;
+
+        return *this;
+    }
+
+    // Initialize the wxColour immediately.
+    wxColourWithRGB& operator=(const wxColour& c)
+    {
+        m_col = c;
+
+        // We don't really need to set the RGB values here as they are only
+        // used if the colour is not initialized but it seems cleaner to do it
+        // as it doesn't have any real performance implications.
+        r = c.Red();
+        g = c.Green();
+        b = c.Blue();
+
+        return *this;
+    }
+
+    // Get the colour, creating it on demand.
+    const wxColour& GetColour()
+    {
+        if ( !m_col.IsOk() )
+            m_col.Set(r, g, b);
+
+        return m_col;
+    }
+
+    bool operator==(const wxColour& c) const
+    {
+        return m_col.IsOk() ? m_col == c
+                            : (c.Red() == r && c.Green() == g && c.Blue() == b);
+    }
+
+private:
+    wxColour m_col;
+    unsigned char r,g,b;
+};
+
+using wxColourMap = std::unordered_map<wxString, wxColourWithRGB>;
+
+void AddColours(wxColourMap& map, const wxColourDesc* table, size_t len)
+{
+    for ( size_t n = 0; n < len; n++ )
+    {
+        const wxColourDesc& cc = table[n];
+        map[wxString::FromAscii(cc.name)] = cc;
+    }
+}
+
+} // anonymous namespace
+
+// Due to a bug mentioned in wx/hashmap.h we have to use aggregation here and
+// define a simple accessor function below.
+//
+// FIXME-GCC-4.8: Remove this and just inherit from std::unordered_map<>.
+class wxStringToColourHashMap
+{
+public:
+    wxColourMap m_colours;
+};
+
+namespace
+{
+
+inline wxColourMap& GetColours(wxStringToColourHashMap* map)
+{
+    return map->m_colours;
+}
+
+} // anonymous namespace
+
 // ----------------------------------------------------------------------------
 // wxColourDatabase ctor/dtor
 // ----------------------------------------------------------------------------
@@ -266,17 +367,14 @@ wxRealPoint::wxRealPoint(const wxPoint& pt)
 wxColourDatabase::wxColourDatabase ()
 {
     // will be created on demand in Initialize()
-    m_map = NULL;
+    m_map = nullptr;
+
+    m_scheme = CSS;
 }
 
 wxColourDatabase::~wxColourDatabase ()
 {
-    if ( m_map )
-    {
-        WX_CLEAR_HASH_MAP(wxStringToColourHashMap, *m_map);
-
-        delete m_map;
-    }
+    delete m_map;
 }
 
 // Colour database stuff
@@ -290,92 +388,261 @@ void wxColourDatabase::Initialize()
 
     m_map = new wxStringToColourHashMap;
 
-    static const struct wxColourDesc
+    static const wxColourDesc legacyColours[] =
     {
-        const wxChar *name;
-        unsigned char r,g,b;
-    }
-    wxColourTable[] =
-    {
-        {wxT("AQUAMARINE"),112, 219, 147},
-        {wxT("BLACK"),0, 0, 0},
-        {wxT("BLUE"), 0, 0, 255},
-        {wxT("BLUE VIOLET"), 159, 95, 159},
-        {wxT("BROWN"), 165, 42, 42},
-        {wxT("CADET BLUE"), 95, 159, 159},
-        {wxT("CORAL"), 255, 127, 0},
-        {wxT("CORNFLOWER BLUE"), 66, 66, 111},
-        {wxT("CYAN"), 0, 255, 255},
-        {wxT("DARK GREY"), 47, 47, 47},   // ?
-
-        {wxT("DARK GREEN"), 47, 79, 47},
-        {wxT("DARK OLIVE GREEN"), 79, 79, 47},
-        {wxT("DARK ORCHID"), 153, 50, 204},
-        {wxT("DARK SLATE BLUE"), 107, 35, 142},
-        {wxT("DARK SLATE GREY"), 47, 79, 79},
-        {wxT("DARK TURQUOISE"), 112, 147, 219},
-        {wxT("DIM GREY"), 84, 84, 84},
-        {wxT("FIREBRICK"), 142, 35, 35},
-        {wxT("FOREST GREEN"), 35, 142, 35},
-        {wxT("GOLD"), 204, 127, 50},
-        {wxT("GOLDENROD"), 219, 219, 112},
-        {wxT("GREY"), 128, 128, 128},
-        {wxT("GREEN"), 0, 255, 0},
-        {wxT("GREEN YELLOW"), 147, 219, 112},
-        {wxT("INDIAN RED"), 79, 47, 47},
-        {wxT("KHAKI"), 159, 159, 95},
-        {wxT("LIGHT BLUE"), 191, 216, 216},
-        {wxT("LIGHT GREY"), 192, 192, 192},
-        {wxT("LIGHT STEEL BLUE"), 143, 143, 188},
-        {wxT("LIME GREEN"), 50, 204, 50},
-        {wxT("LIGHT MAGENTA"), 255, 119, 255},
-        {wxT("MAGENTA"), 255, 0, 255},
-        {wxT("MAROON"), 142, 35, 107},
-        {wxT("MEDIUM AQUAMARINE"), 50, 204, 153},
-        {wxT("MEDIUM GREY"), 100, 100, 100},
-        {wxT("MEDIUM BLUE"), 50, 50, 204},
-        {wxT("MEDIUM FOREST GREEN"), 107, 142, 35},
-        {wxT("MEDIUM GOLDENROD"), 234, 234, 173},
-        {wxT("MEDIUM ORCHID"), 147, 112, 219},
-        {wxT("MEDIUM SEA GREEN"), 66, 111, 66},
-        {wxT("MEDIUM SLATE BLUE"), 127, 0, 255},
-        {wxT("MEDIUM SPRING GREEN"), 127, 255, 0},
-        {wxT("MEDIUM TURQUOISE"), 112, 219, 219},
-        {wxT("MEDIUM VIOLET RED"), 219, 112, 147},
-        {wxT("MIDNIGHT BLUE"), 47, 47, 79},
-        {wxT("NAVY"), 35, 35, 142},
-        {wxT("ORANGE"), 204, 50, 50},
-        {wxT("ORANGE RED"), 255, 0, 127},
-        {wxT("ORCHID"), 219, 112, 219},
-        {wxT("PALE GREEN"), 143, 188, 143},
-        {wxT("PINK"), 255, 192, 203},
-        {wxT("PLUM"), 234, 173, 234},
-        {wxT("PURPLE"), 176, 0, 255},
-        {wxT("RED"), 255, 0, 0},
-        {wxT("SALMON"), 111, 66, 66},
-        {wxT("SEA GREEN"), 35, 142, 107},
-        {wxT("SIENNA"), 142, 107, 35},
-        {wxT("SKY BLUE"), 50, 153, 204},
-        {wxT("SLATE BLUE"), 0, 127, 255},
-        {wxT("SPRING GREEN"), 0, 255, 127},
-        {wxT("STEEL BLUE"), 35, 107, 142},
-        {wxT("TAN"), 219, 147, 112},
-        {wxT("THISTLE"), 216, 191, 216},
-        {wxT("TURQUOISE"), 173, 234, 234},
-        {wxT("VIOLET"), 79, 47, 79},
-        {wxT("VIOLET RED"), 204, 50, 153},
-        {wxT("WHEAT"), 216, 216, 191},
-        {wxT("WHITE"), 255, 255, 255},
-        {wxT("YELLOW"), 255, 255, 0},
-        {wxT("YELLOW GREEN"), 153, 204, 50}
+        {"AQUAMARINE",112, 219, 147},
+        {"BLUE VIOLET", 159, 95, 159},
+        {"CADET BLUE", 95, 159, 159},
+        {"CORAL", 255, 127, 0},
+        {"CORNFLOWER BLUE", 66, 66, 111},
+        {"DARK GRAY", 47, 47, 47},
+        {"DARK GREY", 47, 47, 47},   // ?
+        {"DARK GREEN", 47, 79, 47},
+        {"DARK OLIVE GREEN", 79, 79, 47},
+        {"DARK ORCHID", 153, 50, 204},
+        {"DARK SLATE BLUE", 107, 35, 142},
+        {"DARK SLATE GRAY", 47, 79, 79},
+        {"DARK SLATE GREY", 47, 79, 79},
+        {"DARK TURQUOISE", 112, 147, 219},
+        {"DIM GRAY", 84, 84, 84},
+        {"DIM GREY", 84, 84, 84},
+        {"FIREBRICK", 142, 35, 35},
+        {"FOREST GREEN", 35, 142, 35},
+        {"GOLD", 204, 127, 50},
+        {"GOLDENROD", 219, 219, 112},
+        {"GREEN", 0, 255, 0},
+        {"GREEN YELLOW", 147, 219, 112},
+        {"INDIAN RED", 79, 47, 47},
+        {"KHAKI", 159, 159, 95},
+        {"LIGHT BLUE", 191, 216, 216},
+        {"LIGHT GRAY", 192, 192, 192},
+        {"LIGHT GREY", 192, 192, 192},
+        {"LIGHT STEEL BLUE", 143, 143, 188},
+        {"LIME GREEN", 50, 204, 50},
+        {"LIGHT MAGENTA", 255, 119, 255},
+        {"MAROON", 142, 35, 107},
+        {"MEDIUM AQUAMARINE", 50, 204, 153},
+        {"MEDIUM GRAY", 100, 100, 100},
+        {"MEDIUM GREY", 100, 100, 100},
+        {"MEDIUM BLUE", 50, 50, 204},
+        {"MEDIUM FOREST GREEN", 107, 142, 35},
+        {"MEDIUM GOLDENROD", 234, 234, 173},
+        {"MEDIUM ORCHID", 147, 112, 219},
+        {"MEDIUM SEA GREEN", 66, 111, 66},
+        {"MEDIUM SLATE BLUE", 127, 0, 255},
+        {"MEDIUM SPRING GREEN", 127, 255, 0},
+        {"MEDIUM TURQUOISE", 112, 219, 219},
+        {"MEDIUM VIOLET RED", 219, 112, 147},
+        {"MIDNIGHT BLUE", 47, 47, 79},
+        {"NAVY", 35, 35, 142},
+        {"ORANGE", 204, 50, 50},
+        {"ORANGE RED", 255, 0, 127},
+        {"ORCHID", 219, 112, 219},
+        {"PALE GREEN", 143, 188, 143},
+        {"PLUM", 234, 173, 234},
+        {"PURPLE", 176, 0, 255},
+        {"SALMON", 111, 66, 66},
+        {"SEA GREEN", 35, 142, 107},
+        {"SIENNA", 142, 107, 35},
+        {"SKY BLUE", 50, 153, 204},
+        {"SLATE BLUE", 0, 127, 255},
+        {"SPRING GREEN", 0, 255, 127},
+        {"STEEL BLUE", 35, 107, 142},
+        {"TAN", 219, 147, 112},
+        {"TURQUOISE", 173, 234, 234},
+        {"VIOLET", 79, 47, 79},
+        {"VIOLET RED", 204, 50, 153},
+        {"WHEAT", 216, 216, 191},
+        {"YELLOW GREEN", 153, 204, 50}
     };
 
-    size_t n;
-
-    for ( n = 0; n < WXSIZEOF(wxColourTable); n++ )
+    // See https://www.w3.org/TR/css-color-4/#named-colors
+    static const wxColourDesc cssColours[] =
     {
-        const wxColourDesc& cc = wxColourTable[n];
-        (*m_map)[cc.name] = new wxColour(cc.r, cc.g, cc.b);
+        { "ALICEBLUE", 240, 248, 255 }, // #f0f8ff
+        { "ANTIQUEWHITE", 250, 235, 215 }, // #faebd7
+        { "AQUA", 0, 255, 255 }, // #00ffff
+        { "AQUAMARINE", 127, 255, 212 }, // #7fffd4
+        { "AZURE", 240, 255, 255 }, // #f0ffff
+        { "BEIGE", 245, 245, 220 }, // #f5f5dc
+        { "BISQUE", 255, 228, 196 }, // #ffe4c4
+        { "BLACK", 0, 0, 0 }, // #000000
+        { "BLANCHEDALMOND", 255, 235, 205 }, // #ffebcd
+        { "BLUE", 0, 0, 255 }, // #0000ff
+        { "BLUEVIOLET", 138, 43, 226 }, // #8a2be2
+        { "BROWN", 165, 42, 42 }, // #a52a2a
+        { "BURLYWOOD", 222, 184, 135 }, // #deb887
+        { "CADETBLUE", 95, 158, 160 }, // #5f9ea0
+        { "CHARTREUSE", 127, 255, 0 }, // #7fff00
+        { "CHOCOLATE", 210, 105, 30 }, // #d2691e
+        { "CORAL", 255, 127, 80 }, // #ff7f50
+        { "CORNFLOWERBLUE", 100, 149, 237 }, // #6495ed
+        { "CORNSILK", 255, 248, 220 }, // #fff8dc
+        { "CRIMSON", 220, 20, 60 }, // #dc143c
+        { "CYAN", 0, 255, 255 }, // #00ffff
+        { "DARKBLUE", 0, 0, 139 }, // #00008b
+        { "DARKCYAN", 0, 139, 139 }, // #008b8b
+        { "DARKGOLDENROD", 184, 134, 11 }, // #b8860b
+        { "DARKGRAY", 169, 169, 169 }, // #a9a9a9
+        { "DARKGREEN", 0, 100, 0 }, // #006400
+        { "DARKGREY", 169, 169, 169 }, // #a9a9a9
+        { "DARKKHAKI", 189, 183, 107 }, // #bdb76b
+        { "DARKMAGENTA", 139, 0, 139 }, // #8b008b
+        { "DARKOLIVEGREEN", 85, 107, 47 }, // #556b2f
+        { "DARKORANGE", 255, 140, 0 }, // #ff8c00
+        { "DARKORCHID", 153, 50, 204 }, // #9932cc
+        { "DARKRED", 139, 0, 0 }, // #8b0000
+        { "DARKSALMON", 233, 150, 122 }, // #e9967a
+        { "DARKSEAGREEN", 143, 188, 143 }, // #8fbc8f
+        { "DARKSLATEBLUE", 72, 61, 139 }, // #483d8b
+        { "DARKSLATEGRAY", 47, 79, 79 }, // #2f4f4f
+        { "DARKSLATEGREY", 47, 79, 79 }, // #2f4f4f
+        { "DARKTURQUOISE", 0, 206, 209 }, // #00ced1
+        { "DARKVIOLET", 148, 0, 211 }, // #9400d3
+        { "DEEPPINK", 255, 20, 147 }, // #ff1493
+        { "DEEPSKYBLUE", 0, 191, 255 }, // #00bfff
+        { "DIMGRAY", 105, 105, 105 }, // #696969
+        { "DIMGREY", 105, 105, 105 }, // #696969
+        { "DODGERBLUE", 30, 144, 255 }, // #1e90ff
+        { "FIREBRICK", 178, 34, 34 }, // #b22222
+        { "FLORALWHITE", 255, 250, 240 }, // #fffaf0
+        { "FORESTGREEN", 34, 139, 34 }, // #228b22
+        { "FUCHSIA", 255, 0, 255 }, // #ff00ff
+        { "GAINSBORO", 220, 220, 220 }, // #dcdcdc
+        { "GHOSTWHITE", 248, 248, 255 }, // #f8f8ff
+        { "GOLD", 255, 215, 0 }, // #ffd700
+        { "GOLDENROD", 218, 165, 32 }, // #daa520
+        { "GRAY", 128, 128, 128 }, // #808080
+        { "GREEN", 0, 128, 0 }, // #008000
+        { "GREENYELLOW", 173, 255, 47 }, // #adff2f
+        { "GREY", 128, 128, 128 }, // #808080
+        { "HONEYDEW", 240, 255, 240 }, // #f0fff0
+        { "HOTPINK", 255, 105, 180 }, // #ff69b4
+        { "INDIANRED", 205, 92, 92 }, // #cd5c5c
+        { "INDIGO", 75, 0, 130 }, // #4b0082
+        { "IVORY", 255, 255, 240 }, // #fffff0
+        { "KHAKI", 240, 230, 140 }, // #f0e68c
+        { "LAVENDER", 230, 230, 250 }, // #e6e6fa
+        { "LAVENDERBLUSH", 255, 240, 245 }, // #fff0f5
+        { "LAWNGREEN", 124, 252, 0 }, // #7cfc00
+        { "LEMONCHIFFON", 255, 250, 205 }, // #fffacd
+        { "LIGHTBLUE", 173, 216, 230 }, // #add8e6
+        { "LIGHTCORAL", 240, 128, 128 }, // #f08080
+        { "LIGHTCYAN", 224, 255, 255 }, // #e0ffff
+        { "LIGHTGOLDENRODYELLOW", 250, 250, 210 }, // #fafad2
+        { "LIGHTGRAY", 211, 211, 211 }, // #d3d3d3
+        { "LIGHTGREEN", 144, 238, 144 }, // #90ee90
+        { "LIGHTGREY", 211, 211, 211 }, // #d3d3d3
+        { "LIGHTPINK", 255, 182, 193 }, // #ffb6c1
+        { "LIGHTSALMON", 255, 160, 122 }, // #ffa07a
+        { "LIGHTSEAGREEN", 32, 178, 170 }, // #20b2aa
+        { "LIGHTSKYBLUE", 135, 206, 250 }, // #87cefa
+        { "LIGHTSLATEGRAY", 119, 136, 153 }, // #778899
+        { "LIGHTSLATEGREY", 119, 136, 153 }, // #778899
+        { "LIGHTSTEELBLUE", 176, 196, 222 }, // #b0c4de
+        { "LIGHTYELLOW", 255, 255, 224 }, // #ffffe0
+        { "LIME", 0, 255, 0 }, // #00ff00
+        { "LIMEGREEN", 50, 205, 50 }, // #32cd32
+        { "LINEN", 250, 240, 230 }, // #faf0e6
+        { "MAGENTA", 255, 0, 255 }, // #ff00ff
+        { "MAROON", 128, 0, 0 }, // #800000
+        { "MEDIUMAQUAMARINE", 102, 205, 170 }, // #66cdaa
+        { "MEDIUMBLUE", 0, 0, 205 }, // #0000cd
+        { "MEDIUMORCHID", 186, 85, 211 }, // #ba55d3
+        { "MEDIUMPURPLE", 147, 112, 219 }, // #9370db
+        { "MEDIUMSEAGREEN", 60, 179, 113 }, // #3cb371
+        { "MEDIUMSLATEBLUE", 123, 104, 238 }, // #7b68ee
+        { "MEDIUMSPRINGGREEN", 0, 250, 154 }, // #00fa9a
+        { "MEDIUMTURQUOISE", 72, 209, 204 }, // #48d1cc
+        { "MEDIUMVIOLETRED", 199, 21, 133 }, // #c71585
+        { "MIDNIGHTBLUE", 25, 25, 112 }, // #191970
+        { "MINTCREAM", 245, 255, 250 }, // #f5fffa
+        { "MISTYROSE", 255, 228, 225 }, // #ffe4e1
+        { "MOCCASIN", 255, 228, 181 }, // #ffe4b5
+        { "NAVAJOWHITE", 255, 222, 173 }, // #ffdead
+        { "NAVY", 0, 0, 128 }, // #000080
+        { "OLDLACE", 253, 245, 230 }, // #fdf5e6
+        { "OLIVE", 128, 128, 0 }, // #808000
+        { "OLIVEDRAB", 107, 142, 35 }, // #6b8e23
+        { "ORANGE", 255, 165, 0 }, // #ffa500
+        { "ORANGERED", 255, 69, 0 }, // #ff4500
+        { "ORCHID", 218, 112, 214 }, // #da70d6
+        { "PALEGOLDENROD", 238, 232, 170 }, // #eee8aa
+        { "PALEGREEN", 152, 251, 152 }, // #98fb98
+        { "PALETURQUOISE", 175, 238, 238 }, // #afeeee
+        { "PALEVIOLETRED", 219, 112, 147 }, // #db7093
+        { "PAPAYAWHIP", 255, 239, 213 }, // #ffefd5
+        { "PEACHPUFF", 255, 218, 185 }, // #ffdab9
+        { "PERU", 205, 133, 63 }, // #cd853f
+        { "PINK", 255, 192, 203 }, // #ffc0cb
+        { "PLUM", 221, 160, 221 }, // #dda0dd
+        { "POWDERBLUE", 176, 224, 230 }, // #b0e0e6
+        { "PURPLE", 128, 0, 128 }, // #800080
+        { "REBECCAPURPLE", 102, 51, 153 }, // #663399
+        { "RED", 255, 0, 0 }, // #ff0000
+        { "ROSYBROWN", 188, 143, 143 }, // #bc8f8f
+        { "ROYALBLUE", 65, 105, 225 }, // #4169e1
+        { "SADDLEBROWN", 139, 69, 19 }, // #8b4513
+        { "SALMON", 250, 128, 114 }, // #fa8072
+        { "SANDYBROWN", 244, 164, 96 }, // #f4a460
+        { "SEAGREEN", 46, 139, 87 }, // #2e8b57
+        { "SEASHELL", 255, 245, 238 }, // #fff5ee
+        { "SIENNA", 160, 82, 45 }, // #a0522d
+        { "SILVER", 192, 192, 192 }, // #c0c0c0
+        { "SKYBLUE", 135, 206, 235 }, // #87ceeb
+        { "SLATEBLUE", 106, 90, 205 }, // #6a5acd
+        { "SLATEGRAY", 112, 128, 144 }, // #708090
+        { "SLATEGREY", 112, 128, 144 }, // #708090
+        { "SNOW", 255, 250, 250 }, // #fffafa
+        { "SPRINGGREEN", 0, 255, 127 }, // #00ff7f
+        { "STEELBLUE", 70, 130, 180 }, // #4682b4
+        { "TAN", 210, 180, 140 }, // #d2b48c
+        { "TEAL", 0, 128, 128 }, // #008080
+        { "THISTLE", 216, 191, 216 }, // #d8bfd8
+        { "TOMATO", 255, 99, 71 }, // #ff6347
+        { "TURQUOISE", 64, 224, 208 }, // #40e0d0
+        { "VIOLET", 238, 130, 238 }, // #ee82ee
+        { "WHEAT", 245, 222, 179 }, // #f5deb3
+        { "WHITE", 255, 255, 255 }, // #ffffff
+        { "WHITESMOKE", 245, 245, 245 }, // #f5f5f5
+        { "YELLOW", 255, 255, 0 }, // #ffff00
+        { "YELLOWGREEN", 154, 205, 50 }, // #9acd32
+    };
+
+    auto& map = GetColours(m_map);
+
+    // We still use the legacy colour names in CSS scheme, but we add them
+    // first so any conflicting values are overwritten with the correct values
+    // in the CSS table. Similarly, we provide CSS colour names even in the
+    // traditional scheme -- but legacy colour values take precedence for the
+    // colours that used to be defined by wxWidgets.
+    switch ( m_scheme )
+    {
+        case CSS:
+            AddColours(map, legacyColours, WXSIZEOF(legacyColours));
+            AddColours(map, cssColours, WXSIZEOF(cssColours));
+            break;
+
+        case Traditional:
+            AddColours(map, cssColours, WXSIZEOF(cssColours));
+            AddColours(map, legacyColours, WXSIZEOF(legacyColours));
+            break;
+    }
+}
+
+void wxColourDatabase::UseScheme(Scheme scheme)
+{
+    if ( scheme == m_scheme )
+        return;
+
+    m_scheme = scheme;
+
+    // Reset the existing map for the different scheme, it will be re-filled on
+    // next use.
+    if ( m_map )
+    {
+        delete m_map;
+        m_map = nullptr;
     }
 }
 
@@ -392,25 +659,7 @@ void wxColourDatabase::AddColour(const wxString& name, const wxColour& colour)
     wxString colName = name;
     colName.MakeUpper();
 
-    // ... and we also allow both grey/gray
-    wxString colNameAlt = colName;
-    if ( !colNameAlt.Replace(wxT("GRAY"), wxT("GREY")) )
-    {
-        // but in this case it is not necessary so avoid extra search below
-        colNameAlt.clear();
-    }
-
-    wxStringToColourHashMap::iterator it = m_map->find(colName);
-    if ( it == m_map->end() && !colNameAlt.empty() )
-        it = m_map->find(colNameAlt);
-    if ( it != m_map->end() )
-    {
-        *(it->second) = colour;
-    }
-    else // new colour
-    {
-        (*m_map)[colName] = new wxColour(colour);
-    }
+    GetColours(m_map)[colName] = colour;
 }
 
 wxColour wxColourDatabase::Find(const wxString& colour) const
@@ -418,18 +667,14 @@ wxColour wxColourDatabase::Find(const wxString& colour) const
     wxColourDatabase * const self = wxConstCast(this, wxColourDatabase);
     self->Initialize();
 
-    // make the comparison case insensitive and also match both grey and gray
+    // make the comparison case insensitive
     wxString colName = colour;
     colName.MakeUpper();
-    wxString colNameAlt = colName;
-    if ( !colNameAlt.Replace(wxT("GRAY"), wxT("GREY")) )
-        colNameAlt.clear();
 
-    wxStringToColourHashMap::iterator it = m_map->find(colName);
-    if ( it == m_map->end() && !colNameAlt.empty() )
-        it = m_map->find(colNameAlt);
-    if ( it != m_map->end() )
-        return *(it->second);
+    auto& map = GetColours(m_map);
+    auto it = map.find(colName);
+    if ( it != map.end() )
+        return it->second.GetColour();
 
     // we did not find any result in existing colours:
     // we won't use wxString -> wxColour conversion because the
@@ -444,15 +689,29 @@ wxString wxColourDatabase::FindName(const wxColour& colour) const
     wxColourDatabase * const self = wxConstCast(this, wxColourDatabase);
     self->Initialize();
 
-    typedef wxStringToColourHashMap::iterator iterator;
-
-    for ( iterator it = m_map->begin(), en = m_map->end(); it != en; ++it )
+    for ( const auto& kv : GetColours(m_map) )
     {
-        if ( *(it->second) == colour )
-            return it->first;
+        if ( kv.second == colour )
+            return kv.first;
     }
 
     return wxEmptyString;
+}
+
+wxVector<wxString> wxColourDatabase::GetAllNames() const
+{
+    wxColourDatabase * const self = wxConstCast(this, wxColourDatabase);
+    self->Initialize();
+
+    const auto& map = GetColours(m_map);
+
+    wxVector<wxString> names;
+    names.reserve(map.size());
+
+    for ( const auto& kv : map )
+        names.push_back(kv.first);
+
+    return names;
 }
 
 // ============================================================================
@@ -482,7 +741,7 @@ void wxStockGDI::DeleteAll()
 const wxBrush* wxStockGDI::GetBrush(Item item)
 {
     wxBrush* brush = static_cast<wxBrush*>(ms_stockObject[item]);
-    if (brush == NULL)
+    if (brush == nullptr)
     {
         switch (item)
         {
@@ -502,13 +761,13 @@ const wxBrush* wxStockGDI::GetBrush(Item item)
             brush = new wxBrush(*GetColour(COLOUR_YELLOW), wxBRUSHSTYLE_SOLID);
             break;
         case BRUSH_GREY:
-            brush = new wxBrush(wxColour(wxT("GREY")), wxBRUSHSTYLE_SOLID);
+            brush = new wxBrush(*GetColour(COLOUR_GREY), wxBRUSHSTYLE_SOLID);
             break;
         case BRUSH_LIGHTGREY:
             brush = new wxBrush(*GetColour(COLOUR_LIGHTGREY), wxBRUSHSTYLE_SOLID);
             break;
         case BRUSH_MEDIUMGREY:
-            brush = new wxBrush(wxColour(wxT("MEDIUM GREY")), wxBRUSHSTYLE_SOLID);
+            brush = new wxBrush(*GetColour(COLOUR_MEDIUMGREY), wxBRUSHSTYLE_SOLID);
             break;
         case BRUSH_RED:
             brush = new wxBrush(*GetColour(COLOUR_RED), wxBRUSHSTYLE_SOLID);
@@ -530,7 +789,7 @@ const wxBrush* wxStockGDI::GetBrush(Item item)
 const wxColour* wxStockGDI::GetColour(Item item)
 {
     wxColour* colour = static_cast<wxColour*>(ms_stockObject[item]);
-    if (colour == NULL)
+    if (colour == nullptr)
     {
         switch (item)
         {
@@ -549,8 +808,14 @@ const wxColour* wxStockGDI::GetColour(Item item)
         case COLOUR_YELLOW:
             colour = new wxColour(255, 255, 0);
             break;
+        case COLOUR_GREY:
+            colour = new wxColour(128, 128, 128);
+            break;
         case COLOUR_LIGHTGREY:
             colour = new wxColour(192, 192, 192);
+            break;
+        case COLOUR_MEDIUMGREY:
+            colour = new wxColour(100, 100, 100);
             break;
         case COLOUR_RED:
             colour = new wxColour(255, 0, 0);
@@ -569,7 +834,7 @@ const wxColour* wxStockGDI::GetColour(Item item)
 const wxCursor* wxStockGDI::GetCursor(Item item)
 {
     wxCursor* cursor = static_cast<wxCursor*>(ms_stockObject[item]);
-    if (cursor == NULL)
+    if (cursor == nullptr)
     {
         switch (item)
         {
@@ -593,7 +858,7 @@ const wxCursor* wxStockGDI::GetCursor(Item item)
 const wxFont* wxStockGDI::GetFont(Item item)
 {
     wxFont* font = static_cast<wxFont*>(ms_stockObject[item]);
-    if (font == NULL)
+    if (font == nullptr)
     {
         switch (item)
         {
@@ -634,7 +899,7 @@ const wxFont* wxStockGDI::GetFont(Item item)
 const wxPen* wxStockGDI::GetPen(Item item)
 {
     wxPen* pen = static_cast<wxPen*>(ms_stockObject[item]);
-    if (pen == NULL)
+    if (pen == nullptr)
     {
         switch (item)
         {
@@ -657,13 +922,13 @@ const wxPen* wxStockGDI::GetPen(Item item)
             pen = new wxPen(*GetColour(COLOUR_YELLOW), 1, wxPENSTYLE_SOLID);
             break;
         case PEN_GREY:
-            pen = new wxPen(wxColour(wxT("GREY")), 1, wxPENSTYLE_SOLID);
+            pen = new wxPen(*GetColour(COLOUR_GREY), 1, wxPENSTYLE_SOLID);
             break;
         case PEN_LIGHTGREY:
             pen = new wxPen(*GetColour(COLOUR_LIGHTGREY), 1, wxPENSTYLE_SOLID);
             break;
         case PEN_MEDIUMGREY:
-            pen = new wxPen(wxColour(wxT("MEDIUM GREY")), 1, wxPENSTYLE_SOLID);
+            pen = new wxPen(*GetColour(COLOUR_MEDIUMGREY), 1, wxPENSTYLE_SOLID);
             break;
         case PEN_RED:
             pen = new wxPen(*GetColour(COLOUR_RED), 1, wxPENSTYLE_SOLID);
@@ -697,7 +962,7 @@ void wxDeleteStockLists()
     wxDELETE(wxThePenList);
     wxDELETE(wxTheFontList);
 
-    // wxTheColourDatabase is cleaned up by wxAppBase::CleanUp()
+    wxDELETE(wxTheColourDatabase);
 }
 
 // ============================================================================
@@ -729,7 +994,7 @@ wxPen *wxPenList::FindOrCreatePen (const wxColour& colour, int width, wxPenStyle
             return pen;
     }
 
-    wxPen* pen = NULL;
+    wxPen* pen = nullptr;
     wxPen penTmp(colour, width, style);
     if (penTmp.IsOk())
     {
@@ -751,7 +1016,7 @@ wxBrush *wxBrushList::FindOrCreateBrush (const wxColour& colour, wxBrushStyle st
             return brush;
     }
 
-    wxBrush* brush = NULL;
+    wxBrush* brush = nullptr;
     wxBrush brushTmp(colour, style);
     if (brushTmp.IsOk())
     {
@@ -762,24 +1027,18 @@ wxBrush *wxBrushList::FindOrCreateBrush (const wxColour& colour, wxBrushStyle st
     return brush;
 }
 
-wxFont *wxFontList::FindOrCreateFont(int pointSize,
-                                     wxFontFamily family,
-                                     wxFontStyle style,
-                                     wxFontWeight weight,
-                                     bool underline,
-                                     const wxString& facename,
-                                     wxFontEncoding encoding)
+wxFont *wxFontList::FindOrCreateFont(const wxFontInfo& fontInfo)
 {
+    // info is fontInfo adjusted for platform oddities
+    wxFontInfo info(fontInfo);
+
     // In all ports but wxOSX, the effective family of a font created using
     // wxFONTFAMILY_DEFAULT is wxFONTFAMILY_SWISS so this is what we need to
     // use for comparison.
     //
-    // In wxOSX the original wxFONTFAMILY_DEFAULT seems to be kept and it uses
-    // a different font than wxFONTFAMILY_SWISS anyhow so we just preserve it.
-#ifndef __WXOSX__
-    if ( family == wxFONTFAMILY_DEFAULT )
-        family = wxFONTFAMILY_SWISS;
-#endif // !__WXOSX__
+    // wxOSX is handled specifically below, see there.
+    if ( info.GetFamily() == wxFONTFAMILY_DEFAULT )
+        info.Family(wxFONTFAMILY_SWISS);
 
     // In wxMSW, creating a font with wxFONTSTYLE_SLANT creates the same font
     // as wxFONTSTYLE_ITALIC and its GetStyle() returns the latter, so we must
@@ -789,38 +1048,69 @@ wxFont *wxFontList::FindOrCreateFont(int pointSize,
     // between ports here which it would be nice to fix in one way or another
     // (wxGTK supports both as separate styles, so it doesn't suffer from it).
  #ifdef __WXMSW__
-    if ( style == wxFONTSTYLE_SLANT )
-        style = wxFONTSTYLE_ITALIC;
+    if ( info.GetStyle() == wxFONTSTYLE_SLANT )
+        info.Style(wxFONTSTYLE_ITALIC);
  #endif // __WXMSW__
 
     wxFont *font;
     wxList::compatibility_iterator node;
     for (node = list.GetFirst(); node; node = node->GetNext())
     {
+        bool same;
+
         font = (wxFont *)node->GetData();
-        if (
-             font->GetPointSize () == pointSize &&
-             font->GetStyle () == style &&
-             font->GetWeight () == weight &&
-             font->GetUnderlined () == underline )
+
+        if ( info.IsUsingSizeInPixels() )
+        {
+            // When the width is 0, it means that we don't care about it.
+            if ( info.GetPixelSize().x == 0 )
+                same = font->GetPixelSize().y == info.GetPixelSize().y;
+            else
+                same = font->GetPixelSize() == info.GetPixelSize();
+        }
+        else
+        {
+            same = font->GetFractionalPointSize() == info.GetFractionalPointSize();
+        }
+
+        if ( same &&
+             font->GetStyle () == info.GetStyle() &&
+             font->GetWeight () == info.GetWeight() &&
+             font->GetUnderlined () == info.IsUnderlined() )
         {
             // empty facename matches anything at all: this is bad because
             // depending on which fonts are already created, we might get back
             // a different font if we create it with empty facename, but it is
             // still better than never matching anything in the cache at all
             // in this case
-            bool same;
             const wxString fontFaceName(font->GetFaceName());
 
-            if (facename.empty() || fontFaceName.empty())
-                same = font->GetFamily() == family;
-            else
-                same = fontFaceName == facename;
+            if (info.GetFaceName().empty() || fontFaceName.empty())
+            {
+                same = font->GetFamily() == info.GetFamily();
 
-            if ( same && (encoding != wxFONTENCODING_DEFAULT) )
+                // In wxOSX fonts created using wxFONTFAMILY_DEFAULT can return
+                // either it or wxFONTFAMILY_SWISS from GetFamily(), which is a
+                // bug and needs to be fixed (see #23144), but for now work
+                // around it here.
+#ifdef __WXOSX__
+                if ( !same &&
+                     fontInfo.GetFamily() == wxFONTFAMILY_DEFAULT &&
+                     font->GetFamily() == wxFONTFAMILY_DEFAULT )
+                {
+                    same = true;
+                }
+#endif // __WXOSX__
+            }
+            else
+            {
+                same = fontFaceName == info.GetFaceName();
+            }
+
+            if ( same && (info.GetEncoding() != wxFONTENCODING_DEFAULT) )
             {
                 // have to match the encoding too
-                same = font->GetEncoding() == encoding;
+                same = font->GetEncoding() == info.GetEncoding();
             }
 
             if ( same )
@@ -831,12 +1121,15 @@ wxFont *wxFontList::FindOrCreateFont(int pointSize,
     }
 
     // font not found, create the new one
-    font = NULL;
-    wxFont fontTmp(pointSize, family, style, weight, underline, facename, encoding);
-    if (fontTmp.IsOk())
+    font = new wxFont(info);
+    if (font->IsOk())
     {
-        font = new wxFont(fontTmp);
         list.Append(font);
+    }
+    else
+    {
+        delete font;
+        font = nullptr;
     }
 
     return font;
@@ -909,15 +1202,4 @@ wxSize wxGetDisplaySizeMM()
 wxSize wxGetDisplayPPI()
 {
     return wxDisplay().GetPPI();
-}
-
-wxResourceCache::~wxResourceCache ()
-{
-    wxList::compatibility_iterator node = GetFirst ();
-    while (node) {
-        wxObject *item = (wxObject *)node->GetData();
-        delete item;
-
-        node = node->GetNext ();
-    }
 }

@@ -2,7 +2,6 @@
 // Name:        src/msw/datectrl.cpp
 // Purpose:     wxDatePickerCtrl implementation
 // Author:      Vadim Zeitlin
-// Modified by:
 // Created:     2005-01-09
 // Copyright:   (c) 2005 Vadim Zeitlin <vadim@wxwidgets.org>
 // Licence:     wxWindows licence
@@ -33,6 +32,8 @@
 
 #include "wx/datectrl.h"
 #include "wx/dateevt.h"
+#include "wx/uilocale.h"
+#include "wx/msw/private/uilocale.h"
 
 wxIMPLEMENT_DYNAMIC_CLASS(wxDatePickerCtrl, wxControl);
 
@@ -58,9 +59,16 @@ wxDatePickerCtrl::Create(wxWindow *parent,
     if ( !(style & wxDP_DROPDOWN) )
         style |= wxDP_SPIN;
 
-    return MSWCreateDateTimePicker(parent, id, dt,
-                                   pos, size, style,
-                                   validator, name);
+    bool ok = MSWCreateDateTimePicker(parent, id, dt,
+                                      pos, size, style,
+                                      validator, name);
+#if wxUSE_INTL
+    if (ok)
+    {
+        MSWSetTimeFormat(wxLOCALE_SHORT_DATE_FMT);
+    }
+#endif
+    return ok;
 }
 
 WXDWORD wxDatePickerCtrl::MSWGetStyle(long style, WXDWORD *exstyle) const
@@ -101,17 +109,8 @@ void wxDatePickerCtrl::SetValue(const wxDateTime& dt)
 {
     if ( dt.IsValid() )
     {
-        // Don't try setting the date if it's out of range: calendar control
-        // under XP (and presumably all the other pre-Vista Windows versions)
-        // doesn't return false from DateTime_SetSystemtime() in this case but
-        // doesn't actually change the date, so we can't update our m_date
-        // unconditionally and would need to check whether it was changed
-        // before doing it. It looks simpler to just check whether it's in
-        // range here instead.
-        //
-        // If we ever drop support for XP we could rely on the return value of
-        // DateTime_SetSystemtime() but this probably won't happen in near
-        // future.
+        // Don't try setting the date if it's out of range as we can't rely on
+        // DateTime_SetSystemtime() always returning FALSE for it.
         wxDateTime dtStart, dtEnd;
         GetRange(&dtStart, &dtEnd);
         if ( (dtStart.IsValid() && dt < dtStart) ||

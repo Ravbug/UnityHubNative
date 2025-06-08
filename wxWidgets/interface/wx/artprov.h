@@ -133,6 +133,10 @@ const char* wxART_WX_LOGO;
       wxArtProvider::Push(new MyProvider);
     @endcode
 
+    Note that, as usual in wxWidgets API, wxArtProvider takes ownership of the
+    pointer and will destroy it on program shutdown. In particular, you should
+    not delete this pointer in your own code.
+
     If you need bitmap images (of the same artwork) that should be displayed at
     different sizes you should probably consider overriding wxArtProvider::CreateIconBundle
     and supplying icon bundles that contain different bitmap sizes.
@@ -356,7 +360,7 @@ public:
 
         @since 2.9.0 (@a win parameter is available only since 3.1.6)
      */
-    static wxSize GetNativeSizeHint(const wxArtClient& client, wxWindow* win = NULL);
+    static wxSize GetNativeSizeHint(const wxArtClient& client, wxWindow* win = nullptr);
 
     /**
         Returns a suitable size hint for the given @e wxArtClient in DIPs.
@@ -378,7 +382,7 @@ public:
 
         Note that @a win parameter is only available since wxWidgets 3.1.6.
      */
-    static wxSize GetSizeHint(const wxArtClient& client, wxWindow* win = NULL);
+    static wxSize GetSizeHint(const wxArtClient& client, wxWindow* win = nullptr);
 
     /**
         Query registered providers for icon bundle with given ID.
@@ -423,6 +427,8 @@ public:
         Register new art provider and add it to the top of providers stack
         (i.e. it will be queried as the first provider).
 
+        @param provider A valid pointer that becomes owned by wxArtProvider.
+
         @see PushBack()
     */
     static void Push(wxArtProvider* provider);
@@ -431,6 +437,8 @@ public:
         Register new art provider and add it to the bottom of providers stack.
         In other words, it will be queried as the last one, after all others,
         including the default provider.
+
+        @param provider A valid pointer that becomes owned by wxArtProvider.
 
         @see Push()
 

@@ -15,6 +15,9 @@
 // there is no separate setting for wxMemoryText, it's smallish anyhow
 #if wxUSE_TEXTBUFFER
 
+#include "wx/strconv.h"
+#include "wx/textbuf.h"
+
 // ----------------------------------------------------------------------------
 // wxMemoryText
 // ----------------------------------------------------------------------------
@@ -23,25 +26,25 @@ class WXDLLIMPEXP_BASE wxMemoryText : public wxTextBuffer
 {
 public:
     // Constructors.
-    wxMemoryText() { }
+    wxMemoryText() = default;
     wxMemoryText(const wxString& name) : wxTextBuffer(name) { }
 
 protected:
-    virtual bool OnExists() const wxOVERRIDE
+    virtual bool OnExists() const override
         { return false; }
 
     virtual bool OnOpen(const wxString & WXUNUSED(strBufferName),
-                        wxTextBufferOpenMode WXUNUSED(OpenMode)) wxOVERRIDE
+                        wxTextBufferOpenMode WXUNUSED(OpenMode)) override
         { return true; }
 
-    virtual bool OnClose() wxOVERRIDE
+    virtual bool OnClose() override
         { return true; }
 
-    virtual bool OnRead(const wxMBConv& WXUNUSED(conv)) wxOVERRIDE
+    virtual bool OnRead(const wxMBConv& WXUNUSED(conv)) override
         { return true; }
 
     virtual bool OnWrite(wxTextFileType WXUNUSED(typeNew),
-                         const wxMBConv& WXUNUSED(conv) = wxMBConvUTF8()) wxOVERRIDE
+                         const wxMBConv& WXUNUSED(conv) = wxMBConvUTF8()) override
         { return true; }
 
 private:

@@ -30,20 +30,20 @@
 
 #include "tiffio.h"
 
-#define WIDTH       512
-#define HEIGHT      WIDTH
+#define WIDTH 512
+#define HEIGHT WIDTH
 
-char *              programName;
-void                Usage();
+char *programName;
+void Usage();
 
 int main(int argc, char **argv)
 {
-    int             bits_per_pixel = 8, cmsize, i, j, k,
-                    gray_index, chunk_size = 32, nchunks = 16;
-    unsigned char * scan_line;
-    uint16 *        gray;
-    float           refblackwhite[2*1];
-    TIFF *          tif;
+    int bits_per_pixel = 8, cmsize, i, j, k, gray_index, chunk_size = 32,
+        nchunks = 16;
+    unsigned char *scan_line;
+    uint16_t *gray;
+    float refblackwhite[2 * 1];
+    TIFF *tif;
 
     programName = argv[0];
 
@@ -51,11 +51,12 @@ int main(int argc, char **argv)
         Usage();
 
     if (!strcmp(argv[1], "-depth"))
-         bits_per_pixel = atoi(argv[2]);
+        bits_per_pixel = atoi(argv[2]);
     else
-         Usage();
+        Usage();
 
-    switch (bits_per_pixel) {
+    switch (bits_per_pixel)
+    {
         case 8:
             nchunks = 16;
             chunk_size = 32;
@@ -73,18 +74,19 @@ int main(int argc, char **argv)
     }
 
     cmsize = nchunks * nchunks;
-    gray = (uint16 *) malloc(cmsize * sizeof(uint16));
+    gray = (uint16_t *)malloc(cmsize * sizeof(uint16_t));
 
     gray[0] = 3000;
     for (i = 1; i < cmsize; i++)
-        gray[i] = (uint16) (-log10((double) i / (cmsize - 1)) * 1000);
+        gray[i] = (uint16_t)(-log10((double)i / (cmsize - 1)) * 1000);
 
     refblackwhite[0] = 0.0;
-    refblackwhite[1] = (float)((1L<<bits_per_pixel) - 1);
+    refblackwhite[1] = (float)((1L << bits_per_pixel) - 1);
 
-    if ((tif = TIFFOpen(argv[3], "w")) == NULL) {
+    if ((tif = TIFFOpen(argv[3], "w")) == NULL)
+    {
         fprintf(stderr, "can't open %s as a TIFF file\n", argv[3]);
-		free(gray);
+        free(gray);
         return 0;
     }
 
@@ -100,26 +102,29 @@ int main(int argc, char **argv)
     TIFFSetField(tif, TIFFTAG_TRANSFERFUNCTION, gray);
     TIFFSetField(tif, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE);
 
-    scan_line = (unsigned char *) malloc(WIDTH / (8 / bits_per_pixel));
+    scan_line = (unsigned char *)malloc(WIDTH / (8 / bits_per_pixel));
 
-    for (i = 0; i < HEIGHT; i++) {
-        for (j = 0, k = 0; j < WIDTH;) {
+    for (i = 0; i < HEIGHT; i++)
+    {
+        for (j = 0, k = 0; j < WIDTH;)
+        {
             gray_index = (j / chunk_size) + ((i / chunk_size) * nchunks);
 
-            switch (bits_per_pixel) {
-            case 8:
-                scan_line[k++] = gray_index;
-                j++;
-                break;
-            case 4:
-                scan_line[k++] = (gray_index << 4) + gray_index;
-                j += 2;
-                break;
-            case 2:
-                scan_line[k++] = (gray_index << 6) + (gray_index << 4)
-                    + (gray_index << 2) + gray_index;
-                j += 4;
-                break;
+            switch (bits_per_pixel)
+            {
+                case 8:
+                    scan_line[k++] = gray_index;
+                    j++;
+                    break;
+                case 4:
+                    scan_line[k++] = (gray_index << 4) + gray_index;
+                    j += 2;
+                    break;
+                case 2:
+                    scan_line[k++] = (gray_index << 6) + (gray_index << 4) +
+                                     (gray_index << 2) + gray_index;
+                    j += 4;
+                    break;
             }
         }
         TIFFWriteScanline(tif, scan_line, i, 0);
@@ -130,16 +135,8 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void
-Usage()
+void Usage()
 {
     fprintf(stderr, "Usage: %s -depth (8 | 4 | 2) tiff-image\n", programName);
     exit(0);
 }
-/*
- * Local Variables:
- * mode: c
- * c-basic-offset: 8
- * fill-column: 78
- * End:
- */

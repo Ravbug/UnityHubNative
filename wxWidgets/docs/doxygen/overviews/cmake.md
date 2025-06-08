@@ -69,9 +69,19 @@ wxBUILD_TESTS             | STRING | OFF     | CONSOLE_ONLY, ALL or OFF
 wxBUILD_SAMPLES           | STRING | OFF     | SOME, ALL or OFF
 wxBUILD_DEMOS             | BOOL   | OFF     | Build demo applications
 wxUSE_GUI                 | BOOL   | ON      | Build the UI libraries
-wxBUILD_COMPATIBILITY     | STRING | 3.0     | 2.8, 3.0 or 3.1 API compatibility
+wxBUILD_COMPATIBILITY     | STRING | 3.2     | Enable API compatibility with 3.0, 3.2 or neither ("NONE")
 wxBUILD_PRECOMP           | BOOL   | ON      | Use precompiled headers
 wxBUILD_MONOLITHIC        | BOOL   | OFF     | Build a single library
+
+Note that on macOS, the option `CMAKE_OSX_ARCHITECTURES` is used to specify which architecture(s) to build.
+For example, the following will build a "universal binary 2" (i.e., ARM64 and Intel x86_64) library.
+~~~{.sh}
+    cmake ~/Downloads/wxWidgets_3.1 \
+      -DCMAKE_INSTALL_PREFIX=~/wx_install \
+      -DwxBUILD_SHARED=OFF \
+      -D"CMAKE_OSX_ARCHITECTURES:STRING=arm64;x86_64"
+    cmake --build . --target install
+~~~
 
 A complete list of options and advanced options can be found when using the
 CMake GUI.
@@ -79,16 +89,16 @@ CMake GUI.
 Recommendations                       {#cmake_recommendations}
 =======================
 While CMake in wxWidgets aims to support most generators available
-in CMake the following generators are recommended:
+in CMake, the following generators are recommended:
 * Windows: Visual Studio (any supported version)
 * macOS: Xcode
 * Linux: Ninja or Makefiles
 
-CMake 3.10 or newer is recommended. The minimum version required is 2.8.12.
+CMake 3.10 or newer is recommended. The minimum tested version is 3.5.
 
 Using CMake with your applications     {#cmake_apps}
 ==================================
-If you are using CMake with your own application there are various ways to use
+If you are using CMake with your own application, there are various ways to use
 wxWidgets:
 * Using an installed, binary or compiled version of wxWidgets
 using `find_package()`
@@ -114,7 +124,9 @@ Your *CMakeLists.txt* would look like this:
 ...
 
 find_package(wxWidgets REQUIRED COMPONENTS net core base)
-include(${wxWidgets_USE_FILE})
+if(wxWidgets_USE_FILE) # not defined in CONFIG mode
+    include(${wxWidgets_USE_FILE})
+endif()
 add_executable(myapp myapp.cpp)
 target_link_libraries(myapp ${wxWidgets_LIBRARIES})
 ~~~
@@ -122,8 +134,8 @@ target_link_libraries(myapp ${wxWidgets_LIBRARIES})
 Using a sub directory                  {#cmake_subdir}
 ---------------------
 You can use wxWidgets as a subdirectory in your application's build tree
-e.g. as a git submodule. This way the wxWidgets libraries will be part
-of your applications build process.
+(e.g., as a git submodule). This way the wxWidgets libraries will be part
+of your application's build process.
 
 Your *CMakeLists.txt* would look like this:
 ~~~
@@ -132,3 +144,61 @@ add_subdirectory(libs/wxWidgets)
 add_executable(myapp myapp.cpp)
 target_link_libraries(myapp wx::net wx::core wx::base)
 ~~~
+
+Note that you can predefine the build options before using `add_subdirectory()`
+by either defining them on command line with e.g. `-DwxBUILD_SHARED=OFF`, or by
+adding
+~~~~
+set(wxBUILD_SHARED OFF)
+~~~~
+to your *CMakeLists.txt* if you want to always use static wxWidgets libraries.
+
+Using an out-of-tree directory         {#cmake_outerdir}
+---------------------
+Likewise, wxWidgets can also be outside of your project, but still be part
+of your application's build process. To do this, you will need to provide a
+build directory argument to `add_subdirectory()`.
+This will tell CMake where to place wxWidget's build files.
+
+For example, if wxWidgets is one folder up from your project:
+~~~
+...
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../wxWidgets"
+                 "${CMAKE_CURRENT_SOURCE_DIR}/wxWidgets_lib")
+add_executable(myapp myapp.cpp)
+target_link_libraries(myapp wx::net wx::core wx::base)
+~~~
+
+This can be useful if you have multiple projects using wxWidgets.
+This way, you can place wxWidgets side-by-side with your other projects and
+have their CMake scripts all point to the same wxWidgets folder.
+
+Using XRC
+---------
+
+To embed XRC resources into your application, you need to define a custom
+command to generate a source file using `wxrc`. When using an installed version
+of wxWidgets you can just use `wxrc` directly, but when using wxWidgets from a
+subdirectory you need to ensure that it is built first and use the correct path
+to it, e.g.:
+
+~~~~{.cmake}
+# One or more XRC files containing your resources.
+set(xrc_files ${CMAKE_CURRENT_SOURCE_DIR}/resource.xrc)
+
+# Generate this file somewhere under the build directory.
+set(resource_cpp ${CMAKE_CURRENT_BINARY_DIR}/resource.cpp)
+
+# Not needed with the installed version, just use "wxrc".
+set(wxrc $<TARGET_FILE:wxrc>)
+
+add_custom_command(
+    OUTPUT ${resource_cpp}
+    COMMAND ${wxrc} -c -o ${resource_cpp} ${xrc_files}
+    DEPENDS ${xrc_files}
+    DEPENDS wxrc                        # Not needed with the installed version.
+    COMMENT "Compiling XRC resources"
+)
+
+target_sources(myapp PRIVATE ${resource_cpp})
+~~~~

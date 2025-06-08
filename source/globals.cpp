@@ -31,7 +31,6 @@ void reveal_in_explorer(const std::filesystem::path& path) {
 		std::string command = "xdg-open \"" + path.string() + "\"";
 		launch_process(command);
 #elif defined _WIN32
-
 		PIDLIST_ABSOLUTE pidl; 
 		SFGAOF attributes; 
 		HRESULT hr = SHParseDisplayName(path.c_str(), nullptr, &pidl, 0, &attributes);

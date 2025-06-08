@@ -1,16 +1,22 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import json
 import os
-import urllib2
+import urllib.request
+import urllib.parse
+
 
 from scriptCommon import catchPath
 
 def upload(options):
-    request = urllib2.Request('http://melpon.org/wandbox/api/compile.json')
-    request.add_header('Content-Type', 'application/json')
-    response = urllib2.urlopen(request, json.dumps(options))
-    return json.loads(response.read())
+#    request_blah = urllib.request.Request('https://
+
+    request = urllib.request.Request('https://melpon.org/wandbox/api/compile.json', method='POST')
+    json_bytes = json.dumps(options).encode('utf-8')
+    request.add_header('Content-Type', 'application/json; charset=utf-8')
+    request.add_header('Content-Length', len(json_bytes))
+    response = urllib.request.urlopen(request, json_bytes)
+    return json.loads(response.read().decode('utf-8'))
 
 main_file = '''
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
@@ -34,14 +40,14 @@ def uploadFiles():
         'code': main_file,
         'codes': [{
             'file': 'catch.hpp',
-            'code': open(os.path.join(catchPath, 'single_include', 'catch.hpp')).read()
+            'code': open(os.path.join(catchPath, 'single_include', 'catch2', 'catch.hpp')).read()
         }],
         'options': 'c++11,cpp-no-pedantic,boost-nothing',
         'compiler-option-raw': '-DCATCH_CONFIG_FAST_COMPILE',
         'save': True
     })
 
-    if 'status' in response and not 'compiler_error' in response:
+    if 'url' in response and 'compiler_error' not in response:
         return True, response['url']
     else:
         return False, response

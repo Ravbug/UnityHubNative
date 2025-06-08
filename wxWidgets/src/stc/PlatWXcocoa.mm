@@ -90,7 +90,7 @@
 - (void)drawRect:(NSRect)dirtyRect
 {
     static_cast<wxWidgetCocoaImpl*>(m_wxWin->GetPeer())->
-        drawRect(&dirtyRect, self, NULL);
+        drawRect(&dirtyRect, self, nil);
 }
 
 @end
@@ -104,7 +104,7 @@ WX_NSWindow CreateFloatingWindow(wxWindow* wxWin)
                                               styleMask: NSBorderlessWindowMask
                                                 backing: NSBackingStoreBuffered
                                                   defer: NO];
-    [w setLevel:NSFloatingWindowLevel];
+    [w setLevel:NSPopUpMenuWindowLevel];
     [w setHasShadow:YES];
     [w setContentView:[[wxSTCPopupBaseView alloc] initWithwxWin:wxWin]];
 

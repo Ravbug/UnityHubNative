@@ -29,7 +29,9 @@
 #include "wx/wxhtml.h"
 #include "wx/wfstream.h"
 #include "wx/infobar.h"
+#include "wx/numformatter.h"
 
+#include <limits>
 
 // default font size of normal text (HTML font size 0) for printing, in points:
 #define DEFAULT_PRINT_FONT_SIZE   12
@@ -64,9 +66,9 @@
 
 wxHtmlDCRenderer::wxHtmlDCRenderer() : wxObject()
 {
-    m_DC = NULL;
+    m_DC = nullptr;
     m_Width = m_Height = 0;
-    m_Cells = NULL;
+    m_Cells = nullptr;
     m_ownsCells = false;
     m_Parser.SetFS(&m_FS);
     SetStandardFonts(DEFAULT_PRINT_FONT_SIZE);
@@ -180,7 +182,7 @@ void wxHtmlDCRenderer::Render(int x, int y, int from, int to)
 {
     wxCHECK_RET( m_DC, "SetDC() must be called before Render()" );
 
-    const int hght = to == INT_MAX ? m_Height : to - from;
+    const int hght = to == std::numeric_limits<int>::max() ? m_Height : to - from;
 
     wxHtmlRenderingInfo rinfo;
     wxDefaultHtmlRenderingStyle rstyle;
@@ -277,7 +279,7 @@ wxHtmlPrintout::CheckFit(const wxSize& pageArea, const wxSize& docArea) const
         wxMessageDialog
             dlg
             (
-                NULL,
+                nullptr,
                 wxString::Format
                 (
                  _("The document \"%s\" doesn't fit on the page "
@@ -405,11 +407,11 @@ void wxHtmlPrintout::GetPageInfo(int *minPage, int *maxPage, int *selPageFrom, i
 {
     *minPage = 1;
     if ( m_PageBreaks.empty() )
-        *maxPage = INT_MAX;
+        *maxPage = std::numeric_limits<int>::max();
     else
-        *maxPage = (signed)m_PageBreaks.size()-1;
+        *maxPage = wxSsize(m_PageBreaks)-1;
     *selPageFrom = 1;
-    *selPageTo = (signed)m_PageBreaks.size()-1;
+    *selPageTo = *maxPage;
 }
 
 
@@ -438,7 +440,7 @@ void wxHtmlPrintout::SetHtmlFile(const wxString& htmlfile)
     else
         ff = fs.OpenFile(htmlfile);
 
-    if (ff == NULL)
+    if (ff == nullptr)
     {
         wxLogError(htmlfile + _(": file does not exist!"));
         return;
@@ -557,24 +559,27 @@ void wxHtmlPrintout::RenderPage(wxDC *dc, int page)
 wxString wxHtmlPrintout::TranslateHeader(const wxString& instr, int page)
 {
     wxString r = instr;
-    wxString num;
 
-    num.Printf(wxT("%i"), page);
-    r.Replace(wxT("@PAGENUM@"), num);
+    r.Replace("@PAGENUM@",
+        wxNumberFormatter::ToString(page, 0,
+            wxNumberFormatter::Style::Style_WithThousandsSep));
 
-    num.Printf(wxT("%lu"), (unsigned long)(m_PageBreaks.size() - 1));
-    r.Replace(wxT("@PAGESCNT@"), num);
+    r.Replace("@PAGESCNT@",
+        wxNumberFormatter::ToString(m_PageBreaks.empty() ? 1 : m_PageBreaks.size() - 1, 0,
+            wxNumberFormatter::Style::Style_WithThousandsSep));
 
 #if wxUSE_DATETIME
     const wxDateTime now = wxDateTime::Now();
-    r.Replace(wxT("@DATE@"), now.FormatDate());
-    r.Replace(wxT("@TIME@"), now.FormatTime());
+    r.Replace("@DATE@", now.FormatDate());
+    r.Replace("@TIME@", now.FormatTime());
 #else
-    r.Replace(wxT("@DATE@"), wxEmptyString);
-    r.Replace(wxT("@TIME@"), wxEmptyString);
+    r.Replace("@DATE@", wxEmptyString);
+    r.Replace("@TIME@", wxEmptyString);
 #endif
 
-    r.Replace(wxT("@TITLE@"), GetTitle());
+    r.Replace("@USER@", wxGetUserName());
+
+    r.Replace("@TITLE@", GetTitle());
 
     return r;
 }
@@ -624,7 +629,7 @@ wxHtmlEasyPrinting::wxHtmlEasyPrinting(const wxString& name, wxWindow *parentWin
 {
     m_ParentWindow = parentWindow;
     m_Name = name;
-    m_PrintData = NULL;
+    m_PrintData = nullptr;
     m_PageSetupData = new wxPageSetupDialogData;
 
     m_PageSetupData->EnableMargins(true);
@@ -647,7 +652,7 @@ wxHtmlEasyPrinting::~wxHtmlEasyPrinting()
 
 wxPrintData *wxHtmlEasyPrinting::GetPrintData()
 {
-    if (m_PrintData == NULL)
+    if (m_PrintData == nullptr)
         m_PrintData = new wxPrintData();
     return m_PrintData;
 }
@@ -709,8 +714,9 @@ bool wxHtmlEasyPrinting::DoPreview(wxHtmlPrintout *printout1, wxHtmlPrintout *pr
     }
 
     wxPreviewFrame *frame = new wxPreviewFrame(preview, m_ParentWindow,
-                                               m_Name + _(" Preview"),
-                                               wxPoint(100, 100), wxSize(650, 500));
+                                wxString::Format(/* TRANSLATORS: %s may be a document title. */_("%s Preview"), m_Name),
+                                wxDefaultPosition,
+                                wxWindow::FromDIP(wxSize(650, 500), m_ParentWindow));
     frame->Centre(wxBOTH);
     frame->Initialize();
     frame->Show(true);
@@ -794,7 +800,7 @@ void wxHtmlEasyPrinting::SetFonts(const wxString& normal_face, const wxString& f
         for (int i = 0; i < 7; i++) m_FontsSizes[i] = sizes[i];
     }
     else
-        m_FontsSizes = NULL;
+        m_FontsSizes = nullptr;
 }
 
 void wxHtmlEasyPrinting::SetStandardFonts(int size,
@@ -841,8 +847,8 @@ class wxHtmlPrintingModule: public wxModule
     wxDECLARE_DYNAMIC_CLASS(wxHtmlPrintingModule);
 public:
     wxHtmlPrintingModule() : wxModule() {}
-    bool OnInit() wxOVERRIDE { return true; }
-    void OnExit() wxOVERRIDE { wxHtmlPrintout::CleanUpStatics(); }
+    bool OnInit() override { return true; }
+    void OnExit() override { wxHtmlPrintout::CleanUpStatics(); }
 };
 
 wxIMPLEMENT_DYNAMIC_CLASS(wxHtmlPrintingModule, wxModule);

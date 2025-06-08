@@ -28,12 +28,12 @@
 class WXDLLIMPEXP_CORE wxDropTarget: public wxDropTargetBase
 {
 public:
-    wxDropTarget(wxDataObject *dataObject = NULL );
+    wxDropTarget(wxDataObject *dataObject = nullptr );
 
-    virtual wxDragResult OnDragOver(wxCoord x, wxCoord y, wxDragResult def) wxOVERRIDE;
-    virtual bool OnDrop(wxCoord x, wxCoord y) wxOVERRIDE;
-    virtual wxDragResult OnData(wxCoord x, wxCoord y, wxDragResult def) wxOVERRIDE;
-    virtual bool GetData() wxOVERRIDE;
+    virtual wxDragResult OnDragOver(wxCoord x, wxCoord y, wxDragResult def) override;
+    virtual bool OnDrop(wxCoord x, wxCoord y) override;
+    virtual wxDragResult OnData(wxCoord x, wxCoord y, wxDragResult def) override;
+    virtual bool GetData() override;
 
     // Can only be called during OnXXX methods.
     wxDataFormat GetMatchingPair();
@@ -66,7 +66,7 @@ class WXDLLIMPEXP_CORE wxDropSource: public wxDropSourceBase
 {
 public:
     // constructor. set data later with SetData()
-    wxDropSource( wxWindow *win = NULL,
+    wxDropSource( wxWindow *win = nullptr,
                   const wxIcon &copy = wxNullIcon,
                   const wxIcon &move = wxNullIcon,
                   const wxIcon &none = wxNullIcon);
@@ -92,27 +92,24 @@ public:
     }
 
     // start drag action
-    virtual wxDragResult DoDragDrop(int flags = wxDrag_CopyOnly) wxOVERRIDE;
+    virtual wxDragResult DoDragDrop(int flags = wxDrag_CopyOnly) override;
 
+    // implementation
+
+    GdkDragContext* m_dragContext;
+    wxDragResult m_retValue;
+    bool m_waiting;
+
+private:
     void PrepareIcon( int action, GdkDragContext *context );
 
     GtkWidget       *m_widget;
     GtkWidget       *m_iconWindow;
-    GdkDragContext  *m_dragContext;
-    wxWindow        *m_window;
-
-    wxDragResult     m_retValue;
     wxIcon           m_iconCopy,
                      m_iconMove,
                      m_iconNone;
 
-    bool             m_waiting;
-
-private:
-    // common part of both ctors
-    void SetIcons(const wxIcon& copy,
-                  const wxIcon& move,
-                  const wxIcon& none);
+    void Init(wxWindow* win);
 
     // GTK implementation
     void GTKConnectDragSignals();

@@ -48,6 +48,13 @@ enum
     current UI locale or wxString::FromCDouble() and wxString::ToCDouble()
     functions for doing it always using period as decimal separator.
 
+    To set the C runtime functions (e.g., @c strtod()) to use the user's locale
+    consistently on all platforms, a wxLocale object should be created and
+    initialized with @c wxLANGUAGE_DEFAULT. This is not recommended due to
+    various side effects, but can be done for applications which rely on these
+    functions. (Note that this should be done in conjunction with calling
+    wxUILocale::UseDefault().)
+
     Localized applications should call wxUILocale::UseDefault() on startup to
     explicitly indicate that they opt-in using the current UI locale, even if
     this results in changing the global C locale, as is the case in wxGTK. Note
@@ -61,7 +68,7 @@ enum
     listed as a supported language in the application @c Info.plist file under
     @c CFBundleLocalizations key.
 
-    Unlike wxLocale class, this class doesn't affect the translations used by
+    Unlike the wxLocale class, this class doesn't affect the translations used by
     the application, see wxTranslations for doing this.
 
     @library{wxbase}
@@ -98,6 +105,41 @@ public:
         format.
      */
     static const wxUILocale& GetCurrent();
+
+    /**
+        Configure the UI to use the locale corresponding to the given locale name tag.
+
+        If localized applications use this function instead of the recommended
+        function wxUILocale::UseDefault(), it should be called as early as possible
+        during the program startup, e.g. in the very beginning of the overridden
+        wxApp::OnInit().
+
+        @param localeName
+            The locale name tag for which the corresponding locale should be created.
+            Example: "de_DE.UTF-8" - German locale name in POSIX notation.
+            See wxLocaleIdent::FromTag() for more information about the syntax of
+            the @a locale tag string.
+
+        Note that under most Unix systems (but not macOS) this function changes
+        the C locale to the locale specified by the environment variables and
+        so affects the results of calling C functions such as @c sprintf() etc
+        which can use comma, rather than period, as decimal separator. The
+        wxString::ToCDouble() and wxString::FromCDouble() functions can be used
+        for parsing and formatting floating point numbers using period as
+        decimal separator independently of the current locale.
+
+        @return @true on success or @false if the locale with the given name
+        couldn't be set
+
+        @note If an application tries to configure the UI to use a locale other
+              than the default user locale of the system, it can't be guaranteed
+              that really @em all controls will obey the locale setting. For
+              example, under Windows the calendar control will always use the
+              default user locale, no matter which locale was set by this function.
+              Under MacOS several standard dialogs like the file selection dialog
+              will use at least partially the default user locale.
+     */
+    static bool UseLocaleName(const wxString& localeName);
 
     /**
         Creates the local corresponding to the given language tag.
@@ -198,6 +240,43 @@ public:
     wxString GetLocalizedName(wxLocaleName name, wxLocaleForm form) const;
 
     /**
+        Gets the full (default), abbreviated or shortest name of the given month.
+
+        This function returns the name in the current locale, use
+        wxDateTime::GetEnglishMonthName() to get the untranslated name if necessary.
+
+        @param month
+            One of wxDateTime::Jan, ..., wxDateTime::Dec values.
+        @param form
+            Name form consisting of the flags (Name_Full, Name_Abbr, or Name_Shortest)
+            and the context (Context_Formatting or Context_Standalone)
+            The default is Name_Full in Context_Formatting.
+            Example: wxNameForm().Abbr().Standalone()
+
+        @see GetWeekDayName()
+        @since 3.3.0
+    */
+    wxString GetMonthName(wxDateTime::Month month, wxDateTime::NameForm form = {});
+
+    /**
+        Gets the full (default), abbreviated or shortest name of the given week day.
+
+        This function returns the name in the current locale, use
+        wxDateTime::GetEnglishWeekDayName() to get the untranslated name if necessary.
+
+        @param weekday
+            One of wxDateTime::Sun, ..., wxDateTime::Sat values.
+        @param form
+            Name form consisting of the flags (Name_Full, Name_Abbr, or Name_Shortest)
+            and the context (Context_Formatting or Context_Standalone)
+            The default is Name_Full in Context_Formatting.
+            Example: wxNameForm().Abbr().Standalone()
+
+        @see GetMonthName()
+    */
+    wxString GetWeekDayName(wxDateTime::WeekDay weekday, wxDateTime::NameForm form = {});
+
+    /**
         Query the layout direction of the current locale.
 
         @return
@@ -218,7 +297,6 @@ public:
 
     /**
         Adds custom, user-defined language to the database of known languages.
-        This database is used in conjunction with the first form of Init().
     */
     static void AddLanguage(const wxLanguageInfo& info);
 
@@ -263,6 +341,13 @@ public:
     static const wxLanguageInfo* GetLanguageInfo(int lang);
 
     /**
+        Tries to retrieve a list of the user's (or OS's) preferred UI languages.
+
+        @return An empty list if language-guessing algorithm failed.
+    */
+    static wxVector<wxString> GetPreferredUILanguages();
+
+    /**
         Returns English name of the given language or empty string if this
         language is unknown.
 
@@ -271,8 +356,8 @@ public:
     static wxString GetLanguageName(int lang);
 
     /**
-        Returns canonical name (see GetCanonicalName()) of the given language
-        or empty string if this language is unknown.
+        Returns canonical name of the given language or empty string if this
+        language is unknown.
 
         See GetLanguageInfo() for a remark about special meaning of @c wxLANGUAGE_DEFAULT.
     */
@@ -290,7 +375,7 @@ public:
               by the operating system (for example, Windows 7 and below), the user's
               default @em locale will be used.
 
-        @see wxTranslations::GetBestTranslation().
+        @see wxTranslations::GetBestTranslation(), GetSystemLocaleId().
     */
     static int GetSystemLanguage();
 
@@ -298,7 +383,8 @@ public:
         Tries to detect the user's default locale setting.
 
         Returns the ::wxLanguage value or @c wxLANGUAGE_UNKNOWN if the locale-guessing
-        algorithm failed.
+        algorithm failed or if the locale can't be described using solely a
+        language constant. Consider using GetSystemLocaleId() in this case.
 
         @note This function works with @em locales and returns the user's default
               locale. This may be, and usually is, the same as their preferred UI
@@ -309,7 +395,20 @@ public:
 
         @see wxTranslations::GetBestTranslation().
     */
-    static int GetSystemLocale();};
+    static int GetSystemLocale();
+
+    /**
+        Return the description of the default system locale.
+
+        This function can always represent the system locale, even when using
+        a language and region pair that doesn't correspond to any of the
+        predefined ::wxLanguage constants, such as e.g. "fr-DE", which means
+        French language used with German locale settings.
+
+        @since 3.2.2
+     */
+    static wxLocaleIdent GetSystemLocaleId();
+};
 
 /**
     Return the format to use for formatting user-visible dates.
@@ -340,7 +439,7 @@ wxString wxGetUIDateFormat();
       Region(), Script() and other methods.
 
     The first method is useful for interoperating with the other software using
-    BCP 47 language tags, while the second one may may result in more readable
+    BCP 47 language tags, while the second one may result in more readable
     code and allows to specify Unix-specific locale description parts such as
     charset and modifier that are not part of the BCP 47 strings.
 

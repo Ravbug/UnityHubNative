@@ -2,7 +2,7 @@ Frank,
 
 I attached a file that uses RGBA interface (tif_getimage.c) to read a tiff
 file and convert to a DIB.  It's advantage is that it is easy to read *any*
-tiff file suported by libtiff and easily convert it to a DIB.  The disadvantage
+tiff file supported by libtiff and easily convert it to a DIB.  The disadvantage
 is that bilevel (B&W) bitmaps (and all other non-rgba images) are also 
 converted to RGBA, thus taking up 32x as much memory as needed (4 bytes per 
 pixel, rather than 1 bit).  I read tiff files, but don't need to

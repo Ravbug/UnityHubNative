@@ -13,6 +13,14 @@
 
 #include "wx/stattext.h"
 
+#ifndef WX_PRECOMP
+    #include "wx/dcclient.h"
+#endif
+
+#if wxUSE_MARKUP
+    #include "wx/generic/private/markuptext.h"
+#endif // wxUSE_MARKUP
+
 #include "wx/gtk/private.h"
 
 //-----------------------------------------------------------------------------
@@ -49,7 +57,7 @@ bool wxStaticText::Create(wxWindow *parent,
         return false;
     }
 
-    m_widget = gtk_label_new(NULL);
+    m_widget = gtk_label_new(nullptr);
     g_object_ref(m_widget);
 
     GtkJustification justify;
@@ -108,7 +116,7 @@ bool wxStaticText::Create(wxWindow *parent,
     // GTK_JUSTIFY_LEFT is 0, RIGHT 1 and CENTER 2
     static const float labelAlignments[] = { 0.0, 1.0, 0.5 };
 #ifdef __WXGTK4__
-    g_object_set(m_widget, "xalign", labelAlignments[justify], NULL);
+    g_object_set(m_widget, "xalign", labelAlignments[justify], nullptr);
 #else
     wxGCC_WARNING_SUPPRESS(deprecated-declarations)
     gtk_misc_set_alignment(GTK_MISC(m_widget), labelAlignments[justify], 0.0);
@@ -135,7 +143,7 @@ bool wxStaticText::Create(wxWindow *parent,
 
 void wxStaticText::GTKDoSetLabel(GTKLabelSetter setter, const wxString& label)
 {
-    wxCHECK_RET( m_widget != NULL, wxT("invalid static text") );
+    wxCHECK_RET( m_widget != nullptr, wxT("invalid static text") );
 
     (this->*setter)(GTK_LABEL(m_widget), label);
 
@@ -177,6 +185,14 @@ bool wxStaticText::SetFont( const wxFont &font )
     if ( !wxControl::SetFont(font) )
         return false;
 
+    if ( !IsShownOnScreen() )
+    {
+        // Setting the font of a hidden window doesn't update GTK style cache,
+        // see #16088, and the size computed by GTK will be wrong, so we will
+        // need to compute it ourselves.
+        m_computeOurOwnBestSize = true;
+    }
+
     const bool isUnderlined = GetFont().GetUnderlined();
     const bool isStrickenThrough = GetFont().GetStrikethrough();
 
@@ -209,7 +225,7 @@ bool wxStaticText::SetFont( const wxFont &font )
         else // No special attributes any more.
         {
             // Just remove any attributes we had set.
-            gtk_label_set_attributes(GTK_LABEL(m_widget), NULL);
+            gtk_label_set_attributes(GTK_LABEL(m_widget), nullptr);
         }
 
         // The underlines for mnemonics are incompatible with using attributes
@@ -227,32 +243,58 @@ wxSize wxStaticText::DoGetBestSize() const
     // Do not return any arbitrary default value...
     wxASSERT_MSG( m_widget, wxT("wxStaticText::DoGetBestSize called before creation") );
 
-    // GetBestSize is supposed to return unwrapped size but calling
-    // gtk_label_set_line_wrap() from here is a bad idea as it queues another
-    // size request by calling gtk_widget_queue_resize() and we end up in
-    // infinite loop sometimes (notably when the control is in a toolbar)
-    // With GTK3 however, there is no simple alternative, and the sizing loop
-    // no longer seems to occur.
-#ifdef __WXGTK3__
-    gtk_label_set_line_wrap(GTK_LABEL(m_widget), false);
-#else
-    GTK_LABEL(m_widget)->wrap = FALSE;
+    wxSize size;
+    if ( m_computeOurOwnBestSize )
+    {
+        // GTK style cache may not be up to date, so we can't trust the results
+        // of wxControl::DoGetBestSize() and need to compute the best size
+        // ourselves here.
+        wxInfoDC dc(wxConstCast(this, wxStaticText));
 
-    // Reset the ellipsize mode while computing the best size, otherwise it's
-    // going to be too small as the control knows that it can be shrunk to the
-    // bare minimum and just hide most of the text replacing it with ellipsis.
-    // This is especially important because we can enable ellipsization
-    // implicitly for GTK+ 2, see the code dealing with alignment in the ctor.
-    const PangoEllipsizeMode ellipsizeMode = gtk_label_get_ellipsize(GTK_LABEL(m_widget));
-    gtk_label_set_ellipsize(GTK_LABEL(m_widget), PANGO_ELLIPSIZE_NONE);
-#endif
-    wxSize size = wxStaticTextBase::DoGetBestSize();
+        const wxString
+            label = wxString::FromUTF8(gtk_label_get_label(GTK_LABEL(m_widget)));
+
+#if wxUSE_MARKUP
+        if ( gtk_label_get_use_markup(GTK_LABEL(m_widget)) )
+        {
+            wxMarkupText markupText(label);
+            size = markupText.Measure(dc);
+        }
+        else
+#endif // wxUSE_MARKUP
+        {
+            size = dc.GetMultiLineTextExtent(label);
+        }
+    }
+    else
+    {
+        // GetBestSize is supposed to return unwrapped size but calling
+        // gtk_label_set_line_wrap() from here is a bad idea as it queues another
+        // size request by calling gtk_widget_queue_resize() and we end up in
+        // infinite loop sometimes (notably when the control is in a toolbar)
+        // With GTK3 however, there is no simple alternative, and the sizing loop
+        // no longer seems to occur.
 #ifdef __WXGTK3__
-    gtk_label_set_line_wrap(GTK_LABEL(m_widget), true);
+        gtk_label_set_line_wrap(GTK_LABEL(m_widget), false);
 #else
-    gtk_label_set_ellipsize(GTK_LABEL(m_widget), ellipsizeMode);
-    GTK_LABEL(m_widget)->wrap = TRUE; // restore old value
+        GTK_LABEL(m_widget)->wrap = FALSE;
+
+        // Reset the ellipsize mode while computing the best size, otherwise it's
+        // going to be too small as the control knows that it can be shrunk to the
+        // bare minimum and just hide most of the text replacing it with ellipsis.
+        // This is especially important because we can enable ellipsization
+        // implicitly for GTK+ 2, see the code dealing with alignment in the ctor.
+        const PangoEllipsizeMode ellipsizeMode = gtk_label_get_ellipsize(GTK_LABEL(m_widget));
+        gtk_label_set_ellipsize(GTK_LABEL(m_widget), PANGO_ELLIPSIZE_NONE);
 #endif
+        size = wxStaticTextBase::DoGetBestSize();
+#ifdef __WXGTK3__
+        gtk_label_set_line_wrap(GTK_LABEL(m_widget), true);
+#else
+        gtk_label_set_ellipsize(GTK_LABEL(m_widget), ellipsizeMode);
+        GTK_LABEL(m_widget)->wrap = TRUE; // restore old value
+#endif
+    }
 
     // Adding 1 to width to workaround GTK sometimes wrapping the text needlessly
     size.x++;

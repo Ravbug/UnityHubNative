@@ -14,6 +14,7 @@
 #include "wx/qt/private/converter.h"
 #include "wx/qt/private/utils.h"
 
+#include <QtCore/QRect>
 #include <QtGui/QRegion>
 #include <QtGui/QBitmap>
 #include <QtGui/QPainter>
@@ -21,12 +22,30 @@
 class wxRegionRefData: public wxGDIRefData
 {
 public:
-    wxRegionRefData()
-    {
-    }
+    wxRegionRefData() = default;
 
-    wxRegionRefData( QRect r ) : m_qtRegion( r )
+    wxRegionRefData( wxCoord x, wxCoord y, wxCoord w, wxCoord h )
     {
+        // Rectangle needs to be defined in the canonical form,
+        // with (x,y) pointing to the top-left corner of the box
+        // and with non-negative width and height.
+        // Notice that we would simply use QRect::normalized() here,
+        // but we don't, because the normalized rectangle is an off-by-one
+        // (width or height) for some inputs! which wx doesn't expect.
+
+        if ( w < 0 )
+        {
+            w = -w;
+            x -= (w - 1);
+        }
+
+        if ( h < 0 )
+        {
+            h = -h;
+            y -= (h - 1);
+        }
+
+        m_qtRegion = QRegion( QRect{x, y, w, h} );
     }
 
     wxRegionRefData( QBitmap b ) : m_qtRegion ( b )
@@ -57,44 +76,45 @@ wxIMPLEMENT_DYNAMIC_CLASS(wxRegion,wxGDIObject);
 
 wxRegion::wxRegion()
 {
-    m_refData = NULL;
+    m_refData = nullptr;
 }
 
 wxRegion::wxRegion(wxCoord x, wxCoord y, wxCoord w, wxCoord h)
 {
-    m_refData = new wxRegionRefData( QRect( x, y, w, h ) );
+    m_refData = new wxRegionRefData( x, y, w, h );
 }
 
 wxRegion::wxRegion(const wxPoint& topLeft, const wxPoint& bottomRight)
 {
-    m_refData = new wxRegionRefData( QRect( wxQtConvertPoint( topLeft ),
-                                           wxQtConvertPoint( bottomRight ) ) );
+    m_refData = new wxRegionRefData( topLeft.x,
+                                     topLeft.y,
+                                     bottomRight.x - topLeft.x,
+                                     bottomRight.y - topLeft.y );
 }
 
 wxRegion::wxRegion(const wxRect& rect)
 {
-    m_refData = new wxRegionRefData( wxQtConvertRect( rect ) );
+    m_refData = new wxRegionRefData( rect.x, rect.y, rect.width, rect.height );
 }
 
 wxRegion::wxRegion(size_t n, const wxPoint *points, wxPolygonFillMode fillStyle)
 {
-    QVector< QPoint > qtPoints;
-    for ( uint i = 0; i < n; i++)
+    QPolygon polygon;
+    for ( size_t i = 0; i < n; ++i )
     {
-        qtPoints << wxQtConvertPoint( points[i] );
+        polygon << wxQtConvertPoint( points[i] );
     }
-    QPolygon p( qtPoints );
 
     Qt::FillRule fillingRule = fillStyle == wxODDEVEN_RULE ? Qt::OddEvenFill : Qt::WindingFill;
-    m_refData = new wxRegionRefData( p, fillingRule );
+    m_refData = new wxRegionRefData( polygon, fillingRule );
 }
 
 wxRegion::wxRegion(const wxBitmap& bmp)
 {
-    if ( bmp.GetMask() != NULL )
+    if ( bmp.GetMask() != nullptr )
         m_refData = new wxRegionRefData( *bmp.GetMask()->GetHandle() );
     else
-        m_refData = new wxRegionRefData( QRect( 0, 0, bmp.GetWidth(), bmp.GetHeight() ) );
+        m_refData = new wxRegionRefData( 0, 0, bmp.GetWidth(), bmp.GetHeight() );
 }
 
 wxRegion::wxRegion(const wxBitmap& bmp, const wxColour& transp, int tolerance)
@@ -165,7 +185,7 @@ wxGDIRefData *wxRegion::CreateGDIRefData() const
 
 wxGDIRefData *wxRegion::CloneGDIRefData(const wxGDIRefData *data) const
 {
-    return new wxRegionRefData(*(wxRegionRefData *)data);
+    return new wxRegionRefData(*static_cast<const wxRegionRefData*>(data));
 }
 
 bool wxRegion::DoIsEqual(const wxRegion& region) const
@@ -178,7 +198,7 @@ bool wxRegion::DoIsEqual(const wxRegion& region) const
 
 bool wxRegion::DoGetBox(wxCoord& x, wxCoord& y, wxCoord& w, wxCoord& h) const
 {
-    if ( m_refData == NULL )
+    if ( m_refData == nullptr )
     {
         x =
         y =
@@ -302,9 +322,9 @@ bool wxRegion::DoXor(const wxRegion& region)
 
 bool wxRegion::DoUnionWithRect(const wxRect& rect)
 {
-    if ( m_refData == NULL )
+    if ( m_refData == nullptr )
     {
-        m_refData = new wxRegionRefData(wxQtConvertRect(rect));
+        m_refData = new wxRegionRefData(rect.x, rect.y, rect.width, rect.height);
         return true;
     }
 
@@ -328,33 +348,28 @@ wxIMPLEMENT_DYNAMIC_CLASS(wxRegionIterator,wxObject);
 
 wxRegionIterator::wxRegionIterator()
 {
-    m_qtRects = NULL;
-    m_pos = 0;
 }
 
 wxRegionIterator::wxRegionIterator(const wxRegion& region)
 {
-    m_qtRects = new QVector< QRect >( region.GetHandle().rects() );
-    m_pos = 0;
+    Reset(region);
 }
 
 wxRegionIterator::wxRegionIterator(const wxRegionIterator& ri)
+    : wxObject(ri)
 {
-    m_qtRects = new QVector< QRect >( *ri.m_qtRects );
-    m_pos = ri.m_pos;
+    *this = ri;
 }
 
 wxRegionIterator::~wxRegionIterator()
 {
-    delete m_qtRects;
 }
 
 wxRegionIterator& wxRegionIterator::operator=(const wxRegionIterator& ri)
 {
     if (this != &ri)
     {
-        delete m_qtRects;
-        m_qtRects = new QVector< QRect >( *ri.m_qtRects );
+        m_qtRects = ri.m_qtRects;
         m_pos = ri.m_pos;
     }
     return *this;
@@ -367,17 +382,18 @@ void wxRegionIterator::Reset()
 
 void wxRegionIterator::Reset(const wxRegion& region)
 {
-    delete m_qtRects;
-
-    m_qtRects = new QVector< QRect >( region.GetHandle().rects() );
     m_pos = 0;
+    m_qtRects.clear();
+
+    auto qtRegion = region.GetHandle();
+    m_qtRects.reserve(qtRegion.rectCount());
+    for (const auto& r : qtRegion)
+        m_qtRects.push_back(r);
 }
 
 bool wxRegionIterator::HaveRects() const
 {
-    wxCHECK_MSG( m_qtRects != NULL, false, "Invalid iterator" );
-
-    return m_pos < m_qtRects->size();
+    return m_pos < m_qtRects.size();
 }
 
 wxRegionIterator::operator bool () const
@@ -387,7 +403,7 @@ wxRegionIterator::operator bool () const
 
 wxRegionIterator& wxRegionIterator::operator ++ ()
 {
-    m_pos++;
+    ++m_pos;
     return *this;
 }
 
@@ -400,18 +416,16 @@ wxRegionIterator wxRegionIterator::operator ++ (int)
 
 wxCoord wxRegionIterator::GetX() const
 {
-    wxCHECK_MSG( m_qtRects != NULL, 0, "Invalid iterator" );
-    wxCHECK_MSG( m_pos < m_qtRects->size(), 0, "Invalid position" );
+    wxCHECK_MSG( m_pos < m_qtRects.size(), 0, "Invalid position" );
 
-    return m_qtRects->at( m_pos ).x();
+    return m_qtRects[m_pos].x();
 }
 
 wxCoord wxRegionIterator::GetY() const
 {
-    wxCHECK_MSG( m_qtRects != NULL, 0, "Invalid iterator" );
-    wxCHECK_MSG( m_pos < m_qtRects->size(), 0, "Invalid position" );
+    wxCHECK_MSG( m_pos < m_qtRects.size(), 0, "Invalid position" );
 
-    return m_qtRects->at( m_pos ).y();
+    return m_qtRects[m_pos].y();
 }
 
 wxCoord wxRegionIterator::GetW() const
@@ -421,10 +435,9 @@ wxCoord wxRegionIterator::GetW() const
 
 wxCoord wxRegionIterator::GetWidth() const
 {
-    wxCHECK_MSG( m_qtRects != NULL, 0, "Invalid iterator" );
-    wxCHECK_MSG( m_pos < m_qtRects->size(), 0, "Invalid position" );
+    wxCHECK_MSG( m_pos < m_qtRects.size(), 0, "Invalid position" );
 
-    return m_qtRects->at( m_pos ).width();
+    return m_qtRects[m_pos].width();
 }
 
 wxCoord wxRegionIterator::GetH() const
@@ -434,17 +447,15 @@ wxCoord wxRegionIterator::GetH() const
 
 wxCoord wxRegionIterator::GetHeight() const
 {
-    wxCHECK_MSG( m_qtRects != NULL, 0, "Invalid iterator" );
-    wxCHECK_MSG( m_pos < m_qtRects->size(), 0, "Invalid position" );
+    wxCHECK_MSG( m_pos < m_qtRects.size(), 0, "Invalid position" );
 
-    return m_qtRects->at( m_pos ).height();
+    return m_qtRects[m_pos].height();
 }
 
 wxRect wxRegionIterator::GetRect() const
 {
-    wxCHECK_MSG( m_qtRects != NULL, wxRect(), "Invalid iterator" );
-    wxCHECK_MSG( m_pos < m_qtRects->size(), wxRect(), "Invalid position" );
+    wxCHECK_MSG( m_pos < m_qtRects.size(), wxRect(), "Invalid position" );
 
-    return wxQtConvertRect( m_qtRects->at( m_pos ) );
+    return wxQtConvertRect( m_qtRects[m_pos] );
 }
 

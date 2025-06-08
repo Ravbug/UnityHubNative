@@ -28,8 +28,9 @@ LIBTIFF = $(top_builddir)/libtiff/libtiff.la
 
 EXTRA_DIST = \
 	CMakeLists.txt \
-	Makefile.vc
+	tif_tools_versioninfo.rc
 
+if TIFF_TOOLS
 bin_PROGRAMS = \
 	fax2ps \
 	fax2tiff \
@@ -52,13 +53,16 @@ bin_PROGRAMS = \
 if HAVE_OPENGL
 bin_PROGRAMS += tiffgt
 endif
+endif
 
 EXTRA_PROGRAMS = rgb2ycbcr thumbnail
 
 # Executable programs which need to be built in order to support tests
+if TIFF_TESTS
 check_PROGRAMS = \
 	rgb2ycbcr \
 	thumbnail
+endif
 
 if HAVE_RPATH
 AM_LDFLAGS = $(LIBDIR)
@@ -128,7 +132,7 @@ tiffgt_SOURCES = tiffgt.c
 tiffgt_CFLAGS = $(CFLAGS) $(GLUT_CFLAGS) $(AM_CFLAGS)
 tiffgt_LDADD = $(LIBTIFF) $(LIBPORT) $(X_LIBS) $(GLUT_LIBS)
 
-AM_CPPFLAGS = -I$(top_srcdir)/libtiff
+AM_CPPFLAGS = -I$(top_srcdir)/libtiff -I$(top_srcdir)/port
 
 echo:
 	(echo $(CFLAGS))

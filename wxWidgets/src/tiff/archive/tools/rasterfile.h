@@ -3,31 +3,32 @@
 /*
  * Description of header for files containing raster images
  */
-struct rasterfile {
-	char	ras_magic[4];		/* magic number */
-	int32	ras_width;		/* width (pixels) of image */
-	int32	ras_height;		/* height (pixels) of image */
-	int32	ras_depth;		/* depth (1, 8, or 24 bits) of pixel */
-	int32	ras_length;		/* length (bytes) of image */
-	int32	ras_type;		/* type of file; see RT_* below */
-	int32	ras_maptype;		/* type of colormap; see RMT_* below */
-	int32	ras_maplength;		/* length (bytes) of following map */
-	/* color map follows for ras_maplength bytes, followed by image */
+struct rasterfile
+{
+    char ras_magic[4];     /* magic number */
+    int32_t ras_width;     /* width (pixels) of image */
+    int32_t ras_height;    /* height (pixels) of image */
+    int32_t ras_depth;     /* depth (1, 8, or 24 bits) of pixel */
+    int32_t ras_length;    /* length (bytes) of image */
+    int32_t ras_type;      /* type of file; see RT_* below */
+    int32_t ras_maptype;   /* type of colormap; see RMT_* below */
+    int32_t ras_maplength; /* length (bytes) of following map */
+    /* color map follows for ras_maplength bytes, followed by image */
 };
-#define	RAS_MAGIC	"\x59\xa6\x6a\x95"
-#define	RAS_MAGIC_INV	"\x95\x6a\xa6\x59"
+#define RAS_MAGIC "\x59\xa6\x6a\x95"
+#define RAS_MAGIC_INV "\x95\x6a\xa6\x59"
 
-	/* Sun supported ras_type's */
-#define RT_OLD		0	/* Raw pixrect image in 68000 byte order */
-#define RT_STANDARD	1	/* Raw pixrect image in 68000 byte order */
-#define RT_BYTE_ENCODED	2	/* Run-length compression of bytes */
-#define RT_EXPERIMENTAL 0xffff	/* Reserved for testing */
+/* Sun supported ras_type's */
+#define RT_OLD 0               /* Raw pixrect image in 68000 byte order */
+#define RT_STANDARD 1          /* Raw pixrect image in 68000 byte order */
+#define RT_BYTE_ENCODED 2      /* Run-length compression of bytes */
+#define RT_EXPERIMENTAL 0xffff /* Reserved for testing */
 
-	/* Sun registered ras_maptype's */
-#define RMT_RAW		2
-	/* Sun supported ras_maptype's */
-#define RMT_NONE	0	/* ras_maplength is expected to be 0 */
-#define RMT_EQUAL_RGB	1	/* red[ras_maplength/3],green[],blue[] */
+/* Sun registered ras_maptype's */
+#define RMT_RAW 2
+/* Sun supported ras_maptype's */
+#define RMT_NONE 0      /* ras_maplength is expected to be 0 */
+#define RMT_EQUAL_RGB 1 /* red[ras_maplength/3],green[],blue[] */
 
 /*
  * NOTES:

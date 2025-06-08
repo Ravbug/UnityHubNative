@@ -8,18 +8,28 @@
 #ifndef TWOBLUECUBES_CATCH_DEFAULT_MAIN_HPP_INCLUDED
 #define TWOBLUECUBES_CATCH_DEFAULT_MAIN_HPP_INCLUDED
 
+#include "catch_session.h"
+#include "catch_platform.h"
+
 #ifndef __OBJC__
 
-#if defined(WIN32) && defined(_UNICODE) && !defined(DO_NOT_USE_WMAIN)
-// Standard C/C++ Win32 Unicode wmain entry point
-extern "C" int wmain (int argc, wchar_t * argv[], wchar_t * []) {
+#ifndef CATCH_INTERNAL_CDECL
+#ifdef _MSC_VER
+#define CATCH_INTERNAL_CDECL __cdecl
 #else
-// Standard C/C++ main entry point
-int main (int argc, char * argv[]) {
+#define CATCH_INTERNAL_CDECL
+#endif
 #endif
 
-    int result = Catch::Session().run( argc, argv );
-    return ( result < 0xff ? result : 0xff );
+#if defined(CATCH_CONFIG_WCHAR) && defined(CATCH_PLATFORM_WINDOWS) && defined(_UNICODE) && !defined(DO_NOT_USE_WMAIN)
+// Standard C/C++ Win32 Unicode wmain entry point
+extern "C" int CATCH_INTERNAL_CDECL wmain (int argc, wchar_t * argv[], wchar_t * []) {
+#else
+// Standard C/C++ main entry point
+int CATCH_INTERNAL_CDECL main (int argc, char * argv[]) {
+#endif
+
+    return Catch::Session().run( argc, argv );
 }
 
 #else // __OBJC__
@@ -31,13 +41,13 @@ int main (int argc, char * const argv[]) {
 #endif
 
     Catch::registerTestMethods();
-    int result = Catch::Session().run( argc, (char* const*)argv );
+    int result = Catch::Session().run( argc, (char**)argv );
 
 #if !CATCH_ARC_ENABLED
     [pool drain];
 #endif
 
-    return ( result < 0xff ? result : 0xff );
+    return result;
 }
 
 #endif // __OBJC__

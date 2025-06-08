@@ -127,12 +127,14 @@ public:
 
         @since 2.9.5
      */
-    virtual void ScheduleExit(int rc = 0) = 0;
+    void ScheduleExit(int rc = 0);
 
     /**
         Return true if any events are available.
 
         If this method returns @true, calling Dispatch() will not block.
+
+        @note This function always returns @false under wxQt since 3.3.0
      */
     virtual bool Pending() const = 0;
 
@@ -146,6 +148,14 @@ public:
         @code
         while (evtloop->Pending())
             evtloop->Dispatch();
+        @endcode
+
+        Notice that since wxWidgets 3.3.0, Pending() always returns false under wxQt.
+        Therefore, the above code should be replaced with the following instead:
+
+        @code
+        while (evtloop->QtDispatch())
+            ;
         @endcode
 
         @return @false if the event loop should stop and @true otherwise.

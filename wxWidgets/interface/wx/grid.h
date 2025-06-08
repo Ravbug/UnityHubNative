@@ -668,7 +668,7 @@ public:
         Show or hide the edit control, use the specified attributes to set
         colours/fonts for it.
     */
-    virtual void Show(bool show, wxGridCellAttr* attr = NULL);
+    virtual void Show(bool show, wxGridCellAttr* attr = nullptr);
 
     /**
         If the editor is enabled by clicking on the cell, this method will be
@@ -684,13 +684,13 @@ public:
 
     /**
        Return @true to allow the given key to start editing: the base class
-       version only checks that the event has no modifiers. 
+       version only checks that the event has no modifiers.
 
        If the key is F2 (special), editing will always start and this
        method will not be called at all (but StartingKey() will)
     */
     virtual bool IsAcceptedKey(wxKeyEvent& event);
-    
+
 
     /**
        Returns the value currently in the editor control.
@@ -905,7 +905,7 @@ public:
             array.
     */
     wxGridCellChoiceEditor(size_t count = 0,
-                           const wxString choices[] = NULL,
+                           const wxString choices[] = nullptr,
                            bool allowOthers = false);
 
     /**
@@ -1246,7 +1246,7 @@ public:
     /**
         Default constructor.
     */
-    explicit wxGridCellAttr(wxGridCellAttr* attrDefault = NULL);
+    explicit wxGridCellAttr(wxGridCellAttr* attrDefault = nullptr);
 
     /**
         Constructor specifying some of the often used attributes.
@@ -1277,10 +1277,10 @@ public:
         this function, use GetNonDefaultAlignment() if this is not desirable.
 
         @param hAlign
-            Horizontal alignment is returned here if this argument is non-@NULL.
+            Horizontal alignment is returned here if this argument is non-null.
             It is one of wxALIGN_LEFT, wxALIGN_CENTRE or wxALIGN_RIGHT.
         @param vAlign
-            Vertical alignment is returned here if this argument is non-@NULL.
+            Vertical alignment is returned here if this argument is non-null.
             It is one of wxALIGN_TOP, wxALIGN_CENTRE or wxALIGN_BOTTOM.
     */
     void GetAlignment(int* hAlign, int* vAlign) const;
@@ -1737,7 +1737,7 @@ public:
         the cell attribute having the highest precedence.
 
         Notice that the caller must call DecRef() on the returned pointer if it
-        is non-@NULL. GetAttrPtr() method can be used to do this automatically.
+        is non-null. GetAttrPtr() method can be used to do this automatically.
 
         @param row
             The row of the cell.
@@ -1955,7 +1955,7 @@ public:
         Default constructor initializes the object to invalid state.
 
         Initially the row and column are both invalid (-1) and so operator!()
-        for an uninitialized wxGridCellCoords returns false.
+        for an uninitialized wxGridCellCoords returns @false.
      */
     wxGridCellCoords();
 
@@ -1990,6 +1990,13 @@ public:
     void Set(int row, int col);
 
     /**
+        Returns @c true if neither the row nor column are invalid (-1).
+
+        @since 3.3.0
+     */
+    bool IsFullySpecified() const
+
+    /**
         Assignment operator for coordinate types.
      */
     wxGridCellCoords& operator=(const wxGridCellCoords& other);
@@ -2008,7 +2015,7 @@ public:
         Checks whether the coordinates are invalid.
 
         Returns false only if both row and column are -1. Notice that if either
-        row or column (but not both) are -1, this method returns true even if
+        row or column (but not both) are -1, this method returns @true even if
         the object is invalid. This is done because objects in such state
         should actually never exist, i.e. either both coordinates should be -1
         or none of them should be -1.
@@ -2099,7 +2106,7 @@ public:
 
     /**
         Return the canonicalized block where top left coordinates is less
-        then bottom right coordinates.
+        than bottom right coordinates.
      */
     wxGridBlockCoords Canonicalize() const;
 
@@ -2212,19 +2219,10 @@ struct wxGridBlockDiffResult
     Note that objects of this class can only be returned by wxGrid, but not
     constructed in the application code.
 
-    The preferable way to iterate over it is using C++11 range-for loop:
+    The preferable way to iterate over it is using range-for loop:
     @code
         for ( const auto& block: grid->GetSelectedBlocks() ) {
             ... do something with block ...
-        }
-    @endcode
-    When not using C++11, iteration has to be done manually:
-    @code
-        wxGridBlocks range = grid->GetSelectedBlocks();
-        for ( wxGridBlocks::iterator it = range.begin();
-              it != range.end();
-              ++it ) {
-            ... do something with *it ...
         }
     @endcode
 
@@ -3111,9 +3109,25 @@ public:
                       wxGridSelectionModes selmode = wxGridSelectCells);
 
     /**
-       Receive and handle a message from the table.
+        Reacts to a message notifying about a change to the grid shape.
+
+        This function should be called by the wxGridTableBase-derived class to
+        notify the grid about any changes to its rows or columns.
     */
-    bool ProcessTableMessage(wxGridTableMessage& msg);
+    bool ProcessTableMessage(const wxGridTableMessage& msg);
+
+    /**
+        Convenient overload for notifying the grid about changes to its shape.
+
+        This is identical to the overload taking wxGridTableMessage and simply
+        constructs the message object from the function arguments and then
+        calls the other overload with this object.
+
+        @since 3.3.0
+     */
+    bool ProcessTableMessage(wxGridTableBase *table, int id,
+                             int comInt1 = -1,
+                             int comInt2 = -1);
 
     ///@}
 
@@ -4367,14 +4381,14 @@ public:
         needs to be saved. The widths can be later restored using
         SetColSizes().
 
-        @sa wxGridSizesInfo, GetRowSizes()
+        @see wxGridSizesInfo, GetRowSizes()
      */
     wxGridSizesInfo GetColSizes() const;
 
     /**
         Get size information for all row at once.
 
-        @sa wxGridSizesInfo, GetColSizes()
+        @see wxGridSizesInfo, GetColSizes()
      */
     wxGridSizesInfo GetRowSizes() const;
 
@@ -4384,14 +4398,14 @@ public:
         This is usually called with wxGridSizesInfo object previously returned
         by GetColSizes().
 
-        @sa SetRowSizes()
+        @see SetRowSizes()
      */
     void SetColSizes(const wxGridSizesInfo& sizeInfo);
 
     /**
         Restore all rows sizes.
 
-        @sa SetColSizes()
+        @see SetColSizes()
      */
     void SetRowSizes(const wxGridSizesInfo& sizeInfo);
 
@@ -4557,6 +4571,24 @@ public:
     bool CanDragRowSize(int row) const;
 
     /**
+        Returns @true if the row labels can be resized by dragging with the
+        mouse.
+
+        @since 3.3.0
+    */
+    bool CanDragRowLabelSize();
+
+    /**
+        Returns @true if the column labels can be resized by dragging with the
+        mouse.
+
+        This is the same as CanDragRowLabelSize() but for column labels.
+
+        @since 3.3.0
+    */
+    bool CanDragColLabelSize();
+
+    /**
         Returns @true if columns can be hidden from the popup menu of the native header.
 
         @since 3.1.3
@@ -4631,6 +4663,24 @@ public:
     void DisableDragRowSize();
 
     /**
+        Disables row label sizing by dragging with the mouse.
+
+        Equivalent to passing @false to EnableDragRowLabelSize().
+
+        @since 3.3.0
+    */
+    void DisableDragRowLabelSize();
+
+    /**
+        Disables column label sizing by dragging with the mouse.
+
+        Equivalent to passing @false to EnableDragColLabelSize().
+
+        @since 3.3.0
+    */
+    void DisableDragColLabelSize();
+
+    /**
         Disables column hiding from the header popup menu.
 
         Equivalent to passing @false to EnableHidingColumns().
@@ -4638,6 +4688,17 @@ public:
         @since 3.1.3
     */
     void DisableHidingColumns();
+
+    /**
+        Enable interactively resizing a column if it was previously forbidden.
+
+        Calling this function only makes sense if the row resizing had been
+        previously forbidden using DisableColResize(), as it simply undoes its
+        effect.
+
+        @since 3.3.0
+     */
+    void EnableColResize(int col);
 
     /**
         Enables or disables cell dragging with the mouse.
@@ -4689,6 +4750,24 @@ public:
     void EnableDragRowSize(bool enable = true);
 
     /**
+        Enables or disables row label sizing by dragging with the mouse.
+
+        @see DisableDragRowLabelSize()
+
+        @since 3.3.0
+    */
+    void EnableDragRowLabelSize(bool enable = true);
+
+    /**
+        Enables or disables col label sizing by dragging with the mouse.
+
+        @see DisableDragColLabelSize()
+
+        @since 3.3.0
+    */
+    void EnableDragColLabelSize(bool enable = true);
+
+    /**
         Enables or disables column hiding from the header popup menu.
 
         Note that currently the popup menu can only be shown when using
@@ -4709,6 +4788,17 @@ public:
         @see DisableHidingColumns()
     */
     bool EnableHidingColumns(bool enable = true);
+
+    /**
+        Enable interactively resizing a row if it was previously forbidden.
+
+        Calling this function only makes sense if the row resizing had been
+        previously forbidden using DisableRowResize(), as it simply undoes its
+        effect.
+
+        @since 3.3.0
+     */
+    void EnableRowResize(int row);
 
     /**
         Returns the column ID of the specified column position.
@@ -4969,6 +5059,21 @@ public:
     void ClearSelection();
 
     /**
+        Copies all cells that are currently selected.
+
+        Note that the cells must be contiguously selected;
+        otherwise, nothing will be copied.
+
+        Returns @c true if content is successfully copied,
+        @c false otherwise. @c false will be returned if
+        nothing was selected, the selected cells weren't contiguous,
+        or a clipboard error occurred.
+
+        @since 3.3.0
+     */
+    bool CopySelection();
+
+    /**
         Deselects a row of cells.
     */
     void DeselectRow( int row );
@@ -4986,7 +5091,7 @@ public:
     /**
         Returns a range of grid selection blocks.
 
-        The returned range can be iterated over, e.g. with C++11 range-for loop:
+        The returned range can be iterated over, e.g. with range-for loop:
         @code
             for ( const auto block: grid->GetSelectedBlocks() ) {
                 if ( block.Intersects(myBlock) )
@@ -5214,6 +5319,30 @@ public:
     */
     void SetSelectionMode(wxGridSelectionModes selmode);
 
+    /**
+        Return @true if overlay selection can be used (wxUSE_GRAPHICS_CONTEXT=1)
+        and DisableOverlaySelection() hadn't been called, @false otherwise.
+
+        @since 3.3.0
+
+        @see DisableOverlaySelection()
+    */
+    bool UsesOverlaySelection();
+
+    /**
+        Disable overlay selection if it is enabled.
+
+        Starting from wxWidgets 3.3.0, the wxGrid selection appearance is changed
+        from using a solid and opaque colour to denote selection to using a semi-
+        transparent area overlaid on the selected cells. Notice that the old behaviour
+        is still supported and can be reverted to by calling this function.
+
+        @since 3.3.0
+
+        @see UsesOverlaySelection()
+    */
+    void DisableOverlaySelection();
+
     ///@}
 
 
@@ -5325,7 +5454,7 @@ public:
     */
     wxRect BlockToDeviceRect(const wxGridCellCoords& topLeft,
                              const wxGridCellCoords& bottomRight,
-                             const wxGridWindow *gridWindow = NULL) const;
+                             const wxGridWindow *gridWindow = nullptr) const;
 
     /**
         Return the rectangle corresponding to the grid cell's size and position
@@ -5430,7 +5559,7 @@ public:
         @return
             The column index or @c wxNOT_FOUND.
     */
-    int XToCol(int x, bool clipToMinMax = false, wxGridWindow *gridWindow = NULL) const;
+    int XToCol(int x, bool clipToMinMax = false, wxGridWindow *gridWindow = nullptr) const;
 
     /**
         Returns the column whose right hand edge is close to the given logical
@@ -5449,7 +5578,7 @@ public:
         logical ones.
 
         The parameter @a gridWindow is new since wxWidgets 3.1.3. If it is
-        specified, i.e. non-@NULL, the coordinates must be in this window
+        specified, i.e. non-null, the coordinates must be in this window
         coordinate system and only the cells of this window are considered,
         i.e. the function returns @c wxNOT_FOUND if the coordinates are out of
         bounds.
@@ -5459,10 +5588,10 @@ public:
 
         @see XToCol(), YToRow()
      */
-    wxGridCellCoords XYToCell(int x, int y, wxGridWindow *gridWindow = NULL) const;
+    wxGridCellCoords XYToCell(int x, int y, wxGridWindow *gridWindow = nullptr) const;
 
     /// @overload
-    wxGridCellCoords XYToCell(const wxPoint& pos, wxGridWindow *gridWindow = NULL) const;
+    wxGridCellCoords XYToCell(const wxPoint& pos, wxGridWindow *gridWindow = nullptr) const;
 
     // XYToCell(int, int, wxGridCellCoords&) overload is intentionally
     // undocumented, using it is ugly and non-const reference parameters are
@@ -5481,14 +5610,14 @@ public:
 
 
         The parameter @a gridWindow is new since wxWidgets 3.1.3. If it is
-        specified, i.e. non-@NULL, only the cells of this window are
+        specified, i.e. non-null, only the cells of this window are
         considered, i.e. the function returns @c wxNOT_FOUND if @a y is out of
         bounds.
 
         If @a gridWindow is @NULL, the function returns @c wxNOT_FOUND only if
         there is no row at all at the @a y position.
     */
-    int YToRow(int y, bool clipToMinMax = false, wxGridWindow *gridWindow = NULL) const;
+    int YToRow(int y, bool clipToMinMax = false, wxGridWindow *gridWindow = nullptr) const;
 
     ///@}
 
@@ -5627,16 +5756,20 @@ public:
 
         Note that this method doesn't do anything, and returns @false, if any
         of the following conditions are true:
-        - Either @a row or @a col are out of range
-        - Size of the frozen area would be bigger than the current viewing area
         - There are any merged cells in the area to be frozen
         - Grid uses a native header control (see UseNativeColHeader())
 
         (some of these limitations could be lifted in the future).
 
+        Additionally, the function also returns false if either @a row or @a
+        col are out of range, i.e. negative or strictly greater than the total
+        number of grid rows or columns and also generates an assert failure in
+        this case, as this indicates a programming error and not a limitation
+        of the current implementation, unlike the conditions above.
+
         @since 3.1.3
      */
-    bool FreezeTo(unsigned row, unsigned col);
+    bool FreezeTo(int row, int col);
 
     /// @overload
     bool FreezeTo(const wxGridCellCoords& coords);
@@ -5902,13 +6035,23 @@ public:
     */
     void SetRowAttr(int row, wxGridCellAttr* attr);
 
-
+    /**
+        Returns an array of row labels within the given region.
+    */
     wxArrayInt CalcRowLabelsExposed( const wxRegion& reg,
-                                     wxGridWindow *gridWindow = NULL) const;
+                                     wxGridWindow *gridWindow = nullptr) const;
+
+    /**
+        Returns an array of column labels within the given region.
+    */
     wxArrayInt CalcColLabelsExposed( const wxRegion& reg,
-                                     wxGridWindow *gridWindow = NULL) const;
+                                     wxGridWindow *gridWindow = nullptr) const;
+
+    /**
+        Returns an array of (visible) cells within the given region.
+    */
     wxGridCellCoordsArray CalcCellsExposed( const wxRegion& reg,
-                                            wxGridWindow *gridWindow = NULL) const;
+                                            wxGridWindow *gridWindow = nullptr) const;
 
     ///@}
 
@@ -6198,13 +6341,13 @@ public:
     /**
         Creates an object preventing the updates of the specified @a grid. The
         parameter could be @NULL in which case nothing is done. If @a grid is
-        non-@NULL then the grid must exist for longer than this
+        non-null then the grid must exist for longer than this
         wxGridUpdateLocker object itself.
 
         The default constructor could be followed by a call to Create() to set
         the grid object later.
     */
-    wxGridUpdateLocker(wxGrid* grid = NULL);
+    wxGridUpdateLocker(wxGrid* grid = nullptr);
 
     /**
         Destructor reenables updates for the grid this object is associated
@@ -6280,33 +6423,39 @@ public:
         The user double-clicked a label with the right mouse button. Processes
         a @c wxEVT_GRID_LABEL_RIGHT_DCLICK event type.
     @event{EVT_GRID_SELECT_CELL(func)}
-        The given cell was made current, either by user or by the program via a
-        call to SetGridCursor() or GoToCell(). Processes a
-        @c wxEVT_GRID_SELECT_CELL event type.
+        The given cell is about to be made current, either by user or by the
+        program via a call to wxGrid::SetGridCursor() or wxGrid::GoToCell().
+        The event can be vetoed to prevent this from happening and
+        wxGrid::GetGridCursorCoords() still returns the previous current cell
+        coordinates during the event handler execution, while the new ones are
+        available via the event object GetRow() and GetCol() functions.
+        Processes a @c wxEVT_GRID_SELECT_CELL event type.
     @event{EVT_GRID_ROW_MOVE(func)}
         The user tries to change the order of the rows in the grid by
-        dragging the row specified by GetRow(). This event can be vetoed to
-        either prevent the user from reordering the row change completely
-        (but notice that if you don't want to allow it at all, you simply
-        shouldn't call wxGrid::EnableDragRowMove() in the first place), vetoed
-        but handled in some way in the handler, e.g. by really moving the
-        row to the new position at the associated table level, or allowed to
-        proceed in which case wxGrid::SetRowPos() is used to reorder the
-        rows display order without affecting the use of the row indices
-        otherwise.
+        dragging the row specified by GetRow() to the position specified
+        by GetNewRow().
+        This event can be vetoed to either prevent the user from reordering
+        the row change completely (but notice that if you don't want to allow
+        it at all, you simply shouldn't call wxGrid::EnableDragRowMove() in
+        the first place), vetoed but handled in some way in the handler,
+        e.g. by really moving the row to the new position at the associated
+        table level, or allowed to proceed in which case wxGrid::SetRowPos()
+        is used to reorder the rows display order without affecting the use
+        of the row indices otherwise.
         This event macro corresponds to @c wxEVT_GRID_ROW_MOVE event type.
         It is only available since wxWidgets 3.1.7.
     @event{EVT_GRID_COL_MOVE(func)}
         The user tries to change the order of the columns in the grid by
-        dragging the column specified by GetCol(). This event can be vetoed to
-        either prevent the user from reordering the column change completely
-        (but notice that if you don't want to allow it at all, you simply
-        shouldn't call wxGrid::EnableDragColMove() in the first place), vetoed
-        but handled in some way in the handler, e.g. by really moving the
-        column to the new position at the associated table level, or allowed to
-        proceed in which case wxGrid::SetColPos() is used to reorder the
-        columns display order without affecting the use of the column indices
-        otherwise.
+        dragging the column specified by GetCol() to the position specified
+        by GetNewCol().
+        This event can be vetoed to either prevent the user from reordering
+        the column change completely (but notice that if you don't want to
+        allow it at all, you simply shouldn't call wxGrid::EnableDragColMove()
+        in the first place), vetoed but handled in some way in the handler,
+        e.g. by really moving the column to the new position at the associated
+        table level, or allowed to proceed in which case wxGrid::SetColPos()
+        is used to reorder the columns display order without affecting the use
+        of the column indices otherwise.
         This event macro corresponds to @c wxEVT_GRID_COL_MOVE event type.
     @event{EVT_GRID_COL_SORT(func)}
         This event is generated when a column is clicked by the user and its
@@ -6377,6 +6526,20 @@ public:
     int GetRow() const;
 
     /**
+        Target row for wxEVT_GRID_ROW_MOVE
+
+        @since 3.3.0
+    */
+    int GetNewRow() const;
+
+    /**
+        Target column for wxEVT_GRID_COL_MOVE
+
+        @since 3.3.0
+    */
+    int GetNewCol() const;
+
+    /**
         Returns @true if the Meta key was down at the time of the event.
     */
     bool MetaDown() const;
@@ -6425,6 +6588,14 @@ public:
         wxWidgets 2.9.5.
     @event{EVT_GRID_ROW_SIZE(func)}
         Same as EVT_GRID_CMD_ROW_SIZE() but uses `wxID_ANY` id.
+    @event{EVT_GRID_ROW_LABEL_SIZE(id, func)}
+        The user resized the row labels.
+        Corresponds to @c wxEVT_GRID_ROW_LABEL_SIZE event type.
+        This is new since wxWidgets 3.3.0.
+    @event{EVT_GRID_COL_LABEL_SIZE(id, func)}
+        The user resized the column labels.
+        Corresponds to @c wxEVT_GRID_COL_LABEL_SIZE event type.
+        This is new since wxWidgets 3.3.0.
     @endEventTable
 
     @library{wxcore}
@@ -6690,6 +6861,8 @@ wxEventType wxEVT_GRID_ROW_SIZE;
 wxEventType wxEVT_GRID_ROW_AUTO_SIZE;
 wxEventType wxEVT_GRID_COL_SIZE;
 wxEventType wxEVT_GRID_COL_AUTO_SIZE;
+wxEventType wxEVT_GRID_ROW_LABEL_SIZE;
+wxEventType wxEVT_GRID_COL_LABEL_SIZE;
 wxEventType wxEVT_GRID_RANGE_SELECTING;
 wxEventType wxEVT_GRID_RANGE_SELECTED;
 wxEventType wxEVT_GRID_CELL_CHANGING;

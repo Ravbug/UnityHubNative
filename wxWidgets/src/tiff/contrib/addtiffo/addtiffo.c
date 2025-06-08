@@ -59,49 +59,50 @@
  * New
  */
 
+#include "tiffio.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "tiffio.h"
 
-void TIFFBuildOverviews( TIFF *, int, int *, int, const char *,
-                         int (*)(double,void*), void * );
+void TIFFBuildOverviews(TIFF *, int, int *, int, const char *,
+                        int (*)(double, void *), void *);
 
 /************************************************************************/
 /*                                main()                                */
 /************************************************************************/
 
-int main( int argc, char ** argv )
+int main(int argc, char **argv)
 
 {
-    int		anOverviews[100];   /* TODO: un-hardwire array length, flexible allocate */
-    int		nOverviewCount = 0;
-    int		bUseSubIFD = 0;
-    TIFF	*hTIFF;
-    const char  *pszResampling = "nearest";
+    int anOverviews[100]; /* TODO: un-hardwire array length, flexible allocate
+                           */
+    int nOverviewCount = 0;
+    int bUseSubIFD = 0;
+    TIFF *hTIFF;
+    const char *pszResampling = "nearest";
 
-/* -------------------------------------------------------------------- */
-/*      Usage:                                                          */
-/* -------------------------------------------------------------------- */
-    if( argc < 2 )
+    /* -------------------------------------------------------------------- */
+    /*      Usage:                                                          */
+    /* -------------------------------------------------------------------- */
+    if (argc < 2)
     {
-        printf( "Usage: addtiffo [-r {nearest,average,mode}]\n"
-                "                tiff_filename [resolution_reductions]\n"
-                "\n"
-                "Example:\n"
-                " %% addtiffo abc.tif 2 4 8 16\n" );
-        return( 1 );
+        printf("Usage: addtiffo [-r {nearest,average,mode}]\n"
+               "                tiff_filename [resolution_reductions]\n"
+               "\n"
+               "Example:\n"
+               " %% addtiffo abc.tif 2 4 8 16\n");
+        return (1);
     }
 
-    while( argv[1][0] == '-' )
+    while (argv[1][0] == '-')
     {
-        if( strcmp(argv[1],"-subifd") == 0 )
+        if (strcmp(argv[1], "-subifd") == 0)
         {
             bUseSubIFD = 1;
             argv++;
             argc--;
         }
-        else if( strcmp(argv[1],"-r") == 0 )
+        else if (strcmp(argv[1], "-r") == 0)
         {
             argv += 2;
             argc -= 2;
@@ -109,34 +110,35 @@ int main( int argc, char ** argv )
         }
         else
         {
-            fprintf( stderr, "Incorrect parameters\n" );
-            return( 1 );
+            fprintf(stderr, "Incorrect parameters\n");
+            return (1);
         }
     }
 
-    /* TODO: resampling mode parameter needs to be encoded in an integer from this point on */
+    /* TODO: resampling mode parameter needs to be encoded in an integer from
+     * this point on */
 
-/* -------------------------------------------------------------------- */
-/*      Collect the user requested reduction factors.                   */
-/* -------------------------------------------------------------------- */
-    while( nOverviewCount < argc - 2 && nOverviewCount < 100 )
+    /* -------------------------------------------------------------------- */
+    /*      Collect the user requested reduction factors.                   */
+    /* -------------------------------------------------------------------- */
+    while (nOverviewCount < argc - 2 && nOverviewCount < 100)
     {
-        anOverviews[nOverviewCount] = atoi(argv[nOverviewCount+2]);
-        if( (anOverviews[nOverviewCount] <= 0) ||
+        anOverviews[nOverviewCount] = atoi(argv[nOverviewCount + 2]);
+        if ((anOverviews[nOverviewCount] <= 0) ||
             ((anOverviews[nOverviewCount] > 1024)))
         {
-            fprintf( stderr, "Incorrect parameters\n" );
-            return(1);
+            fprintf(stderr, "Incorrect parameters\n");
+            return (1);
         }
         nOverviewCount++;
     }
 
-/* -------------------------------------------------------------------- */
-/*      Default to four overview levels.  It would be nicer if it       */
-/*      defaulted based on the size of the source image.                */
-/* -------------------------------------------------------------------- */
+    /* -------------------------------------------------------------------- */
+    /*      Default to four overview levels.  It would be nicer if it       */
+    /*      defaulted based on the size of the source image.                */
+    /* -------------------------------------------------------------------- */
     /* TODO: make it default based on the size of the source image */
-    if( nOverviewCount == 0 )
+    if (nOverviewCount == 0)
     {
         nOverviewCount = 4;
 
@@ -146,20 +148,20 @@ int main( int argc, char ** argv )
         anOverviews[3] = 16;
     }
 
-/* -------------------------------------------------------------------- */
-/*      Build the overview.                                             */
-/* -------------------------------------------------------------------- */
-    hTIFF = TIFFOpen( argv[1], "r+" );
-    if( hTIFF == NULL )
+    /* -------------------------------------------------------------------- */
+    /*      Build the overview.                                             */
+    /* -------------------------------------------------------------------- */
+    hTIFF = TIFFOpen(argv[1], "r+");
+    if (hTIFF == NULL)
     {
-        fprintf( stderr, "TIFFOpen(%s) failed.\n", argv[1] );
-        return( 1 );
+        fprintf(stderr, "TIFFOpen(%s) failed.\n", argv[1]);
+        return (1);
     }
 
-    TIFFBuildOverviews( hTIFF, nOverviewCount, anOverviews, bUseSubIFD,
-                        pszResampling, NULL, NULL );
+    TIFFBuildOverviews(hTIFF, nOverviewCount, anOverviews, bUseSubIFD,
+                       pszResampling, NULL, NULL);
 
-    TIFFClose( hTIFF );
+    TIFFClose(hTIFF);
 
 /* -------------------------------------------------------------------- */
 /*      Optionally test for memory leaks.                               */
@@ -168,12 +170,5 @@ int main( int argc, char ** argv )
     malloc_dump(1);
 #endif
 
-    return( 0 );
+    return (0);
 }
-/*
- * Local Variables:
- * mode: c
- * c-basic-offset: 4
- * fill-column: 78
- * End:
- */

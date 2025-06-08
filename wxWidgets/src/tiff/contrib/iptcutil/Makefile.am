@@ -31,7 +31,9 @@ EXTRA_DIST = \
 	test.iptc \
 	test.txt
 
+if TIFF_CONTRIB
 noinst_PROGRAMS = iptcutil
+endif
 
 iptcutil_SOURCES = iptcutil.c
 iptcutil_LDADD = $(LIBTIFF)

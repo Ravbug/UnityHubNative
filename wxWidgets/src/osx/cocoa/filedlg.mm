@@ -2,7 +2,6 @@
 // Name:        src/cocoa/filedlg.mm
 // Purpose:     wxFileDialog for wxCocoa
 // Author:      Ryan Norton
-// Modified by:
 // Created:     2004-10-02
 // Copyright:   (c) Ryan Norton
 // Licence:     wxWindows licence
@@ -108,8 +107,8 @@ void wxFileDialog::Init()
 {
     m_filterIndex = -1;
     m_delegate = nil;
-    m_filterPanel = NULL;
-    m_filterChoice = NULL;
+    m_filterPanel = nullptr;
+    m_filterChoice = nullptr;
     m_useFileTypeFilter = false;
     m_firstFileTypeFilter = 0;
 }
@@ -125,6 +124,16 @@ void wxFileDialog::Create(
 
 wxFileDialog::~wxFileDialog()
 {
+    if ( m_extraControl )
+    {
+        m_extraControl->Destroy();
+        // if this is set, then m_filterPanel points to the same instance
+        // so no need to delete that one as well
+    }
+    else if ( m_filterPanel )
+    {
+        m_filterPanel->Destroy();
+    }
 }
 
 bool wxFileDialog::SupportsExtraControl() const
@@ -242,7 +251,7 @@ void wxFileDialog::ShowWindowModal()
     wxCFStringRef dir( m_dir );
     wxCFStringRef file( m_fileName );
 
-    wxNonOwnedWindow* parentWindow = NULL;
+    wxNonOwnedWindow* parentWindow = nullptr;
     
     m_modality = wxDIALOG_MODALITY_WINDOW_MODAL;
 
@@ -252,6 +261,34 @@ void wxFileDialog::ShowWindowModal()
     wxCHECK_RET(parentWindow, "Window modal display requires parent.");
 
     NSArray* types = GetTypesFromFilter( m_wildCard, m_filterNames, m_filterExtensions, m_currentExtensions ) ;
+
+    m_useFileTypeFilter = m_filterExtensions.GetCount() > 1;
+
+    // native behaviour on macos is to enable just every file type
+    // in a file open dialog that could be handled, without a file
+    // filter choice control
+    // wxOSX_FILEDIALOG_ALWAYS_SHOW_TYPES allows to override
+    // that and get the same behaviour as other platforms have ...
+
+    if( HasFlag(wxFD_OPEN) )
+    {
+      if ( !(wxSystemOptions::HasOption( wxOSX_FILEDIALOG_ALWAYS_SHOW_TYPES ) && (wxSystemOptions::GetOptionInt( wxOSX_FILEDIALOG_ALWAYS_SHOW_TYPES ) == 1)) )
+        m_useFileTypeFilter = false;
+    }
+
+    m_firstFileTypeFilter = -1;
+
+    if ( m_useFileTypeFilter
+        && m_filterIndex >= 0 && (size_t)m_filterIndex < m_filterExtensions.GetCount() )
+    {
+      m_firstFileTypeFilter = m_filterIndex;
+    }
+    else if ( m_useFileTypeFilter )
+    {
+      m_firstFileTypeFilter = GetMatchingFilterExtension(m_fileName);
+      types = GetTypesFromExtension(m_filterExtensions[m_firstFileTypeFilter], m_currentExtensions);
+    }
+
     if ( HasFlag(wxFD_SAVE) )
     {
         NSSavePanel* sPanel = [NSSavePanel savePanel];
@@ -268,6 +305,26 @@ void wxFileDialog::ShowWindowModal()
         [sPanel setAllowedFileTypes:types];
         [sPanel setAllowsOtherFileTypes:NO];
         [sPanel setShowsHiddenFiles: HasFlag(wxFD_SHOW_HIDDEN) ? YES : NO];
+
+        /*
+         Let the file dialog know what file type should be used initially.
+         If this is not done then when setting the filter index
+         programmatically to 1 the file will still have the extension
+         of the first file type instead of the second one. E.g. when file
+         types are foo and bar, a filename "myletter" with SetDialogIndex(1)
+         would result in saving as myletter.foo, while we want myletter.bar.
+         */
+        if(m_firstFileTypeFilter > 0)
+        {
+          DoOnFilterSelected(m_firstFileTypeFilter);
+        }
+        else
+        {
+          if ( m_delegate )
+            [(wxOpenSavePanelDelegate*) m_delegate setAllowedExtensions: m_currentExtensions];
+          else
+            [sPanel setAllowedFileTypes: types];
+        }
 
         NSWindow* nativeParent = parentWindow->GetWXWindow();
         if ( !m_dir.IsEmpty() )
@@ -294,7 +351,25 @@ void wxFileDialog::ShowWindowModal()
         [oPanel setCanChooseFiles:YES];
         [oPanel setMessage:cf.AsNSString()];
         [oPanel setAllowsMultipleSelection: (HasFlag(wxFD_MULTIPLE) ? YES : NO )];
+        [oPanel setAllowedFileTypes:types];
+        [oPanel setAllowsOtherFileTypes:NO];
         [oPanel setShowsHiddenFiles: HasFlag(wxFD_SHOW_HIDDEN) ? YES : NO];
+
+        // Note that the test here is intentionally different from the one
+        // above, in the wxFD_SAVE case: we need to call DoOnFilterSelected()
+        // even for m_firstFileTypeFilter == 0, i.e. when using the default
+        // filter.
+        if ( m_firstFileTypeFilter >= 0 )
+        {
+          DoOnFilterSelected(m_firstFileTypeFilter);
+        }
+        else
+        {
+          if ( m_delegate )
+            [(wxOpenSavePanelDelegate*) m_delegate setAllowedExtensions: m_currentExtensions];
+          else
+            [oPanel setAllowedFileTypes: types];
+        }
 
         NSWindow* nativeParent = parentWindow->GetWXWindow();
         if ( !m_dir.IsEmpty() )
@@ -321,7 +396,7 @@ wxWindow* wxFileDialog::CreateFilterPanel(wxWindow *extracontrol)
     // and then reparenting extracontrol. Reparenting is less desired as user
     // code may expect the parent to be a wxFileDialog as on other platforms.
     const bool useExtraControlAsPanel = extracontrol &&
-        wxDynamicCast(extracontrol, wxPanel) != NULL;
+        wxDynamicCast(extracontrol, wxPanel) != nullptr;
 
     wxWindow* extrapanel = useExtraControlAsPanel
                             ? extracontrol
@@ -357,7 +432,7 @@ wxWindow* wxFileDialog::CreateFilterPanel(wxWindow *extracontrol)
         if ( useExtraControlAsPanel && existingSizer )
         {
             // Move extra control's sizer to verticalSizer.
-            extracontrol->SetSizer(NULL, /* deleteOld = */ false);
+            extracontrol->SetSizer(nullptr, /* deleteOld = */ false);
             verticalSizer->Add(existingSizer);
         }
         else
@@ -407,13 +482,13 @@ void wxFileDialog::SetupExtraControls(WXWindow nativeWindow)
     // for sandboxed app we cannot access the outer structures
     // this leads to problems with extra controls, so as a temporary
     // workaround for crashes we don't support those yet
-    if ( [panel contentView] == nil || getenv("APP_SANDBOX_CONTAINER_ID") != NULL )
+    if ( [panel contentView] == nil || getenv("APP_SANDBOX_CONTAINER_ID") != nullptr )
         return;
     
     wxNonOwnedWindow::Create( GetParent(), nativeWindow );
 
     // This won't do anything if there are no extra controls to create and
-    // extracontrol will be NULL in this case.
+    // extracontrol will be null in this case.
     CreateExtraControl();
     wxWindow* const extracontrol = GetExtraControl();
 
@@ -426,8 +501,8 @@ void wxFileDialog::SetupExtraControls(WXWindow nativeWindow)
     }
     else
     {
-        m_filterPanel = NULL;
-        m_filterChoice = NULL;
+        m_filterPanel = nullptr;
+        m_filterChoice = nullptr;
         if ( extracontrol != nil )
             accView = extracontrol->GetHandle();
     }
@@ -436,10 +511,13 @@ void wxFileDialog::SetupExtraControls(WXWindow nativeWindow)
     {
         [accView removeFromSuperview];
         [panel setAccessoryView:accView];
+
+        wxCLANG_WARNING_SUPPRESS(undeclared-selector)
         if ([panel respondsToSelector:@selector(setAccessoryViewDisclosed)])
         {
             [(id)panel setAccessoryViewDisclosed:YES];
         }
+        wxCLANG_WARNING_RESTORE(undeclared-selector)
     }
     else
     {
@@ -494,14 +572,7 @@ int wxFileDialog::ShowModal()
     m_fileNames.Clear();
     m_paths.Clear();
 
-    wxNonOwnedWindow* parentWindow = NULL;
     int returnCode = -1;
-
-    if (GetParent())
-    {
-        parentWindow = dynamic_cast<wxNonOwnedWindow*>(wxGetTopLevelParent(GetParent()));
-    }
-
 
     NSArray* types = GetTypesFromFilter( m_wildCard, m_filterNames, m_filterExtensions, m_currentExtensions ) ;
 
@@ -567,6 +638,13 @@ int wxFileDialog::ShowModal()
         {
             DoOnFilterSelected(m_firstFileTypeFilter);
         }
+        else
+        {
+          if ( m_delegate )
+            [(wxOpenSavePanelDelegate*) m_delegate setAllowedExtensions: m_currentExtensions];
+          else
+            [sPanel setAllowedFileTypes: types];
+        }
 
         if ( !m_dir.IsEmpty() )
             [sPanel setDirectoryURL:[NSURL fileURLWithPath:dir.AsNSString()
@@ -594,6 +672,8 @@ int wxFileDialog::ShowModal()
         [oPanel setCanChooseFiles:YES];
         [oPanel setMessage:cf.AsNSString()];
         [oPanel setAllowsMultipleSelection: (HasFlag(wxFD_MULTIPLE) ? YES : NO )];
+        [oPanel setAllowedFileTypes:types];
+        [oPanel setAllowsOtherFileTypes:NO];
         [oPanel setShowsHiddenFiles: HasFlag(wxFD_SHOW_HIDDEN) ? YES : NO];
 
         // Note that the test here is intentionally different from the one

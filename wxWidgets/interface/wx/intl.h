@@ -287,7 +287,8 @@ enum wxLocaleForm
         11.0 and 12.2 inclusive are affected by a bug when changing C locale can
         break display of the application menus. Because of this, it is
         recommended to use wxUILocale instead of this class for the
-        applications targeting macOS.
+        applications targeting macOS. In general, this class should only be used
+        if requiring C runtime functions (@c strtod) to be localized.
 
     In wxWidgets this class manages current locale. It also initializes and
     activates wxTranslations object that manages message catalogs.
@@ -390,7 +391,10 @@ public:
     bool AddCatalog(const wxString& domain, wxLanguage msgIdLanguage);
 
     /**
-        Calls wxTranslations::AddCatalog(const wxString&, wxLanguage, const wxString&).
+        Calls wxTranslations::AddCatalog(const wxString&, const wxString&).
+
+        @deprecated This overload shouldn't be used any longer as @a
+        msgIdCharset is just ignored, please omit it.
     */
     bool AddCatalog(const wxString& domain, wxLanguage msgIdLanguage,
                     const wxString& msgIdCharset);
@@ -526,13 +530,15 @@ public:
     /**
         Tries to detect the user's default locale setting.
 
-        Returns the ::wxLanguage value or @c wxLANGUAGE_UNKNOWN if the language-guessing
-        algorithm failed.
+        @note This function is somewhat misleading, as it uses the default
+        system locale to determine its return value, and not just the system
+        language. It is preserved for backwards compatibility, but to actually
+        get the language, and not locale, used by the system by default, call
+        wxUILocale::GetSystemLanguage() instead.
 
-        @note This function works with @em locales and returns the user's default
-              locale. This may be, and usually is, the same as their preferred UI
-              language, but it's not the same thing. Use wxTranslation to obtain
-              @em language information.
+        Returns the ::wxLanguage value or @c wxLANGUAGE_UNKNOWN if the locale
+        is not recognized, as can notably happen when combining any language
+        with a region where this language is not typically spoken.
 
         @see wxTranslations::GetBestTranslation().
     */
@@ -651,7 +657,7 @@ public:
 
 
 /**
-   Get the current locale object (note that it may be NULL!)
+   Get the current locale object (note that it may be @NULL!)
 */
 wxLocale* wxGetLocale();
 

@@ -2,7 +2,6 @@
 // Name:        src/generic/msgdlgg.cpp
 // Purpose:     wxGenericMessageDialog
 // Author:      Julian Smart, Robert Roebling
-// Modified by:
 // Created:     04/01/98
 // Copyright:   (c) Julian Smart and Robert Roebling
 // Licence:     wxWindows licence
@@ -53,7 +52,7 @@ public:
     }
 
 protected:
-    virtual wxWindow *OnCreateLine(const wxString& s) wxOVERRIDE
+    virtual wxWindow *OnCreateLine(const wxString& s) override
     {
         wxWindow * const win = wxTextSizerWrapper::OnCreateLine(s);
 
@@ -96,7 +95,7 @@ wxSizer *wxGenericMessageDialog::CreateMsgDlgButtonSizer()
     {
         wxStdDialogButtonSizer * const sizerStd = new wxStdDialogButtonSizer;
 
-        wxButton *btnDef = NULL;
+        wxButton *btnDef = nullptr;
 
         if ( m_dialogStyle & wxOK )
         {
@@ -174,9 +173,9 @@ void wxGenericMessageDialog::DoCreateMsgdialog()
                                     wxArtProvider::GetMessageBoxIcon(m_dialogStyle)
                                    );
         if ( wxSystemSettings::GetScreenType() <= wxSYS_SCREEN_PDA )
-            topsizer->Add( icon, 0, wxTOP|wxLEFT|wxRIGHT | wxALIGN_LEFT, 10 );
+            topsizer->Add( icon, 0, wxTOP|wxLEFT|wxRIGHT | wxALIGN_LEFT, FromDIP(10) );
         else
-            icon_text->Add(icon, wxSizerFlags().Top().Border(wxRIGHT, 20));
+            icon_text->Add(icon, wxSizerFlags().Top().Border(wxRIGHT, FromDIP(20)));
     }
 #endif // wxUSE_STATBMP
 
@@ -185,6 +184,12 @@ void wxGenericMessageDialog::DoCreateMsgdialog()
 
     wxBoxSizer * const textsizer = new wxBoxSizer(wxVERTICAL);
 
+    // To prevent clipping
+    int maxWidth = wxSystemSettings::GetMetric(wxSYS_SCREEN_X, this) - FromDIP(25);
+
+    // To enhance readability
+    maxWidth = wxMin( maxWidth, GetCharWidth() * 70 );
+
     // We want to show the main message in a different font to make it stand
     // out if the extended message is used as well. This looks better and is
     // more consistent with the native dialogs under MSW and GTK.
@@ -192,8 +197,8 @@ void wxGenericMessageDialog::DoCreateMsgdialog()
     if ( !m_extendedMessage.empty() )
     {
         wxTitleTextWrapper titleWrapper(this);
-        textsizer->Add(CreateTextSizer(GetMessage(), titleWrapper),
-                       wxSizerFlags().Border(wxBOTTOM, 20));
+        textsizer->Add(CreateTextSizer(GetMessage(), titleWrapper, maxWidth),
+                       wxSizerFlags().Border(wxBOTTOM, FromDIP(20)));
 
         lowerMessage = GetExtendedMessage();
     }
@@ -202,7 +207,7 @@ void wxGenericMessageDialog::DoCreateMsgdialog()
         lowerMessage = GetMessage();
     }
 
-    textsizer->Add(CreateTextSizer(lowerMessage));
+    textsizer->Add(CreateTextSizer(lowerMessage, maxWidth));
 
     icon_text->Add(textsizer, 0, wxALIGN_CENTER, 10);
     topsizer->Add( icon_text, 1, wxLEFT|wxRIGHT|wxTOP, 10 );

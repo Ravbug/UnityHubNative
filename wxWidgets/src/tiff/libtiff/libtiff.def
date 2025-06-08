@@ -5,6 +5,7 @@ EXPORTS	TIFFAccessTagMethods
 	TIFFCheckpointDirectory
 	TIFFCleanup
 	TIFFClientOpen
+	TIFFClientOpenExt
 	TIFFClientdata
 	TIFFClose
 	TIFFComputeStrip
@@ -24,15 +25,20 @@ EXPORTS	TIFFAccessTagMethods
 	TIFFDeferStrileArrayWriting
 	TIFFError
 	TIFFErrorExt
+	TIFFErrorExtR
 	TIFFFdOpen
+	TIFFFdOpenExt
 	TIFFFieldDataType
 	TIFFFieldName
 	TIFFFieldPassCount
 	TIFFFieldReadCount
+	TIFFFieldIsAnonymous
 	TIFFFieldTag
 	TIFFFieldWithName
 	TIFFFieldWithTag
 	TIFFFieldWriteCount
+	TIFFFieldSetGetSize
+	TIFFFieldSetGetCountSize
 	TIFFFileName
 	TIFFFileno
 	TIFFFindCODEC
@@ -62,6 +68,7 @@ EXPORTS	TIFFAccessTagMethods
 	TIFFGetVersion
 	TIFFGetWriteProc
 	TIFFIsBigEndian
+	TIFFIsBigTIFF
 	TIFFIsByteSwapped
 	TIFFIsCODECConfigured
 	TIFFIsMSB2LSB
@@ -73,7 +80,15 @@ EXPORTS	TIFFAccessTagMethods
 	TIFFNumberOfStrips
 	TIFFNumberOfTiles
 	TIFFOpen
+	TIFFOpenExt
 	TIFFOpenW
+	TIFFOpenWExt
+	TIFFOpenOptionsAlloc
+	TIFFOpenOptionsFree
+	TIFFOpenOptionsSetMaxCumulatedMemAlloc
+	TIFFOpenOptionsSetMaxSingleMemAlloc
+	TIFFOpenOptionsSetErrorHandlerExtR
+	TIFFOpenOptionsSetWarningHandlerExtR
 	TIFFPrintDirectory
 	TIFFRGBAImageBegin
 	TIFFRGBAImageEnd
@@ -151,6 +166,7 @@ EXPORTS	TIFFAccessTagMethods
 	TIFFVTileSize64
 	TIFFWarning
 	TIFFWarningExt
+	TIFFWarningExtR
 	TIFFWriteBufferSetup
 	TIFFWriteCheck
 	TIFFWriteCustomDirectory
@@ -166,6 +182,7 @@ EXPORTS	TIFFAccessTagMethods
 	TIFFYCbCrtoRGB
 	_TIFFCheckMalloc
 	_TIFFCheckRealloc
+	_TIFFClampDoubleToUInt32
 	_TIFFRewriteField
 	_TIFFfree
 	_TIFFmalloc

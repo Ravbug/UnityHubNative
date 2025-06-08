@@ -56,7 +56,7 @@ bool wxFrameBase::ShouldUpdateMenuFromIdle()
     // check if we're using the global menu bar as we don't get EVT_MENU_OPEN
     // for it and need to fall back to idle time updating even if normally
     // wxUSE_IDLEMENUUPDATES is set to 0 for wxGTK.
-#ifdef __WXGTK20__
+#ifdef __WXGTK__
     if ( wxApp::GTKIsUsingGlobalMenu() )
         return true;
 #endif // !__WXGTK__
@@ -96,7 +96,6 @@ wxFLAGS_MEMBER(wxBORDER)
 // standard window styles
 wxFLAGS_MEMBER(wxTAB_TRAVERSAL)
 wxFLAGS_MEMBER(wxCLIP_CHILDREN)
-wxFLAGS_MEMBER(wxTRANSPARENT_WINDOW)
 wxFLAGS_MEMBER(wxWANTS_CHARS)
 wxFLAGS_MEMBER(wxFULL_REPAINT_ON_RESIZE)
 wxFLAGS_MEMBER(wxALWAYS_SHOW_SB )
@@ -146,15 +145,15 @@ wxCONSTRUCTOR_6( wxFrame, wxWindow*, Parent, wxWindowID, Id, wxString, Title, \
 wxFrameBase::wxFrameBase()
 {
 #if wxUSE_MENUBAR
-    m_frameMenuBar = NULL;
+    m_frameMenuBar = nullptr;
 #endif // wxUSE_MENUS
 
 #if wxUSE_TOOLBAR
-    m_frameToolBar = NULL;
+    m_frameToolBar = nullptr;
 #endif // wxUSE_TOOLBAR
 
 #if wxUSE_STATUSBAR
-    m_frameStatusBar = NULL;
+    m_frameStatusBar = nullptr;
 #endif // wxUSE_STATUSBAR
 
     m_statusBarPane = 0;
@@ -247,6 +246,25 @@ wxPoint wxFrameBase::GetClientAreaOrigin() const
     return pt;
 }
 
+void wxFrameBase::RemoveChild(wxWindowBase *child)
+{
+#if wxUSE_STATUSBAR
+    if ( child == m_frameStatusBar )
+    {
+        m_frameStatusBar = nullptr;
+    }
+#endif // wxUSE_STATUSBAR
+
+#if wxUSE_TOOLBAR
+    if ( child == m_frameToolBar )
+    {
+        m_frameToolBar = nullptr;
+    }
+#endif // wxUSE_STATUSBAR
+
+    wxTopLevelWindow::RemoveChild(child);
+}
+
 // ----------------------------------------------------------------------------
 // misc
 // ----------------------------------------------------------------------------
@@ -268,7 +286,7 @@ bool wxFrameBase::ProcessCommand(int id)
 
 bool wxFrameBase::ProcessCommand(wxMenuItem *item)
 {
-    wxCHECK_MSG( item, false, wxS("Menu item can't be NULL") );
+    wxCHECK_MSG( item, false, wxS("Menu item can't be null") );
 
     if (!item->IsEnabled())
         return true;
@@ -344,7 +362,14 @@ void wxFrameBase::OnMenuHighlight(wxMenuEvent& event)
 {
     event.Skip();
 
-    (void)ShowMenuHelp(event.GetMenuId());
+    if ( wxMenuItem* menuItem = event.GetMenuItem() )
+    {
+        DoGiveHelp(menuItem->GetHelp(), true);
+    }
+    else
+    {
+        (void)ShowMenuHelp(event.GetMenuId());
+    }
 }
 
 void wxFrameBase::OnMenuClose(wxMenuEvent& event)
@@ -382,7 +407,7 @@ wxStatusBar* wxFrameBase::CreateStatusBar(int number,
 {
     // the main status bar can only be created once (or else it should be
     // deleted before calling CreateStatusBar() again)
-    wxCHECK_MSG( !m_frameStatusBar, NULL,
+    wxCHECK_MSG( !m_frameStatusBar, nullptr,
                  wxT("recreating status bar in wxFrame") );
 
     SetStatusBar(OnCreateStatusBar(number, style, id, name));
@@ -404,14 +429,14 @@ wxStatusBar *wxFrameBase::OnCreateStatusBar(int number,
 
 void wxFrameBase::SetStatusText(const wxString& text, int number)
 {
-    wxCHECK_RET( m_frameStatusBar != NULL, wxT("no statusbar to set text for") );
+    wxCHECK_RET( m_frameStatusBar != nullptr, wxT("no statusbar to set text for") );
 
     m_frameStatusBar->SetStatusText(text, number);
 }
 
 void wxFrameBase::SetStatusWidths(int n, const int widths_field[] )
 {
-    wxCHECK_RET( m_frameStatusBar != NULL, wxT("no statusbar to set widths for") );
+    wxCHECK_RET( m_frameStatusBar != nullptr, wxT("no statusbar to set widths for") );
 
     m_frameStatusBar->SetStatusWidths(n, widths_field);
 
@@ -420,14 +445,14 @@ void wxFrameBase::SetStatusWidths(int n, const int widths_field[] )
 
 void wxFrameBase::PushStatusText(const wxString& text, int number)
 {
-    wxCHECK_RET( m_frameStatusBar != NULL, wxT("no statusbar to set text for") );
+    wxCHECK_RET( m_frameStatusBar != nullptr, wxT("no statusbar to set text for") );
 
     m_frameStatusBar->PushStatusText(text, number);
 }
 
 void wxFrameBase::PopStatusText(int number)
 {
-    wxCHECK_RET( m_frameStatusBar != NULL, wxT("no statusbar to set text for") );
+    wxCHECK_RET( m_frameStatusBar != nullptr, wxT("no statusbar to set text for") );
 
     m_frameStatusBar->PopStatusText(number);
 }
@@ -459,10 +484,10 @@ bool wxFrameBase::ShowMenuHelp(int menuId)
 
 void wxFrameBase::SetStatusBar(wxStatusBar *statBar)
 {
-    bool hadBar = m_frameStatusBar != NULL;
+    bool hadBar = m_frameStatusBar != nullptr;
     m_frameStatusBar = statBar;
 
-    if ( (m_frameStatusBar != NULL) != hadBar )
+    if ( (m_frameStatusBar != nullptr) != hadBar )
     {
         PositionStatusBar();
 
@@ -554,7 +579,7 @@ wxToolBar* wxFrameBase::CreateToolBar(long style,
 {
     // the main toolbar can't be recreated (unless it was explicitly deleted
     // before)
-    wxCHECK_MSG( !m_frameToolBar, NULL,
+    wxCHECK_MSG( !m_frameToolBar, nullptr,
                  wxT("recreating toolbar in wxFrame") );
 
     if ( style == -1 )
@@ -585,7 +610,7 @@ wxToolBar* wxFrameBase::OnCreateToolBar(long style,
 
 void wxFrameBase::SetToolBar(wxToolBar *toolbar)
 {
-    if ( (toolbar != NULL) != (m_frameToolBar != NULL) )
+    if ( (toolbar != nullptr) != (m_frameToolBar != nullptr) )
     {
         // the toolbar visibility must have changed so we need to both position
         // the toolbar itself (if it appeared) and to relayout the frame
@@ -640,7 +665,7 @@ void wxFrameBase::DoMenuUpdates(wxMenu* menu)
     else
     {
         wxMenuBar* bar = GetMenuBar();
-        if (bar != NULL)
+        if (bar != nullptr)
             bar->UpdateMenus();
     }
 #endif
@@ -653,7 +678,7 @@ void wxFrameBase::DetachMenuBar()
     if ( m_frameMenuBar )
     {
         m_frameMenuBar->Detach();
-        m_frameMenuBar = NULL;
+        m_frameMenuBar = nullptr;
     }
 }
 
@@ -683,7 +708,7 @@ wxMenuItem *wxFrameBase::FindItemInMenuBar(int menuId) const
 {
     const wxMenuBar * const menuBar = GetMenuBar();
 
-    return menuBar ? menuBar->FindItem(menuId) : NULL;
+    return menuBar ? menuBar->FindItem(menuId) : nullptr;
 }
 
 #endif // wxUSE_MENUBAR

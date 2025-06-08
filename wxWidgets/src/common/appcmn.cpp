@@ -2,7 +2,6 @@
 // Name:        src/common/appcmn.cpp
 // Purpose:     wxAppBase methods common to all platforms
 // Author:      Vadim Zeitlin
-// Modified by:
 // Created:     18.10.99
 // Copyright:   (c) Vadim Zeitlin
 // Licence:     wxWindows licence
@@ -59,7 +58,7 @@ WX_CHECK_BUILD_OPTIONS("wxCore")
 
 wxAppBase::wxAppBase()
 {
-    m_topWindow = NULL;
+    m_topWindow = nullptr;
 
     m_useBestVisual = false;
     m_forceTrueColour = false;
@@ -150,14 +149,28 @@ void wxAppBase::CleanUp()
     // and any remaining TLWs
     DeleteAllTLWs();
 
+#if wxUSE_LOG
+    // flush the logged messages if any and don't use the current probably
+    // unsafe log target any more: the default one (wxLogGui) can't be used
+    // after the resources are freed below and the user supplied one might be
+    // even worse (using any wxWidgets GUI function is unsafe starting from
+    // now)
+    //
+    // notice that wxLog will still recreate a default log target if any
+    // messages are logged but that one will be safe to use until the very end
+    delete wxLog::SetActiveTarget(nullptr);
+#endif // wxUSE_LOG
+
+    // Starting from now, the application object is no longer valid and
+    // shouldn't be used any longer, so reset the global pointer to it.
+    wxApp::SetInstance(nullptr);
+
     // undo everything we did in Initialize() above
     wxBitmap::CleanUpHandlers();
 
     wxStockGDI::DeleteAll();
 
     wxDeleteStockLists();
-
-    wxDELETE(wxTheColourDatabase);
 
     wxAppConsole::CleanUp();
 }
@@ -174,7 +187,7 @@ wxWindow* wxAppBase::GetTopWindow() const
     // we need to search for the first TLW which is not pending delete
     if ( !window || wxPendingDelete.Member(window) )
     {
-        window = NULL;
+        window = nullptr;
         wxWindowList::compatibility_iterator node = wxTopLevelWindows.GetFirst();
         while ( node )
         {
@@ -196,7 +209,7 @@ wxWindow* wxAppBase::GetMainTopWindow()
 {
     const wxAppBase* const app = GetGUIInstance();
 
-    return app ? app->GetTopWindow() : NULL;
+    return app ? app->GetTopWindow() : nullptr;
 }
 
 wxVideoMode wxAppBase::GetDisplayMode() const
@@ -238,7 +251,7 @@ void wxAppBase::OnInitCmdLine(wxCmdLineParser& parser)
 #ifdef __WXUNIVERSAL__
         {
             wxCMD_LINE_OPTION,
-            NULL,
+            nullptr,
             OPTION_THEME,
             gettext_noop("specify the theme to use"),
             wxCMD_LINE_VAL_STRING,
@@ -252,7 +265,7 @@ void wxAppBase::OnInitCmdLine(wxCmdLineParser& parser)
         //     and not dfb/app.cpp
         {
             wxCMD_LINE_OPTION,
-            NULL,
+            nullptr,
             OPTION_MODE,
             gettext_noop("specify display mode to use (e.g. 640x480-16)"),
             wxCMD_LINE_VAL_STRING,
@@ -337,7 +350,7 @@ int wxAppBase::OnRun()
 int wxAppBase::OnExit()
 {
 #ifdef __WXUNIVERSAL__
-    delete wxTheme::Set(NULL);
+    delete wxTheme::Set(nullptr);
 #endif // __WXUNIVERSAL__
 
     return wxAppConsole::OnExit();
@@ -445,10 +458,7 @@ wxMessageOutput *wxGUIAppTraitsBase::CreateMessageOutput()
 #ifdef __UNIX__
     return new wxMessageOutputStderr;
 #else // !__UNIX__
-    // wxMessageOutputMessageBox doesn't work under Motif
-    #ifdef __WXMOTIF__
-        return new wxMessageOutputLog;
-    #elif wxUSE_MSGDLG
+    #if wxUSE_MSGDLG
         return new wxMessageOutputBest(wxMSGOUT_PREFER_STDERR);
     #else
         return new wxMessageOutputStderr;
@@ -468,7 +478,7 @@ wxFontMapper *wxGUIAppTraitsBase::CreateFontMapper()
 wxRendererNative *wxGUIAppTraitsBase::CreateRenderer()
 {
     // use the default native renderer by default
-    return NULL;
+    return nullptr;
 }
 
 bool wxGUIAppTraitsBase::ShowAssertDialog(const wxString& msg)
@@ -508,7 +518,7 @@ bool wxGUIAppTraitsBase::ShowAssertDialog(const wxString& msg)
 #endif // wxUSE_STACKWALKER
 
 #if wxUSE_RICHMSGDLG
-        wxRichMessageDialog dlg(NULL, msgDlg, caption, flags);
+        wxRichMessageDialog dlg(nullptr, msgDlg, caption, flags);
 
         dlg.SetYesNoLabels("Stop", "Continue");
 
@@ -528,7 +538,7 @@ bool wxGUIAppTraitsBase::ShowAssertDialog(const wxString& msg)
                   wxT("You can also choose [Cancel] to suppress ")
                   wxT("further warnings.");
 
-        wxMessageDialog dlg(NULL, msg, caption, flags);
+        wxMessageDialog dlg(nullptr, msg, caption, flags);
 #endif // wxUSE_RICHMSGDLG/!wxUSE_RICHMSGDLG
 
         switch ( dlg.ShowModal() )

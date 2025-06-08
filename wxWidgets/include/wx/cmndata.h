@@ -2,7 +2,6 @@
 // Name:        wx/cmndata.h
 // Purpose:     Common GDI data classes
 // Author:      Julian Smart and others
-// Modified by:
 // Created:     01/02/97
 // Copyright:   (c)
 // Licence:     wxWindows licence
@@ -20,6 +19,8 @@
 #if wxUSE_STREAMS
 #include "wx/stream.h"
 #endif
+
+#include <vector>
 
 class WXDLLIMPEXP_FWD_CORE wxPrintNativeDataBase;
 
@@ -101,8 +102,9 @@ public:
 
     wxPrintData& operator=(const wxPrintData& data);
 
-    char* GetPrivData() const { return m_privData; }
-    int GetPrivDataLen() const { return m_privDataLen; }
+    char* GetPrivData() { return m_privData.empty() ? nullptr : &m_privData[0]; }
+    const char* GetPrivData() const { return m_privData.empty() ? nullptr : &m_privData[0]; }
+    int GetPrivDataLen() const { return wxSsize(m_privData); }
     void SetPrivData( char *privData, int len );
 
 
@@ -110,35 +112,63 @@ public:
     void ConvertToNative();
     void ConvertFromNative();
     // Holds the native print data
-    wxPrintNativeDataBase *GetNativeData() const { return m_nativeData; }
+    wxPrintNativeDataBase *GetNativeData() const { return m_nativeData.get(); }
 
 private:
-    wxPrintBin      m_bin;
-    int             m_media;
-    wxPrintMode     m_printMode;
+    wxPrintBin      m_bin = wxPRINTBIN_DEFAULT;
+    int             m_media = wxPRINTMEDIA_DEFAULT;
+    wxPrintMode     m_printMode = wxPRINT_MODE_PRINTER;
 
-    int             m_printNoCopies;
-    wxPrintOrientation m_printOrientation;
-    bool            m_printOrientationReversed;
-    bool            m_printCollate;
+    int             m_printNoCopies = 1;
+    wxPrintOrientation m_printOrientation = wxPORTRAIT;
+    bool            m_printOrientationReversed = false;
+    bool            m_printCollate = false;
 
     wxString        m_printerName;
-    bool            m_colour;
-    wxDuplexMode    m_duplexMode;
-    wxPrintQuality  m_printQuality;
-    wxPaperSize     m_paperId;
-    wxSize          m_paperSize;
+    bool            m_colour = true;
+    wxDuplexMode    m_duplexMode = wxDUPLEX_SIMPLEX;
+    wxPrintQuality  m_printQuality = wxPRINT_QUALITY_HIGH;
+
+    // we intentionally don't initialize paper id and size at all, like this
+    // the default system settings will be used for them
+    wxPaperSize     m_paperId = wxPAPER_NONE;
+    wxSize          m_paperSize = wxDefaultSize;
 
     wxString        m_filename;
 
-    char* m_privData;
-    int   m_privDataLen;
+    std::vector<char> m_privData;
 
-    wxPrintNativeDataBase  *m_nativeData;
+    wxObjectDataPtr<wxPrintNativeDataBase> m_nativeData;
 
 private:
     wxDECLARE_DYNAMIC_CLASS(wxPrintData);
 };
+
+/*
+ * wxPrintPageRange
+ * Defines a range of pages to be printed.
+ */
+
+class wxPrintPageRange
+{
+public:
+    wxPrintPageRange() = default;
+    wxPrintPageRange(int from, int to) : fromPage(from), toPage(to)
+    {
+        wxASSERT_MSG( IsValid(), "Invalid page range values" );
+    }
+
+    // check if both components are set/initialized correctly
+    bool IsValid() const { return fromPage > 0 && fromPage <= toPage; }
+
+    // get the number of pages in the range
+    int GetNumberOfPages() const { return toPage - fromPage + 1; }
+
+    int fromPage = 0;
+    int toPage = 0;
+};
+
+using wxPrintPageRanges = std::vector<wxPrintPageRange>;
 
 /*
  * wxPrintDialogData
@@ -151,37 +181,55 @@ class WXDLLIMPEXP_CORE wxPrintDialogData: public wxObject
 {
 public:
     wxPrintDialogData();
-    wxPrintDialogData(const wxPrintDialogData& dialogData);
+    wxPrintDialogData(const wxPrintDialogData& dialogData) = default;
     wxPrintDialogData(const wxPrintData& printData);
     virtual ~wxPrintDialogData();
 
-    int GetFromPage() const { return m_printFromPage; }
-    int GetToPage() const { return m_printToPage; }
+    // These functions can be used only when printing all pages or a single
+    // continuous range of pages, use GetPageRanges() to support multiple
+    // ranges.
+    int GetFromPage() const;
+    int GetToPage() const;
+
     int GetMinPage() const { return m_printMinPage; }
     int GetMaxPage() const { return m_printMaxPage; }
     int GetNoCopies() const { return m_printNoCopies; }
-    bool GetAllPages() const { return m_printAllPages; }
-    bool GetSelection() const { return m_printSelection; }
+    bool GetAllPages() const { return m_printWhat == Print::AllPages; }
+    bool GetSelection() const { return m_printWhat == Print::Selection; }
+    bool GetCurrentPage() const { return m_printWhat == Print::CurrentPage; }
+    bool GetSpecifiedPages() const { return m_printWhat == Print::SpecifiedPages; }
     bool GetCollate() const { return m_printCollate; }
     bool GetPrintToFile() const { return m_printToFile; }
 
-    void SetFromPage(int v) { m_printFromPage = v; }
-    void SetToPage(int v) { m_printToPage = v; }
+    // Similarly to the getters above, these functions can be used only to
+    // define a single continuous range of pages to print, use SetPageRanges()
+    // for anything else. Note that if you do use SetPageRanges() to specify
+    // multiple ranges, then these functions cannot be used.
+    void SetFromPage(int v);
+    void SetToPage(int v);
+
     void SetMinPage(int v) { m_printMinPage = v; }
     void SetMaxPage(int v) { m_printMaxPage = v; }
     void SetNoCopies(int v) { m_printNoCopies = v; }
-    void SetAllPages(bool flag) { m_printAllPages = flag; }
-    void SetSelection(bool flag) { m_printSelection = flag; }
+
+    // Avoid calling these functions with flag == false as it's not really
+    // obvious what they do in this case.
+    void SetAllPages(bool flag = true) { DoSetWhat(Print::AllPages, flag); }
+    void SetSelection(bool flag = true) { DoSetWhat(Print::Selection, flag); }
+    void SetCurrentPage(bool flag = true) { DoSetWhat(Print::CurrentPage, flag); }
+
     void SetCollate(bool flag) { m_printCollate = flag; }
     void SetPrintToFile(bool flag) { m_printToFile = flag; }
 
     void EnablePrintToFile(bool flag) { m_printEnablePrintToFile = flag; }
     void EnableSelection(bool flag) { m_printEnableSelection = flag; }
+    void EnableCurrentPage(bool flag) { m_printEnableCurrentPage = flag; }
     void EnablePageNumbers(bool flag) { m_printEnablePageNumbers = flag; }
     void EnableHelp(bool flag) { m_printEnableHelp = flag; }
 
     bool GetEnablePrintToFile() const { return m_printEnablePrintToFile; }
     bool GetEnableSelection() const { return m_printEnableSelection; }
+    bool GetEnableCurrentPage() const { return m_printEnableCurrentPage; }
     bool GetEnablePageNumbers() const { return m_printEnablePageNumbers; }
     bool GetEnableHelp() const { return m_printEnableHelp; }
 
@@ -192,24 +240,48 @@ public:
     wxPrintData& GetPrintData() { return m_printData; }
     void SetPrintData(const wxPrintData& printData) { m_printData = printData; }
 
-    void operator=(const wxPrintDialogData& data);
+    void SetPageRanges(const wxPrintPageRanges& pageRanges) { m_printPageRanges = pageRanges; }
+    const wxPrintPageRanges& GetPageRanges() const { return m_printPageRanges; }
+
+    void SetMaxPageRanges(int maxPageRanges) { m_maxPageRanges = maxPageRanges; }
+    int GetMaxPageRanges() const { return m_maxPageRanges; }
+
+    wxPrintDialogData& operator=(const wxPrintDialogData& data) = default;
     void operator=(const wxPrintData& data); // Sets internal m_printData member
 
 private:
-    int             m_printFromPage;
-    int             m_printToPage;
-    int             m_printMinPage;
-    int             m_printMaxPage;
-    int             m_printNoCopies;
-    bool            m_printAllPages;
-    bool            m_printCollate;
-    bool            m_printToFile;
-    bool            m_printSelection;
-    bool            m_printEnableSelection;
-    bool            m_printEnablePageNumbers;
-    bool            m_printEnableHelp;
-    bool            m_printEnablePrintToFile;
+    enum class Print
+    {
+        SpecifiedPages, // Default used if none of the other flags are selected.
+        AllPages,
+        Selection,
+        CurrentPage
+    };
+
+    void DoSetWhat(Print what, bool flag);
+
+    Print           m_printWhat = Print::AllPages;
+
+    int             m_printMinPage = 0;
+    int             m_printMaxPage = 0;
+    int             m_printNoCopies = 1;
+
+    bool            m_printCollate = false;
+    bool            m_printToFile = false;
+    bool            m_printEnableSelection = false;
+    bool            m_printEnableCurrentPage = false;
+    bool            m_printEnablePageNumbers = true;
+    bool            m_printEnableHelp = false;
+    bool            m_printEnablePrintToFile = true;
     wxPrintData     m_printData;
+
+    // Maximum number of page ranges that the user can specify via the print dialog.
+    int m_maxPageRanges = 64;
+
+    // The page ranges to print. If this vector contains more then m_maxPageRanges
+    // elements, then the maximum number of page ranges that the user can specify
+    // via the print dialog is the size of this vector.
+    wxPrintPageRanges m_printPageRanges;
 
 private:
     wxDECLARE_DYNAMIC_CLASS(wxPrintDialogData);
@@ -226,9 +298,8 @@ class WXDLLIMPEXP_CORE wxPageSetupDialogData: public wxObject
 {
 public:
     wxPageSetupDialogData();
-    wxPageSetupDialogData(const wxPageSetupDialogData& dialogData);
+    wxPageSetupDialogData(const wxPageSetupDialogData& dialogData) = default;
     wxPageSetupDialogData(const wxPrintData& printData);
-    virtual ~wxPageSetupDialogData();
 
     wxSize GetPaperSize() const { return m_paperSize; }
     wxPaperSize GetPaperId() const { return m_printData.GetPaperId(); }
@@ -278,7 +349,7 @@ public:
     // Use paper id in wxPrintData to set this object's paper size
     void CalculatePaperSizeFromId();
 
-    wxPageSetupDialogData& operator=(const wxPageSetupDialogData& data);
+    wxPageSetupDialogData& operator=(const wxPageSetupDialogData& data) = default;
     wxPageSetupDialogData& operator=(const wxPrintData& data);
 
     wxPrintData& GetPrintData() { return m_printData; }
@@ -291,13 +362,13 @@ private:
     wxPoint         m_minMarginBottomRight;
     wxPoint         m_marginTopLeft;
     wxPoint         m_marginBottomRight;
-    bool            m_defaultMinMargins;
-    bool            m_enableMargins;
-    bool            m_enableOrientation;
-    bool            m_enablePaper;
-    bool            m_enablePrinter;
-    bool            m_getDefaultInfo; // Equiv. to PSD_RETURNDEFAULT
-    bool            m_enableHelp;
+    bool            m_defaultMinMargins = false;
+    bool            m_enableMargins = true;
+    bool            m_enableOrientation = true;
+    bool            m_enablePaper = true;
+    bool            m_enablePrinter = true;
+    bool            m_getDefaultInfo = false; // Equiv. to PSD_RETURNDEFAULT
+    bool            m_enableHelp = false;
     wxPrintData     m_printData;
 
 private:

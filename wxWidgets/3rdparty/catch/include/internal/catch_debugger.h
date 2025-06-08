@@ -11,27 +11,29 @@
 
 #include "catch_platform.h"
 
-#include <string>
-
-namespace Catch{
-
+namespace Catch {
     bool isDebuggerActive();
-    void writeToDebugConsole( std::string const& text );
 }
 
 #ifdef CATCH_PLATFORM_MAC
 
-    // The following code snippet based on:
-    // http://cocoawithlove.com/2008/03/break-into-debugger.html
-    #if defined(__ppc64__) || defined(__ppc__)
-        #define CATCH_TRAP() \
-                __asm__("li r0, 20\nsc\nnop\nli r0, 37\nli r4, 2\nsc\nnop\n" \
-                : : : "memory","r0","r3","r4" ) /* NOLINT */
+    #if defined(__i386__) || defined(__x86_64__)
+        #define CATCH_TRAP() __asm__("int $3\n" : : ) /* NOLINT */
     #elif defined(__aarch64__)
-        // Backport of https://github.com/catchorg/Catch2/commit/a25c1a24af8bffd35727a888a307ff0280cf9387
-        #define CATCH_TRAP() __asm__(".inst 0xd4200000")
-    #else
-        #define CATCH_TRAP() __asm__("int $3\n" : : /* NOLINT */ )
+        #define CATCH_TRAP()  __asm__(".inst 0xd43e0000")
+    #endif
+
+#elif defined(CATCH_PLATFORM_IPHONE)
+
+    // use inline assembler
+    #if defined(__i386__) || defined(__x86_64__)
+        #define CATCH_TRAP()  __asm__("int $3")
+    #elif defined(__aarch64__)
+        #define CATCH_TRAP()  __asm__(".inst 0xd4200000")
+    #elif defined(__arm__) && !defined(__thumb__)
+        #define CATCH_TRAP()  __asm__(".inst 0xe7f001f0")
+    #elif defined(__arm__) &&  defined(__thumb__)
+        #define CATCH_TRAP()  __asm__(".inst 0xde01")
     #endif
 
 #elif defined(CATCH_PLATFORM_LINUX)
@@ -52,10 +54,12 @@ namespace Catch{
     #define CATCH_TRAP() DebugBreak()
 #endif
 
-#ifdef CATCH_TRAP
-    #define CATCH_BREAK_INTO_DEBUGGER() if( Catch::isDebuggerActive() ) { CATCH_TRAP(); }
-#else
-    #define CATCH_BREAK_INTO_DEBUGGER() Catch::alwaysTrue();
+#ifndef CATCH_BREAK_INTO_DEBUGGER
+    #ifdef CATCH_TRAP
+        #define CATCH_BREAK_INTO_DEBUGGER() []{ if( Catch::isDebuggerActive() ) { CATCH_TRAP(); } }()
+    #else
+        #define CATCH_BREAK_INTO_DEBUGGER() []{}()
+    #endif
 #endif
 
 #endif // TWOBLUECUBES_CATCH_DEBUGGER_H_INCLUDED

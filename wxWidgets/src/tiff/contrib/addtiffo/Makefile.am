@@ -27,10 +27,11 @@ LIBTIFF = $(top_builddir)/libtiff/libtiff.la
 
 EXTRA_DIST = \
 	CMakeLists.txt \
-	Makefile.vc \
 	README
 
+if TIFF_CONTRIB
 noinst_PROGRAMS = addtiffo
+endif
 
 addtiffo_SOURCES = addtiffo.c tif_overview.c tif_ovrcache.c tif_ovrcache.h
 addtiffo_LDADD = $(LIBTIFF)

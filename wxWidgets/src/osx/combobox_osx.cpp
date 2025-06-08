@@ -2,7 +2,6 @@
 // Name:        src/osx/combobox_osx.cpp
 // Purpose:     wxComboBox class using HIView ComboBox
 // Author:      Stefan Csomor
-// Modified by:
 // Created:     1998-01-01
 // Copyright:   (c) Stefan Csomor
 // Licence:     wxWindows licence
@@ -59,13 +58,13 @@ bool wxComboBox::Create(wxWindow *parent, wxWindowID id,
 {
     DontCreatePeer();
     
-    m_text = NULL;
-    m_choice = NULL;
+    m_text = nullptr;
+    m_choice = nullptr;
     
     if ( !wxControl::Create( parent, id, pos, size, style, validator, name ) )
         return false;
 
-    SetPeer(wxWidgetImpl::CreateComboBox( this, parent, id, NULL, pos, size, style, GetExtraStyle() ));
+    SetPeer(wxWidgetImpl::CreateComboBox( this, parent, id, nullptr, pos, size, style, GetExtraStyle() ));
 
     MacPostControlCreate( pos, size );
 
@@ -107,7 +106,7 @@ int wxComboBox::DoInsertItems(const wxArrayStringsAdapter& items,
 
         if (idx > m_datas.GetCount())
             m_datas.SetCount(idx);
-        m_datas.Insert( NULL, idx );
+        m_datas.Insert( nullptr, idx );
         AssignNewItemClientData(idx, clientData, i, type);
     }
 
@@ -261,10 +260,10 @@ void wxComboBox::OnChar(wxKeyEvent& event)
         case WXK_NUMPAD_ENTER:
             if (m_windowStyle & wxTE_PROCESS_ENTER)
             {
-                wxCommandEvent event(wxEVT_TEXT_ENTER, m_windowId);
-                event.SetEventObject(this);
-                event.SetString(GetValue());
-                if (HandleWindowEvent(event))
+                wxCommandEvent evt(wxEVT_TEXT_ENTER, m_windowId);
+                evt.SetEventObject(this);
+                evt.SetString(GetValue());
+                if (HandleWindowEvent(evt))
                     return;
             }
 
@@ -275,9 +274,9 @@ void wxComboBox::OnChar(wxKeyEvent& event)
                     wxButton *def = wxDynamicCast(tlw->GetDefaultItem(), wxButton);
                     if (def && def->IsEnabled())
                     {
-                        wxCommandEvent event(wxEVT_BUTTON, def->GetId());
-                        event.SetEventObject(def);
-                        def->Command(event);
+                        wxCommandEvent evt(wxEVT_BUTTON, def->GetId());
+                        evt.SetEventObject(def);
+                        def->Command(evt);
                         return;
                     }
                 }

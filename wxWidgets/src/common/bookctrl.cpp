@@ -2,7 +2,6 @@
 // Name:        src/common/bookctrl.cpp
 // Purpose:     wxBookCtrlBase implementation
 // Author:      Vadim Zeitlin
-// Modified by:
 // Created:     19.08.03
 // Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwidgets.org>
 // Licence:     wxWindows licence
@@ -22,9 +21,9 @@
 
 #if wxUSE_BOOKCTRL
 
-#include "wx/imaglist.h"
+#include "wx/compositebookctrl.h"
 
-#include "wx/bookctrl.h"
+#include "wx/imaglist.h"
 
 // ============================================================================
 // implementation
@@ -50,13 +49,13 @@ wxEND_EVENT_TABLE()
 void wxBookCtrlBase::Init()
 {
     m_selection = wxNOT_FOUND;
-    m_bookctrl = NULL;
+    m_bookctrl = nullptr;
     m_fitToCurrentPage = false;
 
     m_internalBorder = 5;
 
     m_controlMargin = 0;
-    m_controlSizer = NULL;
+    m_controlSizer = nullptr;
 
     Bind(wxEVT_DPI_CHANGED, &wxBookCtrlBase::WXHandleDPIChanged, this);
 }
@@ -315,7 +314,7 @@ void wxBookCtrlBase::OnHelp(wxHelpEvent& event)
             if ( FindPage(source) != wxNOT_FOUND )
             {
                 // The event comes from our own page, don't send it back to it.
-                source = NULL;
+                source = nullptr;
             }
             else
             {
@@ -336,7 +335,7 @@ void wxBookCtrlBase::OnHelp(wxHelpEvent& event)
     {
         // this event is for the book control itself, redirect it to the
         // corresponding page
-        wxWindow *page = NULL;
+        wxWindow *page = nullptr;
 
         if ( event.GetOrigin() == wxHelpEvent::Origin_HelpButton )
         {
@@ -386,7 +385,7 @@ wxBookCtrlBase::InsertPage(size_t nPage,
                            int WXUNUSED(imageId))
 {
     wxCHECK_MSG( page || AllowNullPage(), false,
-                 wxT("NULL page in wxBookCtrlBase::InsertPage()") );
+                 wxT("null page in wxBookCtrlBase::InsertPage()") );
     wxCHECK_MSG( nPage <= m_pages.size(), false,
                  wxT("invalid page index in wxBookCtrlBase::InsertPage()") );
 
@@ -402,18 +401,22 @@ wxBookCtrlBase::InsertPage(size_t nPage,
 bool wxBookCtrlBase::DeletePage(size_t nPage)
 {
     wxWindow *page = DoRemovePage(nPage);
-    if ( !(page || AllowNullPage()) )
-        return false;
 
-    // delete NULL is harmless
-    delete page;
+    if ( !page )
+    {
+        // Normally a null page indicates a problem, but it can be valid if
+        // null pages are allowed in the control.
+        return AllowNullPage();
+    }
+
+    page->Destroy();
 
     return true;
 }
 
 wxWindow *wxBookCtrlBase::DoRemovePage(size_t nPage)
 {
-    wxCHECK_MSG( nPage < m_pages.size(), NULL,
+    wxCHECK_MSG( nPage < m_pages.size(), nullptr,
                  wxT("invalid page index in wxBookCtrlBase::DoRemovePage()") );
 
     wxWindow *pageRemoved = m_pages[nPage];
@@ -556,5 +559,11 @@ int wxBookCtrlBase::DoSetSelection(size_t n, int flags)
 }
 
 wxIMPLEMENT_DYNAMIC_CLASS(wxBookCtrlEvent, wxNotifyEvent);
+
+// Implement the trivial ctor here to ensure it's emitted here and exported
+// from the DLL instead of having an inline version of it which may result in
+// link errors if it happens to be instantiated both inside and outside of the
+// DLL, see #22805.
+wxCompositeBookCtrlBase::wxCompositeBookCtrlBase() = default;
 
 #endif // wxUSE_BOOKCTRL

@@ -4,7 +4,6 @@
 //              wxWidgets itself, it may contain identifiers which don't start
 //              with "wx".
 // Author:      Stefan Csomor
-// Modified by:
 // Created:     1998-01-01
 // Copyright:   (c) Stefan Csomor
 // Licence:     wxWindows licence
@@ -49,7 +48,7 @@
 void WXDLLIMPEXP_CORE wxMacStringToPascal( const wxString&from , unsigned char * to );
 wxString WXDLLIMPEXP_CORE wxMacMakeStringFromPascal( const unsigned char * from );
 
-WXDLLIMPEXP_BASE wxString wxMacFSRefToPath( const FSRef *fsRef , CFStringRef additionalPathComponent = NULL );
+WXDLLIMPEXP_BASE wxString wxMacFSRefToPath( const FSRef *fsRef , CFStringRef additionalPathComponent = nullptr );
 WXDLLIMPEXP_BASE OSStatus wxMacPathToFSRef( const wxString&path , FSRef *fsRef );
 WXDLLIMPEXP_BASE wxString wxMacHFSUniStrToString( ConstHFSUniStr255Param uniname );
 
@@ -78,6 +77,8 @@ WXDLLIMPEXP_BASE CFURLRef wxOSXCreateURLFromFileSystemPath( const wxString& path
 #include "wx/toplevel.h"
 
 class wxTextProofOptions;
+struct wxTextSearchResult;
+struct wxTextSearch;
 
 class WXDLLIMPEXP_CORE wxMacCGContextStateSaver
 {
@@ -124,9 +125,9 @@ WXDLLIMPEXP_CORE double wxOSXGetMainScreenContentScaleFactor();
 // UI
 
 CGSize WXDLLIMPEXP_CORE wxOSXGetImageSize(WXImage image);
-CGImageRef WXDLLIMPEXP_CORE wxOSXCreateCGImageFromImage( WXImage nsimage, double *scale = NULL );
+CGImageRef WXDLLIMPEXP_CORE wxOSXCreateCGImageFromImage( WXImage nsimage, double *scale = nullptr );
 CGImageRef WXDLLIMPEXP_CORE wxOSXGetCGImageFromImage( WXImage nsimage, CGRect* r, CGContextRef cg);
-CGContextRef WXDLLIMPEXP_CORE wxOSXCreateBitmapContextFromImage( WXImage nsimage, bool *isTemplate = NULL);
+CGContextRef WXDLLIMPEXP_CORE wxOSXCreateBitmapContextFromImage( WXImage nsimage, bool *isTemplate = nullptr);
 WXImage WXDLLIMPEXP_CORE wxOSXGetImageFromCGImage( CGImageRef image, double scale = 1.0, bool isTemplate = false);
 double WXDLLIMPEXP_CORE wxOSXGetImageScaleFactor(WXImage image);
 
@@ -254,7 +255,7 @@ public :
 
     wxWindowMac*        GetWXPeer() const { return m_wxPeer; }
 
-    bool IsOk() const { return GetWXWidget() != NULL; }
+    bool IsOk() const { return GetWXWidget() != nullptr; }
 
     // not only the control itself, but also all its parents must be visible
     // in order for this function to return true
@@ -302,7 +303,7 @@ public :
     // native view coordinates are topleft to bottom right (flipped regarding CoreGraphics origin)
     virtual bool        IsFlipped() const { return true; }
 
-    virtual void        SetNeedsDisplay( const wxRect* where = NULL ) = 0;
+    virtual void        SetNeedsDisplay( const wxRect* where = nullptr ) = 0;
     virtual bool        GetNeedsDisplay() const = 0;
 
     virtual void        EnableFocusRing(bool WXUNUSED(enabled)) {}
@@ -322,12 +323,12 @@ public :
 
     virtual void        SetDefaultButton( bool isDefault ) = 0;
     virtual void        PerformClick() = 0;
-    virtual void        SetLabel( const wxString& title, wxFontEncoding encoding ) = 0;
+    virtual void        SetLabel( const wxString& title ) = 0;
 #if wxUSE_MARKUP && wxOSX_USE_COCOA
     virtual void        SetLabelMarkup( const wxString& WXUNUSED(markup) ) { }
 #endif
-    virtual void        SetInitialLabel( const wxString& title, wxFontEncoding encoding )
-                            { SetLabel(title, encoding); }
+    virtual void        SetInitialLabel( const wxString& title )
+                            { SetLabel(title); }
 
     virtual void        SetCursor( const wxCursor & cursor ) = 0;
     virtual void        CaptureMouse() = 0;
@@ -362,9 +363,17 @@ public :
     // state changing logic is required from the outside
     virtual bool        ButtonClickDidStateChange() = 0;
 
-    virtual void        InstallEventHandler( WXWidget control = NULL ) = 0;
+    virtual void        InstallEventHandler( WXWidget control = nullptr ) = 0;
 
     virtual bool        EnableTouchEvents(int eventsMask) = 0;
+
+    // scrolling views need a clip subview that acts as parent for native children
+    // (except for the scollbars) which are children of the view itself
+    virtual void        AdjustClippingView(wxScrollBar* horizontal, wxScrollBar* vertical);
+    virtual void        UseClippingView();
+
+    // returns native view which acts as a parent for native children
+    virtual WXWidget    GetContainer() const;
 
     // Mechanism used to keep track of whether a change should send an event
     // Do SendEvents(false) when starting actions that would trigger programmatic events
@@ -616,14 +625,14 @@ protected :
 class WXDLLIMPEXP_CORE wxListWidgetColumn
 {
 public :
-    virtual ~wxListWidgetColumn() {}
+    virtual ~wxListWidgetColumn() = default;
 } ;
 
 class WXDLLIMPEXP_CORE wxListWidgetCellValue
 {
 public :
-    wxListWidgetCellValue() {}
-    virtual ~wxListWidgetCellValue() {}
+    wxListWidgetCellValue() = default;
+    virtual ~wxListWidgetCellValue() = default;
 
    virtual void Set( CFStringRef value ) = 0;
     virtual void Set( const wxString& value ) = 0;
@@ -638,8 +647,8 @@ public :
 class WXDLLIMPEXP_CORE wxListWidgetImpl
 {
 public:
-    wxListWidgetImpl() {}
-    virtual ~wxListWidgetImpl() { }
+    wxListWidgetImpl() = default;
+    virtual ~wxListWidgetImpl() = default;
 
     virtual wxListWidgetColumn*     InsertTextColumn( unsigned pos, const wxString& title, bool editable = false,
                                 wxAlignment just = wxALIGN_LEFT , int defaultWidth = -1) = 0 ;
@@ -666,7 +675,7 @@ public:
     virtual void            ListScrollTo( unsigned int n ) = 0;
     virtual int             ListGetTopItem() const = 0;
     virtual int             ListGetCountPerPage() const = 0;
-    virtual void            UpdateLine( unsigned int n, wxListWidgetColumn* col = NULL ) = 0;
+    virtual void            UpdateLine( unsigned int n, wxListWidgetColumn* col = nullptr ) = 0;
     virtual void            UpdateLineToEnd( unsigned int n) = 0;
 
     // accessing content
@@ -694,20 +703,26 @@ public :
     // our ctor and implement GetTextEntry() ourselves.
     wxTextWidgetImpl(wxTextEntry *entry) : m_entry(entry) {}
 
-    virtual ~wxTextWidgetImpl() {}
+    virtual ~wxTextWidgetImpl() = default;
 
     wxTextEntry *GetTextEntry() const { return m_entry; }
 
     virtual bool CanFocus() const { return true; }
 
+    virtual wxTextSearchResult SearchText(const wxTextSearch &search) const = 0;
+
     virtual wxString GetStringValue() const = 0 ;
     virtual void SetStringValue( const wxString &val ) = 0 ;
+    virtual wxString GetRTFValue() const = 0;
+    virtual void SetRTFValue( const wxString& val ) = 0;
     virtual void SetSelection( long from, long to ) = 0 ;
     virtual void GetSelection( long* from, long* to ) const = 0 ;
     virtual void WriteText( const wxString& str ) = 0 ;
 
     virtual bool CanClipMaxLength() const { return false; }
     virtual void SetMaxLength(unsigned long WXUNUSED(len)) {}
+
+    virtual bool IsRTFSupported() { return false; }
 
     virtual bool CanForceUpper() { return false; }
     virtual void ForceUpper() {}
@@ -766,9 +781,9 @@ class WXDLLIMPEXP_CORE wxComboWidgetImpl
 
 {
 public :
-    wxComboWidgetImpl() {}
+    wxComboWidgetImpl() = default;
 
-    virtual ~wxComboWidgetImpl() {}
+    virtual ~wxComboWidgetImpl() = default;
 
     virtual int GetSelectedItem() const { return -1; }
     virtual void SetSelectedItem(int WXUNUSED(item)) {}
@@ -796,9 +811,9 @@ class WXDLLIMPEXP_CORE wxChoiceWidgetImpl
 
 {
 public :
-    wxChoiceWidgetImpl() {}
+    wxChoiceWidgetImpl() = default;
 
-    virtual ~wxChoiceWidgetImpl() {}
+    virtual ~wxChoiceWidgetImpl() = default;
 
     virtual int GetSelectedItem() const { return -1; }
 
@@ -830,8 +845,8 @@ public :
 class wxButtonImpl
 {
     public :
-    wxButtonImpl(){}
-    virtual ~wxButtonImpl(){}
+    wxButtonImpl() = default;
+    virtual ~wxButtonImpl() = default;
 
     virtual void SetPressedBitmap( const wxBitmapBundle& bitmap ) = 0;
 } ;
@@ -843,8 +858,8 @@ class wxButtonImpl
 class wxSearchWidgetImpl
 {
 public :
-    wxSearchWidgetImpl(){}
-    virtual ~wxSearchWidgetImpl(){}
+    wxSearchWidgetImpl() = default;
+    virtual ~wxSearchWidgetImpl() = default;
 
     // search field options
     virtual void ShowSearchButton( bool show ) = 0;
@@ -945,7 +960,7 @@ public :
         return false;
     }
 
-    virtual void SetTitle( const wxString& title, wxFontEncoding encoding ) = 0;
+    virtual void SetTitle( const wxString& title ) = 0;
 
     virtual bool EnableCloseButton(bool enable) = 0;
     virtual bool EnableMaximizeButton(bool enable) = 0;
@@ -1043,7 +1058,7 @@ public:
     typedef T element_type;
 
     wxNSObjRef()
-        : m_ptr(NULL)
+        : m_ptr(nullptr)
     {
     }
 
@@ -1095,7 +1110,7 @@ public:
         return m_ptr;
     }
 
-    void reset( T p = NULL )
+    void reset( T p = nullptr )
     {
         wxMacCocoaRelease(m_ptr);
         m_ptr = p; // Automatic conversion should occur
@@ -1105,7 +1120,7 @@ public:
     T release()
     {
         T p = m_ptr;
-        m_ptr = NULL;
+        m_ptr = nullptr;
         return p;
     }
 

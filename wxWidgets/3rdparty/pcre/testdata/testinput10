@@ -1,6 +1,8 @@
 # This set of tests is for UTF-8 support and Unicode property support, with
 # relevance only for the 8-bit library.
 
+#newline_default lf any anycrlf
+
 # The next 5 patterns have UTF-8 errors
 
 /[�]/utf
@@ -184,9 +186,6 @@
 \= Expect no match
     \x{c0}
     \x{f0}
-
-/Ā{3,4}/IB,utf
-  \x{100}\x{100}\x{100}\x{100\x{100}
 
 /(\x{100}+|x)/IB,utf
 
@@ -485,11 +484,11 @@
     
 # Check name length with non-ASCII characters 
 
-/(?'ABáC678901234567890123456789012'...)/utf
+/(?'ABáC678901234567890123456789012012345678901234567890123456789AB012345678901234567890123456789AB012345678901234567890123456789AB'...)/utf
 
-/(?'ABáC6789012345678901234567890123'...)/utf
+/(?'ABáC6789012345678901234567890123012345678901234567890123456789AB012345678901234567890123456789AB012345678901234567890123456789AB'...)/utf
 
-/(?'ABZC6789012345678901234567890123'...)/utf
+/(?'ABZC6789012345678901234567890123012345678901234567890123456789AB012345678901234567890123456789AB012345678901234567890123456789AB'...)/utf
 
 /(?(n/utf
 
@@ -505,6 +504,25 @@
     ab\x80ab\=ph
 \= Expect no match
     ab\x80cdef\=ph
+
+/.a/match_invalid_utf
+    ab\=ph
+    ab\=ps
+    b\xf0\x91\x88b\=ph
+    b\xf0\x91\x88b\=ps
+    b\xf0\x91\x88\xb4a
+\= Expect no match
+    b\x80\=ph
+    b\x80\=ps
+    b\xf0\x91\x88\=ph
+    b\xf0\x91\x88\=ps
+
+/.a$/match_invalid_utf
+    ab\=ph
+    ab\=ps
+\= Expect no match
+    b\xf0\x91\x98\=ph
+    b\xf0\x91\x98\=ps
 
 /ab$/match_invalid_utf
     ab\x80cdeab
@@ -616,5 +634,81 @@
 /\bch\b/utf,match_invalid_utf
     qchq\=ph
     qchq\=ps
+
+/line1\nbreak/firstline,utf,match_invalid_utf
+    line1\nbreak
+    line0\nline1\nbreak
+
+/A\z/utf,match_invalid_utf
+    A\x80\x42\n
+
+/ab$/match_invalid_utf
+\= Expect no match            
+    ab\x80cde         
+
+/ab\z/match_invalid_utf
+\= Expect no match            
+    ab\x80cde         
+
+/ab\Z/match_invalid_utf
+\= Expect no match            
+    ab\x80cde         
+
+/(..)(*scs:(1)ab\z)/match_invalid_utf
+    ab\x80cde         
+
+/(..)(*scs:(1)ab\Z)/match_invalid_utf
+    ab\x80cde         
+
+/(..)(*scs:(1)ab$)/match_invalid_utf
+    ab\x80cde         
+
+/(.) \1/i,ucp
+    i I
+
+/(.) \1/i,ucp,turkish_casing
+
+/[\x60-\x7f]/i,ucp,turkish_casing
+    i
+\= Expect no match
+    I
+
+/[\x60-\xc0]/i,ucp,turkish_casing
+    i
+\= Expect no match
+    I
+
+/[\x80-\xc0]/i,ucp,turkish_casing
+\= Expect no match
+    i
+    I
+
+# python_octal
+
+/\400/
+
+/abc/substitute_extended
+    abc\=replace=\400
+
+/\400/python_octal
+
+/abc/substitute_extended,python_octal
+    abc\=replace=\400
+
+/\400/utf
+
+/abc/utf,substitute_extended
+    abc\=replace=\400
+
+/\400/utf,python_octal
+
+/abc/utf,substitute_extended,python_octal
+    abc\=replace=\400
+
+/[\x00-\x2f\x11-\xff]+/B
+    abcd
+
+/[\x00-\x2f\x11-\xff]{4,}/B,utf
+    abcd
 
 # End of testinput10

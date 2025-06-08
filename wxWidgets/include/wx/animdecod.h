@@ -75,6 +75,7 @@ enum wxAnimationType
     wxANIMATION_TYPE_INVALID,
     wxANIMATION_TYPE_GIF,
     wxANIMATION_TYPE_ANI,
+    wxANIMATION_TYPE_WEBP,
 
     wxANIMATION_TYPE_ANY
 };
@@ -100,7 +101,7 @@ public:
                     CallIfCanSeek(&wxAnimationDecoder::DoCanRead, this);
     }
 
-    virtual wxAnimationDecoder *Clone() const = 0;
+    wxNODISCARD virtual wxAnimationDecoder *Clone() const = 0;
     virtual wxAnimationType GetType() const = 0;
 
     // convert given frame to wxImage

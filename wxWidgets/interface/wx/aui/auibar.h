@@ -102,7 +102,7 @@ enum wxAuiToolBarArtSetting
     /**
       Overflow button size in wxAuiToolBar.
     */
-    wxAUI_TBART_OVERFLOW_SIZE = 2
+    wxAUI_TBART_OVERFLOW_SIZE = 2,
 
     /**
       Drop down button size in wxAuiToolBar.
@@ -398,13 +398,44 @@ public:
     bool IsSticky() const;
 
     /**
+        Associates a number with the item.
 
+        @param userData Number to associate
+
+        @see GetUserData()
     */
-    void SetUserData(long l);
-    /**
+    void SetUserData(long userData);
 
+    /**
+        Get number associated with the item.
+
+        @return Associated number
+
+        @see SetUserData()
     */
     long GetUserData() const;
+
+    /**
+        Associates a wxObject with the item.
+
+        @param clientData Pointer to the wxObject
+
+        @see GetClientData()
+
+        @since 3.3.0
+    */
+    void SetClientData(wxObject* clientData);
+
+    /**
+        Get wxObject associated with the item.
+
+        @return Pointer to the associated wxObject
+
+        @see SetClientData()
+
+        @since 3.3.0
+    */
+    wxObject* GetClientData() const;
 
     /**
 
@@ -421,6 +452,17 @@ public:
         @since 3.1.5
      */
     bool CanBeToggled() const;
+};
+
+/**
+    A vector of AUI toolbar items.
+
+    This class is actually a legacy container (see @ref overview_container for
+    more details), but it can, and should be, handled as just a vector of
+    wxAuiToolBarItem objects in the application code.
+*/
+class wxAuiToolBarItemArray : public std::vector<wxAuiToolBarItem>
+{
 };
 
 /**
@@ -505,8 +547,56 @@ public:
                          wxWindow* wnd,
                          const wxAuiToolBarItem& item) = 0;
 
-    virtual int GetElementSize(int element_id) = 0;
-    virtual void SetElementSize(int element_id, int size) = 0;
+    /**
+        Get the element size scaled by the DPI of the given window.
+
+        This function should be used to get the size of the element in pixels.
+
+        The default version delegates to GetElementSize(), override this
+        function if a different behaviour (e.g. to use some smarter algorithm
+        for scaling instead of just multiplying by the DPI factor) is needed.
+
+        @param elementId
+            One of ::wxAuiToolBarArtSetting elements.
+        @param window
+            A valid window, typically wxAuiToolBar itself.
+        @return
+            The size of the element in pixels.
+
+        @see SetElementSize()
+
+        @since 3.3.0
+     */
+    virtual int GetElementSizeForWindow(int elementId, const wxWindow* window);
+
+    /**
+        Returns the size of the given element in DIPs.
+
+        This function is typically more convenient to override, as it can just
+        return the same value as was passed to SetElementSize(), but it
+        shouldn't usually be called, use GetElementSizeForWindow() instead.
+
+        @param elementId
+            One of ::wxAuiToolBarArtSetting elements.
+        @return
+            The size of the element in DIPs.
+     */
+    virtual int GetElementSize(int elementId) = 0;
+
+    /**
+        Sets the size of the given element in DIPs.
+
+        Note that this function takes the size in DPI-independent pixels and
+        this size will be scaled by the factor depending on the DPI being
+        actually used by GetElementSizeForWindow(). In particular, do _not_ use
+        wxWindow::FromDIP() for the @a size argument passed to this function.
+
+        @param elementId
+            One of ::wxAuiToolBarArtSetting elements.
+        @param size
+            The size of the element in DIPs.
+     */
+    virtual void SetElementSize(int elementId, int size) = 0;
 
     virtual int ShowDropDown(
                          wxWindow* wnd,
@@ -596,8 +686,24 @@ public:
                 wxWindow* wnd,
                 const wxAuiToolBarItem& item);
 
-    virtual int GetElementSize(int element);
-    virtual void SetElementSize(int element_id, int size);
+    /**
+        Return the size of the element.
+
+        Implement the base class pure virtual function by returning the default
+        element size or the last value passed to SetElementSize().
+     */
+    virtual int GetElementSize(int elementId);
+
+    /**
+        Change the size of the element.
+
+        Implements the base class pure virtual function by storing the value to
+        be returned by GetElementSize() and used by GetElementSizeForWindow().
+
+        As for the base class function, @a size is in DIPs, _not_ pixels, so
+        wxWindow::FromDIP() should _not_ be used for it.
+     */
+    virtual void SetElementSize(int elementId, int size);
 
     virtual int ShowDropDown(wxWindow* wnd,
                              const wxAuiToolBarItemArray& items);
@@ -703,6 +809,13 @@ public:
     bool SetFont(const wxFont& font);
 
 
+    ///@{
+    /**
+        Add a new tool to the toolbar.
+
+        This function works similarly to the corresponding wxToolBar::AddTool()
+        overloads. Note that before 3.3.0 the @a client_data parameter was not used.
+     */
     wxAuiToolBarItem* AddTool(int toolId,
                  const wxString& label,
                  const wxBitmapBundle& bitmap,
@@ -722,9 +835,10 @@ public:
                  const wxBitmapBundle& bitmap,
                  const wxBitmapBundle& disabled_bitmap,
                  bool toggle = false,
-                 wxObject* client_data = NULL,
+                 wxObject* client_data = nullptr,
                  const wxString& short_help_string = wxEmptyString,
                  const wxString& long_help_string = wxEmptyString);
+    ///@}
 
     wxAuiToolBarItem* AddLabel(int toolId,
                   const wxString& label = wxEmptyString,
@@ -807,6 +921,30 @@ public:
     void SetMargins(int x, int y);
     void SetMargins(int left, int right, int top, int bottom);
 
+    /**
+        Associates a wxObject with the item identified by id.
+
+        @param toolId Identifier of the desired item
+        @param clientData Pointer to the wxObject
+
+        @see GetToolClientData()
+
+        @since 3.3.0
+    */
+    void SetToolClientData(int toolId, wxObject* clientData);
+
+    /**
+        Get wxObject associated with the item identified by id.
+
+        @param toolId Identifier of the desired item
+        @return Pointer to the associated wxObject
+
+        @see SetToolClientData()
+
+        @since 3.3.0
+    */
+    wxObject* GetToolClientData(int toolId) const;
+
     void SetToolBitmapSize(const wxSize& size);
     wxSize GetToolBitmapSize() const;
 
@@ -851,7 +989,19 @@ public:
     void SetToolProportion(int toolId, int proportion);
     int  GetToolProportion(int toolId) const;
 
+    /**
+        Set the tool separation in DIPs.
+
+        Please note that because this function passes @a separation to
+        wxAuiToolBarArt::SetElementSize() it should be given in DIPs, not in
+        (logical) pixels. I.e. do _not_ use wxWindow::FromDIP() for this
+        function argument.
+     */
     void SetToolSeparation(int separation);
+
+    /**
+        Returns the separation between tools in logical pixels.
+     */
     int GetToolSeparation() const;
 
     void SetToolSticky(int toolId, bool sticky);

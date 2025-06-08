@@ -10,12 +10,15 @@
 #ifndef _WX_FILEDLGCUSTOMIZE_H_
 #define _WX_FILEDLGCUSTOMIZE_H_
 
+#include "wx/event.h"
 #include "wx/vector.h"
 
 class wxFileDialogCustomControlImpl;
 class wxFileDialogButtonImpl;
 class wxFileDialogCheckBoxImpl;
+#if wxUSE_RADIOBTN
 class wxFileDialogRadioButtonImpl;
+#endif
 class wxFileDialogChoiceImpl;
 class wxFileDialogTextCtrlImpl;
 class wxFileDialogStaticTextImpl;
@@ -49,7 +52,7 @@ protected:
 
     // By default custom controls don't generate any events, but some of them
     // override this function to allow connecting to the selected events.
-    virtual bool OnDynamicBind(wxDynamicEventTableEntry& entry) wxOVERRIDE;
+    virtual bool OnDynamicBind(wxDynamicEventTableEntry& entry) override;
 
 
     wxFileDialogCustomControlImpl* const m_impl;
@@ -65,7 +68,7 @@ public:
     explicit wxFileDialogButton(wxFileDialogButtonImpl* impl);
 
 protected:
-    virtual bool OnDynamicBind(wxDynamicEventTableEntry& entry) wxOVERRIDE;
+    virtual bool OnDynamicBind(wxDynamicEventTableEntry& entry) override;
 
 private:
     wxFileDialogButtonImpl* GetImpl() const;
@@ -84,7 +87,7 @@ public:
     explicit wxFileDialogCheckBox(wxFileDialogCheckBoxImpl* impl);
 
 protected:
-    virtual bool OnDynamicBind(wxDynamicEventTableEntry& entry) wxOVERRIDE;
+    virtual bool OnDynamicBind(wxDynamicEventTableEntry& entry) override;
 
 private:
     wxFileDialogCheckBoxImpl* GetImpl() const;
@@ -92,6 +95,7 @@ private:
     wxDECLARE_NO_COPY_CLASS(wxFileDialogCheckBox);
 };
 
+#if wxUSE_RADIOBTN
 // A class representing a custom radio button.
 class WXDLLIMPEXP_CORE wxFileDialogRadioButton : public wxFileDialogCustomControl
 {
@@ -103,13 +107,14 @@ public:
     explicit wxFileDialogRadioButton(wxFileDialogRadioButtonImpl* impl);
 
 protected:
-    virtual bool OnDynamicBind(wxDynamicEventTableEntry& entry) wxOVERRIDE;
+    virtual bool OnDynamicBind(wxDynamicEventTableEntry& entry) override;
 
 private:
     wxFileDialogRadioButtonImpl* GetImpl() const;
 
     wxDECLARE_NO_COPY_CLASS(wxFileDialogRadioButton);
 };
+#endif // wxUSE_RADIOBTN
 
 // A class representing a custom combobox button.
 class WXDLLIMPEXP_CORE wxFileDialogChoice : public wxFileDialogCustomControl
@@ -122,7 +127,7 @@ public:
     explicit wxFileDialogChoice(wxFileDialogChoiceImpl* impl);
 
 protected:
-    virtual bool OnDynamicBind(wxDynamicEventTableEntry& entry) wxOVERRIDE;
+    virtual bool OnDynamicBind(wxDynamicEventTableEntry& entry) override;
 
 private:
     wxFileDialogChoiceImpl* GetImpl() const;
@@ -170,7 +175,9 @@ class WXDLLIMPEXP_CORE wxFileDialogCustomize
 public:
     wxFileDialogButton* AddButton(const wxString& label);
     wxFileDialogCheckBox* AddCheckBox(const wxString& label);
+#if wxUSE_RADIOBTN
     wxFileDialogRadioButton* AddRadioButton(const wxString& label);
+#endif
     wxFileDialogChoice* AddChoice(size_t n, const wxString* strings);
     wxFileDialogTextCtrl* AddTextCtrl(const wxString& label = wxString());
     wxFileDialogStaticText* AddStaticText(const wxString& label);

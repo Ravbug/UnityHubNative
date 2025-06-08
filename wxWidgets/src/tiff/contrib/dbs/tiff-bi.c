@@ -27,21 +27,23 @@
 
 #include "tiffio.h"
 
-#define WIDTH       512
-#define HEIGHT      WIDTH
+#define WIDTH 512
+#define HEIGHT WIDTH
 
 int main(int argc, char **argv)
 {
-    int             i;
-    unsigned char * scan_line;
-    TIFF *          tif;
+    int i;
+    unsigned char *scan_line;
+    TIFF *tif;
 
-    if (argc != 2) {
+    if (argc != 2)
+    {
         fprintf(stderr, "Usage: %s tiff-image\n", argv[0]);
         return 0;
     }
 
-    if ((tif = TIFFOpen(argv[1], "w")) == NULL) {
+    if ((tif = TIFFOpen(argv[1], "w")) == NULL)
+    {
         fprintf(stderr, "can't open %s as a TIFF file\n", argv[1]);
         return 0;
     }
@@ -56,7 +58,7 @@ int main(int argc, char **argv)
     TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
     TIFFSetField(tif, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE);
 
-    scan_line = (unsigned char *) malloc(WIDTH / 8);
+    scan_line = (unsigned char *)malloc(WIDTH / 8);
 
     for (i = 0; i < (WIDTH / 8) / 2; i++)
         scan_line[i] = 0;
@@ -80,10 +82,3 @@ int main(int argc, char **argv)
     TIFFClose(tif);
     return 0;
 }
-/*
- * Local Variables:
- * mode: c
- * c-basic-offset: 8
- * fill-column: 78
- * End:
- */

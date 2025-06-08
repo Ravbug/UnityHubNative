@@ -35,16 +35,15 @@ and often it is even more useful to experiment by making a small change to a
 sample and checking how it works when running the sample.
 
 Before being able to run them, you need to be able build the sample you're
-interested in. The right way to do it depends on the way you built wxWidgets
-itself (see @ref overview_install for more details):
+interested in. The way to do it depends on the way you built wxWidgets itself
+(see @ref overview_install for more details):
 
 - Under Microsoft Windows (MSW):
-    - If you're using Microsoft Visual C++ compiler (MSVC), you need to
-    use @c makefile.vc from the directory of the sample to build it. Open
-    "Developer Command Prompt", navigate to the sample directory and run
-    <code>nmake -f makefile.vc</code> command with the additional arguments
-    corresponding to your library build, e.g. @c BUILD=debug. See @ref
-    msw_build_msvs "MSVS instructions" for more information.
+    - If you're using Microsoft Visual C++ compiler (MSVC), open the provided
+    `samples/samples_vc17.sln` project (which uses MSVS 2022, solution files
+    for MSVS 2019, 2017 and 2015 are also available in the same directory) and
+    build the sample you are interested in using the context menu in the
+    Solution Explorer.
     - If you're using MinGW, use @c makefile.gcc in the sample directory in a
     similar way. Note that if you use MSYS2 or another Unix-like environment
     for building, you should use the Unix instructions below instead.
@@ -127,7 +126,10 @@ get stock bitmaps for use in your application.
 
 @section page_samples_aui Advanced User Interface Sample
 
-@sampleabout{@ref overview_aui "AUI classes"}
+This sample shows how to use wxAuiManager and other
+@ref overview_aui "AUI classes", such as wxAuiToolBar and wxAuiNotebook. It
+allows to change wxAuiNotebook styles and save and reload the layout of either
+the entire wxAuiManager or just the notebook part.
 
 @sampledir{aui}
 
@@ -179,17 +181,11 @@ See @ref overview_config for the descriptions of all features of this class.
 
 @sampledir{dataview}
 
-@section page_samples_clipboard Clipboard Sample
-
-@sampleabout{wxClipboard}
-
-@sampledir{clipboard}
-
 @section page_samples_debugrpt Debug Reporter Sample
 
 This sample shows how to use wxDebugReport class to
 generate a debug report in case of a program crash or otherwise. On start up,
-it proposes to either crash itself (by dereferencing a NULL pointer) or
+it proposes to either crash itself (by dereferencing a @NULL) or
 generate debug report without doing it. Next it initializes the debug report
 with standard information adding a custom file to it (just a timestamp) and
 allows to view the information gathered using
@@ -505,14 +501,6 @@ and other files.
 It replaces the old @c dynamic sample.
 
 @sampledir{mediaplayer}
-
-@section page_samples_memcheck Memory Checking Sample
-
-@sampleabout{memory tracing using wxDebugContext}
-
-@sampledir{memcheck}
-
-@buildwith{wxUSE_MEMORY_TRACING, wxUSE_DEBUG_CONTEXT}
 
 @section page_samples_menu Menu Sample
 
@@ -931,7 +919,7 @@ control.
 
 @section page_samples_webview wxWebView Sample
 
-The wxWebView sample demonstarates the various capabilities of the wxWebView
+The wxWebView sample demonstrates the various capabilities of the wxWebView
 control. It is set up as a simple single window web browser, but with support
 for many of the more complex wxWebView features, including browsing through
 archives.

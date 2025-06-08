@@ -10,6 +10,10 @@
 #ifndef _WX_AUI_TABARTMSW_H_
 #define _WX_AUI_TABARTMSW_H_
 
+#include "wx/aui/tabart.h"
+
+#if wxUSE_AUI
+
 class WXDLLIMPEXP_AUI wxAuiMSWTabArt : public wxAuiGenericTabArt
 {
 
@@ -18,26 +22,22 @@ public:
     wxAuiMSWTabArt();
     virtual ~wxAuiMSWTabArt();
 
-    wxAuiTabArt* Clone() wxOVERRIDE;
+    wxNODISCARD wxAuiTabArt* Clone() override;
 
     void DrawBorder(
         wxDC& dc,
         wxWindow* wnd,
-        const wxRect& rect) wxOVERRIDE;
+        const wxRect& rect) override;
 
     void DrawBackground(
         wxDC& dc,
         wxWindow* wnd,
-        const wxRect& rect) wxOVERRIDE;
+        const wxRect& rect) override;
 
-    void DrawTab(wxDC& dc,
+    int DrawPageTab(wxDC& dc,
         wxWindow* wnd,
-        const wxAuiNotebookPage& pane,
-        const wxRect& inRect,
-        int closeButtonState,
-        wxRect* outTabRect,
-        wxRect* outButtonRect,
-        int* xExtent) wxOVERRIDE;
+        wxAuiNotebookPage& page,
+        const wxRect& rect) override;
 
     void DrawButton(
         wxDC& dc,
@@ -46,33 +46,32 @@ public:
         int bitmapId,
         int buttonState,
         int orientation,
-        wxRect* outRect) wxOVERRIDE;
+        wxRect* outRect) override;
 
-    int GetIndentSize() wxOVERRIDE;
+    int GetIndentSize() override;
 
     int GetBorderWidth(
-        wxWindow* wnd) wxOVERRIDE;
+        wxWindow* wnd) override;
 
     int GetAdditionalBorderSpace(
-        wxWindow* wnd) wxOVERRIDE;
+        wxWindow* wnd) override;
 
-    wxSize GetTabSize(
-        wxDC& dc,
+    wxSize GetPageTabSize(
+        wxReadOnlyDC& dc,
         wxWindow* wnd,
-        const wxString& caption,
-        const wxBitmapBundle& bitmap,
-        bool active,
-        int closeButtonState,
-        int* xExtent) wxOVERRIDE;
+        const wxAuiNotebookPage& page,
+        int* xExtent) override;
 
     int ShowDropDown(
         wxWindow* wnd,
         const wxAuiNotebookPageArray& items,
-        int activeIdx) wxOVERRIDE;
+        int activeIdx) override;
 
     int GetBestTabCtrlSize(wxWindow* wnd,
         const wxAuiNotebookPageArray& pages,
-        const wxSize& requiredBmpSize) wxOVERRIDE;
+        const wxSize& requiredBmpSize) override;
+
+    void UpdateDpi() override;
 
 private:
     bool m_themed;
@@ -80,9 +79,11 @@ private:
     wxSize m_tabSize;
     int m_maxTabHeight;
 
-    void InitSizes(wxWindow* wnd, wxDC& dc);
+    void InitSizes(wxWindow* wnd, wxReadOnlyDC& dc);
 
     bool IsThemed() const;
 };
+
+#endif // wxUSE_AUI
 
 #endif // _WX_AUI_TABARTMSW_H_

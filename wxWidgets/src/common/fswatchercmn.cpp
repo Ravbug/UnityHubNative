@@ -77,7 +77,7 @@ wxString wxFileSystemWatcherEvent::ToString() const
 // ============================================================================
 
 wxFileSystemWatcherBase::wxFileSystemWatcherBase() :
-    m_service(0), m_owner(this)
+    m_service(nullptr), m_owner(this)
 {
 }
 
@@ -187,14 +187,14 @@ bool wxFileSystemWatcherBase::AddTree(const wxFileName& path, int events,
         {
         }
 
-        virtual wxDirTraverseResult OnFile(const wxString& WXUNUSED(filename)) wxOVERRIDE
+        virtual wxDirTraverseResult OnFile(const wxString& WXUNUSED(filename)) override
         {
             // There is no need to watch individual files as we watch the
             // parent directory which will notify us about any changes in them.
             return wxDIR_CONTINUE;
         }
 
-        virtual wxDirTraverseResult OnDir(const wxString& dirname) wxOVERRIDE
+        virtual wxDirTraverseResult OnDir(const wxString& dirname) override
         {
             if ( m_watcher->AddAny(wxFileName::DirName(dirname),
                                    m_events, wxFSWPath_Tree, m_filespec) )
@@ -213,7 +213,7 @@ bool wxFileSystemWatcherBase::AddTree(const wxFileName& path, int events,
 
     wxDir dir(path.GetFullPath());
     // Prevent asserts or infinite loops in trees containing symlinks
-    int flags = wxDIR_DIRS;
+    int flags = wxDIR_DIRS | wxDIR_HIDDEN;
     if ( !path.ShouldFollowLink() )
     {
         flags |= wxDIR_NO_FOLLOW;
@@ -243,14 +243,14 @@ bool wxFileSystemWatcherBase::RemoveTree(const wxFileName& path)
         {
         }
 
-        virtual wxDirTraverseResult OnFile(const wxString& WXUNUSED(filename)) wxOVERRIDE
+        virtual wxDirTraverseResult OnFile(const wxString& WXUNUSED(filename)) override
         {
             // We never watch the individual files when watching the tree, so
             // nothing to do here.
             return wxDIR_CONTINUE;
         }
 
-        virtual wxDirTraverseResult OnDir(const wxString& dirname) wxOVERRIDE
+        virtual wxDirTraverseResult OnDir(const wxString& dirname) override
         {
             m_watcher->Remove(wxFileName::DirName(dirname));
             return wxDIR_CONTINUE;
@@ -284,7 +284,7 @@ bool wxFileSystemWatcherBase::RemoveTree(const wxFileName& path)
     // infinite loops in trees containing symlinks. We need to do the same
     // or we'll try to remove unwatched items. Let's hope the caller used
     // the same ShouldFollowLink() setting as in AddTree()...
-    int flags = wxDIR_DIRS;
+    int flags = wxDIR_DIRS | wxDIR_HIDDEN;
     if ( !path.ShouldFollowLink() )
     {
         flags |= wxDIR_NO_FOLLOW;
@@ -312,7 +312,7 @@ int wxFileSystemWatcherBase::GetWatchedPathsCount() const
 
 int wxFileSystemWatcherBase::GetWatchedPaths(wxArrayString* paths) const
 {
-    wxCHECK_MSG( paths != NULL, -1, "Null array passed to retrieve paths");
+    wxCHECK_MSG( paths != nullptr, -1, "Null array passed to retrieve paths");
 
     wxFSWatchInfoMap::const_iterator it = m_watches.begin();
     for ( ; it != m_watches.end(); ++it)

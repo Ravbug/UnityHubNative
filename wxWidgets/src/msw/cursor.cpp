@@ -2,7 +2,6 @@
 // Name:        src/msw/cursor.cpp
 // Purpose:     wxCursor class
 // Author:      Julian Smart
-// Modified by:
 // Created:     01/02/97
 // Copyright:   (c) 1997-2003 Julian Smart and Vadim Zeitlin
 // Licence:     wxWindows licence
@@ -30,13 +29,14 @@
     #include "wx/settings.h"
     #include "wx/intl.h"
     #include "wx/image.h"
-    #include "wx/module.h"
 #endif
 
 #include "wx/display.h"
 
 #include "wx/msw/private.h"
 #include "wx/msw/missing.h" // IDC_HAND
+
+#include "wx/private/rescale.h"
 
 // ----------------------------------------------------------------------------
 // private classes
@@ -52,13 +52,12 @@ public:
 
     virtual ~wxCursorRefData() { Free(); }
 
-    virtual void Free() wxOVERRIDE;
+    virtual void Free() override;
 
 
     // return the size of the standard cursor: notice that the system only
     // supports the cursors of this size
-    static wxCoord GetStandardWidth();
-    static wxCoord GetStandardHeight();
+    static wxSize GetStandardSize();
 
 private:
     bool m_destroyCursor;
@@ -76,27 +75,7 @@ wxIMPLEMENT_DYNAMIC_CLASS(wxCursor, wxGDIObject);
 
 // Current cursor, in order to hang on to cursor handle when setting the cursor
 // globally
-static wxCursor *gs_globalCursor = NULL;
-
-// ----------------------------------------------------------------------------
-// private classes
-// ----------------------------------------------------------------------------
-
-class wxCursorModule : public wxModule
-{
-public:
-    virtual bool OnInit() wxOVERRIDE
-    {
-        gs_globalCursor = new wxCursor;
-
-        return true;
-    }
-
-    virtual void OnExit() wxOVERRIDE
-    {
-        wxDELETE(gs_globalCursor);
-    }
-};
+static wxCursor gs_globalCursor;
 
 // ============================================================================
 // implementation
@@ -107,16 +86,12 @@ public:
 // ----------------------------------------------------------------------------
 
 
-wxCoord wxCursorRefData::GetStandardWidth()
+wxSize wxCursorRefData::GetStandardSize()
 {
     const wxWindow* win = wxApp::GetMainTopWindow();
-    return wxSystemSettings::GetMetric(wxSYS_CURSOR_X, win);
-}
-
-wxCoord wxCursorRefData::GetStandardHeight()
-{
-    const wxWindow* win = wxApp::GetMainTopWindow();
-    return wxSystemSettings::GetMetric(wxSYS_CURSOR_Y, win);
+    // Cursors are always square, so using just wxSYS_CURSOR_X is good enough.
+    const int size = wxSystemSettings::GetMetric(wxSYS_CURSOR_X, win);
+    return wxSize(size, size);
 }
 
 wxCursorRefData::wxCursorRefData(HCURSOR hcursor, bool destroy)
@@ -125,8 +100,9 @@ wxCursorRefData::wxCursorRefData(HCURSOR hcursor, bool destroy)
 
     if ( m_hCursor )
     {
-        m_width = GetStandardWidth();
-        m_height = GetStandardHeight();
+        const wxSize size = GetStandardSize();
+        m_width = size.x;
+        m_height = size.y;
     }
 
     m_destroyCursor = destroy;
@@ -151,6 +127,24 @@ wxCursor::wxCursor()
 {
 }
 
+wxCursor::wxCursor(const wxBitmap& bitmap, const wxPoint& hotSpot)
+{
+    InitFromBitmap(bitmap, hotSpot);
+}
+
+void wxCursor::InitFromBitmap(const wxBitmap& bmp, const wxPoint& hotSpot)
+{
+    HCURSOR hcursor = wxBitmapToHCURSOR( bmp, hotSpot.x, hotSpot.y );
+
+    if ( !hcursor )
+    {
+        wxLogWarning(_("Failed to create cursor."));
+        return;
+    }
+
+    m_refData = new wxCursorRefData(hcursor, true /* delete it later */);
+}
+
 #if wxUSE_IMAGE
 wxCursor::wxCursor(const wxImage& image)
 {
@@ -164,49 +158,12 @@ wxCursor::wxCursor(const char* const* xpmData)
 
 void wxCursor::InitFromImage(const wxImage& image)
 {
-    // image has to be of the standard cursor size, otherwise we won't be able
-    // to create it
-    const int w = wxCursorRefData::GetStandardWidth();
-    const int h = wxCursorRefData::GetStandardHeight();
-
-    int hotSpotX = image.GetOptionInt(wxIMAGE_OPTION_CUR_HOTSPOT_X);
-    int hotSpotY = image.GetOptionInt(wxIMAGE_OPTION_CUR_HOTSPOT_Y);
-    int image_w = image.GetWidth();
-    int image_h = image.GetHeight();
-
-    wxASSERT_MSG( hotSpotX >= 0 && hotSpotX < image_w &&
-                  hotSpotY >= 0 && hotSpotY < image_h,
-                  wxT("invalid cursor hot spot coordinates") );
-
-    wxImage imageSized(image); // final image of correct size
-
-    // if image is too small then place it in the center, resize it if too big
-    if ((w > image_w) && (h > image_h))
-    {
-        wxPoint offset((w - image_w)/2, (h - image_h)/2);
-        hotSpotX = hotSpotX + offset.x;
-        hotSpotY = hotSpotY + offset.y;
-
-        imageSized = image.Size(wxSize(w, h), offset);
-    }
-    else if ((w != image_w) || (h != image_h))
-    {
-        hotSpotX = int(hotSpotX * double(w) / double(image_w));
-        hotSpotY = int(hotSpotY * double(h) / double(image_h));
-
-        imageSized = image.Scale(w, h);
-    }
-
-    HCURSOR hcursor = wxBitmapToHCURSOR( wxBitmap(imageSized),
-                                         hotSpotX, hotSpotY );
-
-    if ( !hcursor )
-    {
-        wxLogWarning(_("Failed to create cursor."));
-        return;
-    }
-
-    m_refData = new wxCursorRefData(hcursor, true /* delete it later */);
+    InitFromBitmap
+    (
+        image,
+        wxPoint(image.GetOptionInt(wxIMAGE_OPTION_CUR_HOTSPOT_X),
+                image.GetOptionInt(wxIMAGE_OPTION_CUR_HOTSPOT_Y))
+    );
 }
 #endif // wxUSE_IMAGE
 
@@ -248,7 +205,7 @@ wxCursor::wxCursor(const wxString& filename,
         default:
             wxLogError( wxT("unknown cursor resource type '%d'"), kind );
 
-            hcursor = NULL;
+            hcursor = nullptr;
     }
 
     if ( hcursor )
@@ -292,7 +249,7 @@ HCURSOR CreateReverseCursor(HCURSOR cursor)
 {
     AutoIconInfo info;
     if ( !info.GetFrom(cursor) )
-        return NULL;
+        return nullptr;
 
     const unsigned displayID = (unsigned)wxDisplay::GetFromPoint(wxGetMousePosition());
     wxDisplay disp(displayID == 0u || displayID < wxDisplay::GetCount() ? displayID : 0u);
@@ -322,7 +279,7 @@ void wxCursor::InitFromStock(wxStockCursor idCursor)
         LPCTSTR name;
     } stdCursors[] =
     {
-        {  true, NULL                        }, // wxCURSOR_NONE
+        {  true, nullptr                        }, // wxCURSOR_NONE
         {  true, IDC_ARROW                   }, // wxCURSOR_ARROW
         { false, wxT("WXCURSOR_RIGHT_ARROW")  }, // wxCURSOR_RIGHT_ARROW
         { false, wxT("WXCURSOR_BULLSEYE")     }, // wxCURSOR_BULLSEYE
@@ -363,7 +320,7 @@ void wxCursor::InitFromStock(wxStockCursor idCursor)
     const StdCursor& stdCursor = stdCursors[idCursor];
     bool deleteLater = !stdCursor.isStd;
 
-    HCURSOR hcursor = ::LoadCursor(stdCursor.isStd ? NULL : wxGetInstance(),
+    HCURSOR hcursor = ::LoadCursor(stdCursor.isStd ? nullptr : wxGetInstance(),
                                    stdCursor.name);
 
     // IDC_HAND may not be available on some versions of Windows.
@@ -375,7 +332,7 @@ void wxCursor::InitFromStock(wxStockCursor idCursor)
 
     if ( !hcursor && idCursor == wxCURSOR_RIGHT_ARROW)
     {
-        hcursor = ::LoadCursor(NULL, IDC_ARROW);
+        hcursor = ::LoadCursor(nullptr, IDC_ARROW);
         if ( hcursor )
         {
             hcursor = CreateReverseCursor(hcursor);
@@ -402,10 +359,6 @@ void wxCursor::InitFromStock(wxStockCursor idCursor)
     }
 }
 
-wxCursor::~wxCursor()
-{
-}
-
 // ----------------------------------------------------------------------------
 // other wxCursor functions
 // ----------------------------------------------------------------------------
@@ -421,16 +374,14 @@ wxGDIImageRefData *wxCursor::CreateData() const
 
 const wxCursor *wxGetGlobalCursor()
 {
-    return gs_globalCursor;
+    return &gs_globalCursor;
 }
 
-void wxSetCursor(const wxCursor& cursor)
+void wxSetCursor(const wxCursorBundle& cursors)
 {
+    const wxCursor& cursor = cursors.GetCursorForMainWindow();
     if ( cursor.IsOk() )
-    {
         ::SetCursor(GetHcursorOf(cursor));
 
-        if ( gs_globalCursor )
-            *gs_globalCursor = cursor;
-    }
+    gs_globalCursor = cursor;
 }

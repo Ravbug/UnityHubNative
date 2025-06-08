@@ -8,10 +8,26 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
+#if wxUSE_LISTBOX
+
 #include "wx/listbox.h"
 #include "wx/qt/private/winevent.h"
 
 #include <QtWidgets/QListWidget>
+
+// We need a way to generate wxEVT_CHECKLISTBOX events whenever the checkbox's
+// state has changed. using QListWidget::itemChanged() signal to do that is not
+// going to work as you might think, because it is also emitted when the other
+// data of item has changed (text, icon, ...). The solution is to derive from
+// QListWidgetItem and override setData(). from which we can generate the event.
+class wxQtListWidgetItem : public QListWidgetItem
+{
+public:
+    // Inherit QListWidgetItem constructors
+    using QListWidgetItem::QListWidgetItem;
+
+    virtual void setData(int role, const QVariant& value) override;
+};
 
 class wxQtListWidget : public wxQtEventSignalHandler< QListWidget, wxListBox >
 {
@@ -21,7 +37,6 @@ public:
 private:
     void OnCurrentItemChange(QListWidgetItem *current, QListWidgetItem *previous);
     void doubleClicked( const QModelIndex &index );
-    void itemChanged(QListWidgetItem *item);
 };
 
 wxQtListWidget::wxQtListWidget( wxWindow *parent, wxListBox *handler )
@@ -29,7 +44,6 @@ wxQtListWidget::wxQtListWidget( wxWindow *parent, wxListBox *handler )
 {
     connect(this, &QListWidget::currentItemChanged, this, &wxQtListWidget::OnCurrentItemChange);
     connect(this, &QListWidget::doubleClicked, this, &wxQtListWidget::doubleClicked);
-    connect(this, &QListWidget::itemChanged, this, &wxQtListWidget::itemChanged);
 }
 
 void wxQtListWidget::OnCurrentItemChange(QListWidgetItem *current, QListWidgetItem *)
@@ -52,23 +66,23 @@ void wxQtListWidget::doubleClicked( const QModelIndex &index )
         handler->QtSendEvent(wxEVT_LISTBOX_DCLICK, index.row(), true);
 }
 
-void wxQtListWidget::itemChanged(QListWidgetItem *item)
+void wxQtListWidgetItem::setData(int role, const QVariant& value)
 {
-    if ( item->flags() & Qt::ItemIsUserCheckable )
+    QListWidgetItem::setData(role, value);
+
+    if ( role == Qt::CheckStateRole )
     {
-        wxListBox *handler = GetHandler();
-        if ( handler )
+        const auto list = static_cast<wxQtListWidget*>(listWidget());
+        if ( list && list->isVisible() && !list->signalsBlocked() )
         {
-            int rowIndex = this->row(item);
-            handler->QtSendEvent(wxEVT_CHECKLISTBOX, rowIndex, true);
+            const auto handler = list->GetHandler();
+            if ( handler )
+            {
+                const int rowIndex = list->row(this);
+                handler->QtSendEvent(wxEVT_CHECKLISTBOX, rowIndex, true);
+            }
         }
     }
-}
-
-wxListBox::wxListBox() :
-    m_qtListWidget(NULL)
-{
-    Init();
 }
 
 wxListBox::wxListBox(wxWindow *parent, wxWindowID id,
@@ -110,17 +124,18 @@ bool wxListBox::Create(wxWindow *parent, wxWindowID id,
 
     while ( n-- > 0 )
     {
-        QListWidgetItem* item;
-        item = new QListWidgetItem();
+        QListWidgetItem* item = new wxQtListWidgetItem();
         item->setText(wxQtConvertString( *choices++ ));
         if ( m_hasCheckBoxes )
         {
             item->setFlags(Qt::ItemIsUserCheckable | Qt::ItemIsEnabled | Qt::ItemIsSelectable);
             item->setCheckState(Qt::Unchecked);
         }
-        m_qtListWidget->addItem(item);
+        GetQListWidget()->addItem(item);
     }
-    return wxListBoxBase::Create( parent, id, pos, size, style, validator, name );
+    return wxListBoxBase::Create( parent, id, pos, size,
+                                  style | wxVSCROLL | wxHSCROLL,
+                                  validator, name );
 }
 
 bool wxListBox::Create(wxWindow *parent, wxWindowID id,
@@ -133,53 +148,63 @@ bool wxListBox::Create(wxWindow *parent, wxWindowID id,
 {
     DoCreate(parent, style);
 
-    QStringList items;
+    // Notice that we should explicitly call QListWidgetItem::setCheckState() here if
+    // the listbox has check boxes. otherwise the checkboxes won't be shown on screen.
+    //
+    // From https://doc.qt.io/qt-5/qt.html#ItemFlag-enum:
+    //   Note that checkable items need to be given both a suitable set of flags and an initial state,
+    //   indicating whether the item is checked or not. This is handled automatically for model/view components,
+    //   but needs to be explicitly set for instances of QListWidgetItem, QTableWidgetItem, and QTreeWidgetItem.
 
-    for (size_t i = 0; i < choices.size(); ++i)
-        items.push_back(wxQtConvertString(choices[i]));
+    for ( const auto& choice : choices )
+    {
+        QListWidgetItem* item = new wxQtListWidgetItem;
+        item->setText(wxQtConvertString( choice ));
+        if ( m_hasCheckBoxes )
+        {
+            item->setFlags(Qt::ItemIsUserCheckable | Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+            item->setCheckState(Qt::Unchecked);
+        }
+        GetQListWidget()->addItem(item);
+    }
 
-    m_qtListWidget->addItems(items);
-
-    return wxListBoxBase::Create( parent, id, pos, size, style, validator, name );
+    return wxListBoxBase::Create( parent, id, pos, size,
+                                  style | wxVSCROLL | wxHSCROLL,
+                                  validator, name );
 }
 
 void wxListBox::DoCreate(wxWindow* parent, long style)
 {
-    Init();
-
-    m_qtWindow =
-    m_qtListWidget = new wxQtListWidget( parent, this );
+    m_qtWindow = new wxQtListWidget( parent, this );
 
     if ( style & wxLB_SORT )
     {
-        m_qtListWidget->setSortingEnabled(true);
+        GetQListWidget()->setSortingEnabled(true);
     }
 
     // The following styles are mutually exclusive
     if ( style & wxLB_SINGLE )
     {
-        m_qtListWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+        GetQListWidget()->setSelectionMode(QAbstractItemView::SingleSelection);
     }
     else if ( style & wxLB_MULTIPLE )
     {
-        m_qtListWidget->setSelectionMode(QAbstractItemView::MultiSelection);
+        GetQListWidget()->setSelectionMode(QAbstractItemView::MultiSelection);
     }
     else if ( style & wxLB_EXTENDED )
     {
-        m_qtListWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
+        GetQListWidget()->setSelectionMode(QAbstractItemView::ExtendedSelection);
     }
 }
 
-void wxListBox::Init()
+QListWidget* wxListBox::GetQListWidget() const
 {
-#if wxUSE_CHECKLISTBOX
-    m_hasCheckBoxes = false;
-#endif // wxUSE_CHECKLISTBOX
+    return static_cast<QListWidget*>(m_qtWindow);
 }
 
 bool wxListBox::IsSelected(int n) const
 {
-    QListWidgetItem* item = m_qtListWidget->item(n);
+    QListWidgetItem* item = GetQListWidget()->item(n);
     return item->isSelected();
 }
 
@@ -187,9 +212,9 @@ int wxListBox::GetSelections(wxArrayInt& aSelections) const
 {
     aSelections.clear();
 
-    Q_FOREACH(QListWidgetItem* l, m_qtListWidget->selectedItems())
+    Q_FOREACH(QListWidgetItem* l, GetQListWidget()->selectedItems())
     {
-        aSelections.push_back( m_qtListWidget->row(l) );
+        aSelections.push_back( GetQListWidget()->row(l) );
     }
 
     return aSelections.size();
@@ -197,44 +222,68 @@ int wxListBox::GetSelections(wxArrayInt& aSelections) const
 
 unsigned wxListBox::GetCount() const
 {
-    return m_qtListWidget->count();
+    return GetQListWidget()->count();
 }
 
 wxString wxListBox::GetString(unsigned int n) const
 {
-    QListWidgetItem* item = m_qtListWidget->item(n);
-    wxCHECK_MSG(item != NULL, wxString(), wxT("wrong listbox index") );
+    QListWidgetItem* item = GetQListWidget()->item(n);
+    wxCHECK_MSG(item != nullptr, wxString(), wxT("wrong listbox index") );
     return wxQtConvertString( item->text() );
 }
 
 void wxListBox::SetString(unsigned int n, const wxString& s)
 {
-    QListWidgetItem* item = m_qtListWidget->item(n);
-    wxCHECK_RET(item != NULL, wxT("wrong listbox index") );
-    if ( m_hasCheckBoxes )
-    {
-        item->setFlags(Qt::ItemIsUserCheckable | Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-        item->setCheckState(Qt::Unchecked);
-    }
+    QListWidgetItem* item = GetQListWidget()->item(n);
+    wxCHECK_RET(item != nullptr, wxT("wrong listbox index") );
     item->setText(wxQtConvertString(s));
 }
 
 int wxListBox::GetSelection() const
 {
-    if ( m_qtListWidget->selectedItems().empty() )
+    if ( GetQListWidget()->selectedItems().empty() )
     {
         return wxNOT_FOUND;
     }
 
 
-    QListWidgetItem* item = m_qtListWidget->selectedItems().first();
+    QListWidgetItem* item = GetQListWidget()->selectedItems().first();
 
-    return m_qtListWidget->row(item);
+    return GetQListWidget()->row(item);
+}
+
+void wxListBox::EnsureVisible(int n)
+{
+    wxCHECK_RET( n >= 0 && n < static_cast<int>(GetCount()),
+                "invalid index in wxListBox::EnsureVisible" );
+
+    GetQListWidget()->scrollToItem(GetQListWidget()->item(n));
+}
+
+int wxListBox::GetTopItem() const
+{
+    const auto item = GetQListWidget()->itemAt(2, 2);
+
+    return item ? GetQListWidget()->row(item) : -1;
+}
+
+int wxListBox::GetCountPerPage() const
+{
+    wxCHECK_MSG(GetCount() > 0, 0,
+        "wxListBox needs at least one item to calculate the count per page");
+
+    // this may not be exact but should be a good approximation:
+    const int h = GetQListWidget()->visualItemRect(
+                    GetQListWidget()->item(0)).height();
+    if ( h )
+        return GetQListWidget()->viewport()->height() / h;
+
+    return 0;
 }
 
 void wxListBox::DoSetFirstItem(int n)
 {
-    m_qtListWidget->scrollToItem(m_qtListWidget->item(n), QAbstractItemView::PositionAtTop);
+    GetQListWidget()->scrollToItem(GetQListWidget()->item(n), QAbstractItemView::PositionAtTop);
 }
 
 void wxListBox::DoSetSelection(int n, bool select)
@@ -245,7 +294,7 @@ void wxListBox::DoSetSelection(int n, bool select)
         return;
     }
 
-    m_qtListWidget->setItemSelected( m_qtListWidget->item(n), select);
+    GetQListWidget()->item(n)->setSelected(select);
 }
 
 int wxListBox::DoInsertItems(const wxArrayStringsAdapter & items,
@@ -261,45 +310,47 @@ int wxListBox::DoInsertItems(const wxArrayStringsAdapter & items,
 
 int wxListBox::DoInsertOneItem(const wxString& text, unsigned int pos)
 {
-    QListWidgetItem* item = new QListWidgetItem();
+    QListWidgetItem* item = new wxQtListWidgetItem();
     item->setText(wxQtConvertString( text ));
     if ( m_hasCheckBoxes )
     {
         item->setFlags(Qt::ItemIsUserCheckable | Qt::ItemIsEnabled | Qt::ItemIsSelectable);
         item->setCheckState(Qt::Unchecked);
     }
-    m_qtListWidget->insertItem(pos, item);
-    return pos;
+    GetQListWidget()->insertItem(pos, item);
+    return IsSorted() ? GetQListWidget()->row(item) : pos;
 }
 
 void wxListBox::DoSetItemClientData(unsigned int n, void *clientData)
 {
-    QListWidgetItem* item = m_qtListWidget->item(n);
-    QVariant variant = qVariantFromValue(clientData);
+    QListWidgetItem* item = GetQListWidget()->item(n);
+    QVariant variant = QVariant::fromValue(clientData);
     item->setData(Qt::UserRole, variant);
 }
 
 void *wxListBox::DoGetItemClientData(unsigned int n) const
 {
-    QListWidgetItem* item = m_qtListWidget->item(n);
+    QListWidgetItem* item = GetQListWidget()->item(n);
     QVariant variant = item->data(Qt::UserRole);
     return variant.value<void *>();
 }
 
 void wxListBox::DoClear()
 {
-    m_qtListWidget->clear();
+    GetQListWidget()->clear();
 }
 
 void wxListBox::DoDeleteOneItem(unsigned int pos)
 {
-    QListWidgetItem* item = m_qtListWidget->item(pos);
+    QListWidgetItem* item = GetQListWidget()->item(pos);
     delete item;
 }
 
-QWidget *wxListBox::GetHandle() const
+int wxListBox::DoListHitTest(const wxPoint& point) const
 {
-    return m_qtListWidget;
+    QListWidgetItem* item = GetQListWidget()->itemAt( wxQtConvertPoint(point) );
+
+    return item ? GetQListWidget()->row(item) : wxNOT_FOUND;
 }
 
 void wxListBox::QtSendEvent(wxEventType evtType, int rowIndex, bool selected)
@@ -307,15 +358,12 @@ void wxListBox::QtSendEvent(wxEventType evtType, int rowIndex, bool selected)
     SendEvent(evtType, rowIndex, selected);
 }
 
-QScrollArea *wxListBox::QtGetScrollBarsContainer() const
-{
-    return (QScrollArea *) m_qtListWidget;
-}
-
 void wxListBox::UnSelectAll()
 {
-    Q_FOREACH(QListWidgetItem* l, m_qtListWidget->selectedItems())
+    Q_FOREACH(QListWidgetItem* l, GetQListWidget()->selectedItems())
     {
-        m_qtListWidget->setItemSelected( l, false );
+        l->setSelected(false);
     }
 }
+
+#endif // wxUSE_LISTBOX

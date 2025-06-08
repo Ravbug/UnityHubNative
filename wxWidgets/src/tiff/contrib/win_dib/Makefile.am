@@ -24,7 +24,6 @@
 # Process this file with automake to produce Makefile.in.
 
 EXTRA_DIST = \
-	CMakeLists.txt \
 	Makefile.w95 \
 	README.Tiffile \
 	README.tiff2dib \

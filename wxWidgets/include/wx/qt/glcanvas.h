@@ -10,19 +10,22 @@
 
 #include <GL/gl.h>
 
-class QGLWidget;
-class QGLContext;
-class QGLFormat;
+class QOpenGLWidget;
+class QOpenGLContext;
+class QSurfaceFormat;
 
 class WXDLLIMPEXP_GL wxGLContext : public wxGLContextBase
 {
 public:
     wxGLContext(wxGLCanvas *win,
-                const wxGLContext *other = NULL,
-                const wxGLContextAttrs *ctxAttrs = NULL);
+                const wxGLContext *other = nullptr,
+                const wxGLContextAttrs *ctxAttrs = nullptr);
 ///    virtual ~wxGLContext();
 
-    virtual bool SetCurrent(const wxGLCanvas& win) const wxOVERRIDE;
+    virtual bool SetCurrent(const wxGLCanvas& win) const override;
+
+private:
+    QOpenGLContext* m_glContext = nullptr;
 
     wxDECLARE_CLASS(wxGLContext);
 };
@@ -34,6 +37,8 @@ public:
 class WXDLLIMPEXP_GL wxGLCanvas : public wxGLCanvasBase
 {
 public:
+    wxGLCanvas() = default;
+
     explicit // avoid implicitly converting a wxWindow* to wxGLCanvas
     wxGLCanvas(wxWindow *parent,
                const wxGLAttributes& dispAttrs,
@@ -47,7 +52,7 @@ public:
     explicit
     wxGLCanvas(wxWindow *parent,
                wxWindowID id = wxID_ANY,
-               const int *attribList = NULL,
+               const int *attribList = nullptr,
                const wxPoint& pos = wxDefaultPosition,
                const wxSize& size = wxDefaultSize,
                long style = 0,
@@ -71,16 +76,16 @@ public:
                 const wxSize& size = wxDefaultSize,
                 long style = 0,
                 const wxString& name = wxGLCanvasName,
-                const int *attribList = NULL,
+                const int *attribList = nullptr,
                 const wxPalette& palette = wxNullPalette);
 
-    virtual bool SwapBuffers() wxOVERRIDE;
+    virtual bool SwapBuffers() override;
 
-    static bool ConvertWXAttrsToQtGL(const int *wxattrs, QGLFormat &format);
+    virtual bool QtCanPaintWithoutActivePainter() const override;
+
+    static bool ConvertWXAttrsToQtGL(const wxGLAttributes &glattrs, const wxGLContextAttrs ctxAttrs, QSurfaceFormat &format);
 
 private:
-
-//    wxDECLARE_EVENT_TABLE();
     wxDECLARE_CLASS(wxGLCanvas);
 };
 

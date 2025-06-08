@@ -2,7 +2,6 @@
 // Name:        src/gtk/renderer.cpp
 // Purpose:     implementation of wxRendererNative for wxGTK
 // Author:      Vadim Zeitlin
-// Modified by:
 // Created:     20.07.2003
 // Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwidgets.org>
 // Licence:     wxWindows licence
@@ -60,80 +59,80 @@ public:
                                   const wxRect& rect,
                                   int flags = 0,
                                   wxHeaderSortIconType sortArrow = wxHDR_SORT_ICON_NONE,
-                                  wxHeaderButtonParams* params = NULL) wxOVERRIDE;
+                                  wxHeaderButtonParams* params = nullptr) override;
 
-    virtual int GetHeaderButtonHeight(wxWindow *win) wxOVERRIDE;
+    virtual int GetHeaderButtonHeight(wxWindow *win) override;
 
-    virtual int GetHeaderButtonMargin(wxWindow *win) wxOVERRIDE;
+    virtual int GetHeaderButtonMargin(wxWindow *win) override;
 
 
     // draw the expanded/collapsed icon for a tree control item
     virtual void DrawTreeItemButton(wxWindow *win,
                                     wxDC& dc,
                                     const wxRect& rect,
-                                    int flags = 0) wxOVERRIDE;
+                                    int flags = 0) override;
 
     virtual void DrawSplitterBorder(wxWindow *win,
                                     wxDC& dc,
                                     const wxRect& rect,
-                                    int flags = 0) wxOVERRIDE;
+                                    int flags = 0) override;
     virtual void DrawSplitterSash(wxWindow *win,
                                   wxDC& dc,
                                   const wxSize& size,
                                   wxCoord position,
                                   wxOrientation orient,
-                                  int flags = 0) wxOVERRIDE;
+                                  int flags = 0) override;
 
     virtual void DrawComboBoxDropButton(wxWindow *win,
                                         wxDC& dc,
                                         const wxRect& rect,
-                                        int flags = 0) wxOVERRIDE;
+                                        int flags = 0) override;
 
     virtual void DrawDropArrow(wxWindow *win,
                                wxDC& dc,
                                const wxRect& rect,
-                               int flags = 0) wxOVERRIDE;
+                               int flags = 0) override;
 
     virtual void DrawCheckBox(wxWindow *win,
                               wxDC& dc,
                               const wxRect& rect,
-                              int flags = 0) wxOVERRIDE;
+                              int flags = 0) override;
 
     virtual void DrawPushButton(wxWindow *win,
                                 wxDC& dc,
                                 const wxRect& rect,
-                                int flags = 0) wxOVERRIDE;
+                                int flags = 0) override;
 
     virtual void DrawItemSelectionRect(wxWindow *win,
                                        wxDC& dc,
                                        const wxRect& rect,
-                                       int flags = 0) wxOVERRIDE;
+                                       int flags = 0) override;
 
     virtual void DrawChoice(wxWindow* win,
                             wxDC& dc,
                             const wxRect& rect,
-                            int flags=0) wxOVERRIDE;
+                            int flags=0) override;
 
     virtual void DrawComboBox(wxWindow* win,
                                 wxDC& dc,
                                 const wxRect& rect,
-                                int flags=0) wxOVERRIDE;
+                                int flags=0) override;
 
     virtual void DrawTextCtrl(wxWindow* win,
                                 wxDC& dc,
                                 const wxRect& rect,
-                                int flags=0) wxOVERRIDE;
+                                int flags=0) override;
 
     virtual void DrawRadioBitmap(wxWindow* win,
                                 wxDC& dc,
                                 const wxRect& rect,
-                                int flags=0) wxOVERRIDE;
+                                int flags=0) override;
 
-    virtual void DrawFocusRect(wxWindow* win, wxDC& dc, const wxRect& rect, int flags = 0) wxOVERRIDE;
+    virtual void DrawFocusRect(wxWindow* win, wxDC& dc, const wxRect& rect, int flags = 0) override;
 
-    virtual wxSize GetCheckBoxSize(wxWindow *win, int flags = 0) wxOVERRIDE;
+    virtual wxSize GetCheckBoxSize(wxWindow *win, int flags = 0) override;
 
-    virtual wxSplitterRenderParams GetSplitterParams(const wxWindow *win) wxOVERRIDE;
+    virtual wxSplitterRenderParams GetSplitterParams(const wxWindow *win) override;
 };
 
 // ============================================================================
@@ -149,13 +148,12 @@ wxRendererNative& wxRendererNative::GetDefault()
 }
 
 #ifdef __WXGTK3__
-#define NULL_RECT
 typedef cairo_t wxGTKDrawable;
 
 static cairo_t* wxGetGTKDrawable(const wxDC& dc)
 {
     wxGraphicsContext* gc = dc.GetGraphicsContext();
-    wxCHECK_MSG(gc, NULL, "cannot use wxRendererNative on wxDC of this type");
+    wxCHECK_MSG(gc, nullptr, "cannot use wxRendererNative on wxDC of this type");
     return static_cast<cairo_t*>(gc->GetNativeContext());
 }
 
@@ -166,15 +164,15 @@ static const GtkStateFlags stateTypeToFlags[] = {
 };
 
 #else
-#define NULL_RECT NULL,
+#define NULL_RECT nullptr,
 typedef GdkWindow wxGTKDrawable;
 
 static GdkWindow* wxGetGTKDrawable(wxDC& dc)
 {
-    GdkWindow* gdk_window = NULL;
+    GdkWindow* gdk_window = nullptr;
 
 #if wxUSE_GRAPHICS_CONTEXT && defined(GDK_WINDOWING_X11)
-    cairo_t* cr = NULL;
+    cairo_t* cr = nullptr;
     wxGraphicsContext* gc = dc.GetGraphicsContext();
     if (gc)
         cr = static_cast<cairo_t*>(gc->GetNativeContext());
@@ -187,7 +185,7 @@ static GdkWindow* wxGetGTKDrawable(wxDC& dc)
                 gdk_xid_table_lookup(cairo_xlib_surface_get_drawable(surf)));
         }
     }
-    if (gdk_window == NULL)
+    if (gdk_window == nullptr)
 #endif
     {
         wxDCImpl *impl = dc.GetImpl();
@@ -231,12 +229,12 @@ wxRendererGTK::DrawHeaderButton(wxWindow *win,
 
 #ifdef __WXGTK3__
     cairo_t* cr = wxGetGTKDrawable(dc);
-    if (cr == NULL)
+    if (cr == nullptr)
         return 0;
 
     // AddTreeviewHeaderButton() is only available in 3.20 or later.
 #if GTK_CHECK_VERSION(3,20,0)
-    if (gtk_check_version(3,20,0) == NULL)
+    if (gtk_check_version(3,20,0) == nullptr)
     {
         int pos = 1;
         if (flags & wxCONTROL_SPECIAL)
@@ -250,6 +248,11 @@ wxRendererGTK::DrawHeaderButton(wxWindow *win,
         gtk_style_context_set_state(sc, stateTypeToFlags[state]);
         gtk_render_background(sc, cr, rect.x, rect.y, rect.width, rect.height);
         gtk_render_frame(sc, cr, rect.x, rect.y, rect.width, rect.height);
+        if (params)
+        {
+            sc.Fg(params->m_arrowColour, stateTypeToFlags[state]);
+            params->m_labelColour = params->m_arrowColour;
+        }
     }
     else
 #endif // GTK >= 3.20
@@ -259,6 +262,13 @@ wxRendererGTK::DrawHeaderButton(wxWindow *win,
         gtk_style_context_set_state(sc, stateTypeToFlags[state]);
         gtk_render_background(sc, cr, rect.x, rect.y, rect.width, rect.height);
         gtk_render_frame(sc, cr, rect.x, rect.y, rect.width, rect.height);
+        if (params)
+        {
+            GdkRGBA rgba;
+            gtk_style_context_get_color(sc, stateTypeToFlags[state], &rgba);
+            params->m_arrowColour = wxColour(rgba);
+            params->m_labelColour = params->m_arrowColour;
+        }
         gtk_style_context_restore(sc);
     }
 #else
@@ -273,7 +283,7 @@ wxRendererGTK::DrawHeaderButton(wxWindow *win,
         gdk_window,
         state,
         GTK_SHADOW_OUT,
-        NULL,
+        nullptr,
         button,
         "button",
         dc.LogicalToDeviceX(rect.x) - x_diff, rect.y, rect.width, rect.height
@@ -289,7 +299,7 @@ int wxRendererGTK::GetHeaderButtonHeight(wxWindow *WXUNUSED(win))
 
     GtkRequisition req;
 #ifdef __WXGTK3__
-    gtk_widget_get_preferred_height(button, NULL, &req.height);
+    gtk_widget_get_preferred_height(button, nullptr, &req.height);
 #else
     GTK_WIDGET_GET_CLASS(button)->size_request(button, &req);
 #endif
@@ -309,7 +319,7 @@ wxRendererGTK::DrawTreeItemButton(wxWindow* WXUNUSED_IN_GTK3(win),
                                   wxDC& dc, const wxRect& rect, int flags)
 {
     wxGTKDrawable* drawable = wxGetGTKDrawable(dc);
-    if (drawable == NULL)
+    if (drawable == nullptr)
         return;
 
     GtkWidget *tree = wxGTKPrivate::GetTreeWidget();
@@ -319,14 +329,14 @@ wxRendererGTK::DrawTreeItemButton(wxWindow* WXUNUSED_IN_GTK3(win),
     if (flags & wxCONTROL_EXPANDED)
     {
         state = GTK_STATE_FLAG_ACTIVE;
-        if (gtk_check_version(3,14,0) == NULL)
+        if (gtk_check_version(3,14,0) == nullptr)
             state = GTK_STATE_FLAG_CHECKED;
     }
     if (flags & wxCONTROL_CURRENT)
         state |= GTK_STATE_FLAG_PRELIGHT;
 
     int expander_size;
-    gtk_widget_style_get(tree, "expander-size", &expander_size, NULL);
+    gtk_widget_style_get(tree, "expander-size", &expander_size, nullptr);
     // +1 to match GtkTreeView behavior
     expander_size++;
     const int x = rect.x + (rect.width - expander_size) / 2;
@@ -355,7 +365,7 @@ wxRendererGTK::DrawTreeItemButton(wxWindow* WXUNUSED_IN_GTK3(win),
         gtk_widget_get_style(tree),
         drawable,
         state,
-        NULL,
+        nullptr,
         tree,
         "treeview",
         dc.LogicalToDeviceX(rect.x) + rect.width / 2 - x_diff,
@@ -374,7 +384,7 @@ wxRendererGTK::DrawTreeItemButton(wxWindow* WXUNUSED_IN_GTK3(win),
 static int GetGtkSplitterFullSize(GtkWidget* widget)
 {
     gint handle_size;
-    gtk_widget_style_get(widget, "handle_size", &handle_size, NULL);
+    gtk_widget_style_get(widget, "handle_size", &handle_size, nullptr);
     // Narrow handles don't work well with wxSplitterWindow
     if (handle_size < 5)
         handle_size = 5;
@@ -411,14 +421,14 @@ wxRendererGTK::DrawSplitterSash(wxWindow* win,
                                 wxOrientation orient,
                                 int flags)
 {
-    if (gtk_widget_get_window(win->m_wxwindow) == NULL)
+    if (gtk_widget_get_window(win->m_wxwindow) == nullptr)
     {
         // window not realized yet
         return;
     }
 
     wxGTKDrawable* drawable = wxGetGTKDrawable(dc);
-    if (drawable == NULL)
+    if (drawable == nullptr)
         return;
 
     // are we drawing vertical or horizontal splitter?
@@ -449,8 +459,8 @@ wxRendererGTK::DrawSplitterSash(wxWindow* win,
     sc.AddWindow();
     gtk_render_background(sc, drawable, rect.x, rect.y, rect.width, rect.height);
 
-    sc.Add(GTK_TYPE_PANED, "paned", "pane-separator", NULL);
-    if (gtk_check_version(3,20,0) == NULL)
+    sc.Add(GTK_TYPE_PANED, "paned", "pane-separator", nullptr);
+    if (gtk_check_version(3,20,0) == nullptr)
         sc.Add("separator");
 
     gtk_style_context_set_state(sc,
@@ -462,7 +472,7 @@ wxRendererGTK::DrawSplitterSash(wxWindow* win,
         x_diff = rect.width;
 
     GdkWindow* gdk_window = wxGetGTKDrawable(dc);
-    if (gdk_window == NULL)
+    if (gdk_window == nullptr)
         return;
     gtk_paint_handle
     (
@@ -470,7 +480,7 @@ wxRendererGTK::DrawSplitterSash(wxWindow* win,
         gdk_window,
         flags & wxCONTROL_CURRENT ? GTK_STATE_PRELIGHT : GTK_STATE_NORMAL,
         GTK_SHADOW_NONE,
-        NULL /* no clipping */,
+        nullptr /* no clipping */,
         win->m_wxwindow,
         "paned",
         dc.LogicalToDeviceX(rect.x) - x_diff,
@@ -522,7 +532,7 @@ wxRendererGTK::DrawDropArrow(wxWindow*,
     }
 #else
     GdkWindow* gdk_window = wxGetGTKDrawable(dc);
-    if (gdk_window == NULL)
+    if (gdk_window == nullptr)
         return;
 
     GtkWidget* button = wxGTKPrivate::GetButtonWidget();
@@ -534,7 +544,7 @@ wxRendererGTK::DrawDropArrow(wxWindow*,
         gdk_window,
         state,
         flags & wxCONTROL_PRESSED ? GTK_SHADOW_IN : GTK_SHADOW_OUT,
-        NULL,
+        nullptr,
         button,
         "arrow",
         GTK_ARROW_DOWN,
@@ -567,13 +577,13 @@ struct CheckBoxInfo
         wxUnusedVar(flags);
 
         sc.AddCheckButton();
-        if (gtk_check_version(3,20,0) == NULL)
+        if (gtk_check_version(3,20,0) == nullptr)
         {
             sc.Add("check");
             gtk_style_context_get(sc, GTK_STATE_FLAG_NORMAL,
                                   "min-width", &indicator_width,
                                   "min-height", &indicator_height,
-                                  NULL);
+                                  nullptr);
 
             GtkBorder border, padding;
             gtk_style_context_get_border(sc, GTK_STATE_FLAG_NORMAL, &border);
@@ -606,7 +616,7 @@ struct CheckBoxInfo
         gtk_widget_style_get(button,
                              "indicator_size", &indicator_size,
                              "indicator_spacing", &indicator_margin,
-                             NULL);
+                             nullptr);
 
         // If wxCONTROL_CELL is set then we want to get the size of wxCheckBox
         // control to draw the check mark centered and at the same position as
@@ -619,7 +629,7 @@ struct CheckBoxInfo
             gtk_widget_style_get(button,
                                  "focus-line-width", &focus_width,
                                  "focus-padding", &focus_pad,
-                                 NULL);
+                                 nullptr);
 
             indicator_margin += focus_width + focus_pad;
         }
@@ -708,14 +718,14 @@ wxRendererGTK::DrawCheckBox(wxWindow*,
 {
 #ifdef __WXGTK3__
     cairo_t* cr = wxGetGTKDrawable(dc);
-    if (cr == NULL)
+    if (cr == nullptr)
         return;
 
     int state = GTK_STATE_FLAG_NORMAL;
     if (flags & wxCONTROL_CHECKED)
     {
         state = GTK_STATE_FLAG_ACTIVE;
-        if (gtk_check_version(3,14,0) == NULL)
+        if (gtk_check_version(3,14,0) == nullptr)
             state = GTK_STATE_FLAG_CHECKED;
     }
     if (flags & wxCONTROL_DISABLED)
@@ -745,7 +755,7 @@ wxRendererGTK::DrawCheckBox(wxWindow*,
         x = -x - w;
     }
 
-    if (gtk_check_version(3,20,0) == NULL)
+    if (gtk_check_version(3,20,0) == nullptr)
     {
         gtk_style_context_set_state(sc, GtkStateFlags(state));
         gtk_render_background(sc, cr, x, y, w, h);
@@ -797,7 +807,7 @@ wxRendererGTK::DrawCheckBox(wxWindow*,
         shadow_type = GTK_SHADOW_OUT;
 
     GdkWindow* gdk_window = wxGetGTKDrawable(dc);
-    if (gdk_window == NULL)
+    if (gdk_window == nullptr)
         return;
 
     gtk_paint_check
@@ -806,7 +816,7 @@ wxRendererGTK::DrawCheckBox(wxWindow*,
         gdk_window,
         state,
         shadow_type,
-        NULL,
+        nullptr,
         button,
         "cellcheck",
         dc.LogicalToDeviceX(rect.x) + info.margin_left,
@@ -849,7 +859,7 @@ wxRendererGTK::DrawPushButton(wxWindow*,
     }
 #else
     GdkWindow* gdk_window = wxGetGTKDrawable(dc);
-    if (gdk_window == NULL)
+    if (gdk_window == nullptr)
         return;
 
     gtk_paint_box
@@ -858,7 +868,7 @@ wxRendererGTK::DrawPushButton(wxWindow*,
         gdk_window,
         state,
         flags & wxCONTROL_PRESSED ? GTK_SHADOW_IN : GTK_SHADOW_OUT,
-        NULL,
+        nullptr,
         button,
         "button",
         dc.LogicalToDeviceX(rect.x),
@@ -876,7 +886,7 @@ wxRendererGTK::DrawItemSelectionRect(wxWindow* win,
                                      int flags )
 {
     wxGTKDrawable* drawable = wxGetGTKDrawable(dc);
-    if (drawable == NULL)
+    if (drawable == nullptr)
         return;
 
     if (flags & wxCONTROL_SELECTED)
@@ -921,7 +931,7 @@ wxRendererGTK::DrawItemSelectionRect(wxWindow* win,
 void wxRendererGTK::DrawFocusRect(wxWindow* win, wxDC& dc, const wxRect& rect, int flags)
 {
     wxGTKDrawable* drawable = wxGetGTKDrawable(dc);
-    if (drawable == NULL)
+    if (drawable == nullptr)
         return;
 
     GtkStateType state;
@@ -942,7 +952,7 @@ void wxRendererGTK::DrawFocusRect(wxWindow* win, wxDC& dc, const wxRect& rect, i
                      state,
                      NULL_RECT
                      win->m_wxwindow,
-                     NULL,
+                     nullptr,
                      dc.LogicalToDeviceX(rect.x),
                      dc.LogicalToDeviceY(rect.y),
                      rect.width,
@@ -954,7 +964,7 @@ void wxRendererGTK::DrawFocusRect(wxWindow* win, wxDC& dc, const wxRect& rect, i
 void wxRendererGTK::DrawTextCtrl(wxWindow*, wxDC& dc, const wxRect& rect, int flags)
 {
     wxGTKDrawable* drawable = wxGetGTKDrawable(dc);
-    if (drawable == NULL)
+    if (drawable == nullptr)
         return;
 
 #ifdef __WXGTK3__
@@ -965,13 +975,13 @@ void wxRendererGTK::DrawTextCtrl(wxWindow*, wxDC& dc, const wxRect& rect, int fl
         state = GTK_STATE_FLAG_INSENSITIVE;
 
     wxGtkStyleContext sc(dc.GetContentScaleFactor());
-    sc.Add(GTK_TYPE_ENTRY, "entry", "entry", NULL);
+    sc.Add(GTK_TYPE_ENTRY, "entry", "entry", nullptr);
 
     gtk_style_context_set_state(sc, GtkStateFlags(state));
     gtk_render_background(sc, drawable, rect.x, rect.y, rect.width, rect.height);
     gtk_render_frame(sc, drawable, rect.x, rect.y, rect.width, rect.height);
 #else
-    GtkWidget* entry = wxGTKPrivate::GetTextEntryWidget();
+    GtkWidget* entry = wxGTKPrivate::GetEntryWidget();
 
     GtkStateType state = GTK_STATE_NORMAL;
     if ( flags & wxCONTROL_DISABLED )
@@ -1000,7 +1010,7 @@ void wxRendererGTK::DrawTextCtrl(wxWindow*, wxDC& dc, const wxRect& rect, int fl
 void wxRendererGTK::DrawComboBox(wxWindow* win, wxDC& dc, const wxRect& rect, int flags)
 {
     wxGTKDrawable* drawable = wxGetGTKDrawable(dc);
-    if (drawable == NULL)
+    if (drawable == nullptr)
         return;
 
     GtkWidget* combo = wxGTKPrivate::GetComboBoxWidget();
@@ -1095,7 +1105,7 @@ void wxRendererGTK::DrawChoice(wxWindow* win, wxDC& dc,
 void wxRendererGTK::DrawRadioBitmap(wxWindow*, wxDC& dc, const wxRect& rect, int flags)
 {
     wxGTKDrawable* drawable = wxGetGTKDrawable(dc);
-    if (drawable == NULL)
+    if (drawable == nullptr)
         return;
 
 #ifdef __WXGTK3__
@@ -1103,7 +1113,7 @@ void wxRendererGTK::DrawRadioBitmap(wxWindow*, wxDC& dc, const wxRect& rect, int
     if (flags & wxCONTROL_CHECKED)
     {
         state = GTK_STATE_FLAG_ACTIVE;
-        if (gtk_check_version(3,14,0) == NULL)
+        if (gtk_check_version(3,14,0) == nullptr)
             state = GTK_STATE_FLAG_CHECKED;
     }
     if (flags & wxCONTROL_DISABLED)
@@ -1115,12 +1125,12 @@ void wxRendererGTK::DrawRadioBitmap(wxWindow*, wxDC& dc, const wxRect& rect, int
 
     int min_width, min_height;
     wxGtkStyleContext sc(dc.GetContentScaleFactor());
-    sc.Add(GTK_TYPE_RADIO_BUTTON, "radiobutton", NULL);
-    if (gtk_check_version(3,20,0) == NULL)
+    sc.Add(GTK_TYPE_RADIO_BUTTON, "radiobutton", nullptr);
+    if (gtk_check_version(3,20,0) == nullptr)
     {
         sc.Add("radio");
         gtk_style_context_get(sc, GTK_STATE_FLAG_NORMAL,
-            "min-width", &min_width, "min-height", &min_height, NULL);
+            "min-width", &min_width, "min-height", &min_height, nullptr);
     }
     else
     {

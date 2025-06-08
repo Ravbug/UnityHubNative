@@ -2,7 +2,6 @@
 // Name:        src/msw/frame.cpp
 // Purpose:     wxFrame
 // Author:      Julian Smart
-// Modified by:
 // Created:     01/02/97
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
@@ -39,6 +38,8 @@
 #endif // WX_PRECOMP
 
 #include "wx/msw/private.h"
+#include "wx/msw/private/darkmode.h"
+#include "wx/msw/private/menu.h"
 
 #include "wx/generic/statusbr.h"
 
@@ -96,7 +97,7 @@ wxEND_EVENT_TABLE()
 void wxFrame::Init()
 {
 #if wxUSE_MENUS
-    m_hMenu = NULL;
+    m_hMenu = nullptr;
     m_menuDepth = 0;
 #endif // wxUSE_MENUS
 
@@ -107,7 +108,7 @@ void wxFrame::Init()
     m_wasMinimized = false;
 
 #if wxUSE_TASKBARBUTTON
-    m_taskBarButton = NULL;
+    m_taskBarButton = nullptr;
 #endif
 }
 
@@ -134,12 +135,11 @@ bool wxFrame::Create(wxWindow *parent,
 
         // In case the application is run elevated, allow the
         // TaskbarButtonCreated and WM_COMMAND messages through.
-#if wxUSE_DYNLIB_CLASS
         typedef BOOL (WINAPI *ChangeWindowMessageFilter_t)(UINT message,
                                                            DWORD dwFlag);
         wxDynamicLibrary dllUser32(wxT("user32.dll"));
 
-        ChangeWindowMessageFilter_t pfnChangeWindowMessageFilter = NULL;
+        ChangeWindowMessageFilter_t pfnChangeWindowMessageFilter = nullptr;
         wxDL_INIT_FUNC(pfn, ChangeWindowMessageFilter, dllUser32);
         if ( pfnChangeWindowMessageFilter )
         {
@@ -147,10 +147,6 @@ bool wxFrame::Create(wxWindow *parent,
                                            wxMSGFLT_ADD);
             pfnChangeWindowMessageFilter(WM_COMMAND, wxMSGFLT_ADD);
         }
-#else
-        ChangeWindowMessageFilter(wxMsgTaskbarButtonCreated, wxMSGFLT_ADD);
-        ChangeWindowMessageFilter(WM_COMMAND, wxMSGFLT_ADD);
-#endif // wxUSE_DYNLIB_CLASS
     }
 #endif // wxUSE_TASKBARBUTTON
 
@@ -249,6 +245,17 @@ void wxFrame::DoGetClientSize(int *x, int *y) const
         }
     }
 #endif // wxUSE_STATUSBAR
+
+    // Ensure that we always return a valid size, it can never be negative.
+    //
+    // Note that this takes care of the case when the frame is minimized, as
+    // Windows client size in this case is (0,0), but while we could test for
+    // this separately, it seems more robust to just always do this here to
+    // establish our post-condition.
+    if ( x && *x < 0 )
+        *x = 0;
+    if ( y && *y < 0 )
+        *y = 0;
 }
 
 // ----------------------------------------------------------------------------
@@ -283,7 +290,7 @@ wxStatusBar *wxFrame::OnCreateStatusBar(int number,
                                         wxWindowID id,
                                         const wxString& name)
 {
-    wxStatusBar *statusBar wxDUMMY_INITIALIZE(NULL);
+    wxStatusBar *statusBar wxDUMMY_INITIALIZE(nullptr);
 
 #if wxUSE_NATIVE_STATUSBAR
     if ( !UsesNativeStatusBar() )
@@ -339,7 +346,7 @@ void wxFrame::PositionStatusBar()
     // account for this difference. If not, the statusbar will be positioned
     // too high or low.
     int shOld;
-    m_frameStatusBar->GetSize(NULL, &shOld);
+    m_frameStatusBar->GetSize(nullptr, &shOld);
 
     // Resize the status bar to its default height, as it could have been set
     // to a wrong value before by WM_SIZE sent during the frame creation and
@@ -349,7 +356,7 @@ void wxFrame::PositionStatusBar()
     m_frameStatusBar->SetSize(x, h, w, wxDefaultCoord, wxSIZE_AUTO_HEIGHT);
 
     int sh;
-    m_frameStatusBar->GetSize(NULL, &sh);
+    m_frameStatusBar->GetSize(nullptr, &sh);
     h += shOld - sh;
 
     // Since we wish the status bar to be directly under the client area,
@@ -371,7 +378,7 @@ void wxFrame::AttachMenuBar(wxMenuBar *menubar)
         m_hMenu = (WXHMENU)0;
         InternalSetMenuBar();
     }
-    else // set new non NULL menu bar
+    else // set new non null menu bar
     {
         // Can set a menubar several times.
         if ( menubar->GetHMenu() )
@@ -515,7 +522,7 @@ bool wxFrame::ShowFullScreen(bool show, long style)
 #endif // wxUSE_TOOLBAR
 
         if (style & wxFULLSCREEN_NOMENUBAR)
-            SetMenu((HWND)GetHWND(), (HMENU) NULL);
+            SetMenu((HWND)GetHWND(), (HMENU) nullptr);
 
 #if wxUSE_STATUSBAR
         wxStatusBar *theStatusBar = GetStatusBar();
@@ -764,7 +771,7 @@ bool wxFrame::HandleSize(int WXUNUSED(x), int WXUNUSED(y), WXUINT id)
         case SIZE_RESTORED:
         case SIZE_MAXIMIZED:
             // only do it it if we were iconized before, otherwise resizing the
-            // parent frame has a curious side effect of bringing it under it's
+            // parent frame has a curious side effect of bringing it under its
             // children
             if ( m_showCmd != SW_MINIMIZE )
                 break;
@@ -833,6 +840,63 @@ bool wxFrame::HandleCommand(WXWORD id, WXWORD cmd, WXHWND control)
     return wxFrameBase::HandleCommand(id, cmd, control);
 }
 
+bool
+HandleMenuMessage(WXLRESULT* result,
+                  wxWindow* w,
+                  WXUINT nMsg,
+                  WXWPARAM wParam,
+                  WXLPARAM lParam)
+{
+    if ( wxMSWDarkMode::HandleMenuMessage(result, w, nMsg, wParam, lParam) )
+        return true;
+
+    using namespace wxMSWMenuImpl;
+
+    switch ( nMsg )
+    {
+        case WM_MENUBAR_MEASUREMENUITEM:
+            if ( auto* const measureMenuItem = (MenuBarMeasureMenuItem*)lParam )
+            {
+                // We only need to handle this message to work around the
+                // incorrect behavior of the native control not scaling its
+                // padding at high DPI, which is fixed in Windows 11.
+                if ( !(wxGetWinVersion() <= wxWinVersion_10 &&
+                       w->GetDPIScaleFactor() > 1.0) )
+                    break;
+
+                MEASUREITEMSTRUCT& mis = measureMenuItem->mis;
+
+                // Just a sanity check.
+                if ( mis.CtlType != ODT_MENU )
+                    break;
+
+                HWND hwnd = GetHwndOf(w);
+
+                WinStruct<MENUBARINFO> mbi;
+                if ( !::GetMenuBarInfo(hwnd, OBJID_MENU, 0, &mbi) )
+                {
+                    wxLogLastError("GetMenuBarInfo");
+                    break;
+                }
+
+                *result = w->MSWDefWindowProc(nMsg, wParam, lParam);
+
+                // Scale the horizontal padding of menu bar menus and the
+                // vertical padding of menu items with the DPI scaling factor
+                // as Windows doesn't do it.
+                if ( mbi.hMenu == measureMenuItem->mbdm.hmenu )
+                    mis.itemWidth += w->FromDIP(14) - 14;
+                else
+                    mis.itemHeight += w->FromDIP(6) - 6;
+
+                return true;
+            }
+            break;
+    }
+
+    return false;
+}
+
 // ---------------------------------------------------------------------------
 // the window proc for wxFrame
 // ---------------------------------------------------------------------------
@@ -841,6 +905,12 @@ WXLRESULT wxFrame::MSWWindowProc(WXUINT message, WXWPARAM wParam, WXLPARAM lPara
 {
     WXLRESULT rc = 0;
     bool processed = false;
+
+    if ( GetMenuBar() &&
+          HandleMenuMessage(&rc, this, message, wParam, lParam) )
+    {
+        return rc;
+    }
 
     switch ( message )
     {
@@ -944,4 +1014,16 @@ wxPoint wxFrame::GetClientAreaOrigin() const
 #endif // wxUSE_TOOLBAR
 
     return pt;
+}
+
+void wxFrame::MSWBeforeDPIChangedEvent(const wxDPIChangedEvent& WXUNUSED(event))
+{
+#if wxUSE_STATUSBAR
+    // If this frame uses a status bar, we need to adjust its height here
+    // before executing the user-defined wxEVT_DPI_CHANGED handler which may
+    // want to change the client size of the frame (e.g. using wxSizer::Fit()),
+    // because otherwise this wouldn't work correctly because the status bar
+    // would still have its old height, corresponding to the old DPI.
+    PositionStatusBar();
+#endif // wxUSE_STATUSBAR
 }

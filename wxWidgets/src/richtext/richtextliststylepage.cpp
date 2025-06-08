@@ -2,7 +2,6 @@
 // Name:        src/richtext/richtextliststylepage.cpp
 // Purpose:     Implements the rich text formatting dialog list style page.
 // Author:      Julian Smart
-// Modified by:
 // Created:     10/18/2006 11:36:37 AM
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
@@ -138,27 +137,27 @@ void wxRichTextListStylePage::Init()
     m_currentLevel = 1;
 
 ////@begin wxRichTextListStylePage member initialisation
-    m_levelCtrl = NULL;
-    m_styleListBox = NULL;
-    m_periodCtrl = NULL;
-    m_parenthesesCtrl = NULL;
-    m_rightParenthesisCtrl = NULL;
-    m_bulletAlignmentCtrl = NULL;
-    m_symbolCtrl = NULL;
-    m_symbolFontCtrl = NULL;
-    m_bulletNameCtrl = NULL;
-    m_alignmentLeft = NULL;
-    m_alignmentRight = NULL;
-    m_alignmentJustified = NULL;
-    m_alignmentCentred = NULL;
-    m_alignmentIndeterminate = NULL;
-    m_indentLeft = NULL;
-    m_indentLeftFirst = NULL;
-    m_indentRight = NULL;
-    m_spacingBefore = NULL;
-    m_spacingAfter = NULL;
-    m_spacingLine = NULL;
-    m_previewCtrl = NULL;
+    m_levelCtrl = nullptr;
+    m_styleListBox = nullptr;
+    m_periodCtrl = nullptr;
+    m_parenthesesCtrl = nullptr;
+    m_rightParenthesisCtrl = nullptr;
+    m_bulletAlignmentCtrl = nullptr;
+    m_symbolCtrl = nullptr;
+    m_symbolFontCtrl = nullptr;
+    m_bulletNameCtrl = nullptr;
+    m_alignmentLeft = nullptr;
+    m_alignmentRight = nullptr;
+    m_alignmentJustified = nullptr;
+    m_alignmentCentred = nullptr;
+    m_alignmentIndeterminate = nullptr;
+    m_indentLeft = nullptr;
+    m_indentLeftFirst = nullptr;
+    m_indentRight = nullptr;
+    m_spacingBefore = nullptr;
+    m_spacingAfter = nullptr;
+    m_spacingLine = nullptr;
+    m_previewCtrl = nullptr;
 ////@end wxRichTextListStylePage member initialisation
 }
 
@@ -183,7 +182,7 @@ void wxRichTextListStylePage::CreateControls()
     wxStaticText* itemStaticText5 = new wxStaticText( itemRichTextDialogPage1, wxID_STATIC, _("&List level:"), wxDefaultPosition, wxDefaultSize, 0 );
     itemBoxSizer4->Add(itemStaticText5, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5);
 
-    m_levelCtrl = new wxSpinCtrl( itemRichTextDialogPage1, ID_RICHTEXTLISTSTYLEPAGE_LEVEL, wxT("1"), wxDefaultPosition, wxSize(60, -1), wxSP_ARROW_KEYS, 1, 10, 1 );
+    m_levelCtrl = new wxSpinCtrl( itemRichTextDialogPage1, ID_RICHTEXTLISTSTYLEPAGE_LEVEL, wxT("1"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 10, 1 );
     m_levelCtrl->SetHelpText(_("Selects the list level to edit."));
     if (wxRichTextListStylePage::ShowToolTips())
         m_levelCtrl->SetToolTip(_("Selects the list level to edit."));
@@ -226,14 +225,18 @@ void wxRichTextListStylePage::CreateControls()
         m_periodCtrl->SetToolTip(_("Check to add a period after the bullet."));
     itemBoxSizer16->Add(m_periodCtrl, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5);
 
-    m_parenthesesCtrl = new wxCheckBox( itemPanel10, ID_RICHTEXTLISTSTYLEPAGE_PARENTHESESCTRL, _("(*)"), wxDefaultPosition, wxDefaultSize, 0 );
+    m_parenthesesCtrl = new wxCheckBox( itemPanel10, ID_RICHTEXTLISTSTYLEPAGE_PARENTHESESCTRL,
+        // TRANSLATORS: Bullet point in parentheses option
+        _("(*)"), wxDefaultPosition, wxDefaultSize, 0 );
     m_parenthesesCtrl->SetValue(false);
     m_parenthesesCtrl->SetHelpText(_("Check to enclose the bullet in parentheses."));
     if (wxRichTextListStylePage::ShowToolTips())
         m_parenthesesCtrl->SetToolTip(_("Check to enclose the bullet in parentheses."));
     itemBoxSizer16->Add(m_parenthesesCtrl, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5);
 
-    m_rightParenthesisCtrl = new wxCheckBox( itemPanel10, ID_RICHTEXTLISTSTYLEPAGE_RIGHTPARENTHESISCTRL, _("*)"), wxDefaultPosition, wxDefaultSize, 0 );
+    m_rightParenthesisCtrl = new wxCheckBox( itemPanel10, ID_RICHTEXTLISTSTYLEPAGE_RIGHTPARENTHESISCTRL,
+        // TRANSLATORS: Right parenthesis bullet point option
+        _("*)"), wxDefaultPosition, wxDefaultSize, 0 );
     m_rightParenthesisCtrl->SetValue(false);
     m_rightParenthesisCtrl->SetHelpText(_("Check to add a right parenthesis."));
     if (wxRichTextListStylePage::ShowToolTips())
@@ -880,7 +883,7 @@ wxRichTextAttr* wxRichTextListStylePage::GetAttributesForSelection()
     if (def)
         return def->GetLevelAttributes(value-1);
     else
-        return NULL;
+        return nullptr;
 }
 
 /// Just transfer from the window and update the preview

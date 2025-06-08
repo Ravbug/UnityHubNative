@@ -2,7 +2,6 @@
 // Name:        src/generic/combog.cpp
 // Purpose:     Generic wxComboCtrl
 // Author:      Jaakko Salli
-// Modified by:
 // Created:     Apr-30-2006
 // Copyright:   (c) 2005 Jaakko Salli
 // Licence:     wxWindows licence
@@ -321,8 +320,6 @@ void wxGenericComboCtrl::OnPaintEvent( wxPaintEvent& WXUNUSED(event) )
         if ( m_text )
             tcRect.width = m_widthCustomPaint;
 
-        dc.SetFont( GetFont() );
-
         dc.SetClippingRegion(tcRect);
         if ( m_popupInterface )
             m_popupInterface->PaintComboControl(dc, tcRect);
@@ -450,7 +447,7 @@ bool wxGenericComboCtrl::IsKeyPopupToggle(const wxKeyEvent& event) const
 #if defined(__WXOSX__)
 wxTextWidgetImpl * wxGenericComboCtrl::GetTextPeer() const
 {
-    return m_text ? m_text->GetTextPeer() : NULL;
+    return m_text ? m_text->GetTextPeer() : nullptr;
 }
 #endif
 

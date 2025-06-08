@@ -25,11 +25,3 @@
 add_subdirectory(addtiffo)
 add_subdirectory(dbs)
 add_subdirectory(iptcutil)
-add_subdirectory(mfs)
-add_subdirectory(pds)
-add_subdirectory(ras)
-add_subdirectory(stream)
-add_subdirectory(tags)
-add_subdirectory(win_dib)
-
-extra_dist(README)

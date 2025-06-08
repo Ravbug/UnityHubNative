@@ -2,7 +2,6 @@
 // Name:        src/generic/colrdlgg.cpp
 // Purpose:     Choice dialogs
 // Author:      Julian Smart
-// Modified by:
 // Created:     04/01/98
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
@@ -159,9 +158,9 @@ bool wxGenericColourDialog::Create(wxWindow *parent, const wxColourData *data)
         m_colourData = *data;
 
 #if wxCLRDLGG_USE_PREVIEW_WITH_ALPHA
-    m_customColourBmp = NULL;
+    m_customColourBmp = nullptr;
     for ( unsigned i = 0; i < WXSIZEOF(m_customColoursBmp); i++ )
-        m_customColoursBmp[i] = NULL;
+        m_customColoursBmp[i] = nullptr;
 #endif
 
     InitializeColours();
@@ -342,7 +341,7 @@ void wxGenericColourDialog::CreateWidgets()
     }
     else
     {
-        m_alphaSlider = NULL;
+        m_alphaSlider = nullptr;
     }
 
     wxBoxSizer *sliderSizer = new wxBoxSizer( wxHORIZONTAL );

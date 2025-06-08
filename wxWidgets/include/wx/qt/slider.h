@@ -13,7 +13,8 @@ class QSlider;
 class WXDLLIMPEXP_CORE wxSlider : public wxSliderBase
 {
 public:
-    wxSlider();
+    wxSlider() = default;
+
     wxSlider(wxWindow *parent,
              wxWindowID id,
              int value, int minValue, int maxValue,
@@ -32,30 +33,31 @@ public:
                 const wxValidator& validator = wxDefaultValidator,
                 const wxString& name = wxASCII_STR(wxSliderNameStr));
 
-    virtual int GetValue() const wxOVERRIDE;
-    virtual void SetValue(int value) wxOVERRIDE;
+    virtual int GetValue() const override;
+    virtual void SetValue(int value) override;
 
-    virtual void SetRange(int minValue, int maxValue) wxOVERRIDE;
-    virtual int GetMin() const wxOVERRIDE;
-    virtual int GetMax() const wxOVERRIDE;
+    virtual void SetRange(int minValue, int maxValue) override;
+    virtual int GetMin() const override;
+    virtual int GetMax() const override;
 
-    virtual void DoSetTickFreq(int freq) wxOVERRIDE;
-    virtual int GetTickFreq() const wxOVERRIDE;
+    virtual int GetTickFreq() const override;
+    virtual void ClearTicks() override;
+    virtual void SetTick(int tickPos) override;
 
-    virtual void SetLineSize(int lineSize) wxOVERRIDE;
-    virtual void SetPageSize(int pageSize) wxOVERRIDE;
-    virtual int GetLineSize() const wxOVERRIDE;
-    virtual int GetPageSize() const wxOVERRIDE;
+    virtual void SetLineSize(int lineSize) override;
+    virtual void SetPageSize(int pageSize) override;
+    virtual int GetLineSize() const override;
+    virtual int GetPageSize() const override;
 
-    virtual void SetThumbLength(int lenPixels) wxOVERRIDE;
-    virtual int GetThumbLength() const wxOVERRIDE;
+    virtual void SetThumbLength(int lenPixels) override;
+    virtual int GetThumbLength() const override;
 
-    virtual QWidget *GetHandle() const wxOVERRIDE;
+    QSlider* GetQSlider() const;
 
-private:
-    QSlider *m_qtSlider;
+protected:
+    virtual void DoSetTickFreq(int freq) override;
 
-    wxDECLARE_DYNAMIC_CLASS( wxSlider );
+    wxDECLARE_DYNAMIC_CLASS(wxSlider);
 };
 
 #endif // _WX_QT_SLIDER_H_

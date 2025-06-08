@@ -27,7 +27,7 @@ dnl
 
 dnl ---------------------------------------------------------------------------
 dnl Lots of compiler & linker detection code contained here was taken from
-dnl wxWidgets configure.in script (see https://www.wxwidgets.org)
+dnl wxWidgets configure script (see https://www.wxwidgets.org)
 dnl ---------------------------------------------------------------------------
 
 
@@ -44,7 +44,7 @@ AC_DEFUN([AC_BAKEFILE_GNUMAKE],
     AC_CACHE_CHECK([if make is GNU make], bakefile_cv_prog_makeisgnu,
     [
         if ( ${SHELL-sh} -c "${MAKE-make} --version" 2> /dev/null |
-                egrep -s GNU > /dev/null); then
+                grep -sE GNU > /dev/null); then
             bakefile_cv_prog_makeisgnu="yes"
         else
             bakefile_cv_prog_makeisgnu="no"
@@ -282,11 +282,11 @@ AC_DEFUN([AC_BAKEFILE_SHARED_LD],
       ;;
 
       *-*-darwin* )
-        SHARED_LD_MODULE_CC="\${CC} -bundle -single_module -headerpad_max_install_names -o"
-        SHARED_LD_MODULE_CXX="\${CXX} -bundle -single_module -headerpad_max_install_names -o"
+        SHARED_LD_MODULE_CC="\${CC} -bundle -headerpad_max_install_names -o"
+        SHARED_LD_MODULE_CXX="\${CXX} -bundle -headerpad_max_install_names -o"
 
-        SHARED_LD_CC="\${CC} -dynamiclib -single_module -headerpad_max_install_names -o"
-        SHARED_LD_CXX="\${CXX} -dynamiclib -single_module -headerpad_max_install_names -o"
+        SHARED_LD_CC="\${CC} -dynamiclib -headerpad_max_install_names -o"
+        SHARED_LD_CXX="\${CXX} -dynamiclib -headerpad_max_install_names -o"
 
         if test "x$GCC" = "xyes"; then
             PIC_FLAG="-dynamic -fPIC"
@@ -600,7 +600,7 @@ AC_DEFUN([AC_BAKEFILE_PRECOMP_HEADERS],
         if test "x$GCC" = "xyes"; then
             dnl test if we have gcc-3.4:
             AC_MSG_CHECKING([if the compiler supports precompiled headers])
-            AC_TRY_COMPILE([],
+            AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],
                 [
                     #if !defined(__GNUC__) || !defined(__GNUC_MINOR__)
                         There is no PCH support
@@ -614,7 +614,7 @@ AC_DEFUN([AC_BAKEFILE_PRECOMP_HEADERS],
                        ( defined(__INTEL_COMPILER) )
                         There is no PCH support
                     #endif
-                ],
+                ])],
                 [
                     AC_MSG_RESULT([yes])
                     GCC_PCH=1
@@ -658,7 +658,7 @@ AC_DEFUN([AC_BAKEFILE_PRECOMP_HEADERS],
 dnl ---------------------------------------------------------------------------
 dnl AC_BAKEFILE([autoconf_inc.m4 inclusion])
 dnl
-dnl To be used in configure.in of any project using Bakefile-generated mks
+dnl To be used in configure.ac of any project using Bakefile-generated mks
 dnl
 dnl Behaviour can be modified by setting following variables:
 dnl    BAKEFILE_CHECK_BASICS    set to "no" if you don't want bakefile to
@@ -716,7 +716,7 @@ AC_DEFUN([AC_BAKEFILE],
     $1
 
     if test "$BAKEFILE_AUTOCONF_INC_M4_VERSION" = "" ; then
-        AC_MSG_ERROR([No version found in autoconf_inc.m4 - bakefile macro was changed to take additional argument, perhaps configure.in wasn't updated (see the documentation)?])
+        AC_MSG_ERROR([No version found in autoconf_inc.m4 - bakefile macro was changed to take additional argument, perhaps configure.ac wasn't updated (see the documentation)?])
     fi
 
     if test "$BAKEFILE_BAKEFILE_M4_VERSION" != "$BAKEFILE_AUTOCONF_INC_M4_VERSION" ; then

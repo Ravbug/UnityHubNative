@@ -46,6 +46,8 @@ enum wxBitmapType
     wxBITMAP_TYPE_TGA,
     wxBITMAP_TYPE_MACCURSOR,
     wxBITMAP_TYPE_MACCURSOR_RESOURCE,
+    wxBITMAP_TYPE_WEBP, ///< @since 3.3.0
+    wxBITMAP_TYPE_WEBP_RESOURCE, ///< @since 3.3.0
     wxBITMAP_TYPE_ANY = 50
 };
 
@@ -200,38 +202,43 @@ public:
     /**
         @name Miscellaneous operators
 
-        Note that these operators are documented as class members
-        (to make them easier to find) but, as their prototype shows,
-        they are implemented as global operators; note that this is
-        transparent to the user but it helps to understand why the
-        following functions are documented to take the wxPoint they
-        operate on as an explicit argument.
+        Note that binary operators are defined as friend functions inside this
+        class, making them accessible via argument-dependent lookup, but hidden
+        otherwise.
     */
     ///@{
     wxRealPoint& operator=(const wxRealPoint& pt);
 
-    bool operator ==(const wxRealPoint& p1, const wxRealPoint& p2);
-    bool operator !=(const wxRealPoint& p1, const wxRealPoint& p2);
+    friend bool operator ==(const wxRealPoint& p1, const wxRealPoint& p2);
+    friend bool operator !=(const wxRealPoint& p1, const wxRealPoint& p2);
 
-    wxRealPoint operator +(const wxRealPoint& p1, const wxRealPoint& p2);
-    wxRealPoint operator -(const wxRealPoint& p1, const wxRealPoint& p2);
+    friend wxRealPoint operator +(const wxRealPoint& p1, const wxRealPoint& p2);
+    friend wxRealPoint operator -(const wxRealPoint& p1, const wxRealPoint& p2);
 
     wxRealPoint& operator +=(const wxRealPoint& pt);
     wxRealPoint& operator -=(const wxRealPoint& pt);
 
-    wxRealPoint operator +(const wxRealPoint& pt, const wxSize& sz);
-    wxRealPoint operator -(const wxRealPoint& pt, const wxSize& sz);
-    wxRealPoint operator +(const wxSize& sz, const wxRealPoint& pt);
-    wxRealPoint operator -(const wxSize& sz, const wxRealPoint& pt);
+    friend wxRealPoint operator +(const wxRealPoint& pt, const wxSize& sz);
+    friend wxRealPoint operator -(const wxRealPoint& pt, const wxSize& sz);
+    friend wxRealPoint operator +(const wxSize& sz, const wxRealPoint& pt);
+    friend wxRealPoint operator -(const wxSize& sz, const wxRealPoint& pt);
 
     wxRealPoint& operator +=(const wxSize& sz);
     wxRealPoint& operator -=(const wxSize& sz);
 
-    wxSize operator /(const wxRealPoint& sz, int factor);
-    wxSize operator *(const wxRealPoint& sz, int factor);
-    wxSize operator *(int factor, const wxSize& sz);
-    wxSize& operator /=(int factor);
-    wxSize& operator *=(int factor);
+    friend wxRealPoint operator -(const wxRealPoint& pt);
+
+    friend wxRealPoint operator /(const wxRealPoint& sz, int divisor);
+    friend wxRealPoint operator *(const wxRealPoint& sz, int factor);
+    friend wxRealPoint operator *(int factor, const wxRealPoint& pt);
+    wxRealPoint& operator /=(int divisor);
+    wxRealPoint& operator *=(int factor);
+
+    friend wxRealPoint operator /(const wxRealPoint& pt, double divisor);
+    friend wxRealPoint operator *(const wxRealPoint& pt, double factor);
+    friend wxRealPoint operator *(double factor, const wxRealPoint& pt);
+    wxRealPoint& operator /=(double divisor);
+    wxRealPoint& operator *=(double factor);
     ///@}
 
     /**
@@ -307,6 +314,8 @@ public:
         centred in both directions but if @a dir includes only @c wxVERTICAL or
         only @c wxHORIZONTAL, then it is only centered in this direction while
         the other component of its position remains unchanged.
+
+        @see MakeCenteredIn()
     */
     wxRect CentreIn(const wxRect& r, int dir = wxBOTH) const;
     wxRect CenterIn(const wxRect& r, int dir = wxBOTH) const;
@@ -475,6 +484,20 @@ public:
     */
     bool IsEmpty() const;
 
+    /**
+        Center this rectangle inside the given rectangle @a r.
+
+        By default, rectangle is centred in both directions but if @a dir
+        includes only @c wxVERTICAL or only @c wxHORIZONTAL, then it is only
+        centered in this direction while the other component of its position
+        remains unchanged.
+
+        @see CenterIn()
+
+        @since 3.3.0
+     */
+    void MakeCenteredIn(const wxRect& r, int dir = wxBOTH);
+
     ///@{
     /**
         Moves the rectangle by the specified offset. If @a dx is positive, the
@@ -584,13 +607,13 @@ public:
     /**
         Inequality operator.
     */
-    bool operator !=(const wxRect& r1, const wxRect& r2);
+    friend bool operator !=(const wxRect& r1, const wxRect& r2);
 
     ///@{
     /**
         Like Union(), but doesn't treat empty rectangles specially.
     */
-    wxRect operator +(const wxRect& r1, const wxRect& r2);
+    friend wxRect operator +(const wxRect& r1, const wxRect& r2);
     wxRect& operator +=(const wxRect& r);
     ///@}
 
@@ -598,7 +621,7 @@ public:
     /**
         Returns the intersection of two rectangles (which may be empty).
     */
-    wxRect operator *(const wxRect& r1, const wxRect& r2);
+    friend wxRect operator *(const wxRect& r1, const wxRect& r2);
     wxRect& operator *=(const wxRect& r);
     ///@}
 
@@ -610,7 +633,7 @@ public:
     /**
         Equality operator.
     */
-    bool operator ==(const wxRect& r1, const wxRect& r2);
+    friend bool operator ==(const wxRect& r1, const wxRect& r2);
 
     /**
         Height member.
@@ -688,38 +711,43 @@ public:
     /**
         @name Miscellaneous operators
 
-        Note that these operators are documented as class members
-        (to make them easier to find) but, as their prototype shows,
-        they are implemented as global operators; note that this is
-        transparent to the user but it helps to understand why the
-        following functions are documented to take the wxPoint they
-        operate on as an explicit argument.
+        Note that binary operators are defined as friend functions inside this
+        class, making them accessible via argument-dependent lookup, but hidden
+        otherwise.
     */
     ///@{
     wxPoint& operator=(const wxPoint& pt);
 
-    bool operator ==(const wxPoint& p1, const wxPoint& p2);
-    bool operator !=(const wxPoint& p1, const wxPoint& p2);
+    friend bool operator ==(const wxPoint& p1, const wxPoint& p2);
+    friend bool operator !=(const wxPoint& p1, const wxPoint& p2);
 
-    wxPoint operator +(const wxPoint& p1, const wxPoint& p2);
-    wxPoint operator -(const wxPoint& p1, const wxPoint& p2);
+    friend wxPoint operator +(const wxPoint& p1, const wxPoint& p2);
+    friend wxPoint operator -(const wxPoint& p1, const wxPoint& p2);
 
     wxPoint& operator +=(const wxPoint& pt);
     wxPoint& operator -=(const wxPoint& pt);
 
-    wxPoint operator +(const wxPoint& pt, const wxSize& sz);
-    wxPoint operator -(const wxPoint& pt, const wxSize& sz);
-    wxPoint operator +(const wxSize& sz, const wxPoint& pt);
-    wxPoint operator -(const wxSize& sz, const wxPoint& pt);
+    friend wxPoint operator +(const wxPoint& pt, const wxSize& sz);
+    friend wxPoint operator -(const wxPoint& pt, const wxSize& sz);
+    friend wxPoint operator +(const wxSize& sz, const wxPoint& pt);
+    friend wxPoint operator -(const wxSize& sz, const wxPoint& pt);
 
     wxPoint& operator +=(const wxSize& sz);
     wxPoint& operator -=(const wxSize& sz);
 
-    wxSize operator /(const wxPoint& sz, int factor);
-    wxSize operator *(const wxPoint& sz, int factor);
-    wxSize operator *(int factor, const wxSize& sz);
-    wxSize& operator /=(int factor);
-    wxSize& operator *=(int factor);
+    wxPoint operator -(const wxPoint& pt);
+
+    friend wxPoint operator /(const wxPoint& sz, int divisor);
+    friend wxPoint operator *(const wxPoint& sz, int factor);
+    friend wxPoint operator *(int factor, const wxPoint& sz);
+    wxPoint& operator /=(int divisor);
+    wxPoint& operator *=(int factor);
+
+    friend wxPoint operator /(const wxPoint& pt, double divisor);
+    friend wxPoint operator *(const wxPoint& pt, double factor);
+    friend wxPoint operator *(double factor, const wxPoint& pt);
+    wxPoint& operator /=(double divisor);
+    wxPoint& operator *=(double factor);
     ///@}
 
 
@@ -789,6 +817,13 @@ const wxPoint wxDefaultPosition;
     set of named colours. The application may add to this set if desired by
     using AddColour() and may use it to look up colours by names using Find()
     or find the names for the standard colour using FindName().
+
+    It is also possible to switch between the colour values defined in the CSS
+    standard (see https://www.w3.org/TR/css-color-4/#named-colors) and the
+    traditional colour values which were used by wxWidgets versions earlier
+    than 3.3.0, which may be useful to preserve the appearance of the existing
+    code: if you need to do this, please call UseScheme() with @c Traditional
+    argument, but the use of new, standard colours is recommended.
 
     There is one predefined, global instance of this class called
     ::wxTheColourDatabase.
@@ -871,6 +906,9 @@ const wxPoint wxDefaultPosition;
     </td></tr>
     @endTable
 
+    See the "Database colours" page of the @ref page_samples_drawing to see how
+    all these colours look like.
+
     @library{wxcore}
     @category{gdi}
 
@@ -903,6 +941,63 @@ public:
         colour is not found in the database.
     */
     wxString FindName(const wxColour& colour) const;
+
+    /**
+        List all known colours by name.
+
+        @since 3.3.0
+    */
+    wxVector<wxString> GetAllNames() const;
+
+    /**
+        Possible colour schemes for UseScheme().
+
+        @since 3.3.0
+    */
+    enum Scheme
+    {
+        CSS,        ///< Use CSS standard colours, default since 3.3.0.
+        Traditional ///< Use traditional wxWidgets colours for compatibility.
+    };
+
+    /**
+        Select the colour scheme to use.
+
+        By default, wxColourDatabase uses CSS scheme which returns the standard
+        values for the colours defined in the CSS specification, see
+        https://www.w3.org/TR/css-color-4/#named-colors
+
+        If preserving compatibility with the behaviour and appearance of the
+        previous wxWidgets versions is important, you may switch to the
+        traditional colour scheme by using this function with @c Traditional
+        argument, e.g. call
+
+        @code
+            wxTheColourDatabase->UseScheme(wxColourDatabase::Traditional);
+        @endcode
+
+        during the application initialization. Please note that in the previous
+        versions wxGTK already used CSS colour values, unlike all the other
+        ports, so @c Traditional is not actually backwards compatible for
+        wxGTK, but does make the colour values consistent across all platforms
+        and the same as had been used by wxMSW and wxOSX before. In other
+        words, to obtain 100% compatibility with the previous versions, the
+        UseScheme() call above should be made for all ports except wxGTK.
+
+        Note that the colour names defined only by wxWidgets, which notably
+        includes all colour variants with spaces in their names, are still
+        available in the default CSS colour scheme, with their traditional
+        values but the names of colours defined by CSS standard are taken from
+        it, e.g. "GREEN" corresponds to @c #00ff00 in the traditional scheme
+        but to @c #008000 in the CSS scheme. Similarly, CSS colour names that
+        were not defined by the previous wxWidgets versions are available even
+        when using the traditional scheme, the scheme choice only affects the
+        values of the colours defined by both wxWidgets and CSS with different
+        values.
+
+        @since 3.3.0
+    */
+    void UseScheme(Scheme scheme);
 };
 
 
@@ -1012,6 +1107,14 @@ public:
     void IncTo(const wxSize& size);
 
     /**
+        Returns @true if this size is at least as big as the other one in both
+        directions.
+
+        @since 3.3.0
+     */
+    bool IsAtLeast(const wxSize& size) const;
+
+    /**
         Returns @true if neither of the size object components is equal to -1,
         which is used as default for the size values in wxWidgets (hence the
         predefined ::wxDefaultSize has both of its components equal to -1).
@@ -1067,12 +1170,9 @@ public:
         Sizes can be added to or subtracted from each other or divided or
         multiplied by a number.
 
-        Note that these operators are documented as class members
-        (to make them easier to find) but, as their prototype shows,
-        they are implemented as global operators; note that this is
-        transparent to the user but it helps to understand why the
-        following functions are documented to take the wxSize they
-        operate on as an explicit argument.
+        Note that binary operators are defined as friend functions inside this
+        class, making them accessible via argument-dependent lookup, but hidden
+        otherwise.
 
         Also note that using @c double factor may result in rounding errors,
         as wxSize always stores @c int coordinates and the result is always
@@ -1081,20 +1181,20 @@ public:
     ///@{
     wxSize& operator=(const wxSize& sz);
 
-    bool operator ==(const wxSize& s1, const wxSize& s2);
-    bool operator !=(const wxSize& s1, const wxSize& s2);
+    friend bool operator ==(const wxSize& s1, const wxSize& s2);
+    friend bool operator !=(const wxSize& s1, const wxSize& s2);
 
-    wxSize operator +(const wxSize& s1, const wxSize& s2);
-    wxSize operator -(const wxSize& s1, const wxSize& s2);
+    friend wxSize operator +(const wxSize& s1, const wxSize& s2);
+    friend wxSize operator -(const wxSize& s1, const wxSize& s2);
     wxSize& operator +=(const wxSize& sz);
     wxSize& operator -=(const wxSize& sz);
 
-    wxSize operator /(const wxSize& sz, int factor);
-    wxSize operator /(const wxSize& sz, double factor);
-    wxSize operator *(const wxSize& sz, int factor);
-    wxSize operator *(const wxSize& sz, double factor);
-    wxSize operator *(int factor, const wxSize& sz);
-    wxSize operator *(double factor, const wxSize& sz);
+    friend wxSize operator /(const wxSize& sz, int factor);
+    friend wxSize operator /(const wxSize& sz, double factor);
+    friend wxSize operator *(const wxSize& sz, int factor);
+    friend wxSize operator *(const wxSize& sz, double factor);
+    friend wxSize operator *(int factor, const wxSize& sz);
+    friend wxSize operator *(double factor, const wxSize& sz);
     wxSize& operator /=(int factor);
     wxSize& operator /=(double factor);
     wxSize& operator *=(int factor);
@@ -1120,9 +1220,13 @@ const wxSize wxDefaultSize;
 /**
     This macro loads a bitmap from either application resources (on the
     platforms for which they exist, i.e.\ Windows) or from an XPM file.
-    This can help to avoid using @ifdef_ when creating bitmaps.
 
-    @see @ref overview_bitmap, wxICON()
+    You can use `wxHAS_IMAGES_IN_RESOURCES` to check if the XPM needs to be
+    included when using this macro.
+
+    See also wxBITMAP_PNG() if you want to use images with alpha channel.
+
+    @see @ref overview_bitmap_embedding, wxICON()
 
     @header{wx/gdicmn.h}
 */
@@ -1166,7 +1270,7 @@ const wxSize wxDefaultSize;
     @endcode
     in your application startup code.
 
-    @see wxBITMAP_PNG_FROM_DATA()
+    @see @ref overview_bitmap_embedding, wxBITMAP_PNG_FROM_DATA()
 
     @header{wx/gdicmn.h}
 
@@ -1198,9 +1302,13 @@ const wxSize wxDefaultSize;
 /**
     This macro loads an icon from either application resources (on the
     platforms for which they exist, i.e.\ Windows) or from an XPM file.
-    This can help to avoid using @ifdef_ when creating icons.
 
-    @see @ref overview_bitmap, wxBITMAP()
+    You can use `wxHAS_IMAGES_IN_RESOURCES` to check if the XPM needs to be
+    included when using this macro.
+
+    See also wxBITMAP_PNG() if you want to use images with alpha channel.
+
+    @see @ref overview_bitmap_embedding, wxBITMAP()
 
     @header{wx/gdicmn.h}
 */
@@ -1230,14 +1338,24 @@ bool wxColourDisplay();
 int wxDisplayDepth();
 
 /**
-    Globally sets the cursor; only has an effect on Windows, Mac and GTK+. You
-    should call this function with wxNullCursor to restore the system cursor.
+    Globally sets the cursor.
 
-    @see wxCursor, wxWindow::SetCursor()
+    The globally set cursor overrides any cursor set for the individual
+    windows, i.e. the specified cursor will be used for all windows of the
+    application until this function is called again with an empty cursor bundle
+    to restore the default behaviour of using the window-specific cursors.
+
+    Note that this function won't update the cursor size if the DPI or user
+    preferred cursor size changes, as this is considered unlikely to happen
+    while this temporary cursor is shown. If you do want to update the cursor
+    size, you need to handle ::wxEVT_DPI_CHANGED and ::wxEVT_SYS_METRIC_CHANGED
+    events and call this function again from their handlers.
+
+    @see wxCursor, wxWindow::SetCursor(), wxWindow::SetCursorBundle()
 
     @header{wx/gdicmn.h}
 */
-void wxSetCursor(const wxCursor& cursor);
+void wxSetCursor(const wxCursorBundle& cursors);
 
 ///@}
 

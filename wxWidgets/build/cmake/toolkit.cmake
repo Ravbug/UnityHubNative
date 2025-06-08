@@ -32,7 +32,7 @@ elseif(APPLE)
     set(wxPLATFORM OSX)
 elseif(UNIX)
     set(wxDEFAULT_TOOLKIT gtk3)
-    set(wxTOOLKIT_OPTIONS gtk2 gtk3 gtk4 motif qt)
+    set(wxTOOLKIT_OPTIONS gtk2 gtk3 gtk4 qt)
     set(wxPLATFORM UNIX)
 else()
     message(FATAL_ERROR "Unsupported platform")
@@ -115,27 +115,42 @@ if(WXGTK)
     endif()
 endif()
 
-# We need X11 for non-GTK Unix ports (X11, Motif) and for GTK with X11
-# support, but not for Wayland-only GTK (which is why we have to do this after
-# find_package(GTKx) above, as this is what sets wxHAVE_GDK_X11).
-if(UNIX AND NOT APPLE AND NOT WIN32 AND (WXX11 OR WXMOTIF OR (WXGTK AND wxHAVE_GDK_X11)))
+# We need X11 for non-GTK Unix ports (X11) and for GTK with X11
+# support, but not for Wayland-only GTK (necessarily 3 or later), which is why
+# we have to do this after find_package(GTKx) above, as this is what sets
+# wxHAVE_GDK_X11.
+if(UNIX AND NOT WIN32 AND (WXX11 OR WXGTK2 OR (WXGTK AND wxHAVE_GDK_X11)))
     find_package(X11 REQUIRED)
     list(APPEND wxTOOLKIT_INCLUDE_DIRS ${X11_INCLUDE_DIR})
     list(APPEND wxTOOLKIT_LIBRARIES ${X11_LIBRARIES})
 endif()
 
 if(WXQT)
-    set(QT_COMPONENTS Core Widgets Gui OpenGL Test)
+    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
+
+    if(QT_VERSION_MAJOR EQUAL 5)
+        set(QT_COMPONENTS Core Widgets Gui OpenGL OpenGL Test)
+    elseif(QT_VERSION_MAJOR EQUAL 6)
+        set(QT_COMPONENTS Core Widgets Gui OpenGL OpenGLWidgets Test)
+    endif()
+
     foreach(QT_COMPONENT ${QT_COMPONENTS})
-        find_package(Qt5 COMPONENTS ${QT_COMPONENT} REQUIRED)
-        list(APPEND wxTOOLKIT_INCLUDE_DIRS ${Qt5${QT_COMPONENT}_INCLUDE_DIRS})
-        list(APPEND wxTOOLKIT_LIBRARIES ${Qt5${QT_COMPONENT}_LIBRARIES})
-        list(APPEND wxTOOLKIT_DEFINITIONS ${Qt5${QT_COMPONENT}_COMPILE_DEFINITIONS})
+        find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${QT_COMPONENT} REQUIRED)
+        list(APPEND wxTOOLKIT_INCLUDE_DIRS ${Qt${QT_VERSION_MAJOR}${QT_COMPONENT}_INCLUDE_DIRS})
+        list(APPEND wxTOOLKIT_LIBRARIES ${Qt${QT_VERSION_MAJOR}${QT_COMPONENT}_LIBRARIES})
+        list(APPEND wxTOOLKIT_DEFINITIONS ${Qt${QT_VERSION_MAJOR}${QT_COMPONENT}_COMPILE_DEFINITIONS})
     endforeach()
-    set(wxTOOLKIT_VERSION ${Qt5Core_VERSION})
+    set(wxTOOLKIT_VERSION ${Qt${QT_VERSION_MAJOR}Core_VERSION})
+
+    if(ANDROID)
+        # A hack to remove _${ANDROID_ABI} that Qt5AndroidSupport.cmake added
+        # which breaks wx-config.
+        set(CMAKE_SHARED_LIBRARY_SUFFIX_C ${CMAKE_SHARED_LIBRARY_SUFFIX})
+        set(CMAKE_SHARED_LIBRARY_SUFFIX_CXX ${CMAKE_SHARED_LIBRARY_SUFFIX})
+    endif()
 endif()
 
-if(APPLE)
+if(wxBUILD_TOOLKIT MATCHES "osx_cocoa")
     list(APPEND wxTOOLKIT_DEFINITIONS __WXMAC__ __WXOSX__)
 endif()
 

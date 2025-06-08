@@ -29,18 +29,13 @@ libtiffincludedir = $(includedir)
 
 EXTRA_DIST = \
 	CMakeLists.txt \
-	Makefile.vc \
-	SConstruct \
 	libtiff.def \
 	libtiff.map \
 	libtiffxx.map \
-	tif_config.h-vms \
+	tiffvers.h.cmake.in \
 	tif_config.h.cmake.in \
-	tif_config.vc.h \
-	tif_config.wince.h \
 	tiffconf.h.cmake.in \
-	tiffconf.vc.h \
-	tiffconf.wince.h
+	tif_win32_versioninfo.rc
 
 libtiffinclude_HEADERS = \
 	tiff.h \
@@ -54,6 +49,7 @@ endif
 noinst_HEADERS = \
 	t4.h \
 	tif_dir.h \
+	tif_hash_set.h \
 	tif_predict.h \
 	tiffiop.h \
 	uvcode.h
@@ -78,9 +74,11 @@ libtiff_la_SOURCES = \
 	tif_fax3sm.c \
 	tif_flush.c \
 	tif_getimage.c \
+	tif_hash_set.c \
 	tif_jbig.c \
 	tif_jpeg.c \
 	tif_jpeg_12.c \
+	tif_lerc.c \
 	tif_luv.c \
 	tif_lzma.c \
 	tif_lzw.c \
@@ -128,7 +126,6 @@ endif
 if HAVE_LD_VERSION_SCRIPT
 libtiff_la_LDFLAGS += -Wl,--version-script=$(srcdir)/libtiff.map
 endif
-libtiff_la_LIBADD = $(LIBPORT)
 
 libtiffxx_la_LDFLAGS = \
 	-no-undefined \
@@ -139,7 +136,7 @@ endif
 if HAVE_LD_VERSION_SCRIPT
 libtiffxx_la_LDFLAGS += -Wl,--version-script=$(srcdir)/libtiffxx.map
 endif
-libtiffxx_la_LIBADD = $(LIBTIFF) $(LIBPORT)
+libtiffxx_la_LIBADD = $(LIBTIFF)
 libtiffxx_la_DEPENDENCIES = libtiff.la
 
 #
@@ -154,3 +151,16 @@ mkg3states_LDADD = $(LIBPORT)
 faxtable: mkg3states
 	(rm -f tif_fax3sm.c && ./mkg3states -b -c const tif_fax3sm.c)
 
+if STATIC_LERC
+extra_CPPFLAGS = -DLERC_STATIC
+else
+extra_CPPFLAGS =
+endif
+
+if HAVE_JPEGTURBO_DUAL_MODE_8_12
+JPEGTURBO_CPPFLAGS = -DHAVE_JPEGTURBO_DUAL_MODE_8_12
+else
+JPEGTURBO_CPPFLAGS =
+endif
+
+AM_CPPFLAGS = -I$(top_srcdir)/libtiff -I$(top_srcdir)/port $(extra_CPPFLAGS) $(JPEGTURBO_CPPFLAGS)

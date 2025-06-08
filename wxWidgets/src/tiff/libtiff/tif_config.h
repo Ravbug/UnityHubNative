@@ -1,127 +1,38 @@
-/*
-    This file is used on systems not using configure only and contains
-    hardcoded definitions for MSVC, Xcode and MinGW when using makefiles.
+/* clang-format off */
+/* clang-format disabled because CMake scripts are very sensitive to the
+ * formatting of this file. configure_file variables of type "@VAR@" are
+ * modified by clang-format and won't be substituted.
  */
 
-#ifdef _WIN32
+/* libtiff/tif_config.h.in.  Not generated, but originated from autoheader.  */
 
-/* Define to 1 if you have the <assert.h> header file. */
-#define HAVE_ASSERT_H 1
+#include "tiffconf.h"
 
-/* Define to 1 if you have the <fcntl.h> header file. */
-#define HAVE_FCNTL_H 1
+/* Support CCITT Group 3 & 4 algorithms */
+/* #undef CCITT_SUPPORT */
 
-/* Define as 0 or 1 according to the floating point format suported by the
-   machine */
-#define HAVE_IEEEFP 1
+/* Pick up YCbCr subsampling info from the JPEG data stream to support files
+   lacking the tag (default enabled). */
+/* #undef CHECK_JPEG_YCBCR_SUBSAMPLING */
 
-/* Define to 1 if you have the `jbg_newlen' function. */
-#define HAVE_JBG_NEWLEN 1
+/* enable partial strip reading for large strips (experimental) */
+/* #undef CHUNKY_STRIP_READ_SUPPORT */
 
-/* Define to 1 if you have the <string.h> header file. */
-#define HAVE_STRING_H 1
+/* Support C++ stream API (requires C++ compiler) */
+/* #undef CXX_SUPPORT */
 
-/* Define to 1 if you have the <sys/types.h> header file. */
-#define HAVE_SYS_TYPES_H 1
-
-/* Define to 1 if you have the <io.h> header file. */
-#define HAVE_IO_H 1
-
-/* Define to 1 if you have the <search.h> header file. */
-#define HAVE_SEARCH_H 1
-
-/* Define to 1 if you have the `setmode' function. */
-#define HAVE_SETMODE 1
-
-/* Define to 1 if you have the `snprintf' function. */
-#define HAVE_SNPRINTF 1
-
-/* The size of a `int', as computed by sizeof. */
-#define SIZEOF_INT 4
-
-/* The size of a `long', as computed by sizeof. */
-#define SIZEOF_LONG 4
-
-/* Signed 64-bit type formatter */
-#define TIFF_INT64_FORMAT "%I64d"
-
-/* Signed 64-bit type */
-#define TIFF_INT64_T signed __int64
-
-/* Unsigned 64-bit type formatter */
-#define TIFF_UINT64_FORMAT "%I64u"
-
-/* Unsigned 64-bit type */
-#define TIFF_UINT64_T unsigned __int64
-
-/* Set the native cpu bit order */
-#define HOST_FILLORDER FILLORDER_LSB2MSB
-
-/*
-    Use _snprintf() with older versions of MSVC and MinGW.
-
-    Note that we can't do this unconditionally as starting from the version
-    which does have it (MSVS 2015 a.k.a. MSVC 14 a.k.a. _MSC_VER 19.00), it
-    doesn't allow redefining snprintf any longer.
-
-    Also, MinGW-w32 6.3 uses macro-hackery in its stdio.h which breaks if it is
-    redefined so, again, only do this for earlier versions.
- */
-#if (defined(_MSC_VER) && _MSC_VER < 1900) || \
-    (defined(__MINGW32__) && __GNUC__ < 6)
-# define snprintf _snprintf
-#endif
-
-/* Define to 1 if your processor stores words with the most significant byte
-   first (like Motorola and SPARC, unlike Intel and VAX). */
-/* #undef WORDS_BIGENDIAN */
-
-/* Define to `__inline__' or `__inline' if that's what the C compiler
-   calls it, or to nothing if 'inline' is not supported under any name.  */
-#ifndef __cplusplus
-# ifndef inline
-#  define inline __inline
-# endif
-#endif
-
-#if !defined (__BORLANDC__) && !defined (__WATCOMC__)
-   #define lfind _lfind
-#endif
-
-#ifdef _WIN32_WCE
-#   undef HAVE_FCNTL_H
-#   undef HAVE_SYS_TYPES_H
-
-    /*
-       CE headers don't define these standard constants (not even underscored
-       versions), provide our own replacements as they seem to be only used in
-       libtiff own code anyhow.
-     */
-#   define   O_RDONLY    0x0000
-#   define   O_WRONLY    0x0001
-#   define   O_RDWR      0x0002
-#   define   O_CREAT     0x0100
-#   define   O_TRUNC     0x0200
-#   define   O_EXCL      0x0400
-#endif /* _WIN32_WCE */
-
-#else /* !_WIN32 */
+/* enable deferred strip/tile offset/size loading */
+/* #undef DEFER_STRILE_LOAD */
 
 /* Define to 1 if you have the <assert.h> header file. */
 #define HAVE_ASSERT_H 1
 
 /* Define to 1 if you have the declaration of `optarg', and to 0 if you don't.
    */
-#undef HAVE_DECL_OPTARG
-
-/* Define to 1 if you have the <dlfcn.h> header file. */
-#define HAVE_DLFCN_H 1
+/* #undef HAVE_DECL_OPTARG */
 
 /* Define to 1 if you have the <fcntl.h> header file. */
 #define HAVE_FCNTL_H 1
-
-/* Define to 1 if you have the `floor' function. */
-#define HAVE_FLOOR 1
 
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #define HAVE_FSEEKO 1
@@ -141,48 +52,11 @@
 /* Define to 1 if you have the <GL/gl.h> header file. */
 #define HAVE_GL_GL_H 1
 
-/* Define as 0 or 1 according to the floating point format suported by the
-   machine */
-#define HAVE_IEEEFP 1
-
-/* Define to 1 if the system has the type `int16'. */
-/* #undef HAVE_INT16 */
-
-/* Define to 1 if the system has the type `int32'. */
-/* #undef HAVE_INT32 */
-
-/* Define to 1 if the system has the type `int8'. */
-/* #undef HAVE_INT8 */
-
-/* Define to 1 if you have the <inttypes.h> header file. */
-#define HAVE_INTTYPES_H 1
-
 /* Define to 1 if you have the <io.h> header file. */
 /* #undef HAVE_IO_H */
 
-/* Define to 1 if you have the `isascii' function. */
-#define HAVE_ISASCII 1
-
 /* Define to 1 if you have the `jbg_newlen' function. */
 /* #undef HAVE_JBG_NEWLEN */
-
-/* Define to 1 if you have the `lfind' function. */
-#define HAVE_LFIND 1
-
-/* Define to 1 if you have the <limits.h> header file. */
-#define HAVE_LIMITS_H 1
-
-/* Define to 1 if you have the <malloc.h> header file. */
-/* #undef HAVE_MALLOC_H */
-
-/* Define to 1 if you have the `memmove' function. */
-#define HAVE_MEMMOVE 1
-
-/* Define to 1 if you have the <memory.h> header file. */
-#define HAVE_MEMORY_H 1
-
-/* Define to 1 if you have the `memset' function. */
-#define HAVE_MEMSET 1
 
 /* Define to 1 if you have the `mmap' function. */
 #define HAVE_MMAP 1
@@ -193,250 +67,123 @@
 /* Define to 1 if you have the <OpenGL/gl.h> header file. */
 #define HAVE_OPENGL_GL_H 1
 
-/* Define to 1 if you have the `pow' function. */
-#define HAVE_POW 1
-
-/* Define if you have POSIX threads libraries and header files. */
-#define HAVE_PTHREAD 1
-
-/* Define to 1 if you have the <search.h> header file. */
-#define HAVE_SEARCH_H 1
-
 /* Define to 1 if you have the `setmode' function. */
 #define HAVE_SETMODE 1
 
 /* Define to 1 if you have the `snprintf' function. */
 #define HAVE_SNPRINTF 1
-
-/* Define to 1 if you have the `sqrt' function. */
-#define HAVE_SQRT 1
-
-/* Define to 1 if you have the <stdint.h> header file. */
-#define HAVE_STDINT_H 1
-
-/* Define to 1 if you have the <stdlib.h> header file. */
-#define HAVE_STDLIB_H 1
-
-/* Define to 1 if you have the `strcasecmp' function. */
-#define HAVE_STRCASECMP 1
-
-/* Define to 1 if you have the `strchr' function. */
-#define HAVE_STRCHR 1
+#if (defined(_MSC_VER) && _MSC_VER < 1900) || \
+    (defined(__MINGW32__) && __GNUC__ < 6)
+# define snprintf _snprintf
+#endif
 
 /* Define to 1 if you have the <strings.h> header file. */
 #define HAVE_STRINGS_H 1
-
-/* Define to 1 if you have the <string.h> header file. */
-#define HAVE_STRING_H 1
-
-/* Define to 1 if you have the `strrchr' function. */
-#define HAVE_STRRCHR 1
-
-/* Define to 1 if you have the `strstr' function. */
-#define HAVE_STRSTR 1
-
-/* Define to 1 if you have the `strtol' function. */
-#define HAVE_STRTOL 1
-
-/* Define to 1 if you have the `strtoul' function. */
-#define HAVE_STRTOUL 1
-
-/* Define to 1 if you have the `strtoull' function. */
-#define HAVE_STRTOULL 1
-
-/* Define to 1 if you have the <sys/stat.h> header file. */
-#define HAVE_SYS_STAT_H 1
-
-/* Define to 1 if you have the <sys/time.h> header file. */
-#define HAVE_SYS_TIME_H 1
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #define HAVE_SYS_TYPES_H 1
 
 /* Define to 1 if you have the <unistd.h> header file. */
-#define HAVE_UNISTD_H 1
-
-/* Use nonstandard varargs form for the GLU tesselator callback */
-/* #undef HAVE_VARARGS_GLU_TESSCB */
-
-/* Define to 1 if you have the <windows.h> header file. */
-/* #undef HAVE_WINDOWS_H */
-
-#ifdef __BIG_ENDIAN__
-    /* Set the native cpu bit order */
-    #define HOST_FILLORDER FILLORDER_MSB2LSB
-    
-    /* Define to 1 if your processor stores words with the most significant byte
-    first (like Motorola and SPARC, unlike Intel and VAX). */
-    #define WORDS_BIGENDIAN 1
+#if defined(_WIN32)
+/* #undef HAVE_UNISTD_H */
 #else
-    /* Set the native cpu bit order */
-    #define HOST_FILLORDER FILLORDER_LSB2MSB
-    
-    /* Define to 1 if your processor stores words with the most significant byte
-        first (like Motorola and SPARC, unlike Intel and VAX). */
-    /* #undef WORDS_BIGENDIAN */
+#define HAVE_UNISTD_H 1
 #endif
-
-/* Define to `__inline__' or `__inline' if that's what the C compiler
-   calls it, or to nothing if 'inline' is not supported under any name.  */
-#ifndef __cplusplus
-# ifndef inline
-#  define inline __inline
-# endif
-#endif
-
-/* Support ISO JBIG compression (requires JBIG-KIT library) */
-/* #undef JBIG_SUPPORT */
 
 /* 8/12 bit libjpeg dual mode enabled */
 /* #undef JPEG_DUAL_MODE_8_12 */
 
-/* Support JPEG compression (requires IJG JPEG library) */
-/* #undef JPEG_SUPPORT */
+/* Support LERC compression */
+/* #undef LERC_SUPPORT */
 
 /* 12bit libjpeg primary include file with path */
 /* #undef LIBJPEG_12_PATH */
 
-/* Support LogLuv high dynamic range encoding */
-#define LOGLUV_SUPPORT 1
-
-/* Define to the sub-directory where libtool stores uninstalled libraries. */
-#define LT_OBJDIR ".libs/"
-
 /* Support LZMA2 compression */
 /* #undef LZMA_SUPPORT */
 
-/* Support LZW algorithm */
-#define LZW_SUPPORT 1
+/* Name of package */
+/* #undef PACKAGE */
 
-/* Support Microsoft Document Imaging format */
-#define MDI_SUPPORT 1
+/* Define to the address where bug reports for this package should be sent. */
+/* #undef PACKAGE_BUGREPORT */
 
-/* Support NeXT 2-bit RLE algorithm */
-#define NEXT_SUPPORT 1
+/* Define to the full name of this package. */
+/* #undef PACKAGE_NAME */
 
-/* Support Old JPEG compresson (read-only) */
-/* #undef OJPEG_SUPPORT */
+/* Define to the one symbol short name of this package. */
+/* #undef PACKAGE_TARNAME */
 
-/* Support Macintosh PackBits algorithm */
-#define PACKBITS_SUPPORT 1
-
-/* Support Pixar log-format algorithm (requires Zlib) */
-#define PIXARLOG_SUPPORT 1
-
-/* Define to necessary symbol if this constant uses a non-standard name on
-   your system. */
-/* #undef PTHREAD_CREATE_JOINABLE */
-
-/* The size of `signed int', as computed by sizeof. */
-#define SIZEOF_SIGNED_INT 4
-
-/* The size of `signed long', as computed by sizeof. */
-#define SIZEOF_SIGNED_LONG 4
-
-/* The size of `signed long long', as computed by sizeof. */
-#define SIZEOF_SIGNED_LONG_LONG 8
-
-/* The size of `signed short', as computed by sizeof. */
-#define SIZEOF_SIGNED_SHORT 2
+/* Define to the home page for this package. */
+/* #undef PACKAGE_URL */
 
 /* The size of `size_t', as computed by sizeof. */
+#if defined(_WIN32) && !defined(_WIN64)
+#define SIZEOF_SIZE_T 4
+#else
 #define SIZEOF_SIZE_T 8
-
-/* The size of `unsigned char *', as computed by sizeof. */
-#define SIZEOF_UNSIGNED_CHAR_P 4
-
-/* The size of `unsigned int', as computed by sizeof. */
-#define SIZEOF_UNSIGNED_INT 4
-
-/* The size of `unsigned long', as computed by sizeof. */
-#define SIZEOF_UNSIGNED_LONG 4
-
-/* The size of `unsigned long long', as computed by sizeof. */
-#define SIZEOF_UNSIGNED_LONG_LONG 8
-
-/* The size of `unsigned short', as computed by sizeof. */
-#define SIZEOF_UNSIGNED_SHORT 2
-
-/* Define to 1 if you have the ANSI C header files. */
-#define STDC_HEADERS 1
-
-/* Support strip chopping (whether or not to convert single-strip uncompressed
-   images to mutiple strips of specified size to reduce memory usage) */
-#define STRIPCHOP_DEFAULT TIFF_STRIPCHOP
+#endif
 
 /* Default size of the strip in bytes (when strip chopping enabled) */
 #define STRIP_SIZE_DEFAULT 8192
 
-/* Enable SubIFD tag (330) support */
-#define SUBIFD_SUPPORT 1
+/* Maximum number of TIFF IFDs that libtiff can iterate through in a file. */
+/* #undef TIFF_MAX_DIR_COUNT */
 
-/* Support ThunderScan 4-bit RLE algorithm */
-#define THUNDER_SUPPORT 1
+/* define to use win32 IO system */
+#if defined(_WIN32)
+#define USE_WIN32_FILEIO 1
+#else
+/* #undef USE_WIN32_FILEIO */
+#endif
 
-/* Signed 16-bit type */
-#define TIFF_INT16_T signed short
+/* Support webp compression */
+/* #undef WEBP_SUPPORT */
 
-/* Signed 32-bit type formatter */
-#define TIFF_INT32_FORMAT "%d"
+/* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
+   significant byte first (like Motorola and SPARC, unlike Intel). */
+#if defined AC_APPLE_UNIVERSAL_BUILD
+# if defined __BIG_ENDIAN__
+#  define WORDS_BIGENDIAN 1
+# endif
+#else
+# ifndef WORDS_BIGENDIAN
+#  undef WORDS_BIGENDIAN
+# endif
+#endif
 
-/* Signed 32-bit type */
-#define TIFF_INT32_T signed int
+/* Support zstd compression */
+/* #undef ZSTD_SUPPORT */
 
-/* Signed 64-bit type formatter */
-#define TIFF_INT64_FORMAT "%lld"
+/* Enable large inode numbers on Mac OS X 10.5.  */
+#ifndef _DARWIN_USE_64_BIT_INODE
+# define _DARWIN_USE_64_BIT_INODE 1
+#endif
 
-/* Signed 64-bit type */
-#define TIFF_INT64_T signed long long
+/* Number of bits in a file offset, on hosts where this is settable. */
+/* #undef _FILE_OFFSET_BITS */
 
-/* Signed 8-bit type */
-#define TIFF_INT8_T signed char
+/* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
+/* #undef _LARGEFILE_SOURCE */
 
-/* Pointer difference type formatter */
-#define TIFF_PTRDIFF_FORMAT "%ld"
+/* Define for large files, on AIX-style hosts. */
+/* #undef _LARGE_FILES */
 
-/* Pointer difference type */
-#define TIFF_PTRDIFF_T ptrdiff_t
+#if !defined(__MINGW32__)
+#  define TIFF_SIZE_FORMAT "zu"
+#endif
+#if SIZEOF_SIZE_T == 8
+#  define TIFF_SSIZE_FORMAT PRId64
+#  if defined(__MINGW32__)
+#    define TIFF_SIZE_FORMAT PRIu64
+#  endif
+#elif SIZEOF_SIZE_T == 4
+#  define TIFF_SSIZE_FORMAT PRId32
+#  if defined(__MINGW32__)
+#    define TIFF_SIZE_FORMAT PRIu32
+#  endif
+#else
+#  error "Unsupported size_t size; please submit a bug report"
+#endif
 
-/* Size type formatter */
-#define TIFF_SIZE_FORMAT "%zd"
-
-/* Unsigned size type */
-#define TIFF_SIZE_T size_t
-
-/* Signed size type formatter */
-#define TIFF_SSIZE_FORMAT "%ld"
-
-/* Signed size type */
-#define TIFF_SSIZE_T signed long
-
-/* Unsigned 16-bit type */
-#define TIFF_UINT16_T unsigned short
-
-/* Unsigned 32-bit type formatter */
-#define TIFF_UINT32_FORMAT "%u"
-
-/* Unsigned 32-bit type */
-#define TIFF_UINT32_T unsigned int
-
-/* Unsigned 64-bit type formatter */
-#define TIFF_UINT64_FORMAT "%llu"
-
-/* Unsigned 64-bit type */
-#define TIFF_UINT64_T unsigned long long
-
-/* Unsigned 8-bit type */
-#define TIFF_UINT8_T unsigned char
-
-/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
-#define TIME_WITH_SYS_TIME 1
-
-#endif /* _WIN32/!_WIN32 */
-/*
- * Local Variables:
- * mode: c
- * c-basic-offset: 8
- * fill-column: 78
- * End:
- */
+/* clang-format on */

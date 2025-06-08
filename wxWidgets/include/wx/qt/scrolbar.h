@@ -12,12 +12,11 @@
 
 class QScrollBar;
 
-class WXDLLIMPEXP_FWD_CORE wxQtScrollBar;
-
 class WXDLLIMPEXP_CORE wxScrollBar : public wxScrollBarBase
 {
 public:
-    wxScrollBar();
+    wxScrollBar() = default;
+
     wxScrollBar( wxWindow *parent, wxWindowID id,
            const wxPoint& pos = wxDefaultPosition,
            const wxSize& size = wxDefaultSize,
@@ -32,21 +31,17 @@ public:
            const wxValidator& validator = wxDefaultValidator,
            const wxString& name = wxASCII_STR(wxScrollBarNameStr) );
 
-    virtual int GetThumbPosition() const wxOVERRIDE;
-    virtual int GetThumbSize() const wxOVERRIDE;
-    virtual int GetPageSize() const wxOVERRIDE;
-    virtual int GetRange() const wxOVERRIDE;
+    virtual int GetThumbPosition() const override;
+    virtual int GetThumbSize() const override;
+    virtual int GetPageSize() const override;
+    virtual int GetRange() const override;
 
-    virtual void SetThumbPosition(int viewStart) wxOVERRIDE;
+    virtual void SetThumbPosition(int viewStart) override;
     virtual void SetScrollbar(int position, int thumbSize,
                               int range, int pageSize,
-                              bool refresh = true) wxOVERRIDE;
+                              bool refresh = true) override;
 
-    QScrollBar *GetQScrollBar() const { return m_qtScrollBar; }
-    QWidget *GetHandle() const wxOVERRIDE;
-
-private:
-    QScrollBar *m_qtScrollBar;
+    QScrollBar* GetQScrollBar() const;
 
     wxDECLARE_DYNAMIC_CLASS(wxScrollBar);
 };

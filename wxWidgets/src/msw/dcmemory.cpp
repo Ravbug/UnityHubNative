@@ -2,7 +2,6 @@
 // Name:        src/msw/dcmemory.cpp
 // Purpose:     wxMemoryDC class
 // Author:      Julian Smart
-// Modified by:
 // Created:     01/02/97
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
@@ -41,14 +40,14 @@ wxIMPLEMENT_ABSTRACT_CLASS(wxMemoryDCImpl, wxMSWDCImpl);
 wxMemoryDCImpl::wxMemoryDCImpl( wxMemoryDC *owner )
         : wxMSWDCImpl( owner )
 {
-    CreateCompatible(NULL);
+    CreateCompatible(nullptr);
     Init();
 }
 
 wxMemoryDCImpl::wxMemoryDCImpl( wxMemoryDC *owner, wxBitmap& bitmap )
         : wxMSWDCImpl( owner )
 {
-    CreateCompatible(NULL);
+    CreateCompatible(nullptr);
     Init();
     DoSelect(bitmap);
 }
@@ -56,7 +55,7 @@ wxMemoryDCImpl::wxMemoryDCImpl( wxMemoryDC *owner, wxBitmap& bitmap )
 wxMemoryDCImpl::wxMemoryDCImpl( wxMemoryDC *owner, wxDC *dc )
         : wxMSWDCImpl( owner )
 {
-    wxCHECK_RET( dc, wxT("NULL dc in wxMemoryDC ctor") );
+    wxCHECK_RET( dc, wxT("null dc in wxMemoryDC ctor") );
 
     CreateCompatible(dc);
 
@@ -79,7 +78,7 @@ void wxMemoryDCImpl::Init()
 
 bool wxMemoryDCImpl::CreateCompatible(wxDC *dc)
 {
-    wxDCImpl *impl = dc ? dc->GetImpl() : NULL ;
+    wxDCImpl *impl = dc ? dc->GetImpl() : nullptr ;
     wxMSWDCImpl *msw_impl = wxDynamicCast( impl, wxMSWDCImpl );
     if ( dc && !msw_impl)
     {
@@ -87,7 +86,7 @@ bool wxMemoryDCImpl::CreateCompatible(wxDC *dc)
         return false;
     }
 
-    m_hDC = (WXHDC)::CreateCompatibleDC(dc ? GetHdcOf(*msw_impl) : NULL);
+    m_hDC = (WXHDC)::CreateCompatibleDC(dc ? GetHdcOf(*msw_impl) : nullptr);
 
     // as we created the DC, we must delete it in the dtor
     m_bOwnsDC = true;
@@ -105,7 +104,7 @@ void wxMemoryDCImpl::DoSelect( const wxBitmap& bitmap )
         ::SelectObject(GetHdc(), (HBITMAP) m_oldBitmap);
         if ( m_selectedBitmap.IsOk() )
         {
-            m_selectedBitmap.SetSelectedInto(NULL);
+            m_selectedBitmap.SetSelectedInto(nullptr);
             m_selectedBitmap = wxNullBitmap;
         }
     }
@@ -113,7 +112,7 @@ void wxMemoryDCImpl::DoSelect( const wxBitmap& bitmap )
     // check for whether the bitmap is already selected into a device context
     wxASSERT_MSG( !bitmap.GetSelectedInto() ||
                   (bitmap.GetSelectedInto() == GetOwner()),
-                  wxT("Bitmap is selected in another wxMemoryDC, delete the first wxMemoryDC or use SelectObject(NULL)") );
+                  wxT("Bitmap is selected in another wxMemoryDC, delete the first wxMemoryDC or use SelectObject(nullptr)") );
 
     m_selectedBitmap = bitmap;
     WXHBITMAP hBmp = m_selectedBitmap.GetHBITMAP();
