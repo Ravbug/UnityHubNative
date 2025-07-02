@@ -94,9 +94,6 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	if (status != 0){
 		ReloadData();
 	}
-	#if defined __linux__
-	launchHubBtn->Hide();
-	#endif
 
 	//if no projects to load, the interface will be blank
 
