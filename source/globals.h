@@ -54,9 +54,9 @@ struct wxWindow;
 
 	//where to find various Unity things on windows
 	static const std::filesystem::path executable = "Editor\\Unity.exe";
-    static const std::vector<std::filesystem::path> defaultInstall = {"\\Program Files\\Unity\\Hub\\Editor"};
+    static const std::vector<std::filesystem::path> defaultInstall = { homedrive / "\\Program Files\\Unity\\Hub\\Editor"};
 	
-	static const std::filesystem::path hubDefault = "\\Program Files\\Unity Hub\\Unity Hub.exe";
+	static const std::filesystem::path hubDefault = homedrive / "\\Program Files\\Unity Hub\\Unity Hub.exe";
 	static const std::filesystem::path templatesDir = "Editor\\Data\\Resources\\PackageManager\\ProjectTemplates\\";
 
 	/**
