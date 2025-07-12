@@ -529,10 +529,12 @@ void MainFrameDerived::SaveProjects(){
 void MainFrameDerived::SaveEditorVersions(){
 	ofstream file;
 	file.open(datapath / editorPathsFile);
-	for (auto& p : installPaths){
-		file << p.string() << endl;
-	}
-	file.close();
+    if (file) {
+        for (auto& p : installPaths) {
+            file << p.string() << endl;
+        }
+        file.close();
+    }
 	LoadEditorVersions();
 }
 
