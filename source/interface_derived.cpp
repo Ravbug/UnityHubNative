@@ -77,7 +77,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 
     // load prefs
     wxConfig config(config_name.data());
-    sortColumn = config.ReadLong(config_sortCol.data(), 0);
+    sortColumn = std::clamp<long>(config.ReadLong(config_sortCol.data(), 0), 0, 3);
     sortAscending = config.ReadBool(config_sortAscending.data(), false);
 
 	//set up project list columns
