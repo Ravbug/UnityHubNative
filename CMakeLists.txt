@@ -12,7 +12,7 @@ if(MSVC)
   add_compile_options(/MP)
 endif()
 
-set(CMAKE_OSX_DEPLOYMENT_TARGET "13.0" CACHE INTERNAL "")
+set(CMAKE_OSX_DEPLOYMENT_TARGET "13.3" CACHE INTERNAL "")
 
 # linux detection
 if(UNIX AND NOT APPLE)
