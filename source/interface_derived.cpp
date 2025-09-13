@@ -12,9 +12,8 @@
 #include <wx/dirdlg.h>
 #include <wx/aboutdlg.h>
 
-#include <fmt/format.h>
+#include <format>
 
-#include <fmt/format.h>
 #include <filesystem>
 #if __APPLE__
 #include "AppleUtilities.h"
@@ -99,7 +98,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	//if no projects to load, the interface will be blank
 
 	//show current version in titlebar
-	this->SetLabel(fmt::format("Unity Hub Native {}",AppVersion));
+	this->SetLabel(std::format("Unity Hub Native {}",AppVersion));
     projSearchCtrl->Bind(wxEVT_KEY_UP, &MainFrameDerived::Filter, this);
 	projSearchCtrl->SetFocus();
 }
@@ -252,7 +251,7 @@ void MainFrameDerived::OnAbout(wxCommandEvent& event)
 {
 	wxAboutDialogInfo aboutInfo;
 	aboutInfo.SetName("Unity Hub Native");	
-	aboutInfo.SetCopyright(fmt::format("(C) Ravbug 2019-{}",BUILD_YEAR));
+	aboutInfo.SetCopyright(std::format("(C) Ravbug 2019-{}",BUILD_YEAR));
 	aboutInfo.SetDescription("Developed with wxWidgets in C++");
 #if defined __linux__
 	aboutInfo.SetWebSite("https://github.com/ravbug/UnityHubNative");
@@ -283,7 +282,7 @@ void MainFrameDerived::OnAddProject(wxCommandEvent& event){
             //check that the project does not already exist
             for(project& p : projects){
                 if (p.path == path){
-                    wxMessageBox( fmt::format("Project \"{}\" has already been added.", p.path.string()), "Cannot add project", wxOK | wxICON_WARNING );
+                    wxMessageBox( std::format("Project \"{}\" has already been added.", p.path.string()), "Cannot add project", wxOK | wxICON_WARNING );
                     return;
                 }
             }
@@ -462,7 +461,7 @@ void MainFrameDerived::OpenProject(const project& p, const editor& e, TargetPlat
 	string cmd = "\"" + e.executablePath().string() + "\" -projectpath \"" + p.path.string() + "\"";
     if (plat != TargetPlatform::CurrentPlatform) {
         auto str = PlatToStr(plat);
-        cmd += fmt::format(" -buildTarget {}", str);
+        cmd += std::format(" -buildTarget {}", str);
     }
 	launch_process(cmd);
 }
@@ -637,7 +636,7 @@ void MainFrameDerived::LoadEditorVersions(){
                         archstr += "x86_64";
                     }
                     
-                    const std::string displayName = fmt::format("{} {} - {}", e.name, archstr, e.path.string());
+                    const std::string displayName = std::format("{} {} - {}", e.name, archstr, e.path.string());
 #else
                     const std::string displayName = e.name + " - " + e.path.string();
 #endif

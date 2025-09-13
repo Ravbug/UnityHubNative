@@ -1,7 +1,7 @@
 #if NETWORK_ENABLED 
 #include <curl/curl.h>
 #endif
-#include <fmt/format.h>
+#include <format>
 #include "HTTP.hpp"
 
 size_t writeFunction(void* ptr, size_t size, size_t nmemb, std::string* data) {
@@ -29,7 +29,7 @@ fetchResult fetch(const std::string& url) {
 		auto result = curl_easy_perform(curl);
 		long response_code = 0;
 		if (result != CURLE_OK) {
-			throw std::runtime_error(fmt::format("Curl failed: {}", curl_easy_strerror(result)));
+			throw std::runtime_error(std::format("Curl failed: {}", curl_easy_strerror(result)));
 		}
 		else {
 			curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);

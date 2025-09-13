@@ -1,6 +1,6 @@
 #include "interface_derived.hpp"
 #include "activation.hpp"
-#include "fmt/format.h"
+#include <format>
 #include <wx/process.h>
 #include <wx/filedlg.h>
 #include <fstream>
@@ -43,7 +43,7 @@ void PersonalActivationDlg::OnCreateHit(wxCommandEvent& evt)
 	else {
 		// pass the chosen location
 		auto exe = the_editor.executablePath().string();
-		auto cmd = fmt::format("{} -batchmode -createManualActivationFile -logfile",exe);
+		auto cmd = std::format("{} -batchmode -createManualActivationFile -logfile",exe);
 		auto cwd = wxGetCwd();
 		auto root = std::filesystem::path(saveFileDialog.GetPath().ToStdString()).parent_path();
 		wxSetWorkingDirectory(root.string());
@@ -84,7 +84,7 @@ void PersonalActivationDlg::OnActivateHit(wxCommandEvent&)
 	if (openFileDialog.ShowModal() == wxID_CANCEL) {}
 	else {
 		auto exe = the_editor.executablePath().string();
-		auto cmd = fmt::format("{} -batchmode -manualLicenseFile \"{}\" -logfile",exe,openFileDialog.GetPath().ToStdString());
+		auto cmd = std::format("{} -batchmode -manualLicenseFile \"{}\" -logfile",exe,openFileDialog.GetPath().ToStdString());
         activateBtn->SetLabelText("Activating...");
 		wxExecute(cmd, wxEXEC_SYNC);
         DisplayLicenseOutput();
@@ -98,7 +98,7 @@ void PlusProActivationDlg::OnActivateHit(wxCommandEvent&)
     const std::string& password = plusProActivPasswordCtrl->GetValue().ToStdString();
     const std::string& serial = plusProActivationSerialCtrl->GetValue().ToStdString();
 
-	auto cmd = fmt::format("{} -batchmode -username {} -password {} -serial {} -quit",the_editor.executablePath().string(),username,password,serial);
+	auto cmd = std::format("{} -batchmode -username {} -password {} -serial {} -quit",the_editor.executablePath().string(),username,password,serial);
 
     activateBtn->SetLabelText("Activating...");
 	wxExecute(cmd, wxEXEC_SYNC);

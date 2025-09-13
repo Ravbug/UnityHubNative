@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <sstream>
 #include <fstream>
-#include <fmt/format.h>
+#include <format>
 
 using namespace std;
 #define UPDATEEVT 2004
@@ -133,7 +133,7 @@ void AddNewInstallDlg::GetAllVersions(){
 		}
 #if TRYCATCH
 		catch(std::exception& e){
-			wxMessageBox(fmt::format("Network error: {}", e.what()), "Error", wxOK | wxICON_ERROR);
+			wxMessageBox(std::format("Network error: {}", e.what()), "Error", wxOK | wxICON_ERROR);
 		}
 #endif
     }
@@ -199,7 +199,7 @@ void AddNewInstallDlg::InstallSelected(wxCommandEvent&){
                 #endif
                 
                 // write the file to temp location
-                auto outpath = fmt::format("{}{}{}.{}", cachedir.string(), "UnityDownloadAssistant", data.hashcode, installerExt);
+                auto outpath = std::format("{}{}{}.{}", cachedir.string(), "UnityDownloadAssistant", data.hashcode, installerExt);
                 ofstream outfile(outpath, std::ios::binary);
                 outfile.write(r.text.c_str(),r.text.size());
                 
@@ -208,7 +208,7 @@ void AddNewInstallDlg::InstallSelected(wxCommandEvent&){
 #ifdef __APPLE__
                 lnevt.SetString(fmt::format("open \"{}\"", outpath));
 #elif defined _WIN32
-                lnevt.SetString(fmt::format("\"{}\"", outpath));
+                lnevt.SetString(std::format("\"{}\"", outpath));
 #endif
                 lnevt.SetId(EXECUTEEVT);
                 wxPostEvent(this,lnevt);
@@ -232,7 +232,7 @@ void AddNewInstallDlg::InstallSelectedWithHub(wxCommandEvent &){
     auto item = versionsListCtrl->GetSelection();
     auto data = *(reinterpret_cast<version*>(versionsListCtrl->GetItemData(item)));
     
-    auto url = fmt::format("unityhub://{}/{}", data.name,data.hashcode);
+    auto url = std::format("unityhub://{}/{}", data.name,data.hashcode);
     
     wxLaunchDefaultBrowser(url);
 }

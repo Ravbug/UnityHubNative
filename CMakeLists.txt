@@ -29,7 +29,7 @@ if (APPLE)
     set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE INTERNAL "")
 endif()
 add_executable("${PROJECT_NAME}" WIN32 ${source} "source/wxmac.icns" "source/windows.rc" ${OBJCPP})
-target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23)
 
 #wxwidgets
 set(wxBUILD_SHARED OFF CACHE INTERNAL "")
@@ -40,12 +40,9 @@ set(wxUSE_LIBTIFF OFF CACHE INTERNAL "")
 set(wxUSE_ZLIB builtin CACHE INTERNAL "")
 add_subdirectory("wxWidgets" EXCLUDE_FROM_ALL)
 
-add_subdirectory("fmt" EXCLUDE_FROM_ALL)
-
 target_link_libraries("${PROJECT_NAME}"
     PUBLIC 
 	wx::core
-	fmt
 )
 target_include_directories(${PROJECT_NAME} PUBLIC "fmt/include")
 

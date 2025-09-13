@@ -7,7 +7,7 @@
 #include "interface_derived.hpp"
 #include <filesystem>
 #include <wx/msgdlg.h>
-#include <fmt/format.h>
+#include <format>
 #include <wx/choicdlg.h>
 
 using namespace std;
@@ -82,7 +82,7 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
         {
             auto projectversionpath = outPath / "ProjectSettings" / "ProjectVersion.txt";
             if (std::filesystem::exists(projectversionpath)){
-                auto answer = wxMessageBox(fmt::format("A Unity project already exists at {}. Overwrite it?", outPath.string()),"Project Already Exists",  wxYES_NO);
+                auto answer = wxMessageBox(std::format("A Unity project already exists at {}. Overwrite it?", outPath.string()),"Project Already Exists",  wxYES_NO);
                 if (answer != wxYES){
                     return;
                 }
@@ -107,8 +107,8 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
                                      );
 		#elif defined _WIN32
 			auto fullProj = filesystem::path(projPath) / projName;
-			auto fullTemplate = executableTemplatesPath / fmt::format("{}.{}",templatePrefix,templateName);
-			string command = fmt::format("\"{}\" -createproject \"{}\" -cloneFromTemplate \"{}\"",
+			auto fullTemplate = executableTemplatesPath / std::format("{}.{}",templatePrefix,templateName);
+			string command = std::format("\"{}\" -createproject \"{}\" -cloneFromTemplate \"{}\"",
 				executablePath.string(),
 				fullProj.string(),
 				fullTemplate.string());

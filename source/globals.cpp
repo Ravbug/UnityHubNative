@@ -1,5 +1,5 @@
 #include "globals.h"
-#include <fmt/format.h>
+#include <format>
 #include <wx/listctrl.h>
 #include <wx/msgdlg.h>
 #if __APPLE__
@@ -36,7 +36,7 @@ std::string project::modifyDateString() const {
 void launch_process(const std::string& command, int flags) {
 #if defined __APPLE__ || defined __linux__
     //the '&' runs the command nonblocking, and >/dev/null 2>&1 destroys output
-    auto fullcmd = fmt::format("{}{} &", command,null_device);
+    auto fullcmd = std::format("{}{} &", command,null_device);
     FILE* stream = popen(fullcmd.c_str(), "r");
     pclose(stream);
 
