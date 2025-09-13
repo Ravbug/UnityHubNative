@@ -7,6 +7,21 @@
 #elif _WIN32
 #include <ShlObj_core.h>
 #endif
+#include <cstdio>
+
+ParsedVersion parseVersion(const std::string_view version) {
+    int major, minor, patch, build;
+    if (sscanf(version.data(), "%d.%d.%d%*c%d", &major, &minor, &patch, &build) == 4) {
+        return {
+            major,
+            minor,
+            patch,
+            build
+        };
+    };
+    // parse error, assume all 0s.
+    return {};
+}
 
 void launch_process(const std::string& command, int flags) {
 #if defined __APPLE__ || defined __linux__
@@ -94,3 +109,4 @@ void dpi_scale(wxWindow* window){
 	//set the minimum size
 	window->SetSizeHints(wxSize(minw, minh));
 }
+

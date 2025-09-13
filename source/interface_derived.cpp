@@ -741,9 +741,24 @@ int wxCALLBACK MainFrameDerived::CompareItems(wxIntPtr item1, wxIntPtr item2, wx
         case 0: // Name
             result = p1.name.compare(p2.name);
             break;
-        case 1: // Version
-            result = p1.version.compare(p2.version);
+        case 1: { // Version
+            auto v1 = parseVersion(p1.version);
+            auto v2 = parseVersion(p2.version);
+            
+            auto v1t = std::tie(v1.major, v1.minor, v1.patch, v1.build);
+            auto v2t = std::tie(v2.major, v2.minor, v2.patch, v2.build);
+            
+            if (v1t < v2t) {
+                result = -1;
+            }
+            else if (v1t > v2t) {
+                result = 1;
+            }
+            else {
+                result = 0;
+            }
             break;
+        }
         case 2: // Last Modified
             // Compare dates - note: string comparison may not work correctly for all date formats
             // For dates, default to newest first (reverse the comparison)
