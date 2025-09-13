@@ -40,42 +40,11 @@ set(wxUSE_LIBTIFF OFF CACHE INTERNAL "")
 set(wxUSE_ZLIB builtin CACHE INTERNAL "")
 add_subdirectory("wxWidgets" EXCLUDE_FROM_ALL)
 
-# libcurl
-if (MSVC)
-    # use Windows native SSL instead of OpenSSL or MbedTLS
-    set(CURL_USE_SCHANNEL ON CACHE INTERNAL "")
-else()
-    # for curl SSL
-    set(ENABLE_TESTING OFF CACHE INTERNAL "")
-    set(ENABLE_PROGRAMS OFF CACHE INTERNAL "")
-    set(CURL_USE_MBEDTLS ON CACHE INTERNAL "")
-    add_subdirectory(mbedtls EXCLUDE_FROM_ALL)
-    set(MBEDTLS_LIBRARIES "mbedtls")   
-endif()
-set(BUILD_TESTING OFF)
-set(USE_OPENSSL OFF)
-set(CURL_USE_LIBSSH2 OFF)
-set(CURL_DISABLE_FTP ON)      # disable unused features & protocols
-set(CURL_DISABLE_FILE ON)
-set(CURL_DISABLE_TELNET ON)
-set(CURL_DISABLE_LDAP ON)
-set(CURL_DISABLE_DICT ON)
-set(CURL_DISABLE_TFTP ON)
-set(CURL_DISABLE_GOPHER ON)
-set(CURL_DISABLE_IMAP ON)
-set(CURL_DISABLE_SMB ON)
-set(CURL_DISABLE_SMTP ON)
-set(CURL_DISABLE_RTSP ON)
-set(CURL_DISABLE_MQTT ON)
-set(CURL_DISABLE_POP3 ON)
-add_subdirectory(curl EXCLUDE_FROM_ALL)
-
 add_subdirectory("fmt" EXCLUDE_FROM_ALL)
 
 target_link_libraries("${PROJECT_NAME}"
     PUBLIC 
 	wx::core
-	CURL::libcurl
 	fmt
 )
 target_include_directories(${PROJECT_NAME} PUBLIC "fmt/include")

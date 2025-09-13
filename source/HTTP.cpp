@@ -1,4 +1,6 @@
+#if NETWORK_ENABLED 
 #include <curl/curl.h>
+#endif
 #include <fmt/format.h>
 #include "HTTP.hpp"
 
@@ -8,6 +10,7 @@ size_t writeFunction(void* ptr, size_t size, size_t nmemb, std::string* data) {
 }
 
 fetchResult fetch(const std::string& url) {
+#if NETWORK_ENABLED
 	auto curl = curl_easy_init();
 	if (curl) {
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
@@ -39,4 +42,7 @@ fetchResult fetch(const std::string& url) {
 		throw std::runtime_error("curl init failed");
 		return { "" , -1};
 	}
+#else
+	return { "" , -1 };
+#endif
 }
