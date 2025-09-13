@@ -23,6 +23,12 @@ ParsedVersion parseVersion(const std::string_view version) {
     return {};
 }
 
+
+std::string project::modifyDateString() const {
+    long reducedTime = modifiedDate;    //NOTE: 32-bit time precision loss
+    return ctime(&reducedTime);
+}
+
 void launch_process(const std::string& command, int flags) {
 #if defined __APPLE__ || defined __linux__
     //the '&' runs the command nonblocking, and >/dev/null 2>&1 destroys output

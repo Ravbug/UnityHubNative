@@ -133,11 +133,12 @@ struct editor {
 struct project {
 	std::string name;
 	std::string version;
-	std::string modifiedDate;
+	int64_t modifiedDate;
 	std::filesystem::path path;
 	bool operator==(const project& other) const {
 		return this->path == other.path;
 	}
+    std::string modifyDateString() const;
 };
 
 struct ParsedVersion {

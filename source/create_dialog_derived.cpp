@@ -122,7 +122,7 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 			);
 		#endif
 		//TODO: return this command to what summoned this dialog
-		project p = {projName,e.name,"",filesystem::path(projPath) / filesystem::path(projName)};
+		project p = {projName,e.name,0,filesystem::path(projPath) / filesystem::path(projName)};
 		this->callback(command,p);
 		
 		//close and dispose self

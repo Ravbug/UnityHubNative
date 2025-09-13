@@ -509,11 +509,11 @@ project MainFrameDerived::LoadProject(const std::filesystem::path &p_as_fs){
 	}
 	
 	//get the modification date
-	string modifyDate;
+	int64_t modifyDate;
 	struct stat fileInfo {};
 	if (filesystem::exists(p_as_fs)) {
 		if (stat(p_as_fs.string().c_str(), &fileInfo) == 0) {
-			modifyDate = ctime(&fileInfo.st_mtime);
+            modifyDate = fileInfo.st_mtime;
 		}
 	}
 	
@@ -582,7 +582,7 @@ void MainFrameDerived::AddProject(const project& p, const std::string& filter, b
         projectsList->SetItemData(itemIndex, projectIndex);
 
         projectsList->SetItem(itemIndex, 1, p.version);
-        projectsList->SetItem(itemIndex, 2, p.modifiedDate);
+        projectsList->SetItem(itemIndex, 2, p.modifyDateString());
         projectsList->SetItem(itemIndex, 3, p.path.string());
 
         //resize columns
@@ -760,9 +760,7 @@ int wxCALLBACK MainFrameDerived::CompareItems(wxIntPtr item1, wxIntPtr item2, wx
             break;
         }
         case 2: // Last Modified
-            // Compare dates - note: string comparison may not work correctly for all date formats
-            // For dates, default to newest first (reverse the comparison)
-            result = p2.modifiedDate.compare(p1.modifiedDate);
+            result = int(std::clamp<int64_t>(p2.modifiedDate - p1.modifiedDate,-10,10));
             break;
         case 3: // Path
             result = p1.path.string().compare(p2.path.string());
