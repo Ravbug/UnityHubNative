@@ -98,7 +98,7 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 		
 		//create the command string
 		#if defined __APPLE__
-        string command = fmt::format("\"{}\" -createProject \"{}\" -cloneFromTemplate \"{}{}.{}\"",
+        string command = std::format("\"{}\" -createProject \"{}\" -cloneFromTemplate \"{}{}.{}\"",
                                      executablePath.string(),
                                      outPath.string(),
                                      executableTemplatesPath.string(),
@@ -113,7 +113,7 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 				fullProj.string(),
 				fullTemplate.string());
 		#elif defined __linux__
-			string command = fmt::format("\"{}\"  -createproject \"{}\" -cloneFromTemplate \"{}{}.{}\"",
+			string command = std::format("\"{}\"  -createproject \"{}\" -cloneFromTemplate \"{}{}.{}\"",
 				executablePath.string(),
 				(filesystem::path(projPath) / projName).string(),
 				executableTemplatesPath.string(),

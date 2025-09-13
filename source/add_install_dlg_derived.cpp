@@ -206,7 +206,7 @@ void AddNewInstallDlg::InstallSelected(wxCommandEvent&){
                 // open the file
                 wxCommandEvent lnevt(executeEvt);
 #ifdef __APPLE__
-                lnevt.SetString(fmt::format("open \"{}\"", outpath));
+                lnevt.SetString(std::format("open \"{}\"", outpath));
 #elif defined _WIN32
                 lnevt.SetString(std::format("\"{}\"", outpath));
 #endif
