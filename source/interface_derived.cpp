@@ -725,6 +725,9 @@ void MainFrameDerived::OnColumnClick(wxListEvent& event) {
     }
 
     SortProjects();
+    // update UI 
+    const bool ascending = projectsList->GetUpdatedAscendingSortIndicator(col);
+    projectsList->ShowSortIndicator(col, ascending);
 }
 
 // Sort comparison function
