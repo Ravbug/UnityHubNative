@@ -36,7 +36,7 @@ class MainFrameDerived : public MainFrame{
 public:
 	//constructor (takes no args)
 	MainFrameDerived();
-	
+	virtual ~MainFrameDerived();
 	static std::string GetPathFromDialog(const std::string& message);
 	
 private:
@@ -60,9 +60,7 @@ private:
     void OnSelectEditor(wxCommandEvent&);
     void OnSelectEditorPath(wxCommandEvent&);
 
-	void OnQuit(wxCommandEvent&) {
-		Close();
-	}
+	void OnQuit(wxCommandEvent&);
     
     wxWindow* const projectActionItems[3]{
         revealProjBtn,

@@ -11,6 +11,7 @@
 #include <fstream>
 #include <wx/dirdlg.h>
 #include <wx/aboutdlg.h>
+#include <wx/config.h>
 
 #include <format>
 
@@ -25,6 +26,10 @@ using namespace std::filesystem;
 #define WEBVIEW 2000
 //the web view unloads after 5 minutes of page hidden
 const int TIMER_LENGTH = 5 * 1000 * 60;
+
+constexpr std::string_view config_name = "com.ravbug.unityhubnative.config";
+constexpr std::string_view config_sortCol = "sortColIndex";
+constexpr std::string_view config_sortAscending = "sortAscending";
 
 //Declare events here
 wxBEGIN_EVENT_TABLE(MainFrameDerived, wxFrame)
@@ -69,6 +74,12 @@ wxEND_EVENT_TABLE()
 
 //call superclass constructor
 MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
+
+    // load prefs
+    wxConfig config(config_name.data());
+    sortColumn = config.ReadLong(config_sortCol.data(), 0);
+    sortAscending = config.ReadBool(config_sortAscending.data(), false);
+
 	//set up project list columns
 	{
 		string cols[] = {"Project Name","Unity Version","Last Modified","Path"};
@@ -145,6 +156,11 @@ void MainFrameDerived::OnSelectEditorPath(wxCommandEvent&){
             ptr->Disable();
         }
     }
+}
+
+void MainFrameDerived::OnQuit(wxCommandEvent&)
+{
+    Close();
 }
 
 /**
@@ -464,6 +480,13 @@ void MainFrameDerived::OpenProject(const project& p, const editor& e, TargetPlat
         cmd += std::format(" -buildTarget {}", str);
     }
 	launch_process(cmd);
+}
+
+MainFrameDerived::~MainFrameDerived()
+{
+    wxConfig config(config_name.data());
+    config.Write(config_sortCol.data(), sortColumn);
+    config.Write(config_sortAscending.data(), sortAscending);
 }
 
 /** Brings up a folder selection dialog with a prompt
