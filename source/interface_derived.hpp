@@ -90,6 +90,10 @@ private:
 	std::deque<project> projects;
 	std::vector<std::filesystem::path> installPaths;
 	std::vector<editor> editors;
+
+	// Sorting state
+	int sortColumn = 0;  // Default sort by name (column 0)
+	bool sortAscending = true;  // Default ascending
 	
 	//window events
 	void OnAbout(wxCommandEvent& event);
@@ -112,8 +116,10 @@ private:
 	void OnRemoveProject(wxCommandEvent& event){
 		long itemIndex = wxListCtrl_get_selected(projectsList);
 		if (itemIndex > -1){
+			// Get the project index from item data
+			long projectIndex = projectsList->GetItemData(itemIndex);
 			//remove from the vector
-			projects.erase(projects.begin()+itemIndex);
+			projects.erase(projects.begin()+projectIndex);
 			//remove from the list view
 			projectsList->DeleteItem(itemIndex);
 			//update the file
@@ -127,7 +133,8 @@ private:
 	Called when you double click or press Enter on a cell in the ListView
 	*/
 	void OnOpenProject(wxListEvent& event){
-		OpenProject(event.m_itemIndex);
+		long projectIndex = projectsList->GetItemData(event.m_itemIndex);
+		OpenProject(projectIndex);
 	}
 	/**
 	Locates a Unity install path and adds it to the list and UI
@@ -171,6 +178,9 @@ private:
 	void OnReloadEditors(wxCommandEvent& event){
 		this->LoadEditorVersions();
 	}
+	void OnColumnClick(wxListEvent& event);
+	static int wxCALLBACK CompareItems(wxIntPtr item1, wxIntPtr item2, wxIntPtr sortData);
+	void SortProjects();
 	wxDECLARE_EVENT_TABLE();
 };
 

@@ -56,6 +56,7 @@ EVT_LIST_ITEM_ACTIVATED(wxID_HARDDISK, MainFrameDerived::OnOpenProject)
 EVT_LIST_ITEM_SELECTED(wxID_HARDDISK, MainFrameDerived::OnSelectProject)
 EVT_LIST_ITEM_DESELECTED(wxID_HARDDISK, MainFrameDerived::OnDeselectProject)
 EVT_LIST_DELETE_ITEM(wxID_HARDDISK,  MainFrameDerived::OnDeselectProject)
+EVT_LIST_COL_CLICK(wxID_HARDDISK, MainFrameDerived::OnColumnClick)
 
 EVT_LISTBOX(wxID_FLOPPY, MainFrameDerived::OnSelectEditor)
 EVT_LISTBOX(wxID_HOME, MainFrameDerived::OnSelectEditorPath)
@@ -167,7 +168,10 @@ void MainFrameDerived::ReloadData(){
 	editors.clear();
 	
     LoadProjects("");
-	
+
+	// Sort projects after loading (default: by name ascending)
+	SortProjects();
+
 	//check that the installs path file exists in the folder
 	auto p = datapath / editorPathsFile;
 	if (filesystem::exists(p)){
@@ -225,7 +229,8 @@ void MainFrameDerived::Filter(wxKeyEvent &event){
             projectsList->SetItemState(0, wxLIST_STATE_FOCUSED | wxLIST_STATE_SELECTED, wxLIST_STATE_FOCUSED | wxLIST_STATE_SELECTED);
 
             //open first item
-            OpenProject(0);
+            long projectIndex = projectsList->GetItemData(0);
+            OpenProject(projectIndex);
             return;
         }
     }
@@ -236,6 +241,8 @@ void MainFrameDerived::Filter(wxKeyEvent &event){
     auto filter = projSearchCtrl->GetValue().ToStdString();
     transform(filter.begin(), filter.end(), filter.begin(), ::tolower);
     LoadProjects(filter);
+    // Re-apply sorting after filtering
+    SortProjects();
 }
 
 #define BUILD_YEAR  (__DATE__ + 7)
@@ -366,7 +373,8 @@ void MainFrameDerived::OnCreateProject(wxCommandEvent& event){
 void MainFrameDerived::OnRevealProject(wxCommandEvent& event){
 	long selectedIndex = wxListCtrl_get_selected(projectsList);
 	if (selectedIndex > -1){
-		project& p = projects[selectedIndex];
+		long projectIndex = projectsList->GetItemData(selectedIndex);
+		project& p = projects[projectIndex];
 		reveal_in_explorer(p.path);
 	}
 }
@@ -377,12 +385,13 @@ void MainFrameDerived::OnRevealProject(wxCommandEvent& event){
 void MainFrameDerived::OnOpenWith(wxCommandEvent& event){
 	long selectedIndex = wxListCtrl_get_selected(projectsList);
 	if (selectedIndex > -1){
-		project& p = projects[selectedIndex];
+		long projectIndex = projectsList->GetItemData(selectedIndex);
+		project& p = projects[projectIndex];
 		OpenWithCallback c = [&](project p, editor e, TargetPlatform plat){
 			//open the project
 			OpenProject(p,e, plat);
 		};
-				
+
 		OpenWithDlg* dlg = new OpenWithDlg(this,p,editors,c);
 		dlg->show();
 	}
@@ -554,30 +563,45 @@ void MainFrameDerived::AddProject(const project& p, const std::string& filter, b
     auto name = p.name;
     transform(name.begin(), name.end(), name.begin(), ::tolower);
     if (name.find(filter) != std::string::npos){
+        // Get the index where we're adding the project
+        size_t projectIndex = projects.size();
         projects.push_back(p);
-        
+
         //save to file
         if (save){
             SaveProjects();
         }
-        
+
         //add to the UI
         wxListItem i;
         i.SetId(projectsList->GetItemCount());
         i.SetText(p.name);
-        projectsList->InsertItem(i);
-        projectsList->SetItem(i, 1, p.version);
-        projectsList->SetItem(i, 2, p.modifiedDate);
-        projectsList->SetItem(i, 3, p.path.string());
-        
+        long itemIndex = projectsList->InsertItem(i);
+
+        // Store the project index as item data
+        projectsList->SetItemData(itemIndex, projectIndex);
+
+        projectsList->SetItem(itemIndex, 1, p.version);
+        projectsList->SetItem(itemIndex, 2, p.modifiedDate);
+        projectsList->SetItem(itemIndex, 3, p.path.string());
+
         //resize columns
         int cols = projectsList->GetColumnCount();
-        for (int i = 0; i < cols; i++){
-            projectsList->SetColumnWidth(i, wxLIST_AUTOSIZE_USEHEADER);
+        for (int j = 0; j < cols; j++){
+            projectsList->SetColumnWidth(j, wxLIST_AUTOSIZE_USEHEADER);
         }
-        
+
+        // Sort the list to place the new item in the correct position
+        SortProjects();
+
         if(select){
-            projectsList->SetItemState(i, wxLIST_STATE_SELECTED | wxLIST_STATE_FOCUSED, wxLIST_STATE_SELECTED | wxLIST_STATE_FOCUSED);
+            // Find the item after sorting
+            for (int k = 0; k < projectsList->GetItemCount(); k++) {
+                if (projectsList->GetItemData(k) == static_cast<long>(projectIndex)) {
+                    projectsList->SetItemState(k, wxLIST_STATE_SELECTED | wxLIST_STATE_FOCUSED, wxLIST_STATE_SELECTED | wxLIST_STATE_FOCUSED);
+                    break;
+                }
+            }
         }
     }
 	
@@ -684,5 +708,66 @@ void MainFrameDerived::OnUninstall(wxCommandEvent &){
 		ShellExecute(0, 0, uninstaller_path.c_str(), NULL, 0, SW_SHOW);
 #endif
     }
-   
+}
+
+// Handle column click for sorting
+void MainFrameDerived::OnColumnClick(wxListEvent& event) {
+    int col = event.GetColumn();
+
+    // If clicking the same column, toggle sort direction
+    if (col == sortColumn) {
+        sortAscending = !sortAscending;
+    } else {
+        sortColumn = col;
+        // For date column, default to descending (newest first)
+        // For other columns, default to ascending
+        sortAscending = (col != 2);
+    }
+
+    SortProjects();
+}
+
+// Sort comparison function
+int wxCALLBACK MainFrameDerived::CompareItems(wxIntPtr item1, wxIntPtr item2, wxIntPtr sortData) {
+    MainFrameDerived* frame = reinterpret_cast<MainFrameDerived*>(sortData);
+
+    // Get the actual project indices
+    const project& p1 = frame->projects[item1];
+    const project& p2 = frame->projects[item2];
+
+    int result = 0;
+
+    switch (frame->sortColumn) {
+        case 0: // Name
+            result = p1.name.compare(p2.name);
+            break;
+        case 1: // Version
+            result = p1.version.compare(p2.version);
+            break;
+        case 2: // Last Modified
+            // Compare dates - note: string comparison may not work correctly for all date formats
+            // For dates, default to newest first (reverse the comparison)
+            result = p2.modifiedDate.compare(p1.modifiedDate);
+            break;
+        case 3: // Path
+            result = p1.path.string().compare(p2.path.string());
+            break;
+    }
+
+    // If items are equal on primary sort, sort by name
+    if (result == 0 && frame->sortColumn != 0) {
+        result = p1.name.compare(p2.name);
+    }
+
+    // Apply sort direction
+    if (!frame->sortAscending) {
+        result = -result;
+    }
+
+    return result;
+}
+
+// Sort the project list
+void MainFrameDerived::SortProjects() {
+    projectsList->SortItems(CompareItems, reinterpret_cast<wxIntPtr>(this));
 }
