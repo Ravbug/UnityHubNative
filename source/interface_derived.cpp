@@ -762,9 +762,19 @@ int wxCALLBACK MainFrameDerived::CompareItems(wxIntPtr item1, wxIntPtr item2, wx
 
     int result = 0;
 
+    constexpr static auto toLower = [](std::string data) {
+        std::transform(data.begin(), data.end(), data.begin(),
+            [](unsigned char c) { return std::tolower(c); });
+        return data;
+    };
+
     switch (frame->sortColumn) {
-        case 0: // Name
-            result = p1.name.compare(p2.name);
+    case 0: { // Name
+            auto p1Name = toLower(p1.name);
+            auto p2Name = toLower(p2.name);
+
+            result = p1Name.compare(p2Name);
+            }
             break;
         case 1: { // Version
             auto v1 = parseVersion(p1.version);
@@ -788,7 +798,12 @@ int wxCALLBACK MainFrameDerived::CompareItems(wxIntPtr item1, wxIntPtr item2, wx
             result = int(std::clamp<int64_t>(p2.modifiedDate - p1.modifiedDate,-10,10));
             break;
         case 3: // Path
-            result = p1.path.string().compare(p2.path.string());
+        {
+            auto p1path = toLower(p1.path.string());
+            auto p2path = toLower(p2.path.string());
+
+            result = p1path.compare(p2path);
+        }
             break;
     }
 
