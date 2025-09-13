@@ -25,7 +25,11 @@ ParsedVersion parseVersion(const std::string_view version) {
 
 
 std::string project::modifyDateString() const {
-    long reducedTime = modifiedDate;    //NOTE: 32-bit time precision loss
+#if _WIN32
+    long 
+#endif
+	long
+		reducedTime = modifiedDate;    //NOTE: 32-bit time precision loss on non-windows
     return ctime(&reducedTime);
 }
 
