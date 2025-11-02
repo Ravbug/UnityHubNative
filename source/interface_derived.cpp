@@ -531,7 +531,7 @@ project MainFrameDerived::LoadProject(const std::filesystem::path &p_as_fs){
 	}
 	
 	//get the modification date
-	int64_t modifyDate;
+	int64_t modifyDate = std::numeric_limits<decltype(project::modifiedDate)>::min();
 	struct stat fileInfo {};
 	if (filesystem::exists(p_as_fs)) {
 		if (stat(p_as_fs.string().c_str(), &fileInfo) == 0) {

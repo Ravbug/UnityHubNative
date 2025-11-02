@@ -25,6 +25,9 @@ ParsedVersion parseVersion(const std::string_view version) {
 
 
 std::string project::modifyDateString() const {
+	if (modifiedDate == std::numeric_limits<decltype(modifiedDate)>::min()) {
+		return "???";
+	}
 #if _WIN32
     long 
 #endif
