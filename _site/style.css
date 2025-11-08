@@ -1,0 +1,20 @@
+*{
+    font-family: system-ui
+  }
+  @media (prefers-color-scheme: dark) {
+    body{
+      background-color: #323232;
+      color: white;
+    }
+    a{
+      color: rgb(83, 158, 250)
+    }
+  }
+pre{
+    font-family: monospace;
+    overflow: scroll;
+}
+.heroimage{
+  width: 100%;
+  max-width: 800px;
+}
