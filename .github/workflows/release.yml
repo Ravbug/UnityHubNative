@@ -1,0 +1,175 @@
+name: Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  ###########################################################################
+  # Linux (x86_64)
+  ###########################################################################
+  linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake ninja-build ccache \
+            libgtk-3-dev libwebkit2gtk-4.1-dev \
+            libnotify-dev libsdl2-dev \
+            libcurl4-openssl-dev libsecret-1-dev \
+            fuse
+
+      - name: ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: linux-ccache-${{ github.ref_name }}
+          restore-keys: linux-ccache-
+
+      - name: Configure
+        run: |
+          mkdir -p build && cd build
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            ..
+
+      - name: Build
+        run: cmake --build build --config Release -j$(nproc)
+
+      - name: Package AppImage
+        run: cmake --build build --config Release --target install
+
+      - name: Rename artifact
+        run: |
+          mkdir -p dist
+          cp build/Release/UnityHubNative.AppImage dist/UnityHubNative-Linux64.AppImage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: UnityHubNative-Linux64
+          path: dist/UnityHubNative-Linux64.AppImage
+
+  ###########################################################################
+  # macOS (arm64 + x86_64 universal)
+  ###########################################################################
+  macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Install dependencies
+        run: brew install ccache
+
+      - name: ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: macos-ccache-${{ github.ref_name }}
+          restore-keys: macos-ccache-
+
+      - name: Configure
+        run: |
+          mkdir -p build && cd build
+          cmake -G Xcode -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            ..
+
+      - name: Build
+        run: cmake --build build --config Release -j$(sysctl -n hw.ncpu)
+
+      - name: Package
+        run: cmake --build build --config Release --target install
+
+      - name: Create zip
+        run: |
+          mkdir -p dist
+          cd build/Release
+          zip -r ../../dist/UnityHubNative-macOS.zip UnityHubNative.app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: UnityHubNative-macOS
+          path: dist/UnityHubNative-macOS.zip
+
+  ###########################################################################
+  # Windows (x86_64)
+  ###########################################################################
+  windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: win-ccache-${{ github.ref_name }}
+          restore-keys: win-ccache-
+
+      - name: Configure
+        run: |
+          mkdir build -Force
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER_LAUNCHER=ccache ..
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Package
+        run: |
+          mkdir dist -Force
+          Compress-Archive -Path build/Release/UnityHubNative.exe -DestinationPath dist/UnityHubNative-winx64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: UnityHubNative-winx64
+          path: dist/UnityHubNative-winx64.zip
+
+  ###########################################################################
+  # GitHub Release
+  ###########################################################################
+  release:
+    needs: [linux, macos, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: |
+            ## Unity Hub Native ${{ github.ref_name }}
+
+            ### Changes
+            - Preferences dialog with custom env vars and extra args support
+            - Preset system for saving/loading/defaulting configurations
+            - See the full commit log for details
+
+            ### Downloads
+          files: |
+            UnityHubNative-Linux64/UnityHubNative-Linux64.AppImage
+            UnityHubNative-macOS/UnityHubNative-macOS.zip
+            UnityHubNative-winx64/UnityHubNative-winx64.zip
+          draft: false
+          prerelease: false

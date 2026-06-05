@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Unity Hub Native
+Comment=A lightweight native alternative to the official Unity Hub
+Exec=/usr/bin/unity-hub-native
+Icon=unity-hub-native
+Categories=Development;
+Terminal=false
