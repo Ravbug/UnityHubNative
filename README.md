@@ -26,6 +26,8 @@ UnityHubNative can pass custom environment variables and command-line arguments 
 1. Go to **Window → Preferences**
 2. Configure your settings:
 
+   ![Preferences Dialog](assets/preferences-dialog.png)
+
    **Custom Environment Variables** — one `KEY=VALUE` per line. These are prepended to the Editor launch command as shell variables:
 
    ```
