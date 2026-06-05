@@ -14,6 +14,7 @@
 #include <wx/config.h>
 
 #include <format>
+#include <sstream>
 
 #include <filesystem>
 #if __APPLE__
@@ -30,6 +31,8 @@ const int TIMER_LENGTH = 5 * 1000 * 60;
 constexpr std::string_view config_name = "com.ravbug.unityhubnative.config";
 constexpr std::string_view config_sortCol = "sortColIndex";
 constexpr std::string_view config_sortAscending = "sortAscending";
+constexpr std::string_view config_envVars = "envVars";
+constexpr std::string_view config_extraArgs = "extraArgs";
 
 //Declare events here
 wxBEGIN_EVENT_TABLE(MainFrameDerived, wxFrame)
@@ -42,6 +45,7 @@ EVT_MENU(wxID_PROPERTIES, MainFrameDerived::OnOpenWith)
 EVT_MENU(wxID_REFRESH, MainFrameDerived::OnReloadData)
 EVT_MENU(wxID_UNINDENT, MainFrameDerived::OnSource)
 EVT_MENU(wxID_TOP, MainFrameDerived::OnUpdate)
+EVT_MENU(PREFERENCES, MainFrameDerived::OnPreferences)
 EVT_MENU(wxID_EXIT, MainFrameDerived::OnQuit)
 EVT_BUTTON(wxID_ADD,MainFrameDerived::OnAddProject)
 EVT_BUTTON(wxID_NEW,MainFrameDerived::OnCreateProject)
@@ -71,6 +75,9 @@ EVT_LISTBOX_DCLICK(wxID_HOME,MainFrameDerived::OnRevealInstallLocation)
 //EVT_SEARCHCTRL_CANCEL_BTN(FILTER_PROJ_ID, MainFrameDerived::Filter)
 
 wxEND_EVENT_TABLE()
+
+// Forward declaration
+static std::string BuildEditorCommand(const std::string& editorPath, const std::string& projectPath, TargetPlatform plat);
 
 //call superclass constructor
 MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
@@ -433,7 +440,7 @@ void MainFrameDerived::OpenProject(const long& index){
         //check that the unity editor exists at that location
         if (filesystem::exists(editorPath)) {
             
-            string cmd = "\"" + editorPath.string() + "\" -projectpath \"" + p.path.string() + "\"";
+            string cmd = BuildEditorCommand(editorPath.string(), p.path.string(), TargetPlatform::CurrentPlatform);
             
             //start the process
             launch_process(cmd);
@@ -474,12 +481,96 @@ const char* const PlatToStr(TargetPlatform plat) {
  @param e the editor version to use when opening the project
  */
 void MainFrameDerived::OpenProject(const project& p, const editor& e, TargetPlatform plat){
-	string cmd = "\"" + e.executablePath().string() + "\" -projectpath \"" + p.path.string() + "\"";
+	string cmd = BuildEditorCommand(e.executablePath().string(), p.path.string(), plat);
+	launch_process(cmd);
+}
+
+/**
+ * Build the shell command to launch the Unity Editor, prepending custom
+ * environment variables and appending extra command-line arguments
+ * configured in Preferences.
+ */
+static std::string BuildEditorCommand(const std::string& editorPath, const std::string& projectPath, TargetPlatform plat) {
+    // Read config
+    wxConfig config(config_name.data());
+    std::string envVarsStr = config.Read(config_envVars.data(), "").ToStdString();
+    std::string extraArgsStr = config.Read(config_extraArgs.data(), "").ToStdString();
+
+    // Build env var prefix
+    std::string envPrefix;
+    if (!envVarsStr.empty()) {
+        // Split by newlines, each line is KEY=VALUE
+        std::istringstream stream(envVarsStr);
+        std::string line;
+        while (std::getline(stream, line)) {
+            // Trim whitespace
+            line.erase(0, line.find_first_not_of(" 	\r\n"));
+            line.erase(line.find_last_not_of(" 	\r\n") + 1);
+            if (!line.empty()) {
+                envPrefix += line + " ";
+            }
+        }
+    }
+
+    // Build the base command
+    std::string cmd = "\"" + editorPath + "\" -projectpath \"" + projectPath + "\"";
     if (plat != TargetPlatform::CurrentPlatform) {
         auto str = PlatToStr(plat);
         cmd += std::format(" -buildTarget {}", str);
     }
-	launch_process(cmd);
+
+    // Append extra arguments
+    if (!extraArgsStr.empty()) {
+        cmd += " " + extraArgsStr;
+    }
+
+    // Prepend env vars (for Unix shell syntax)
+    if (!envPrefix.empty()) {
+        cmd = envPrefix + cmd;
+    }
+
+    return cmd;
+}
+
+void MainFrameDerived::OnPreferences(wxCommandEvent&) {
+    wxConfig config(config_name.data());
+    std::string currentEnvVars = config.Read(config_envVars.data(), "").ToStdString();
+    std::string currentExtraArgs = config.Read(config_extraArgs.data(), "").ToStdString();
+
+    // Create dialog
+    wxDialog dlg(this, wxID_ANY, "Preferences", wxDefaultPosition, wxSize(500, 350));
+    wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
+
+    // Environment variables section
+    wxStaticText* envLabel = new wxStaticText(&dlg, wxID_ANY, "Custom Environment Variables (one per line, KEY=VALUE):");
+    mainSizer->Add(envLabel, 0, wxALL | wxEXPAND, 5);
+
+    wxTextCtrl* envCtrl = new wxTextCtrl(&dlg, wxID_ANY, currentEnvVars,
+        wxDefaultPosition, wxSize(-1, 120), wxTE_MULTILINE);
+    mainSizer->Add(envCtrl, 1, wxALL | wxEXPAND, 5);
+
+    // Extra arguments section
+    wxStaticText* argsLabel = new wxStaticText(&dlg, wxID_ANY, "Extra Command-line Arguments:");
+    mainSizer->Add(argsLabel, 0, wxALL | wxEXPAND, 5);
+
+    wxTextCtrl* argsCtrl = new wxTextCtrl(&dlg, wxID_ANY, currentExtraArgs,
+        wxDefaultPosition, wxDefaultSize, 0);
+    mainSizer->Add(argsCtrl, 0, wxALL | wxEXPAND, 5);
+
+    // Buttons
+    wxBoxSizer* btnSizer = new wxBoxSizer(wxHORIZONTAL);
+    btnSizer->Add(new wxButton(&dlg, wxID_CANCEL, "Cancel"), 0, wxALL, 5);
+    btnSizer->Add(new wxButton(&dlg, wxID_OK, "Save"), 0, wxALL, 5);
+    mainSizer->Add(btnSizer, 0, wxALIGN_RIGHT | wxALL, 5);
+
+    dlg.SetSizer(mainSizer);
+    dlg.Layout();
+
+    if (dlg.ShowModal() == wxID_OK) {
+        config.Write(config_envVars.data(), envCtrl->GetValue());
+        config.Write(config_extraArgs.data(), argsCtrl->GetValue());
+        config.Flush();
+    }
 }
 
 MainFrameDerived::~MainFrameDerived()

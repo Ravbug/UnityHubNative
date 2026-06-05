@@ -111,6 +111,7 @@ private:
 	void OnReloadData(wxCommandEvent& event){
 		ReloadData();
 	}
+	void OnPreferences(wxCommandEvent& event);
 	void OnRemoveProject(wxCommandEvent& event){
 		long itemIndex = wxListCtrl_get_selected(projectsList);
 		if (itemIndex > -1){

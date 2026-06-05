@@ -197,6 +197,12 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	about_menu = new wxMenuItem( menuWindow, wxID_ABOUT, wxString( wxT("About Unity Hub Native") ) , wxEmptyString, wxITEM_NORMAL );
 	menuWindow->Append( about_menu );
 
+	menuWindow->AppendSeparator();
+
+	wxMenuItem* pref_menu;
+	pref_menu = new wxMenuItem( menuWindow, PREFERENCES, wxString( wxT("Preferences") ) , wxEmptyString, wxITEM_NORMAL );
+	menuWindow->Append( pref_menu );
+
 	menubar->Append( menuWindow, wxT("Window") );
 
 	wxMenu* helpMenu;
