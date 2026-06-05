@@ -12,6 +12,8 @@
 #include <wx/dirdlg.h>
 #include <wx/aboutdlg.h>
 #include <wx/config.h>
+#include <wx/combobox.h>
+#include <wx/textdlg.h>
 
 #include <format>
 #include <sstream>
@@ -33,6 +35,11 @@ constexpr std::string_view config_sortCol = "sortColIndex";
 constexpr std::string_view config_sortAscending = "sortAscending";
 constexpr std::string_view config_envVars = "envVars";
 constexpr std::string_view config_extraArgs = "extraArgs";
+constexpr std::string_view config_presetCount = "presetCount";
+constexpr std::string_view config_presetName = "presetName_";
+constexpr std::string_view config_presetEnvVars = "presetEnvVars_";
+constexpr std::string_view config_presetExtraArgs = "presetExtraArgs_";
+constexpr std::string_view config_presetIsDefault = "presetDefault_";
 
 //Declare events here
 wxBEGIN_EVENT_TABLE(MainFrameDerived, wxFrame)
@@ -491,7 +498,7 @@ void MainFrameDerived::OpenProject(const project& p, const editor& e, TargetPlat
  * configured in Preferences.
  */
 static std::string BuildEditorCommand(const std::string& editorPath, const std::string& projectPath, TargetPlatform plat) {
-    // Read config
+    // Read active config (always reflects the default preset)
     wxConfig config(config_name.data());
     std::string envVarsStr = config.Read(config_envVars.data(), "").ToStdString();
     std::string extraArgsStr = config.Read(config_extraArgs.data(), "").ToStdString();
@@ -499,11 +506,9 @@ static std::string BuildEditorCommand(const std::string& editorPath, const std::
     // Build env var prefix
     std::string envPrefix;
     if (!envVarsStr.empty()) {
-        // Split by newlines, each line is KEY=VALUE
         std::istringstream stream(envVarsStr);
         std::string line;
         while (std::getline(stream, line)) {
-            // Trim whitespace
             line.erase(0, line.find_first_not_of(" 	\r\n"));
             line.erase(line.find_last_not_of(" 	\r\n") + 1);
             if (!line.empty()) {
@@ -519,54 +524,206 @@ static std::string BuildEditorCommand(const std::string& editorPath, const std::
         cmd += std::format(" -buildTarget {}", str);
     }
 
-    // Append extra arguments
     if (!extraArgsStr.empty()) {
         cmd += " " + extraArgsStr;
     }
-
-    // Prepend env vars (for Unix shell syntax)
     if (!envPrefix.empty()) {
         cmd = envPrefix + cmd;
     }
-
     return cmd;
 }
 
 void MainFrameDerived::OnPreferences(wxCommandEvent&) {
     wxConfig config(config_name.data());
-    std::string currentEnvVars = config.Read(config_envVars.data(), "").ToStdString();
-    std::string currentExtraArgs = config.Read(config_extraArgs.data(), "").ToStdString();
 
-    // Create dialog
-    wxDialog dlg(this, wxID_ANY, "Preferences", wxDefaultPosition, wxSize(500, 350));
+    // Build dialog
+    wxDialog dlg(this, wxID_ANY, "Preferences", wxDefaultPosition, wxSize(540, 440));
     wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
 
-    // Environment variables section
+    // --- Preset selector row ---
+    wxBoxSizer* presetRow = new wxBoxSizer(wxHORIZONTAL);
+    wxStaticText* presetLabel = new wxStaticText(&dlg, wxID_ANY, "Preset:");
+    presetRow->Add(presetLabel, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+
+    wxComboBox* presetCombo = new wxComboBox(&dlg, wxID_ANY, "", wxDefaultPosition, wxSize(200, -1), 0, nullptr, wxCB_READONLY);
+    presetRow->Add(presetCombo, 1, wxALL | wxEXPAND, 5);
+
+    wxButton* saveAsBtn = new wxButton(&dlg, wxID_SAVE, "Save As...");
+    presetRow->Add(saveAsBtn, 0, wxALL, 5);
+
+    wxButton* deleteBtn = new wxButton(&dlg, wxID_DELETE, "Delete");
+    presetRow->Add(deleteBtn, 0, wxALL, 5);
+
+    wxButton* defaultBtn = new wxButton(&dlg, wxID_YES, "Set Default");
+    presetRow->Add(defaultBtn, 0, wxALL, 5);
+
+    mainSizer->Add(presetRow, 0, wxEXPAND | wxLEFT | wxRIGHT, 5);
+
+    // --- Environment variables section ---
     wxStaticText* envLabel = new wxStaticText(&dlg, wxID_ANY, "Custom Environment Variables (one per line, KEY=VALUE):");
     mainSizer->Add(envLabel, 0, wxALL | wxEXPAND, 5);
 
-    wxTextCtrl* envCtrl = new wxTextCtrl(&dlg, wxID_ANY, currentEnvVars,
+    wxTextCtrl* envCtrl = new wxTextCtrl(&dlg, wxID_ANY, "",
         wxDefaultPosition, wxSize(-1, 120), wxTE_MULTILINE);
     mainSizer->Add(envCtrl, 1, wxALL | wxEXPAND, 5);
 
-    // Extra arguments section
+    // --- Extra arguments section ---
     wxStaticText* argsLabel = new wxStaticText(&dlg, wxID_ANY, "Extra Command-line Arguments:");
     mainSizer->Add(argsLabel, 0, wxALL | wxEXPAND, 5);
 
-    wxTextCtrl* argsCtrl = new wxTextCtrl(&dlg, wxID_ANY, currentExtraArgs,
+    wxTextCtrl* argsCtrl = new wxTextCtrl(&dlg, wxID_ANY, "",
         wxDefaultPosition, wxDefaultSize, 0);
     mainSizer->Add(argsCtrl, 0, wxALL | wxEXPAND, 5);
 
-    // Buttons
+    // --- Bottom buttons ---
     wxBoxSizer* btnSizer = new wxBoxSizer(wxHORIZONTAL);
     btnSizer->Add(new wxButton(&dlg, wxID_CANCEL, "Cancel"), 0, wxALL, 5);
-    btnSizer->Add(new wxButton(&dlg, wxID_OK, "Save"), 0, wxALL, 5);
+    wxButton* okBtn = new wxButton(&dlg, wxID_OK, "Save");
+    okBtn->SetDefault();
+    btnSizer->Add(okBtn, 0, wxALL, 5);
     mainSizer->Add(btnSizer, 0, wxALIGN_RIGHT | wxALL, 5);
 
     dlg.SetSizer(mainSizer);
     dlg.Layout();
 
+    // --- Helper: load preset data into combo and fields ---
+    int presetCount = config.ReadLong(config_presetCount.data(), 0);
+    int defaultIdx = -1;
+
+    auto loadPresetList = [&]() {
+        presetCombo->Clear();
+        presetCount = config.ReadLong(config_presetCount.data(), 0);
+        defaultIdx = -1;
+        for (int i = 0; i < presetCount; i++) {
+            std::string name = config.Read((std::string(config_presetName) + std::to_string(i)).c_str(), "").ToStdString();
+            presetCombo->Append(name);
+            bool isDef = config.ReadBool((std::string(config_presetIsDefault) + std::to_string(i)).c_str(), false);
+            if (isDef) defaultIdx = i;
+        }
+    };
+
+    auto loadPresetFields = [&](int idx) {
+        std::string env = config.Read((std::string(config_presetEnvVars) + std::to_string(idx)).c_str(), "").ToStdString();
+        std::string args = config.Read((std::string(config_presetExtraArgs) + std::to_string(idx)).c_str(), "").ToStdString();
+        envCtrl->SetValue(env);
+        argsCtrl->SetValue(args);
+    };
+
+    loadPresetList();
+    if (presetCount > 0) {
+        // Select the default preset or the first one
+        int sel = (defaultIdx >= 0) ? defaultIdx : 0;
+        presetCombo->SetSelection(sel);
+        loadPresetFields(sel);
+    }
+
+    // --- Event handlers ---
+    saveAsBtn->Bind(wxEVT_BUTTON, [&](wxCommandEvent&) {
+        wxTextEntryDialog nameDlg(&dlg, "Enter a name for this preset:", "Save Preset", "");
+        if (nameDlg.ShowModal() == wxID_OK) {
+            std::string name = nameDlg.GetValue().ToStdString();
+            if (name.empty()) return;
+            // Check if name already exists
+            int count = config.ReadLong(config_presetCount.data(), 0);
+            for (int i = 0; i < count; i++) {
+                std::string existing = config.Read((std::string(config_presetName) + std::to_string(i)).c_str(), "").ToStdString();
+                if (existing == name) {
+                    // Overwrite existing preset
+                    config.Write((std::string(config_presetEnvVars) + std::to_string(i)).c_str(), envCtrl->GetValue());
+                    config.Write((std::string(config_presetExtraArgs) + std::to_string(i)).c_str(), argsCtrl->GetValue());
+                    loadPresetList();
+                    presetCombo->SetSelection(i);
+                    return;
+                }
+            }
+            // Add new preset
+            config.Write((std::string(config_presetName) + std::to_string(count)).c_str(), wxString(name));
+            config.Write((std::string(config_presetEnvVars) + std::to_string(count)).c_str(), envCtrl->GetValue());
+            config.Write((std::string(config_presetExtraArgs) + std::to_string(count)).c_str(), argsCtrl->GetValue());
+            config.Write((std::string(config_presetIsDefault) + std::to_string(count)).c_str(), false);
+            config.Write(config_presetCount.data(), count + 1);
+            config.Flush();
+            loadPresetList();
+            presetCombo->SetSelection(count);
+        }
+    });
+
+    deleteBtn->Bind(wxEVT_BUTTON, [&](wxCommandEvent&) {
+        int sel = presetCombo->GetSelection();
+        if (sel == wxNOT_FOUND) return;
+        if (wxMessageBox("Delete this preset?", "Confirm", wxYES_NO | wxICON_QUESTION) != wxYES) return;
+
+        int count = config.ReadLong(config_presetCount.data(), 0);
+        bool wasDefault = config.ReadBool((std::string(config_presetIsDefault) + std::to_string(sel)).c_str(), false);
+
+        // Shift all presets after sel down by one
+        for (int i = sel + 1; i < count; i++) {
+            std::string name = config.Read((std::string(config_presetName) + std::to_string(i)).c_str(), "").ToStdString();
+            std::string env = config.Read((std::string(config_presetEnvVars) + std::to_string(i)).c_str(), "").ToStdString();
+            std::string args = config.Read((std::string(config_presetExtraArgs) + std::to_string(i)).c_str(), "").ToStdString();
+            bool isDef = config.ReadBool((std::string(config_presetIsDefault) + std::to_string(i)).c_str(), false);
+            config.Write((std::string(config_presetName) + std::to_string(i - 1)).c_str(), wxString(name));
+            config.Write((std::string(config_presetEnvVars) + std::to_string(i - 1)).c_str(), wxString(env));
+            config.Write((std::string(config_presetExtraArgs) + std::to_string(i - 1)).c_str(), wxString(args));
+            config.Write((std::string(config_presetIsDefault) + std::to_string(i - 1)).c_str(), isDef);
+        }
+        // Remove last entry
+        config.DeleteEntry((std::string(config_presetName) + std::to_string(count - 1)).c_str());
+        config.DeleteEntry((std::string(config_presetEnvVars) + std::to_string(count - 1)).c_str());
+        config.DeleteEntry((std::string(config_presetExtraArgs) + std::to_string(count - 1)).c_str());
+        config.DeleteEntry((std::string(config_presetIsDefault) + std::to_string(count - 1)).c_str());
+        config.Write(config_presetCount.data(), count - 1);
+        config.Flush();
+
+        // If we deleted the default, clear the active config
+        if (wasDefault) {
+            config.Write(config_envVars.data(), "");
+            config.Write(config_extraArgs.data(), "");
+        }
+
+        loadPresetList();
+        if (presetCombo->GetCount() > 0) {
+            int newSel = std::min(sel, (int)presetCombo->GetCount() - 1);
+            presetCombo->SetSelection(newSel);
+            loadPresetFields(newSel);
+        } else {
+            envCtrl->SetValue("");
+            argsCtrl->SetValue("");
+        }
+    });
+
+    defaultBtn->Bind(wxEVT_BUTTON, [&](wxCommandEvent&) {
+        int sel = presetCombo->GetSelection();
+        if (sel == wxNOT_FOUND) return;
+        int count = config.ReadLong(config_presetCount.data(), 0);
+        // Clear default flag on all presets
+        for (int i = 0; i < count; i++) {
+            config.Write((std::string(config_presetIsDefault) + std::to_string(i)).c_str(), (i == sel));
+        }
+        // Write active config from this preset
+        config.Write(config_envVars.data(), envCtrl->GetValue());
+        config.Write(config_extraArgs.data(), argsCtrl->GetValue());
+        config.Flush();
+        loadPresetList();
+        presetCombo->SetSelection(sel);
+        wxMessageBox("Set \"" + presetCombo->GetString(sel).ToStdString() + "\" as the default preset.", "Default Preset", wxOK | wxICON_INFORMATION);
+    });
+
+    // When combo selection changes, load the preset fields
+    presetCombo->Bind(wxEVT_COMBOBOX, [&](wxCommandEvent&) {
+        int sel = presetCombo->GetSelection();
+        if (sel != wxNOT_FOUND) loadPresetFields(sel);
+    });
+
+    // --- Show modal ---
     if (dlg.ShowModal() == wxID_OK) {
+        // Save the current fields to the selected preset
+        int sel = presetCombo->GetSelection();
+        if (sel != wxNOT_FOUND) {
+            config.Write((std::string(config_presetEnvVars) + std::to_string(sel)).c_str(), envCtrl->GetValue());
+            config.Write((std::string(config_presetExtraArgs) + std::to_string(sel)).c_str(), argsCtrl->GetValue());
+        }
+        // Also write to active config (for immediate use by BuildEditorCommand)
         config.Write(config_envVars.data(), envCtrl->GetValue());
         config.Write(config_extraArgs.data(), argsCtrl->GetValue());
         config.Flush();
