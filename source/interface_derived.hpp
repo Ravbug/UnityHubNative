@@ -120,6 +120,13 @@ private:
 			projects.erase(projects.begin()+projectIndex);
 			//remove from the list view
 			projectsList->DeleteItem(itemIndex);
+			//later projects shifted down by one, so update the indices stored in the remaining rows
+			for (long i = 0; i < projectsList->GetItemCount(); i++){
+				long data = projectsList->GetItemData(i);
+				if (data > projectIndex){
+					projectsList->SetItemData(i, data - 1);
+				}
+			}
 			//update the file
 			SaveProjects();
 		}
