@@ -12,6 +12,7 @@ UnityHubNative launches many times faster, uses far less memory and CPU, and is 
 ## Features
 - Add an existing project to the list using the Add Existing button
 - Open projects by double-clicking them in the list, or by selecting them and pressing Enter
+- Open projects signed in to your Unity account (Asset Store, Unity services) without the official hub running, through the official Unity CLI, for Unity 2019.1 and newer. UnityHubNative offers to install the CLI on launch, and the Install CLI and Login CLI buttons in the Editor Versions tab install it and sign it in to your Unity account. Requires Unity CLI 1.0.0-beta.10 or newer (1.0.0-beta.12 on Windows)
 - Create new unity projects with templates, for any modern Unity version you have installed, with the Create New button
 - View Unity installs by double clicking them in the list views in the Editor Versions section
 - Manage Unity installs

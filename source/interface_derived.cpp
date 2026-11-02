@@ -8,10 +8,13 @@
 
 #include "interface_derived.hpp"
 #include "activation.hpp"
+#include "unity_cli.hpp"
 #include <fstream>
 #include <wx/dirdlg.h>
 #include <wx/aboutdlg.h>
 #include <wx/config.h>
+#include <wx/richmsgdlg.h>
+#include <wx/weakref.h>
 
 #include <format>
 
@@ -30,6 +33,7 @@ const int TIMER_LENGTH = 5 * 1000 * 60;
 constexpr std::string_view config_name = "com.ravbug.unityhubnative.config";
 constexpr std::string_view config_sortCol = "sortColIndex";
 constexpr std::string_view config_sortAscending = "sortAscending";
+constexpr std::string_view config_hideCliPrompt = "hideUnityCliPrompt";
 
 //Declare events here
 wxBEGIN_EVENT_TABLE(MainFrameDerived, wxFrame)
@@ -55,6 +59,8 @@ EVT_BUTTON(wxID_RELOAD,MainFrameDerived::OnReloadEditors)
 EVT_BUTTON(OPEN_WITH, MainFrameDerived::OnOpenWith)
 EVT_BUTTON(ACTIV_PROPLUS, MainFrameDerived::OnActivateProPlus)
 EVT_BUTTON(ACTIV_PERSONAL, MainFrameDerived::OnActivatePersonal)
+EVT_BUTTON(INSTALL_CLI, MainFrameDerived::OnInstallCli)
+EVT_BUTTON(LOGIN_CLI, MainFrameDerived::OnLoginCli)
 
 EVT_LIST_ITEM_ACTIVATED(wxID_HARDDISK, MainFrameDerived::OnOpenProject)
 EVT_LIST_ITEM_SELECTED(wxID_HARDDISK, MainFrameDerived::OnSelectProject)
@@ -112,6 +118,35 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	this->SetLabel(std::format("Unity Hub Native {}",AppVersion));
     projSearchCtrl->Bind(wxEVT_KEY_UP, &MainFrameDerived::Filter, this);
 	projSearchCtrl->SetFocus();
+
+    // Don't let the window get smaller than its tabs need to show all of their buttons
+    {
+        // Lists scroll, so they shouldn't make the window wider for long names and paths
+        constexpr int listMinWidth = 150;
+        for (wxWindow* list : {static_cast<wxWindow*>(projectsList), static_cast<wxWindow*>(installsList), static_cast<wxWindow*>(installsPathsList)}) {
+            list->SetMinSize(wxSize(listMinWidth, list->GetMinSize().y));
+        }
+        wxSize pageMin;
+        for (size_t i = 0; i < notebook->GetPageCount(); i++) {
+            if (const auto sizer = notebook->GetPage(i)->GetSizer()) {
+                pageMin.IncTo(sizer->GetMinSize());
+            }
+        }
+        constexpr int notebookBorder = 5;    // around the notebook in the frame's sizer
+        const wxSize clientMin = notebook->CalcSizeFromPage(pageMin) + wxSize(2 * notebookBorder, 2 * notebookBorder);
+        wxSize windowMin = ClientToWindowSize(clientMin);
+        windowMin.IncTo(GetMinSize());
+        SetMinSize(windowMin);
+        wxSize size = GetSize();
+        if (!(size.x >= windowMin.x && size.y >= windowMin.y)) {
+            size.IncTo(windowMin);
+            SetSize(size);
+        }
+    }
+
+    RefreshCliState();
+    // once the window is on screen
+    CallAfter(&MainFrameDerived::OfferCliInstall);
 }
 
 void MainFrameDerived::OnSelectProject(wxListEvent&){
@@ -432,12 +467,7 @@ void MainFrameDerived::OpenProject(const long& index){
         auto editorPath = editor.executablePath();
         //check that the unity editor exists at that location
         if (filesystem::exists(editorPath)) {
-            
-            string cmd = "\"" + editorPath.string() + "\" -projectpath \"" + p.path.string() + "\"";
-            
-            //start the process
-            launch_process(cmd);
-            
+            OpenProject(p, editor);
             return;
         }
     }
@@ -474,12 +504,139 @@ const char* const PlatToStr(TargetPlatform plat) {
  @param e the editor version to use when opening the project
  */
 void MainFrameDerived::OpenProject(const project& p, const editor& e, TargetPlatform plat){
-	string cmd = "\"" + e.executablePath().string() + "\" -projectpath \"" + p.path.string() + "\"";
-    if (plat != TargetPlatform::CurrentPlatform) {
-        auto str = PlatToStr(plat);
-        cmd += std::format(" -buildTarget {}", str);
+    const std::string_view buildTarget = PlatToStr(plat);
+    auto launchDirectly = [p, e, buildTarget]{
+        string cmd = "\"" + e.executablePath().string() + "\" -projectpath \"" + p.path.string() + "\"";
+        if (!buildTarget.empty()) {
+            cmd += std::format(" -buildTarget {}", buildTarget);
+        }
+        launch_process(cmd);
+    };
+
+    // Launched directly, the Editor starts signed out and starts the official Hub to sign in.
+    // The Unity CLI serves the Editor's sign-in itself, without the Hub.
+    if (UnityCli::CanOpen(p, e)) {
+        if (const auto cli = UnityCli::Find()) {
+            cli->Open(p, e, buildTarget, launchDirectly);
+            return;
+        }
     }
-	launch_process(cmd);
+    launchDirectly();
+}
+
+/**
+ Updates the Install CLI and Login CLI buttons. Install is available while there is no
+ recent enough CLI, Login while the CLI is not signed in.
+ */
+void MainFrameDerived::RefreshCliState(){
+    const auto cli = UnityCli::Locate();
+    const bool usable = cli && cli->recentEnough;
+    installCliBtn->SetLabel(cli && !usable ? "Update CLI" : "Install CLI");
+    installCliBtn->Enable(!usable);
+    loginCliBtn->Enable(false);
+    installCliBtn->GetParent()->Layout();
+    if (!usable) {
+        return;
+    }
+    wxWeakRef<MainFrameDerived> self(this);
+    cli->CheckSignedIn([self](bool signedIn){
+        if (self) {
+            self->loginCliBtn->Enable(!signedIn);
+        }
+    });
+}
+
+/**
+ On launch, explains the Unity CLI and offers to install it, unless the user turned this off
+ */
+void MainFrameDerived::OfferCliInstall(){
+    wxConfig config(config_name.data());
+    if (config.ReadBool(config_hideCliPrompt.data(), false)) {
+        return;
+    }
+    const auto cli = UnityCli::Locate();
+    if (cli && cli->recentEnough) {
+        return;
+    }
+
+    const wxString status = cli
+        ? wxString::Format("The Unity CLI on this computer (version %s) is too old for this.", cli->version.empty() ? "unknown" : cli->version)
+        : wxString("The Unity CLI isn't installed yet.");
+    const wxString message =
+        "Unity Hub Native can open your projects signed in to your Unity account, so the Asset Store, "
+        "Package Manager and other Unity services work, without starting the official Unity Hub. "
+        "It does this through Unity's official command-line tool, the Unity CLI.\n\n" + status + "\n\n"
+        "Installing runs Unity's installer from unity.com. It puts the unity command in your user folder "
+        "and adds it to your shell's PATH. After that, you sign in to your Unity account once in your browser.\n\n"
+        "You can also do this later from the Editor Versions tab.";
+
+    wxRichMessageDialog dialog(this, message, "Open Projects Signed In", wxYES_NO | wxICON_INFORMATION);
+    dialog.SetYesNoLabels(cli ? "Update CLI" : "Install CLI", "Not Now");
+    dialog.ShowCheckBox("Don't show this again");
+    const bool install = dialog.ShowModal() == wxID_YES;
+    if (dialog.IsCheckBoxChecked()) {
+        config.Write(config_hideCliPrompt.data(), true);
+    }
+    if (install) {
+        InstallCli();
+    }
+}
+
+/**
+ Installs or updates the Unity CLI, then helps the user sign in
+ */
+void MainFrameDerived::InstallCli(){
+    wxWeakRef<MainFrameDerived> self(this);
+    UnityCli::Install(this, [self](bool installed){
+        if (!self) {
+            return;
+        }
+        self->RefreshCliState();
+        if (!installed) {
+            return;
+        }
+        const auto cli = UnityCli::Find();
+        if (!cli) {
+            wxMessageBox("The installer finished, but Unity Hub Native cannot find a recent enough Unity CLI.", "Cannot Install Unity CLI", wxOK | wxICON_ERROR, self.get());
+            return;
+        }
+        cli->CheckSignedIn([self](bool signedIn){
+            if (!self) {
+                return;
+            }
+            if (signedIn) {
+                wxMessageBox("The Unity CLI is installed and signed in. Projects now open signed in to your Unity account.", "Unity CLI Installed", wxOK | wxICON_INFORMATION, self.get());
+            }
+            else if (wxMessageBox("The Unity CLI is installed. Sign in to your Unity account now, so projects open signed in?", "Unity CLI Installed", wxYES_NO | wxICON_QUESTION, self.get()) == wxYES) {
+                self->LoginCli();
+            }
+        });
+    });
+}
+
+/**
+ Signs the Unity CLI in to the user's Unity account through the browser
+ */
+void MainFrameDerived::LoginCli(){
+    const auto cli = UnityCli::Find();
+    if (!cli) {
+        RefreshCliState();
+        return;
+    }
+    wxWeakRef<MainFrameDerived> self(this);
+    cli->SignIn(this, [self](bool){
+        if (self) {
+            self->RefreshCliState();
+        }
+    });
+}
+
+void MainFrameDerived::OnInstallCli(wxCommandEvent&){
+    InstallCli();
+}
+
+void MainFrameDerived::OnLoginCli(wxCommandEvent&){
+    LoginCli();
 }
 
 MainFrameDerived::~MainFrameDerived()

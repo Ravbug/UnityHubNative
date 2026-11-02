@@ -51,6 +51,8 @@
 #define VERSIONS_LIST 1012
 #define INSTALLVIAHUB 1013
 #define PPA_ACTIVATE 1014
+#define INSTALL_CLI 1015
+#define LOGIN_CLI 1016
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class MainFrame
@@ -73,6 +75,8 @@ class MainFrame : public wxFrame
 		wxButton* removeInstallBtn;
 		wxButton* activateProPlusBtn;
 		wxButton* activatePersonalBtn;
+		wxButton* installCliBtn;
+		wxButton* loginCliBtn;
 		wxMenuBar* menubar;
 		wxMenuItem* menuRemove;
 		wxMenuItem* menuReveal;

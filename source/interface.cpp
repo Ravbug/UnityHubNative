@@ -134,6 +134,14 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 
 	bSizer5->Add( activatePersonalBtn, 0, wxALL|wxEXPAND, 5 );
 
+	installCliBtn = new wxButton( installs_pane, INSTALL_CLI, wxT("Install CLI"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer5->Add( installCliBtn, 0, wxALL|wxEXPAND, 5 );
+
+	loginCliBtn = new wxButton( installs_pane, LOGIN_CLI, wxT("Login CLI"), wxDefaultPosition, wxDefaultSize, 0 );
+	loginCliBtn->Enable( false );
+
+	bSizer5->Add( loginCliBtn, 0, wxALL|wxEXPAND, 5 );
+
 	wxButton* reloadInstalls;
 	reloadInstalls = new wxButton( installs_pane, wxID_RELOAD, wxT("Reload"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer5->Add( reloadInstalls, 0, wxALL|wxEXPAND, 5 );
