@@ -86,14 +86,6 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
     // load prefs
     wxConfig config(config_name.data());
 
-    // set saved position and size
-    int width, height, x, y;
-    if (config.Read(config_windowWidth.data(), &width) && config.Read(config_windowHeight.data(), &height) &&
-        config.Read(config_windowX.data(), &x) && config.Read(config_windowY.data(), &y)) {
-        this->SetSize(x, y, width, height);
-    }
-    windowRect = this->GetRect();
-
     sortColumn = std::clamp<long>(config.ReadLong(config_sortCol.data(), 0), 0, 3);
     sortAscending = config.ReadBool(config_sortAscending.data(), true);
 
@@ -135,6 +127,16 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 		//set reveal label
 		menuReveal->SetItemLabel("Reveal In File Explorer\tCtrl-F");
 	#endif
+
+	// set saved position and size. This must come after dpi_scale(), which calls Fit() on Windows
+	// and would otherwise shrink the window back to its default size
+	int width, height, x, y;
+	if (config.Read(config_windowWidth.data(), &width) && config.Read(config_windowHeight.data(), &height) &&
+		config.Read(config_windowX.data(), &x) && config.Read(config_windowY.data(), &y)) {
+		this->SetSize(x, y, width, height);
+	}
+	windowRect = this->GetRect();
+
 	if (status != 0){
 		ReloadData();
 	}
