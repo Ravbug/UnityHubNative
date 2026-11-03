@@ -15,6 +15,7 @@
 #include <wx/display.h>
 
 #include <format>
+#include <limits>
 
 #include <filesystem>
 #if __APPLE__
@@ -147,6 +148,8 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 	if (config.Read(config_windowWidth.data(), &width) && config.Read(config_windowHeight.data(), &height) &&
 		config.Read(config_windowX.data(), &x) && config.Read(config_windowY.data(), &y)) {
 		this->SetSize(x, y, width, height);
+		// the saved geometry may no longer fit the displays, e.g. its monitor was disconnected or the layout changed
+		KeepOnScreen();
 	}
 	windowRect = this->GetRect();
 
@@ -200,6 +203,21 @@ void MainFrameDerived::OnMove(wxMoveEvent& event){
 }
 
 /**
+ Shrinks the rect to fit into the area if it is larger, then moves it the shortest distance that puts it fully inside
+ */
+static wxRect FitInto(wxRect rect, const wxRect& area){
+    rect.width = std::min(rect.width, area.width);
+    rect.height = std::min(rect.height, area.height);
+    rect.x = std::clamp(rect.x, area.x, area.x + area.width - rect.width);
+    rect.y = std::clamp(rect.y, area.y, area.y + area.height - rect.height);
+    return rect;
+}
+
+static long long AreaOf(const wxRect& rect){
+    return rect.IsEmpty() ? 0 : static_cast<long long>(rect.width) * rect.height;
+}
+
+/**
  Moves the window to the center of the display the user is working on (the one under the mouse pointer),
  shrinking it to fit if needed. Recovers a window that is off screen or on a display that is gone
  */
@@ -222,11 +240,53 @@ void MainFrameDerived::OnCenterOnDisplay(wxCommandEvent&){
         Maximize(false);
     }
 
-    wxRect rect = GetRect();
-    rect.width = std::min(rect.width, area.width);
-    rect.height = std::min(rect.height, area.height);
-    SetSize(rect.CenterIn(area));
+    SetSize(FitInto(GetRect(), area).CenterIn(area));
     Raise();
+}
+
+/**
+ If part of the window is outside every display, snaps it back to the nearest edge of the display it overlaps the most
+ (or the closest display, if it overlaps none), shrinking it if it does not fit there.
+ A window spanning several displays is left alone as long as all of it is visible
+ */
+void MainFrameDerived::KeepOnScreen(){
+    const unsigned displayCount = wxDisplay::GetCount();
+    if (displayCount == 0) {
+        return;
+    }
+    const wxRect rect = GetRect();
+
+    // The client areas exclude the taskbar, the Dock and the macOS menu bar, and do not overlap each other, so the
+    // window is fully visible exactly when their overlaps with it add up to its whole area. The visibility test
+    // ignores a margin around the window: on Windows 10/11 GetRect() includes the invisible resize borders, so a
+    // window snapped to a screen edge sticks out by a few pixels and must not be treated as off screen
+    // (const matters: the non-const wxRect::Intersect() overload intersects in place instead of returning a copy)
+    const wxRect deflated = wxRect(rect).Deflate(FromDIP(16));
+    const wxRect tested = deflated.IsEmpty() ? rect : deflated;
+
+    long long visibleArea = 0;
+    long long bestOverlap = 0;
+    long long bestDistance = std::numeric_limits<long long>::max();
+    wxRect target;
+    for (unsigned i = 0; i < displayCount; i++){
+        const wxRect area = wxDisplay(i).GetClientArea();
+        visibleArea += AreaOf(tested.Intersect(area));
+
+        // prefer the display holding most of the window; failing that, the one with the closest edge
+        const long long overlap = AreaOf(rect.Intersect(area));
+        const long long dx = std::max({0, area.x - rect.GetRight(), rect.x - area.GetRight()});
+        const long long dy = std::max({0, area.y - rect.GetBottom(), rect.y - area.GetBottom()});
+        const long long distance = dx * dx + dy * dy;
+        if (overlap > bestOverlap || (bestOverlap == 0 && overlap == 0 && distance < bestDistance)) {
+            bestOverlap = overlap;
+            bestDistance = distance;
+            target = area;
+        }
+    }
+
+    if (visibleArea < AreaOf(tested)) {
+        SetSize(FitInto(rect, target));
+    }
 }
 
 /**
