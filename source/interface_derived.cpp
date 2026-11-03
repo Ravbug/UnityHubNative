@@ -12,6 +12,7 @@
 #include <wx/dirdlg.h>
 #include <wx/aboutdlg.h>
 #include <wx/config.h>
+#include <wx/display.h>
 
 #include <format>
 
@@ -36,6 +37,9 @@ constexpr std::string_view config_windowX = "windowX";
 constexpr std::string_view config_windowY = "windowY";
 constexpr std::string_view config_columnWidth = "projectColumnWidth";
 
+// menu command ids that have no fitting stock id
+constexpr int ID_CENTER_ON_DISPLAY = wxID_HIGHEST + 1;
+
 //Declare events here
 wxBEGIN_EVENT_TABLE(MainFrameDerived, wxFrame)
 EVT_MENU(wxID_ABOUT, MainFrameDerived::OnAbout)
@@ -48,6 +52,7 @@ EVT_MENU(wxID_REFRESH, MainFrameDerived::OnReloadData)
 EVT_MENU(wxID_UNINDENT, MainFrameDerived::OnSource)
 EVT_MENU(wxID_TOP, MainFrameDerived::OnUpdate)
 EVT_MENU(wxID_EXIT, MainFrameDerived::OnQuit)
+EVT_MENU(ID_CENTER_ON_DISPLAY, MainFrameDerived::OnCenterOnDisplay)
 EVT_CLOSE(MainFrameDerived::OnClose)
 EVT_SIZE(MainFrameDerived::OnSize)
 EVT_MOVE(MainFrameDerived::OnMove)
@@ -128,6 +133,14 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 		menuReveal->SetItemLabel("Reveal In File Explorer\tCtrl-F");
 	#endif
 
+	// recovery command for a window that ended up off screen (e.g. its saved display was disconnected).
+	// Added here rather than in the generated base class so regenerating interface.cpp does not drop it.
+	// The shortcut matters on Windows and Linux: the menu bar is part of the window there, so when the
+	// window is off screen the menu is unreachable, but the shortcut still works once the window is focused
+	if (const int windowMenuIndex = menubar->FindMenu("Window"); windowMenuIndex != wxNOT_FOUND) {
+		menubar->GetMenu(windowMenuIndex)->Insert(1, ID_CENTER_ON_DISPLAY, "Center Window on Current Display\tCtrl-Shift-M");
+	}
+
 	// set saved position and size. This must come after dpi_scale(), which calls Fit() on Windows
 	// and would otherwise shrink the window back to its default size
 	int width, height, x, y;
@@ -184,6 +197,36 @@ void MainFrameDerived::OnSize(wxSizeEvent& event){
 void MainFrameDerived::OnMove(wxMoveEvent& event){
     RememberWindowRect();
     event.Skip();
+}
+
+/**
+ Moves the window to the center of the display the user is working on (the one under the mouse pointer),
+ shrinking it to fit if needed. Recovers a window that is off screen or on a display that is gone
+ */
+void MainFrameDerived::OnCenterOnDisplay(wxCommandEvent&){
+    int displayIndex = wxDisplay::GetFromPoint(wxGetMousePosition());
+    if (displayIndex == wxNOT_FOUND) {
+        displayIndex = 0;   // the primary display
+    }
+    // the client area excludes the taskbar, the Dock and the macOS menu bar
+    const wxRect area = wxDisplay(static_cast<unsigned>(displayIndex)).GetClientArea();
+
+    // leave the states whose geometry is managed by the OS, so the window can be moved
+    if (IsFullScreen()) {
+        ShowFullScreen(false);
+    }
+    if (IsIconized()) {
+        Iconize(false);
+    }
+    if (IsMaximized()) {
+        Maximize(false);
+    }
+
+    wxRect rect = GetRect();
+    rect.width = std::min(rect.width, area.width);
+    rect.height = std::min(rect.height, area.height);
+    SetSize(rect.CenterIn(area));
+    Raise();
 }
 
 /**

@@ -65,6 +65,7 @@ private:
 	void OnSize(wxSizeEvent&);
 	void OnMove(wxMoveEvent&);
 	void RememberWindowRect();
+	void OnCenterOnDisplay(wxCommandEvent&);
     
     wxWindow* const projectActionItems[3]{
         revealProjBtn,
