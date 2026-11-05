@@ -394,6 +394,54 @@ namespace {
 			done(-1, false, "Could not start " + program);
 		}
 	}
+
+	// Whether project p should be opened with editor e through the CLI. Older Editors
+	// sign in on their own, and the CLI refuses some version changes.
+	bool CliCanOpen(const project& p, const editor& e) {
+		const auto ev = parseVersion(e.name);
+		// Editors before 2019.1 sign in on their own and never look for a Hub. This also
+		// rules out editors whose version could not be read.
+		if (std::tuple(ev.major, ev.minor) < std::tuple(2019, 1)) {
+			return false;
+		}
+		// `unity open` refuses to move an older project onto 6.7 or later (PROJECT_UPGRADE_REQUIRED)
+		if (std::tuple(ev.major, ev.minor) >= std::tuple(6000, 7)) {
+			const auto pv = parseVersion(p.version);
+			if (std::tuple(pv.major, pv.minor, pv.patch, pv.build) < std::tuple(ev.major, ev.minor, ev.patch, ev.build)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	// Opens a project with `unity open`. If the CLI fails, shows why and offers to launch the Editor directly.
+	void OpenThroughCli(const UnityCli& cli, const project& p, const editor& e, std::string_view buildTarget) {
+#if __APPLE__
+		const auto editorPath = e.path;    // the Unity.app bundle
+#else
+		const auto editorPath = e.executablePath();
+#endif
+		std::vector<wxString> args{ToWx(cli.executable), "open", ToWx(p.path), "--editor-path", ToWx(editorPath)};
+		if (!buildTarget.empty()) {
+			args.insert(args.end(), {"--build-target", wxString::FromUTF8(buildTarget.data(), buildTarget.size())});
+		}
+		// never wait on a prompt nobody can see
+		args.insert(args.end(), {"--non-interactive", "--no-banner", "--no-color"});
+
+		RunCommand(args, [p, e, buildTarget = std::string(buildTarget)](int status, bool, const wxString& output) {
+			if (status == 0) {
+				return;
+			}
+			auto message = wxString::Format("Unity CLI could not open \"%s\" (exit code %d).", wxString::FromUTF8(p.name), status);
+			if (!output.empty()) {
+				message += "\n\n" + output;
+			}
+			message += "\n\nOpen it directly with the Editor instead? Unity may then start Unity Hub in the background to sign in.";
+			if (wxMessageBox(message, "Cannot Open Project", wxYES_NO | wxICON_WARNING) == wxYES) {
+				launch_editor(p, e, buildTarget);
+			}
+		});
+	}
 }
 
 UnityCliStatus UnityCli::Probe() {
@@ -422,23 +470,6 @@ UnityCliStatus UnityCli::Probe() {
 		return {UnityCliStatus::State::Ready, version->second, UnityCli{candidate}};
 	}
 	return {UnityCliStatus::State::Missing};
-}
-
-bool UnityCli::CanOpen(const project& p, const editor& e) {
-	const auto ev = parseVersion(e.name);
-	// Editors before 2019.1 sign in on their own and never look for a Hub. This also
-	// rules out editors whose version could not be read.
-	if (std::tuple(ev.major, ev.minor) < std::tuple(2019, 1)) {
-		return false;
-	}
-	// `unity open` refuses to move an older project onto 6.7 or later (PROJECT_UPGRADE_REQUIRED)
-	if (std::tuple(ev.major, ev.minor) >= std::tuple(6000, 7)) {
-		const auto pv = parseVersion(p.version);
-		if (std::tuple(pv.major, pv.minor, pv.patch, pv.build) < std::tuple(ev.major, ev.minor, ev.patch, ev.build)) {
-			return false;
-		}
-	}
-	return true;
 }
 
 void UnityCli::Install(wxWindow* parent, std::function<void(bool)> done) {
@@ -495,34 +526,6 @@ void UnityCli::Install(wxWindow* parent, std::function<void(bool)> done) {
 	}, Progress{parent, "Installing Unity CLI", message});
 }
 
-void UnityCli::Open(const project& p, const editor& e, std::string_view buildTarget, std::function<void()> launchDirectly) const {
-#if __APPLE__
-	const auto editorPath = e.path;    // the Unity.app bundle
-#else
-	const auto editorPath = e.executablePath();
-#endif
-	std::vector<wxString> args{ToWx(executable), "open", ToWx(p.path), "--editor-path", ToWx(editorPath)};
-	if (!buildTarget.empty()) {
-		args.insert(args.end(), {"--build-target", wxString::FromUTF8(buildTarget.data(), buildTarget.size())});
-	}
-	// never wait on a prompt nobody can see
-	args.insert(args.end(), {"--non-interactive", "--no-banner", "--no-color"});
-
-	RunCommand(args, [projectName = wxString::FromUTF8(p.name), launchDirectly](int status, bool, const wxString& output) {
-		if (status == 0) {
-			return;
-		}
-		auto message = wxString::Format("Unity CLI could not open \"%s\" (exit code %d).", projectName, status);
-		if (!output.empty()) {
-			message += "\n\n" + output;
-		}
-		message += "\n\nOpen it directly with the Editor instead? Unity may then start Unity Hub in the background to sign in.";
-		if (wxMessageBox(message, "Cannot Open Project", wxYES_NO | wxICON_WARNING) == wxYES) {
-			launchDirectly();
-		}
-	});
-}
-
 void UnityCli::CheckSignedIn(std::function<void(bool)> done) const {
 	RunCommand({ToWx(executable), "auth", "status", "--json", "--non-interactive", "--no-banner", "--no-color"},
 		[done](int status, bool, const wxString& output) {
@@ -539,4 +542,13 @@ void UnityCli::SignIn(wxWindow* parent, std::function<void(bool)> done) const {
 			done(status == 0);
 		},
 		Progress{parent, "Sign In to Unity", "Your browser opens to sign in to your Unity account.\nFinish signing in there; this window closes when you're done."});
+}
+
+void OpenProjectInEditor(const UnityCliStatus& cli, const project& p, const editor& e, std::string_view buildTarget) {
+	if (cli.cli && CliCanOpen(p, e)) {
+		OpenThroughCli(*cli.cli, p, e, buildTarget);
+	}
+	else {
+		launch_editor(p, e, buildTarget);
+	}
 }

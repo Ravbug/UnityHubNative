@@ -154,3 +154,10 @@ struct ParsedVersion {
 };
 
 ParsedVersion parseVersion(const std::string_view version);
+
+/**
+ Launches editor e to open project p, directly rather than through the Unity CLI. The Editor
+ then starts signed out, and may start the official Unity Hub to sign in.
+ @param buildTarget the value to pass to -buildTarget, or empty for none
+ */
+void launch_editor(const project& p, const editor& e, std::string_view buildTarget = {});

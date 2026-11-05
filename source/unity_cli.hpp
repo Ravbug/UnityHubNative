@@ -27,26 +27,10 @@ struct UnityCli {
 	static UnityCliStatus Probe();
 
 	/**
-	 Whether project p should be opened with editor e through the CLI. Older Editors
-	 sign in on their own, and the CLI refuses some version changes.
-	 */
-	static bool CanOpen(const project& p, const editor& e);
-
-	/**
 	 Installs or updates the CLI with Unity's official installer, showing a progress window
 	 @param done called with whether the installer succeeded
 	 */
 	static void Install(wxWindow* parent, std::function<void(bool)> done);
-
-	/**
-	 Opens a project with `unity open` without blocking. If the CLI fails, shows its
-	 message and offers to launch the Editor directly instead.
-	 @param p the project to open
-	 @param e the editor to open it with
-	 @param buildTarget the value to pass to -buildTarget, or empty for none
-	 @param launchDirectly opens the project without the CLI
-	 */
-	void Open(const project& p, const editor& e, std::string_view buildTarget, std::function<void()> launchDirectly) const;
 
 	/**
 	 Checks whether the CLI is signed in to a Unity account, without blocking
@@ -74,3 +58,13 @@ struct UnityCliStatus {
 	// the CLI to use, set only when it is Ready
 	std::optional<UnityCli> cli;
 };
+
+/**
+ Opens project p with editor e, without blocking. Launched directly, the Editor starts signed out
+ and starts the official Hub to sign in, so this opens it through the Unity CLI when there is a
+ Ready one that can open p with e. If the CLI fails, it shows why and offers to launch the
+ Editor directly instead.
+ @param cli the Unity CLI on this computer
+ @param buildTarget the value to pass to -buildTarget, or empty for none
+ */
+void OpenProjectInEditor(const UnityCliStatus& cli, const project& p, const editor& e, std::string_view buildTarget = {});

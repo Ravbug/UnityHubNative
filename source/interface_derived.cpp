@@ -506,22 +506,7 @@ const char* const PlatToStr(TargetPlatform plat) {
  @param e the editor version to use when opening the project
  */
 void MainFrameDerived::OpenProject(const project& p, const editor& e, TargetPlatform plat){
-    const std::string_view buildTarget = PlatToStr(plat);
-    auto launchDirectly = [p, e, buildTarget]{
-        string cmd = "\"" + e.executablePath().string() + "\" -projectpath \"" + p.path.string() + "\"";
-        if (!buildTarget.empty()) {
-            cmd += std::format(" -buildTarget {}", buildTarget);
-        }
-        launch_process(cmd);
-    };
-
-    // Launched directly, the Editor starts signed out and starts the official Hub to sign in.
-    // The Unity CLI serves the Editor's sign-in itself, without the Hub.
-    if (cliStatus.cli && UnityCli::CanOpen(p, e)) {
-        cliStatus.cli->Open(p, e, buildTarget, launchDirectly);
-        return;
-    }
-    launchDirectly();
+    OpenProjectInEditor(cliStatus, p, e, PlatToStr(plat));
 }
 
 /**

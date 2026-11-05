@@ -50,6 +50,14 @@ void launch_process(const std::string& command, int flags) {
 #endif
 }
 
+void launch_editor(const project& p, const editor& e, std::string_view buildTarget) {
+	std::string cmd = "\"" + e.executablePath().string() + "\" -projectpath \"" + p.path.string() + "\"";
+	if (!buildTarget.empty()) {
+		cmd += std::format(" -buildTarget {}", buildTarget);
+	}
+	launch_process(cmd);
+}
+
 void reveal_in_explorer(const std::filesystem::path& path) {
 #if defined __APPLE__
     RevealFile(path);
