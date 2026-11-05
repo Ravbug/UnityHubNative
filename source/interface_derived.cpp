@@ -404,12 +404,11 @@ void MainFrameDerived::OnRemoveInstallPath(wxCommandEvent& event){
 void MainFrameDerived::OnCreateProject(wxCommandEvent& event){
 	//create a dialog and show it
 	if (editors.size() > 0){
-		DialogCallback d = [&](string str, project p){
+		DialogCallback d = [&](const project& p, const editor& e, const std::filesystem::path& templatePath){
 			//add the project
 			this->AddProject(p,"",true, true);
 			
-			//launch the process
-			launch_process(str);
+			CreateProjectInEditor(this, cliStatus, p, e, templatePath);
 		};
 		CreateProjectDialogD* dialog = new CreateProjectDialogD(this,editors,d);
 		dialog->show();

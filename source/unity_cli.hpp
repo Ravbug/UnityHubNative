@@ -68,3 +68,13 @@ struct UnityCliStatus {
  @param buildTarget the value to pass to -buildTarget, or empty for none
  */
 void OpenProjectInEditor(const UnityCliStatus& cli, const project& p, const editor& e, std::string_view buildTarget = {});
+
+/**
+ Creates project p with editor e from a template, then opens it, without blocking. Through a
+ Ready Unity CLI that can open p with e, the Editor creates the project in batch mode, showing a
+ progress window, and the project then opens through the CLI, signed in. Otherwise the Editor
+ creates and opens it directly.
+ @param cli the Unity CLI on this computer
+ @param templatePath the template package to create the project from
+ */
+void CreateProjectInEditor(wxWindow* parent, const UnityCliStatus& cli, const project& p, const editor& e, const std::filesystem::path& templatePath);

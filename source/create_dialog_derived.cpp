@@ -68,11 +68,7 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 	if (message == ""){
         
         
-		//assemble the command that will create the project described by the dialog
-        
 		editor& e = editors[GetSelectedEditorIndex()];
-        auto executablePath = e.executablePath();
-        auto executableTemplatesPath = e.templatePath();
 		string projName = projNameTxt->GetValue().ToStdString();
 		string projPath = projLocTxt->GetValue().ToStdString();
         
@@ -95,35 +91,10 @@ void CreateProjectDialogD::OnCreate(wxCommandEvent& event){
 		if (itemIndex > -1){
 			templateName = templateCtrl->GetItemText(itemIndex);
 		}
+		auto templatePath = e.templatePath() / std::format("{}.{}", templatePrefix, templateName);
 		
-		//create the command string
-		#if defined __APPLE__
-        string command = std::format("\"{}\" -createProject \"{}\" -cloneFromTemplate \"{}{}.{}\"",
-                                     executablePath.string(),
-                                     outPath.string(),
-                                     executableTemplatesPath.string(),
-                                     templatePrefix,
-                                     templateName
-                                     );
-		#elif defined _WIN32
-			auto fullProj = filesystem::path(projPath) / projName;
-			auto fullTemplate = executableTemplatesPath / std::format("{}.{}",templatePrefix,templateName);
-			string command = std::format("\"{}\" -createproject \"{}\" -cloneFromTemplate \"{}\"",
-				executablePath.string(),
-				fullProj.string(),
-				fullTemplate.string());
-		#elif defined __linux__
-			string command = std::format("\"{}\"  -createproject \"{}\" -cloneFromTemplate \"{}{}.{}\"",
-				executablePath.string(),
-				(filesystem::path(projPath) / projName).string(),
-				executableTemplatesPath.string(),
-				templatePrefix,
-				templateName
-			);
-		#endif
-		//TODO: return this command to what summoned this dialog
-		project p = {projName,e.name,0,filesystem::path(projPath) / filesystem::path(projName)};
-		this->callback(command,p);
+		project p = {projName,e.name,0,outPath};
+		this->callback(p, e, templatePath);
 		
 		//close and dispose self
 		this->EndModal(0);

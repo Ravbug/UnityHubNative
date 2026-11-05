@@ -58,6 +58,10 @@ void launch_editor(const project& p, const editor& e, std::string_view buildTarg
 	launch_process(cmd);
 }
 
+void launch_editor_create(const project& p, const editor& e, const std::filesystem::path& templatePath) {
+	launch_process(std::format("\"{}\" -createProject \"{}\" -cloneFromTemplate \"{}\"", e.executablePath().string(), p.path.string(), templatePath.string()));
+}
+
 void reveal_in_explorer(const std::filesystem::path& path) {
 #if defined __APPLE__
     RevealFile(path);

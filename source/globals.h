@@ -161,3 +161,10 @@ ParsedVersion parseVersion(const std::string_view version);
  @param buildTarget the value to pass to -buildTarget, or empty for none
  */
 void launch_editor(const project& p, const editor& e, std::string_view buildTarget = {});
+
+/**
+ Launches editor e to create project p from a template and open it, directly rather than
+ through the Unity CLI. The Editor then starts signed out, and may start the official Unity Hub to sign in.
+ @param templatePath the template package to create the project from
+ */
+void launch_editor_create(const project& p, const editor& e, const std::filesystem::path& templatePath);

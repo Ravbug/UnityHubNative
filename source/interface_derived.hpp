@@ -200,7 +200,8 @@ private:
  CreateProjectDialog derived class
  Defines the functionality for the project creation dialog
  */
-typedef std::function<void(const std::string&,const project&)> DialogCallback;
+// called with the project to create, the editor to create it with, and the template to create it from
+typedef std::function<void(const project&, const editor&, const std::filesystem::path&)> DialogCallback;
 class CreateProjectDialogD : public CreateProjectDialog{
 public:
 	CreateProjectDialogD(wxWindow* parent, const std::vector<editor>& versions, const DialogCallback& callback);

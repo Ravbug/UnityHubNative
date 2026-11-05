@@ -552,3 +552,33 @@ void OpenProjectInEditor(const UnityCliStatus& cli, const project& p, const edit
 		launch_editor(p, e, buildTarget);
 	}
 }
+
+void CreateProjectInEditor(wxWindow* parent, const UnityCliStatus& cli, const project& p, const editor& e, const std::filesystem::path& templatePath) {
+	if (!cli.cli || !CliCanOpen(p, e)) {
+		launch_editor_create(p, e, templatePath);
+		return;
+	}
+	// `unity open` needs an existing project, and an Editor that creates one without the
+	// CLI starts signed out. So create it in batch mode, which needs no sign-in, then open it.
+	// The Editor writes its log to its usual Editor.log, keeping the output short.
+	std::vector<wxString> args{ToWx(e.executablePath()), "-batchmode", "-quit", "-createProject", ToWx(p.path), "-cloneFromTemplate", ToWx(templatePath)};
+	const auto message = wxString::Format(wxString::FromUTF8(
+		"Unity is creating \"%s\". This can take a few minutes; it opens when it's ready."), wxString::FromUTF8(p.name));
+	RunCommand(args, [cliTool = *cli.cli, p, e, templatePath](int status, bool cancelled, const wxString& output) {
+		if (cancelled) {
+			return;
+		}
+		if (status == 0) {
+			OpenThroughCli(cliTool, p, e, {});
+			return;
+		}
+		auto summary = wxString::Format("Unity could not create \"%s\" (exit code %d). Its Editor.log has the details.", wxString::FromUTF8(p.name), status);
+		if (!output.empty()) {
+			summary += "\n\n" + output;
+		}
+		summary += "\n\nCreate it directly with the Editor instead? Unity may then start Unity Hub in the background to sign in.";
+		if (wxMessageBox(summary, "Cannot Create Project", wxYES_NO | wxICON_WARNING) == wxYES) {
+			launch_editor_create(p, e, templatePath);
+		}
+	}, Progress{parent, "Creating Project", message});
+}
