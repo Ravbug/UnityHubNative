@@ -13,6 +13,8 @@
 #include "wx/unix/pipe.h"
 #include "wx/evtloopsrc.h"
 
+#include <atomic>
+
 // ----------------------------------------------------------------------------
 // wxWakeUpPipe: allows to wake up the event loop by writing to it
 // ----------------------------------------------------------------------------
@@ -51,11 +53,17 @@ public:
 private:
     wxPipe m_pipe;
 
-    // This flag is set to true after writing to the pipe and reset to false
+    // This flag is set to false before writing to the pipe and reset to true
     // after reading from it in the main thread. Having it allows us to avoid
     // overflowing the pipe with too many writes if the main thread can't keep
     // up with reading from it.
-    bool m_pipeIsEmpty;
+    //
+    // It is atomic because WakeUpNoLock() is also called from signal handlers,
+    // which can run on any thread, concurrently with OnReadWaiting(). It must
+    // be cleared before writing: clearing it after the write let the main
+    // thread drain the pipe in between, leaving the flag wrongly false for good,
+    // so that no later wake up (e.g. SIGCHLD) was ever written to the pipe.
+    std::atomic<bool> m_pipeIsEmpty;
 };
 
 // ----------------------------------------------------------------------------

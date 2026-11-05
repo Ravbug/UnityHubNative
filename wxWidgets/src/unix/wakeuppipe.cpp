@@ -67,8 +67,9 @@ wxWakeUpPipe::wxWakeUpPipe()
 
 void wxWakeUpPipe::WakeUpNoLock()
 {
-    // No need to do anything if the pipe already contains something.
-    if ( !m_pipeIsEmpty )
+    // No need to do anything if the pipe already contains something. Claim the
+    // right to write before writing, see the comment on m_pipeIsEmpty.
+    if ( !m_pipeIsEmpty.exchange(false) )
       return;
 
     if ( write(m_pipe[wxPipe::Write], "s", 1) != 1 )
@@ -76,11 +77,9 @@ void wxWakeUpPipe::WakeUpNoLock()
         // don't use wxLog here, we can be in another thread and this could
         // result in dead locks
         perror("write(wake up pipe)");
-    }
-    else
-    {
-        // We just wrote to it, so it's not empty any more.
-        m_pipeIsEmpty = false;
+
+        // Nothing was written, so allow trying again.
+        m_pipeIsEmpty = true;
     }
 }
 
