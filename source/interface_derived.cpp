@@ -578,6 +578,8 @@ void MainFrameDerived::OfferCliInstall(){
     wxRichMessageDialog dialog(this, message, "Open Projects Signed In", wxYES_NO | wxICON_INFORMATION);
     dialog.SetYesNoLabels(cli ? "Update CLI" : "Install CLI", "Not Now");
     dialog.ShowCheckBox("Don't show this again");
+    // Escape (and closing the window) answers Not Now; with no Cancel button it would do nothing
+    dialog.SetEscapeId(wxID_NO);
     const bool install = dialog.ShowModal() == wxID_YES;
     if (dialog.IsCheckBoxChecked()) {
         config.Write(config_hideCliPrompt.data(), true);
