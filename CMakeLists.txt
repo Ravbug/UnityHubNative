@@ -22,7 +22,8 @@ endif()
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/wxWidgets/build/cmake/modules" CACHE INTERNAL "")
 message("module path = ${CMAKE_MODULE_PATH}")
 
-file(GLOB source "source/*.cpp" "source/*.hpp" "source/*.h")
+# CONFIGURE_DEPENDS: existing build directories pick up added or removed source files
+file(GLOB source CONFIGURE_DEPENDS "source/*.cpp" "source/*.hpp" "source/*.h")
 if (APPLE)
 	enable_language(C CXX OBJCXX)
 	set(OBJCPP "source/AppleUtilities.h" "source/AppleUtilities.mm")
