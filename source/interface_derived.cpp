@@ -119,34 +119,36 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
     projSearchCtrl->Bind(wxEVT_KEY_UP, &MainFrameDerived::Filter, this);
 	projSearchCtrl->SetFocus();
 
-    // Don't let the window get smaller than its tabs need to show all of their buttons
-    {
-        // Lists scroll, so they shouldn't make the window wider for long names and paths
-        constexpr int listMinWidth = 150;
-        for (wxWindow* list : {static_cast<wxWindow*>(projectsList), static_cast<wxWindow*>(installsList), static_cast<wxWindow*>(installsPathsList)}) {
-            list->SetMinSize(wxSize(listMinWidth, list->GetMinSize().y));
-        }
-        wxSize pageMin;
-        for (size_t i = 0; i < notebook->GetPageCount(); i++) {
-            if (const auto sizer = notebook->GetPage(i)->GetSizer()) {
-                pageMin.IncTo(sizer->GetMinSize());
-            }
-        }
-        constexpr int notebookBorder = 5;    // around the notebook in the frame's sizer
-        const wxSize clientMin = notebook->CalcSizeFromPage(pageMin) + wxSize(2 * notebookBorder, 2 * notebookBorder);
-        wxSize windowMin = ClientToWindowSize(clientMin);
-        windowMin.IncTo(GetMinSize());
-        SetMinSize(windowMin);
-        wxSize size = GetSize();
-        if (!(size.x >= windowMin.x && size.y >= windowMin.y)) {
-            size.IncTo(windowMin);
-            SetSize(size);
-        }
-    }
+    FitMinSizeToTabs();
 
     RefreshCliState();
     // once the window is on screen
     CallAfter(&MainFrameDerived::OfferCliInstall);
+}
+
+/**
+ Keeps the window from getting smaller than its tabs need to show all of their buttons
+ */
+void MainFrameDerived::FitMinSizeToTabs(){
+    // Lists scroll, so they shouldn't make the window wider for long names and paths
+    constexpr int listMinWidth = 150;
+    for (wxWindow* list : std::initializer_list<wxWindow*>{projectsList, installsList, installsPathsList}) {
+        list->SetMinSize(wxSize(listMinWidth, list->GetMinSize().y));
+    }
+    wxSize pageMin;
+    for (size_t i = 0; i < notebook->GetPageCount(); i++) {
+        if (const auto sizer = notebook->GetPage(i)->GetSizer()) {
+            pageMin.IncTo(sizer->GetMinSize());
+        }
+    }
+    constexpr int notebookBorder = 5;    // around the notebook in the frame's sizer
+    const wxSize clientMin = notebook->CalcSizeFromPage(pageMin) + wxSize(2 * notebookBorder, 2 * notebookBorder);
+    wxSize windowMin = ClientToWindowSize(clientMin);
+    windowMin.IncTo(GetMinSize());
+    SetMinSize(windowMin);
+    wxSize size = GetSize();
+    size.IncTo(windowMin);
+    SetSize(size);
 }
 
 void MainFrameDerived::OnSelectProject(wxListEvent&){

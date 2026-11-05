@@ -61,6 +61,7 @@ private:
     void OnSelectEditorPath(wxCommandEvent&);
 
 	void OnQuit(wxCommandEvent&);
+    void FitMinSizeToTabs();
 
     // Unity CLI: opens projects signed in without the official Hub
     void OnInstallCli(wxCommandEvent&);
