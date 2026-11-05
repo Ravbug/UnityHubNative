@@ -16,23 +16,15 @@
 
 class wxWindow;
 
+struct UnityCliStatus;
+
 struct UnityCli {
 	std::filesystem::path executable;
-	std::string version;
-	// whether this version can sign the Editor in without the Hub
-	bool recentEnough = false;
 
 	/**
-	 Finds the installed Unity CLI, whatever its version
-	 @return the CLI, or nullopt if it is not installed
+	 Finds the installed Unity CLI and checks its version. This runs the CLI, briefly blocking.
 	 */
-	static std::optional<UnityCli> Locate();
-
-	/**
-	 Finds an installed Unity CLI recent enough to sign the Editor in without the Hub
-	 @return the CLI, or nullopt if it is not installed or too old
-	 */
-	static std::optional<UnityCli> Find();
+	static UnityCliStatus Probe();
 
 	/**
 	 Whether project p should be opened with editor e through the CLI. Older Editors
@@ -67,4 +59,18 @@ struct UnityCli {
 	 @param done called with whether the user signed in
 	 */
 	void SignIn(wxWindow* parent, std::function<void(bool)> done) const;
+};
+
+// What Unity CLI there is on this computer
+struct UnityCliStatus {
+	enum class State {
+		Missing,     // not installed
+		Outdated,    // installed, but too old to sign the Editor in without the Hub
+		Ready,       // installed and recent enough
+	};
+	State state = State::Missing;
+	// the installed CLI's version, empty if it is missing or its version could not be read
+	std::string version;
+	// the CLI to use, set only when it is Ready
+	std::optional<UnityCli> cli;
 };

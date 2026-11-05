@@ -224,7 +224,8 @@ namespace {
 		return std::nullopt;
 	}
 
-	std::optional<std::string> QueryVersion(const std::filesystem::path& cli) {
+	// Runs the CLI to read its version
+	std::optional<std::pair<CliVersion, std::string>> QueryVersion(const std::filesystem::path& cli) {
 		wxArrayString output, errors;
 		const auto command = "\"" + ToWx(cli) + "\" --version";
 		if (wxExecute(command, output, errors, wxEXEC_NODISABLE | wxEXEC_HIDE_CONSOLE) != 0) {
@@ -232,8 +233,8 @@ namespace {
 		}
 		for (auto& line : output) {
 			const auto text = line.Trim().Trim(false).utf8_string();
-			if (ParseCliVersion(text)) {
-				return text;
+			if (const auto version = ParseCliVersion(text)) {
+				return std::pair(*version, text);
 			}
 		}
 		return std::nullopt;
@@ -395,7 +396,7 @@ namespace {
 	}
 }
 
-std::optional<UnityCli> UnityCli::Locate() {
+UnityCliStatus UnityCli::Probe() {
 	std::vector<std::filesystem::path> candidates;
 	// the Hub and the CLI's installer record where the CLI is
 	if (std::ifstream file{HubDataDirectory() / "cli-install.json"}) {
@@ -411,22 +412,16 @@ std::optional<UnityCli> UnityCli::Locate() {
 		if (!std::filesystem::is_regular_file(candidate, ec)) {
 			continue;
 		}
-		UnityCli cli{candidate};
-		if (const auto version = QueryVersion(candidate)) {
-			cli.version = *version;
-			cli.recentEnough = IsAtLeast(*ParseCliVersion(*version), minimumVersion);
+		const auto version = QueryVersion(candidate);
+		if (!version) {
+			return {UnityCliStatus::State::Outdated};
 		}
-		return cli;
+		if (!IsAtLeast(version->first, minimumVersion)) {
+			return {UnityCliStatus::State::Outdated, version->second};
+		}
+		return {UnityCliStatus::State::Ready, version->second, UnityCli{candidate}};
 	}
-	return std::nullopt;
-}
-
-std::optional<UnityCli> UnityCli::Find() {
-	auto cli = Locate();
-	if (cli && cli->recentEnough) {
-		return cli;
-	}
-	return std::nullopt;
+	return {UnityCliStatus::State::Missing};
 }
 
 bool UnityCli::CanOpen(const project& p, const editor& e) {
@@ -448,7 +443,7 @@ bool UnityCli::CanOpen(const project& p, const editor& e) {
 
 void UnityCli::Install(wxWindow* parent, std::function<void(bool)> done) {
 	// Unity's official installer, as documented for the CLI. It also records where it
-	// put the CLI in cli-install.json, which Locate() reads.
+	// put the CLI in cli-install.json, which Probe() reads.
 	//
 	// The installer defaults to the stable channel, but Unity has published only beta
 	// versions of the CLI so far, so the stable manifest is missing and that install fails.

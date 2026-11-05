@@ -10,6 +10,7 @@
 
 #include "globals.h"
 #include "interface.h"
+#include "unity_cli.hpp"
 #include <functional>
 #include <wx/webview.h>
 #include <wx/timer.h>
@@ -70,6 +71,9 @@ private:
     void LoginCli();
     void OfferCliInstall();
     void RefreshCliState();
+    const char* InstallCliLabel() const;
+    // the Unity CLI found by the last RefreshCliState()
+    UnityCliStatus cliStatus;
     
     wxWindow* const projectActionItems[3]{
         revealProjBtn,

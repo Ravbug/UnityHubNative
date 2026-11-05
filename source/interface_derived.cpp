@@ -517,31 +517,35 @@ void MainFrameDerived::OpenProject(const project& p, const editor& e, TargetPlat
 
     // Launched directly, the Editor starts signed out and starts the official Hub to sign in.
     // The Unity CLI serves the Editor's sign-in itself, without the Hub.
-    if (UnityCli::CanOpen(p, e)) {
-        if (const auto cli = UnityCli::Find()) {
-            cli->Open(p, e, buildTarget, launchDirectly);
-            return;
-        }
+    if (cliStatus.cli && UnityCli::CanOpen(p, e)) {
+        cliStatus.cli->Open(p, e, buildTarget, launchDirectly);
+        return;
     }
     launchDirectly();
 }
 
 /**
- Updates the Install CLI and Login CLI buttons. Install is available while there is no
- recent enough CLI, Login while the CLI is not signed in.
+ The label for installing the CLI, or updating it if it is too old
+ */
+const char* MainFrameDerived::InstallCliLabel() const{
+    return cliStatus.state == UnityCliStatus::State::Outdated ? "Update CLI" : "Install CLI";
+}
+
+/**
+ Looks for the Unity CLI again, and updates the Install CLI and Login CLI buttons. Install
+ is available while there is no recent enough CLI, Login while the CLI is not signed in.
  */
 void MainFrameDerived::RefreshCliState(){
-    const auto cli = UnityCli::Locate();
-    const bool usable = cli && cli->recentEnough;
-    installCliBtn->SetLabel(cli && !usable ? "Update CLI" : "Install CLI");
-    installCliBtn->Enable(!usable);
+    cliStatus = UnityCli::Probe();
+    installCliBtn->SetLabel(InstallCliLabel());
+    installCliBtn->Enable(!cliStatus.cli);
     loginCliBtn->Enable(false);
     installCliBtn->GetParent()->Layout();
-    if (!usable) {
+    if (!cliStatus.cli) {
         return;
     }
     wxWeakRef<MainFrameDerived> self(this);
-    cli->CheckSignedIn([self](bool signedIn){
+    cliStatus.cli->CheckSignedIn([self](bool signedIn){
         if (self) {
             self->loginCliBtn->Enable(!signedIn);
         }
@@ -556,13 +560,12 @@ void MainFrameDerived::OfferCliInstall(){
     if (config.ReadBool(config_hideCliPrompt.data(), false)) {
         return;
     }
-    const auto cli = UnityCli::Locate();
-    if (cli && cli->recentEnough) {
+    if (cliStatus.cli) {
         return;
     }
 
-    const wxString status = cli
-        ? wxString::Format("The Unity CLI on this computer (version %s) is too old for this.", cli->version.empty() ? "unknown" : cli->version)
+    const wxString status = cliStatus.state == UnityCliStatus::State::Outdated
+        ? wxString::Format("The Unity CLI on this computer (version %s) is too old for this.", cliStatus.version.empty() ? "unknown" : cliStatus.version)
         : wxString("The Unity CLI isn't installed yet.");
     // wxRichMessageDialog lays this out with wxTextSizerWrapper, which drops empty
     // lines, so a blank line has to contain a character or the gap disappears.
@@ -578,7 +581,7 @@ void MainFrameDerived::OfferCliInstall(){
         "You can also do this later from the Editor Versions tab." + paragraphGap;
 
     wxRichMessageDialog dialog(this, message, "Open Projects Signed In", wxYES_NO | wxICON_INFORMATION);
-    dialog.SetYesNoLabels(cli ? "Update CLI" : "Install CLI", "Not Now");
+    dialog.SetYesNoLabels(InstallCliLabel(), "Not Now");
     dialog.ShowCheckBox("Don't show this again");
     // Escape (and closing the window) answers Not Now; with no Cancel button it would do nothing
     dialog.SetEscapeId(wxID_NO);
@@ -604,7 +607,7 @@ void MainFrameDerived::InstallCli(){
         if (!installed) {
             return;
         }
-        const auto cli = UnityCli::Find();
+        const auto& cli = self->cliStatus.cli;
         if (!cli) {
             wxMessageBox("The installer finished, but Unity Hub Native cannot find a recent enough Unity CLI.", "Cannot Install Unity CLI", wxOK | wxICON_ERROR, self.get());
             return;
@@ -627,13 +630,12 @@ void MainFrameDerived::InstallCli(){
  Signs the Unity CLI in to the user's Unity account through the browser
  */
 void MainFrameDerived::LoginCli(){
-    const auto cli = UnityCli::Find();
-    if (!cli) {
+    if (!cliStatus.cli) {
         RefreshCliState();
         return;
     }
     wxWeakRef<MainFrameDerived> self(this);
-    cli->SignIn(this, [self](bool){
+    cliStatus.cli->SignIn(this, [self](bool){
         if (self) {
             self->RefreshCliState();
         }
