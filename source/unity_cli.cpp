@@ -245,12 +245,16 @@ namespace {
 
 		void OnTerminate(int, int status) override {
 			timer.Stop();
-			progress.reset();
-			// report outside of wxWidgets' process bookkeeping, which may show dialogs
-			wxTheApp->CallAfter([done = std::move(done), status, cancelled = cancelled, output = ReadOutput()] {
+			// Close the progress window, report and delete this later, from the event loop.
+			// This can run inside progress->Pulse(): it yields to the event loop, which may
+			// handle the command's exit then, and both still use the window and this object
+			// once it returns. Reporting later also keeps any dialogs that done() shows out
+			// of wxWidgets' process bookkeeping.
+			wxTheApp->CallAfter([this, status, output = ReadOutput()] {
+				progress.reset();
 				done(status, cancelled, output);
+				delete this;
 			});
-			delete this;
 		}
 
 	private:
