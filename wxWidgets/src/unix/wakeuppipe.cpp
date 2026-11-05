@@ -67,6 +67,7 @@ wxWakeUpPipe::wxWakeUpPipe()
 
 void wxWakeUpPipe::WakeUpNoLock()
 {
+    // UnityHubNative patch (see patches/wxWidgets/README.md): fixes a lost wake up
     // No need to do anything if the pipe already contains something. Claim the
     // right to write before writing, see the comment on m_pipeIsEmpty.
     if ( !m_pipeIsEmpty.exchange(false) )

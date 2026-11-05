@@ -53,6 +53,9 @@ public:
 private:
     wxPipe m_pipe;
 
+    // UnityHubNative patch (see patches/wxWidgets/README.md): made atomic and
+    // cleared before writing, to fix a lost wake up.
+    //
     // This flag is set to false before writing to the pipe and reset to true
     // after reading from it in the main thread. Having it allows us to avoid
     // overflowing the pipe with too many writes if the main thread can't keep
