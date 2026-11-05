@@ -562,13 +562,18 @@ void MainFrameDerived::OfferCliInstall(){
     const wxString status = cli
         ? wxString::Format("The Unity CLI on this computer (version %s) is too old for this.", cli->version.empty() ? "unknown" : cli->version)
         : wxString("The Unity CLI isn't installed yet.");
+    // wxRichMessageDialog lays this out with wxTextSizerWrapper, which drops empty
+    // lines, so a blank line has to contain a character or the gap disappears.
+    const wxString paragraphGap = "\n \n";
     const wxString message =
         "Unity Hub Native can open your projects signed in to your Unity account, so the Asset Store, "
         "Package Manager and other Unity services work, without starting the official Unity Hub. "
-        "It does this through Unity's official command-line tool, the Unity CLI.\n\n" + status + "\n\n"
+        "It does this through Unity's official command-line tool, the Unity CLI."
+        + paragraphGap + " > " + status + paragraphGap +
         "Installing runs Unity's installer from unity.com. It puts the unity command in your user folder "
-        "and adds it to your shell's PATH. After that, you sign in to your Unity account once in your browser.\n\n"
-        "You can also do this later from the Editor Versions tab.";
+        "and adds it to your shell's PATH. After that, you sign in to your Unity account once in your browser."
+        + paragraphGap +
+        "You can also do this later from the Editor Versions tab." + paragraphGap;
 
     wxRichMessageDialog dialog(this, message, "Open Projects Signed In", wxYES_NO | wxICON_INFORMATION);
     dialog.SetYesNoLabels(cli ? "Update CLI" : "Install CLI", "Not Now");
