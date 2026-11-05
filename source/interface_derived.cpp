@@ -8,13 +8,10 @@
 
 #include "interface_derived.hpp"
 #include "activation.hpp"
-#include "unity_cli.hpp"
 #include <fstream>
 #include <wx/dirdlg.h>
 #include <wx/aboutdlg.h>
 #include <wx/config.h>
-#include <wx/richmsgdlg.h>
-#include <wx/weakref.h>
 
 #include <format>
 
@@ -30,10 +27,8 @@ using namespace std::filesystem;
 //the web view unloads after 5 minutes of page hidden
 const int TIMER_LENGTH = 5 * 1000 * 60;
 
-constexpr std::string_view config_name = "com.ravbug.unityhubnative.config";
 constexpr std::string_view config_sortCol = "sortColIndex";
 constexpr std::string_view config_sortAscending = "sortAscending";
-constexpr std::string_view config_hideCliPrompt = "hideUnityCliPrompt";
 
 //Declare events here
 wxBEGIN_EVENT_TABLE(MainFrameDerived, wxFrame)
@@ -121,9 +116,10 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 
     FitMinSizeToTabs();
 
-    RefreshCliState();
+    cliController = std::make_unique<UnityCliController>(this, installCliBtn, loginCliBtn);
+    cliController->Refresh();
     // once the window is on screen
-    CallAfter(&MainFrameDerived::OfferCliInstall);
+    CallAfter([this]{ cliController->OfferInstall(); });
 }
 
 /**
@@ -408,7 +404,7 @@ void MainFrameDerived::OnCreateProject(wxCommandEvent& event){
 			//add the project
 			this->AddProject(p,"",true, true);
 			
-			CreateProjectInEditor(this, cliStatus, p, e, templatePath);
+			CreateProjectInEditor(this, cliController->Status(), p, e, templatePath);
 		};
 		CreateProjectDialogD* dialog = new CreateProjectDialogD(this,editors,d);
 		dialog->show();
@@ -505,133 +501,15 @@ const char* const PlatToStr(TargetPlatform plat) {
  @param e the editor version to use when opening the project
  */
 void MainFrameDerived::OpenProject(const project& p, const editor& e, TargetPlatform plat){
-    OpenProjectInEditor(cliStatus, p, e, PlatToStr(plat));
-}
-
-/**
- The label for installing the CLI, or updating it if it is too old
- */
-const char* MainFrameDerived::InstallCliLabel() const{
-    return cliStatus.state == UnityCliStatus::State::Outdated ? "Update CLI" : "Install CLI";
-}
-
-/**
- Looks for the Unity CLI again, and updates the Install CLI and Login CLI buttons. Install
- is available while there is no recent enough CLI, Login while the CLI is not signed in.
- */
-void MainFrameDerived::RefreshCliState(){
-    cliStatus = UnityCli::Probe();
-    installCliBtn->SetLabel(InstallCliLabel());
-    installCliBtn->Enable(!cliStatus.cli);
-    loginCliBtn->Enable(false);
-    installCliBtn->GetParent()->Layout();
-    if (!cliStatus.cli) {
-        return;
-    }
-    wxWeakRef<MainFrameDerived> self(this);
-    cliStatus.cli->CheckSignedIn([self](bool signedIn){
-        if (self) {
-            self->loginCliBtn->Enable(!signedIn);
-        }
-    });
-}
-
-/**
- On launch, explains the Unity CLI and offers to install it, unless the user turned this off
- */
-void MainFrameDerived::OfferCliInstall(){
-    wxConfig config(config_name.data());
-    if (config.ReadBool(config_hideCliPrompt.data(), false)) {
-        return;
-    }
-    if (cliStatus.cli) {
-        return;
-    }
-
-    const wxString status = cliStatus.state == UnityCliStatus::State::Outdated
-        ? wxString::Format("The Unity CLI on this computer (version %s) is too old for this.", cliStatus.version.empty() ? "unknown" : cliStatus.version)
-        : wxString("The Unity CLI isn't installed yet.");
-    // wxRichMessageDialog lays this out with wxTextSizerWrapper, which drops empty
-    // lines, so a blank line has to contain a character or the gap disappears.
-    const wxString paragraphGap = "\n \n";
-    const wxString message =
-        "Unity Hub Native can open your projects signed in to your Unity account, so the Asset Store, "
-        "Package Manager and other Unity services work, without starting the official Unity Hub. "
-        "It does this through Unity's official command-line tool, the Unity CLI."
-        + paragraphGap + " > " + status + paragraphGap +
-        "Installing runs Unity's installer from unity.com. It puts the unity command in your user folder "
-        "and adds it to your shell's PATH. After that, you sign in to your Unity account once in your browser."
-        + paragraphGap +
-        "You can also do this later from the Editor Versions tab." + paragraphGap;
-
-    wxRichMessageDialog dialog(this, message, "Open Projects Signed In", wxYES_NO | wxICON_INFORMATION);
-    dialog.SetYesNoLabels(InstallCliLabel(), "Not Now");
-    dialog.ShowCheckBox("Don't show this again");
-    // Escape (and closing the window) answers Not Now; with no Cancel button it would do nothing
-    dialog.SetEscapeId(wxID_NO);
-    const bool install = dialog.ShowModal() == wxID_YES;
-    if (dialog.IsCheckBoxChecked()) {
-        config.Write(config_hideCliPrompt.data(), true);
-    }
-    if (install) {
-        InstallCli();
-    }
-}
-
-/**
- Installs or updates the Unity CLI, then helps the user sign in
- */
-void MainFrameDerived::InstallCli(){
-    wxWeakRef<MainFrameDerived> self(this);
-    UnityCli::Install(this, [self](bool installed){
-        if (!self) {
-            return;
-        }
-        self->RefreshCliState();
-        if (!installed) {
-            return;
-        }
-        const auto& cli = self->cliStatus.cli;
-        if (!cli) {
-            wxMessageBox("The installer finished, but Unity Hub Native cannot find a recent enough Unity CLI.", "Cannot Install Unity CLI", wxOK | wxICON_ERROR, self.get());
-            return;
-        }
-        cli->CheckSignedIn([self](bool signedIn){
-            if (!self) {
-                return;
-            }
-            if (signedIn) {
-                wxMessageBox("The Unity CLI is installed and signed in. Projects now open signed in to your Unity account.", "Unity CLI Installed", wxOK | wxICON_INFORMATION, self.get());
-            }
-            else if (wxMessageBox("The Unity CLI is installed. Sign in to your Unity account now, so projects open signed in?", "Unity CLI Installed", wxYES_NO | wxICON_QUESTION, self.get()) == wxYES) {
-                self->LoginCli();
-            }
-        });
-    });
-}
-
-/**
- Signs the Unity CLI in to the user's Unity account through the browser
- */
-void MainFrameDerived::LoginCli(){
-    if (!cliStatus.cli) {
-        RefreshCliState();
-        return;
-    }
-    wxWeakRef<MainFrameDerived> self(this);
-    cliStatus.cli->SignIn(this, [self](bool){
-        if (self) {
-            self->RefreshCliState();
-        }
-    });
+    OpenProjectInEditor(cliController->Status(), p, e, PlatToStr(plat));
 }
 
 void MainFrameDerived::OnInstallCli(wxCommandEvent&){
-    InstallCli();
+    cliController->Install();
 }
 
 void MainFrameDerived::OnLoginCli(wxCommandEvent&){
-    LoginCli();
+    cliController->SignIn();
 }
 
 MainFrameDerived::~MainFrameDerived()

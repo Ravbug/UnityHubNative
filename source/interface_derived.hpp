@@ -10,7 +10,8 @@
 
 #include "globals.h"
 #include "interface.h"
-#include "unity_cli.hpp"
+#include "unity_cli_ui.hpp"
+#include <memory>
 #include <functional>
 #include <wx/webview.h>
 #include <wx/timer.h>
@@ -67,13 +68,7 @@ private:
     // Unity CLI: opens projects signed in without the official Hub
     void OnInstallCli(wxCommandEvent&);
     void OnLoginCli(wxCommandEvent&);
-    void InstallCli();
-    void LoginCli();
-    void OfferCliInstall();
-    void RefreshCliState();
-    const char* InstallCliLabel() const;
-    // the Unity CLI found by the last RefreshCliState()
-    UnityCliStatus cliStatus;
+    std::unique_ptr<UnityCliController> cliController;
     
     wxWindow* const projectActionItems[3]{
         revealProjBtn,
@@ -188,7 +183,7 @@ private:
     void OnOpenHub(wxCommandEvent& event);
 	void OnReloadEditors(wxCommandEvent& event){
 		this->LoadEditorVersions();
-		RefreshCliState();
+		cliController->Refresh();
 	}
 	void OnColumnClick(wxListEvent& event);
 	static int wxCALLBACK CompareItems(wxIntPtr item1, wxIntPtr item2, wxIntPtr sortData);

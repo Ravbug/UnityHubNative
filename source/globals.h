@@ -15,6 +15,8 @@ static constexpr std::string_view projectsFile = "projects.txt";
 static constexpr std::string_view editorPathsFile = "editorPaths.txt";
 static constexpr std::string_view templatePrefix = "com.unity.template";
 static constexpr std::string_view AppVersion = "v1.59";
+//the name of the app's settings store (wxConfig)
+static constexpr std::string_view config_name = "com.ravbug.unityhubnative.config";
 
 struct wxListCtrl;
 struct wxWindow;
