@@ -464,18 +464,24 @@ void UnityCli::Install(wxWindow* parent, std::function<void(bool)> done) {
 	// Download with curl or wget, whichever is there (stock Ubuntu desktops have only wget),
 	// and download first, so a failed download fails the install instead of running an
 	// empty script. UNITY_NON_INTERACTIVE skips the installer's terminal-only setup questions.
-	std::vector<wxString> args{"/bin/sh", "-c",
-		"fetch() { "
-			"if command -v curl >/dev/null 2>&1; then curl -fsSL \"$1\" -o \"$2\"; "
-			"elif command -v wget >/dev/null 2>&1; then wget -qO \"$2\" \"$1\"; "
-			"else echo 'Installing the Unity CLI needs curl or wget.' >&2; return 127; fi; "
-		"}; "
-		"if [ -z \"${UNITY_CLI_CHANNEL:-}\" ] && ! fetch " + wxString(stableManifestUrl) + " /dev/null 2>/dev/null; then "
-			"export UNITY_CLI_CHANNEL=beta; "
-		"fi; "
-		"f=$(mktemp) || exit 1; "
-		"fetch https://unity.com/install.sh \"$f\" && UNITY_NON_INTERACTIVE=1 bash \"$f\"; "
-		"s=$?; rm -f \"$f\"; exit $s"};
+	constexpr const char* script = R"sh(
+		stable_manifest="$1"
+		fetch() {
+			if command -v curl >/dev/null 2>&1; then curl -fsSL "$1" -o "$2"
+			elif command -v wget >/dev/null 2>&1; then wget -qO "$2" "$1"
+			else echo 'Installing the Unity CLI needs curl or wget.' >&2; return 127
+			fi
+		}
+		if [ -z "${UNITY_CLI_CHANNEL:-}" ] && ! fetch "$stable_manifest" /dev/null 2>/dev/null; then
+			export UNITY_CLI_CHANNEL=beta
+		fi
+		f=$(mktemp) || exit 1
+		fetch https://unity.com/install.sh "$f" && UNITY_NON_INTERACTIVE=1 bash "$f"
+		s=$?
+		rm -f "$f"
+		exit $s
+	)sh";
+	std::vector<wxString> args{"/bin/sh", "-c", script, "sh", stableManifestUrl};
 #endif
 	// a plain literal holding "…" converts to an empty wxString unless the locale is UTF-8, so convert explicitly
 	const wxString message = wxString::FromUTF8(
