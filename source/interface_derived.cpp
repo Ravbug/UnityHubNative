@@ -30,6 +30,7 @@ const int TIMER_LENGTH = 5 * 1000 * 60;
 constexpr std::string_view config_name = "com.ravbug.unityhubnative.config";
 constexpr std::string_view config_sortCol = "sortColIndex";
 constexpr std::string_view config_sortAscending = "sortAscending";
+constexpr std::string_view config_columnWidth = "projectColumnWidth";
 
 //Declare events here
 wxBEGIN_EVENT_TABLE(MainFrameDerived, wxFrame)
@@ -43,6 +44,7 @@ EVT_MENU(wxID_REFRESH, MainFrameDerived::OnReloadData)
 EVT_MENU(wxID_UNINDENT, MainFrameDerived::OnSource)
 EVT_MENU(wxID_TOP, MainFrameDerived::OnUpdate)
 EVT_MENU(wxID_EXIT, MainFrameDerived::OnQuit)
+EVT_CLOSE(MainFrameDerived::OnClose)
 EVT_BUTTON(wxID_ADD,MainFrameDerived::OnAddProject)
 EVT_BUTTON(wxID_NEW,MainFrameDerived::OnCreateProject)
 EVT_BUTTON(wxID_FIND,MainFrameDerived::OnLocateInstall)
@@ -61,6 +63,7 @@ EVT_LIST_ITEM_SELECTED(wxID_HARDDISK, MainFrameDerived::OnSelectProject)
 EVT_LIST_ITEM_DESELECTED(wxID_HARDDISK, MainFrameDerived::OnDeselectProject)
 EVT_LIST_DELETE_ITEM(wxID_HARDDISK,  MainFrameDerived::OnDeselectProject)
 EVT_LIST_COL_CLICK(wxID_HARDDISK, MainFrameDerived::OnColumnClick)
+EVT_LIST_COL_END_DRAG(wxID_HARDDISK, MainFrameDerived::OnColumnResized)
 
 EVT_LISTBOX(wxID_FLOPPY, MainFrameDerived::OnSelectEditor)
 EVT_LISTBOX(wxID_HOME, MainFrameDerived::OnSelectEditorPath)
@@ -78,7 +81,7 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
     // load prefs
     wxConfig config(config_name.data());
     sortColumn = std::clamp<long>(config.ReadLong(config_sortCol.data(), 0), 0, 3);
-    sortAscending = config.ReadBool(config_sortAscending.data(), false);
+    sortAscending = config.ReadBool(config_sortAscending.data(), true);
 
 	//set up project list columns
 	{
@@ -87,6 +90,22 @@ MainFrameDerived::MainFrameDerived() : MainFrame(NULL){
 			projectsList->AppendColumn(str,wxLIST_FORMAT_LEFT);
 		}
 	}
+	//restore column widths if the user resized them in a previous session
+	{
+		const int cols = projectsList->GetColumnCount();
+		std::vector<int> widths(cols);
+		bool allRead = true;
+		for (int i = 0; i < cols && allRead; i++){
+			allRead = config.Read(std::format("{}{}", config_columnWidth, i), &widths[i]);
+		}
+		if (allRead){
+			for (int i = 0; i < cols; i++){
+				projectsList->SetColumnWidth(i, widths[i]);
+			}
+			customColumnWidths = true;
+		}
+	}
+	projectsList->ShowSortIndicator(sortColumn, sortAscending);
 	//make the data folder if it does not already exist (with readwrite for all groups)
 	#if defined __APPLE__ || defined __linux__
 		int status = mkdir(datapath.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
@@ -161,6 +180,24 @@ void MainFrameDerived::OnSelectEditorPath(wxCommandEvent&){
 void MainFrameDerived::OnQuit(wxCommandEvent&)
 {
     Close();
+}
+
+void MainFrameDerived::OnClose(wxCloseEvent& event){
+    wxConfig config(config_name.data());
+
+    // save column widths only if the user resized them, otherwise keep autosizing
+    for (int i = 0; i < projectsList->GetColumnCount(); i++){
+        const auto key = std::format("{}{}", config_columnWidth, i);
+        if (customColumnWidths){
+            config.Write(key, projectsList->GetColumnWidth(i));
+        }
+        else{
+            config.DeleteEntry(key);
+        }
+    }
+
+    // let the default handler destroy the window
+    event.Skip();
 }
 
 /**
@@ -607,10 +644,12 @@ void MainFrameDerived::AddProject(const project& p, const std::string& filter, b
         projectsList->SetItem(itemIndex, 2, p.modifyDateString());
         projectsList->SetItem(itemIndex, 3, p.path.string());
 
-        //resize columns
-        int cols = projectsList->GetColumnCount();
-        for (int j = 0; j < cols; j++){
-            projectsList->SetColumnWidth(j, wxLIST_AUTOSIZE_USEHEADER);
+        //resize columns, unless the user has set their widths
+        if (!customColumnWidths){
+            int cols = projectsList->GetColumnCount();
+            for (int j = 0; j < cols; j++){
+                projectsList->SetColumnWidth(j, wxLIST_AUTOSIZE_USEHEADER);
+            }
         }
 
         // Sort the list to place the new item in the correct position
@@ -747,9 +786,13 @@ void MainFrameDerived::OnColumnClick(wxListEvent& event) {
     }
 
     SortProjects();
-    // update UI 
-    const bool ascending = projectsList->GetUpdatedAscendingSortIndicator(col);
-    projectsList->ShowSortIndicator(col, ascending);
+    // update UI
+    projectsList->ShowSortIndicator(sortColumn, sortAscending);
+}
+
+void MainFrameDerived::OnColumnResized(wxListEvent& event) {
+    customColumnWidths = true;
+    event.Skip();
 }
 
 // Sort comparison function
