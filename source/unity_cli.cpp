@@ -194,7 +194,7 @@ namespace {
 	void ShowFailure(const wxString& title, const wxString& summary, wxString output) {
 		constexpr size_t maxLength = 2000;
 		if (output.length() > maxLength) {
-			output = "…" + output.Right(maxLength);
+			output = wxString::FromUTF8("…") + output.Right(maxLength);
 		}
 		wxMessageBox(output.empty() ? summary : summary + "\n\n" + output, title, wxOK | wxICON_ERROR);
 	}
@@ -424,12 +424,21 @@ void UnityCli::Install(wxWindow* parent, std::function<void(bool)> done) {
 		"fetch https://unity.com/install.sh \"$f\" && UNITY_NON_INTERACTIVE=1 bash \"$f\"; "
 		"s=$?; rm -f \"$f\"; exit $s"};
 #endif
+	// a plain literal holding "…" converts to an empty wxString unless the locale is UTF-8, so convert explicitly
+	const wxString message = wxString::FromUTF8(
+#if _WIN32
+		"Downloading and installing the Unity CLI from unity.com…"
+#else
+		"Downloading and installing the Unity CLI from unity.com…\n"
+		"You may be asked for your sudo password a few times."
+#endif
+	);
 	RunCommand(args, [done](int status, bool cancelled, const wxString& output) {
 		if (status != 0 && !cancelled) {
 			ShowFailure("Cannot Install Unity CLI", wxString::Format("The Unity CLI installer failed (exit code %d).", status), output);
 		}
 		done(status == 0);
-	}, Progress{parent, "Installing Unity CLI", "Downloading and installing the Unity CLI from unity.com…"});
+	}, Progress{parent, "Installing Unity CLI", message});
 }
 
 void UnityCli::Open(const project& p, const editor& e, std::string_view buildTarget, std::function<void()> launchDirectly) const {
