@@ -111,30 +111,77 @@ namespace {
 #endif
 	}
 
-	// Finds where `"key"` and its following colon end, in a small JSON document
-	std::optional<size_t> JsonValueStart(const std::string& json, std::string_view key) {
-		const std::string quotedKey = "\"" + std::string(key) + "\"";
-		auto pos = json.find(quotedKey);
-		if (pos == std::string::npos) {
-			return std::nullopt;
+	/*
+	 A minimal JSON reader, enough for cli-install.json and `unity auth status --json`.
+	 Values are found by the path of member names leading to them, so a nested member
+	 with the same name is never mistaken for the one asked for.
+	 */
+
+	std::optional<size_t> SkipJsonSpace(const std::string& json, size_t pos) {
+		pos = json.find_first_not_of(" \t\r\n", pos);
+		return pos == std::string::npos ? std::nullopt : std::optional(pos);
+	}
+
+	// Finds the closing quote of the JSON string whose opening quote is at open
+	std::optional<size_t> JsonStringEnd(const std::string& json, size_t open) {
+		for (auto pos = open + 1; pos < json.size(); ++pos) {
+			if (json[pos] == '\\') {
+				++pos;
+			}
+			else if (json[pos] == '"') {
+				return pos;
+			}
 		}
-		pos = json.find_first_not_of(" \t\r\n", pos + quotedKey.size());
-		if (pos == std::string::npos || json[pos] != ':') {
-			return std::nullopt;
+		return std::nullopt;
+	}
+
+	// Finds where the value of the object's own member key starts, in the JSON object whose '{' is at objectStart
+	std::optional<size_t> JsonMemberStart(const std::string& json, size_t objectStart, std::string_view key) {
+		int depth = 0;
+		for (auto pos = objectStart; pos < json.size(); ++pos) {
+			const char c = json[pos];
+			if (c == '{' || c == '[') {
+				++depth;
+			}
+			else if (c == '}' || c == ']') {
+				if (--depth == 0) {
+					return std::nullopt;
+				}
+			}
+			else if (c == '"') {
+				const auto end = JsonStringEnd(json, pos);
+				if (!end) {
+					return std::nullopt;
+				}
+				// a member name is followed by a colon, a string value is not
+				const auto next = SkipJsonSpace(json, *end + 1);
+				if (depth == 1 && next && json[*next] == ':' && json.compare(pos + 1, *end - pos - 1, key) == 0) {
+					return SkipJsonSpace(json, *next + 1);
+				}
+				pos = *end;
+			}
 		}
-		pos = json.find_first_not_of(" \t\r\n", pos + 1);
-		if (pos == std::string::npos) {
-			return std::nullopt;
+		return std::nullopt;
+	}
+
+	// Finds where the value at path starts, e.g. {"data", "loggedIn"} for {"data": {"loggedIn": true}}
+	std::optional<size_t> JsonValueStart(const std::string& json, std::initializer_list<std::string_view> path) {
+		auto pos = SkipJsonSpace(json, 0);
+		for (const auto key : path) {
+			if (!pos || json[*pos] != '{') {
+				return std::nullopt;
+			}
+			pos = JsonMemberStart(json, *pos, key);
 		}
 		return pos;
 	}
 
 	/**
-	 Reads a string value from a small JSON document, enough for cli-install.json
-	 @return the unescaped value, or nullopt if the key is missing or not a string
+	 Reads a string value from a JSON document
+	 @return the unescaped value, or nullopt if it is missing or not a string
 	 */
-	std::optional<std::string> JsonStringField(const std::string& json, std::string_view key) {
-		const auto start = JsonValueStart(json, key);
+	std::optional<std::string> JsonStringField(const std::string& json, std::initializer_list<std::string_view> path) {
+		const auto start = JsonValueStart(json, path);
 		if (!start || json[*start] != '"') {
 			return std::nullopt;
 		}
@@ -162,9 +209,9 @@ namespace {
 		return std::nullopt;
 	}
 
-	// Reads a boolean value from a small JSON document
-	std::optional<bool> JsonBoolField(const std::string& json, std::string_view key) {
-		const auto start = JsonValueStart(json, key);
+	// Reads a boolean value from a JSON document
+	std::optional<bool> JsonBoolField(const std::string& json, std::initializer_list<std::string_view> path) {
+		const auto start = JsonValueStart(json, path);
 		if (!start) {
 			return std::nullopt;
 		}
@@ -353,7 +400,7 @@ std::optional<UnityCli> UnityCli::Locate() {
 	// the Hub and the CLI's installer record where the CLI is
 	if (std::ifstream file{HubDataDirectory() / "cli-install.json"}) {
 		const std::string json{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
-		if (const auto recorded = JsonStringField(json, "path")) {
+		if (const auto recorded = JsonStringField(json, {"path"})) {
 			candidates.emplace_back(std::u8string(recorded->begin(), recorded->end()));
 		}
 	}
@@ -478,7 +525,7 @@ void UnityCli::Open(const project& p, const editor& e, std::string_view buildTar
 void UnityCli::CheckSignedIn(std::function<void(bool)> done) const {
 	RunCommand({ToWx(executable), "auth", "status", "--json", "--non-interactive", "--no-banner", "--no-color"},
 		[done](int status, bool, const wxString& output) {
-			done(status == 0 && JsonBoolField(output.utf8_string(), "loggedIn").value_or(false));
+			done(status == 0 && JsonBoolField(output.utf8_string(), {"data", "loggedIn"}).value_or(false));
 		});
 }
 
