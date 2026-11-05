@@ -74,12 +74,14 @@ namespace {
 #endif
 	}
 
+	// The user's home folder. On Windows, USERPROFILE is more reliable than globals.h's
+	// HOMEDRIVE and HOMEPATH, which can point at a network share.
 	std::filesystem::path HomeDirectory() {
 #if _WIN32
 		const wchar_t* profile = _wgetenv(L"USERPROFILE");
 		return profile ? std::filesystem::path(profile) : homedir;
 #else
-		return std::filesystem::path(getpwuid(getuid())->pw_dir);
+		return homedir;
 #endif
 	}
 

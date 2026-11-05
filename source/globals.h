@@ -19,13 +19,23 @@ static constexpr std::string_view AppVersion = "v1.59";
 struct wxListCtrl;
 struct wxWindow;
 
-#if defined __APPLE__
+#if defined __APPLE__ || defined __linux__
 	#include <pwd.h>
-    #include <unistd.h>
-	//the location to store application data
-	static const std::filesystem::path datapath = std::filesystem::path(getpwuid(getuid())->pw_dir) / "Library/Application Support/UnityHubNative";
+	#include <unistd.h>
+	#include <cstdlib>
+	//the user's home folder
+	static const std::filesystem::path homedir = [] {
+		const passwd* user = getpwuid(getuid());
+		const char* home = user ? user->pw_dir : getenv("HOME");
+		return std::filesystem::path(home ? home : "");
+	}();
+#endif
 
-    static const std::filesystem::path cachedir = std::filesystem::path(getpwuid(getuid())->pw_dir) / "/Library/Caches/com.ravbug.UnityHubNative/";
+#if defined __APPLE__
+	//the location to store application data
+	static const std::filesystem::path datapath = homedir / "Library/Application Support/UnityHubNative";
+
+    static const std::filesystem::path cachedir = homedir / "/Library/Caches/com.ravbug.UnityHubNative/";
 	static constexpr std::string_view installerExt = "dmg";
 
 	//where to find various Unity things on macOS
@@ -68,13 +78,11 @@ struct wxWindow;
 	void dpi_scale(wxWindow* window);
 
 #elif defined __linux__
-	#include <pwd.h>
-    #include <unistd.h>
-	static const std::filesystem::path datapath = std::filesystem::path(getpwuid(getuid())->pw_dir) / "UnityHubNative";
+	static const std::filesystem::path datapath = homedir / "UnityHubNative";
 	static constexpr std::string_view null_device = ">/dev/null 2>&1";
 	
 	static const std::filesystem::path executable = "Editor/Unity";
-    static const std::vector<std::filesystem::path> defaultInstall = {std::filesystem::path(getpwuid(getuid())->pw_dir) / "Unity/Hub/Editor"};
+    static const std::vector<std::filesystem::path> defaultInstall = {homedir / "Unity/Hub/Editor"};
 	//TODO: make this a preference?
 	static const std::filesystem::path hubDefault = "";
 	static const std::filesystem::path templatesDir = "Editor/Data/Resources/PackageManager/ProjectTemplates/";
